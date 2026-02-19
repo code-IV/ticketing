@@ -1,0 +1,36 @@
+# Dependency directories
+node_modules/
+**/node_modules/
+
+# Next.js build output
+frontend/.next/
+frontend/out/
+
+# Node.js/Express build/logs
+backend/dist/
+backend/build/
+*.log
+npm-debug.log*
+
+# Environment variables (CRITICAL: Never commit these)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+**/ .env*
+
+# Operating System files
+.DS_Store
+Thumbs.db
+
+# IDEs and editors
+.visualstudio/
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Temporary folders
+.temp/
+.tmp/
