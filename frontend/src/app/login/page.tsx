@@ -1,31 +1,34 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { useAuth } from '@/contexts/AuthContext';
-import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
-import { Card, CardHeader, CardBody } from '@/components/ui/Card';
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { Card, CardHeader, CardBody } from "@/components/ui/Card";
 
 export default function LoginPage() {
   const router = useRouter();
   const { login } = useAuth();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError("");
     setLoading(true);
 
     try {
       await login(email, password);
-      router.push('/events');
+      router.push("/events");
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Login failed. Please check your credentials.');
+      setError(
+        err.response?.data?.message ||
+          "Login failed. Please check your credentials.",
+      );
     } finally {
       setLoading(false);
     }
@@ -36,13 +39,15 @@ export default function LoginPage() {
       <div className="max-w-md w-full">
         <Card>
           <CardHeader>
-            <h2 className="text-3xl font-bold text-center text-gray-900">Sign In</h2>
+            <h2 className="text-3xl font-bold text-center text-gray-900">
+              Sign In
+            </h2>
             <p className="mt-2 text-center text-sm text-gray-600">
               Access your Bora Park account
             </p>
           </CardHeader>
           <CardBody>
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-6 text-gray-900">
               {error && (
                 <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
                   {error}
@@ -75,7 +80,10 @@ export default function LoginPage() {
 
               <div className="text-center text-sm">
                 <span className="text-gray-600">Don't have an account? </span>
-                <Link href="/register" className="text-blue-600 hover:text-blue-700 font-medium">
+                <Link
+                  href="/register"
+                  className="text-blue-600 hover:text-blue-700 font-medium"
+                >
                   Sign up
                 </Link>
               </div>
