@@ -15,11 +15,11 @@ import {
 } from "lucide-react";
 import { adminService } from "@/services/adminService";
 import { Button } from "@/components/ui/Button";
-
+import Link from "next/link";
 export default function UserManagementPage() {
   // Fix 1: Initialize as empty array to prevent .length errors
   const [users, setUsers] = useState<User[]>([]);
-  const [isloading, setIsLoading] = useState<boolean>(true);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [search, setSearch] = useState("");
 
   // Fix 2: Wrap loadUsers in useEffect so it actually runs
@@ -27,13 +27,17 @@ export default function UserManagementPage() {
     loadUsers();
   }, []);
 
+  const [error, setError] = useState<string | null>(null);
+
   const loadUsers = async () => {
     try {
       setIsLoading(true); // Ensure loading state is active
+      setError(null);
       const response = await adminService.getAllUsers(1, 20, "admin");
       setUsers(response.data?.users || []);
     } catch (error) {
       console.error("Failed to load users:", error);
+      setError("Failed to load users. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -56,7 +60,7 @@ export default function UserManagementPage() {
       u.email?.toLowerCase().includes(search.toLowerCase()),
   );
 
-  if (isloading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -182,9 +186,12 @@ export default function UserManagementPage() {
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button className="p-2 hover:bg-gray-100 rounded-lg text-gray-500">
+                        <Link
+                          href={`/admin/users/${user.id}`}
+                          className="p-2 hover:bg-gray-100 rounded-lg text-gray-500"
+                        >
                           <Edit2 className="h-4 w-4" />
-                        </button>
+                        </Link>
                         <button className="p-2 hover:bg-red-50 rounded-lg text-red-600">
                           <Trash2 className="h-4 w-4" />
                         </button>

@@ -187,7 +187,7 @@ export default function BookingDetailPage({
                 <div>
                   <p className="font-medium text-gray-900">Payment Method</p>
                   <p className="text-gray-600 capitalize">
-                    {booking.payment_method?.replace("_", " ")}
+                    {booking.payment_method?.replace(/_/g, " ")}
                   </p>
                 </div>
               </div>

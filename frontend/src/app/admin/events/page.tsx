@@ -283,10 +283,12 @@ export default function AdminEventsPage() {
                           <p className="text-gray-500">Tickets Sold</p>
                           <p className="font-medium text-gray-900">
                             {event.tickets_sold} (
-                            {(
-                              (event.tickets_sold / event.capacity) *
-                              100
-                            ).toFixed(0)}
+                            {event.capacity > 0
+                              ? (
+                                  (event.tickets_sold / event.capacity) *
+                                  100
+                                ).toFixed(0)
+                              : 0}
                             %)
                           </p>
                         </div>

@@ -118,18 +118,24 @@ export const adminService = {
   async getAllUsers(
     page = 1,
     limit = 20,
-    cookie?: string,
     role?: string,
   ): Promise<PaginatedResponse<User>> {
     const response = await api.get("/admin/users", {
       params: { page, limit, role },
-      headers: { Cookie: cookie },
     });
     return response.data;
   },
 
   async getUserById(id: string): Promise<ApiResponse<{ user: User }>> {
     const response = await api.get(`/admin/users/${id}`);
+    return response.data;
+  },
+
+  async updateUser(
+    id: string,
+    data: Partial<User>,
+  ): Promise<ApiResponse<{ user: User }>> {
+    const response = await api.patch(`/admin/users/${id}`, data);
     return response.data;
   },
 

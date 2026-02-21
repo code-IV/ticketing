@@ -1,5 +1,5 @@
-const { query } = require('../config/db');
-const bcrypt = require('bcrypt');
+const { query } = require("../config/db");
+const bcrypt = require("bcrypt");
 
 const SALT_ROUNDS = 12;
 
@@ -7,7 +7,14 @@ const User = {
   /**
    * Create a new user
    */
-  async create({ firstName, lastName, email, phone, password, role = 'visitor' }) {
+  async create({
+    firstName,
+    lastName,
+    email,
+    phone,
+    password,
+    role = "visitor",
+  }) {
     const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
     const sql = `
       INSERT INTO users (first_name, last_name, email, phone, password_hash, role)
@@ -120,6 +127,28 @@ const User = {
         totalPages: Math.ceil(total / limit),
       },
     };
+  },
+
+  /**
+   * update user information (admin)
+   */
+  async updateUser(id, { firstName, lastName, email, phone, role, isActive }) {
+    const sql = `
+      UPDATE users
+      SET 
+        first_name = COALESCE($2, first_name),
+        last_name = COALESCE($3, last_name),
+        email = COALESCE($4, email),
+        phone = COALESCE($5, phone),
+        role = COALESCE($6, role),
+        is_active = COALESCE($7, is_active),
+        updated_at = CURRENT_TIMESTAMP
+      WHERE id = $1
+      RETURNING id, first_name, last_name, email, phone, role, is_active, updated_at`;
+
+    const values = [id, firstName, lastName, email, phone, role, isActive];
+    const result = await query(sql, values);
+    return result.rows[0] || null;
   },
 
   /**

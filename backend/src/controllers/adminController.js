@@ -1,9 +1,9 @@
-const Event = require('../models/Event');
-const TicketType = require('../models/TicketType');
-const Booking = require('../models/Booking');
-const Payment = require('../models/Payment');
-const User = require('../models/User');
-const { apiResponse } = require('../utils/helpers');
+const Event = require("../models/Event");
+const TicketType = require("../models/TicketType");
+const Booking = require("../models/Booking");
+const Payment = require("../models/Payment");
+const User = require("../models/User");
+const { apiResponse } = require("../utils/helpers");
 
 const adminController = {
   // ============================================
@@ -19,7 +19,7 @@ const adminController = {
       const { events } = await Event.findAll({ page: 1, limit: 5 });
       const { bookings } = await Booking.findAll({ page: 1, limit: 5 });
 
-      return apiResponse(res, 200, true, 'Dashboard data retrieved.', {
+      return apiResponse(res, 200, true, "Dashboard data retrieved.", {
         revenue,
         recentEvents: events,
         recentBookings: bookings,
@@ -42,7 +42,7 @@ const adminController = {
       const limit = parseInt(req.query.limit, 10) || 20;
 
       const result = await Event.findAll({ page, limit });
-      return apiResponse(res, 200, true, 'Events retrieved.', result);
+      return apiResponse(res, 200, true, "Events retrieved.", result);
     } catch (err) {
       next(err);
     }
@@ -53,7 +53,8 @@ const adminController = {
    */
   async createEvent(req, res, next) {
     try {
-      const { name, description, eventDate, startTime, endTime, capacity } = req.body;
+      const { name, description, eventDate, startTime, endTime, capacity } =
+        req.body;
 
       const event = await Event.create({
         name,
@@ -65,7 +66,9 @@ const adminController = {
         createdBy: req.session.user.id,
       });
 
-      return apiResponse(res, 201, true, 'Event created successfully.', { event });
+      return apiResponse(res, 201, true, "Event created successfully.", {
+        event,
+      });
     } catch (err) {
       next(err);
     }
@@ -76,11 +79,19 @@ const adminController = {
    */
   async updateEvent(req, res, next) {
     try {
-      const { name, description, eventDate, startTime, endTime, capacity, isActive } = req.body;
+      const {
+        name,
+        description,
+        eventDate,
+        startTime,
+        endTime,
+        capacity,
+        isActive,
+      } = req.body;
 
       const existing = await Event.findById(req.params.id);
       if (!existing) {
-        return apiResponse(res, 404, false, 'Event not found.');
+        return apiResponse(res, 404, false, "Event not found.");
       }
 
       const event = await Event.update(req.params.id, {
@@ -93,7 +104,9 @@ const adminController = {
         isActive,
       });
 
-      return apiResponse(res, 200, true, 'Event updated successfully.', { event });
+      return apiResponse(res, 200, true, "Event updated successfully.", {
+        event,
+      });
     } catch (err) {
       next(err);
     }
@@ -106,9 +119,11 @@ const adminController = {
     try {
       const event = await Event.deactivate(req.params.id);
       if (!event) {
-        return apiResponse(res, 404, false, 'Event not found.');
+        return apiResponse(res, 404, false, "Event not found.");
       }
-      return apiResponse(res, 200, true, 'Event deactivated successfully.', { event });
+      return apiResponse(res, 200, true, "Event deactivated successfully.", {
+        event,
+      });
     } catch (err) {
       next(err);
     }
@@ -123,12 +138,19 @@ const adminController = {
    */
   async createTicketType(req, res, next) {
     try {
-      const { eventId, name, category, price, description, maxQuantityPerBooking } = req.body;
+      const {
+        eventId,
+        name,
+        category,
+        price,
+        description,
+        maxQuantityPerBooking,
+      } = req.body;
 
       // Verify event exists
       const event = await Event.findById(eventId);
       if (!event) {
-        return apiResponse(res, 404, false, 'Event not found.');
+        return apiResponse(res, 404, false, "Event not found.");
       }
 
       const ticketType = await TicketType.create({
@@ -140,7 +162,9 @@ const adminController = {
         maxQuantityPerBooking,
       });
 
-      return apiResponse(res, 201, true, 'Ticket type created successfully.', { ticketType });
+      return apiResponse(res, 201, true, "Ticket type created successfully.", {
+        ticketType,
+      });
     } catch (err) {
       next(err);
     }
@@ -151,11 +175,18 @@ const adminController = {
    */
   async updateTicketType(req, res, next) {
     try {
-      const { name, category, price, description, maxQuantityPerBooking, isActive } = req.body;
+      const {
+        name,
+        category,
+        price,
+        description,
+        maxQuantityPerBooking,
+        isActive,
+      } = req.body;
 
       const existing = await TicketType.findById(req.params.id);
       if (!existing) {
-        return apiResponse(res, 404, false, 'Ticket type not found.');
+        return apiResponse(res, 404, false, "Ticket type not found.");
       }
 
       const ticketType = await TicketType.update(req.params.id, {
@@ -167,7 +198,9 @@ const adminController = {
         isActive,
       });
 
-      return apiResponse(res, 200, true, 'Ticket type updated successfully.', { ticketType });
+      return apiResponse(res, 200, true, "Ticket type updated successfully.", {
+        ticketType,
+      });
     } catch (err) {
       next(err);
     }
@@ -180,9 +213,15 @@ const adminController = {
     try {
       const ticketType = await TicketType.deactivate(req.params.id);
       if (!ticketType) {
-        return apiResponse(res, 404, false, 'Ticket type not found.');
+        return apiResponse(res, 404, false, "Ticket type not found.");
       }
-      return apiResponse(res, 200, true, 'Ticket type deactivated successfully.', { ticketType });
+      return apiResponse(
+        res,
+        200,
+        true,
+        "Ticket type deactivated successfully.",
+        { ticketType },
+      );
     } catch (err) {
       next(err);
     }
@@ -202,7 +241,7 @@ const adminController = {
       const status = req.query.status || null;
 
       const result = await Booking.findAll({ page, limit, status });
-      return apiResponse(res, 200, true, 'Bookings retrieved.', result);
+      return apiResponse(res, 200, true, "Bookings retrieved.", result);
     } catch (err) {
       next(err);
     }
@@ -215,9 +254,9 @@ const adminController = {
     try {
       const booking = await Booking.findByIdWithDetails(req.params.id);
       if (!booking) {
-        return apiResponse(res, 404, false, 'Booking not found.');
+        return apiResponse(res, 404, false, "Booking not found.");
       }
-      return apiResponse(res, 200, true, 'Booking retrieved.', { booking });
+      return apiResponse(res, 200, true, "Booking retrieved.", { booking });
     } catch (err) {
       next(err);
     }
@@ -230,14 +269,20 @@ const adminController = {
     try {
       const booking = await Booking.findById(req.params.id);
       if (!booking) {
-        return apiResponse(res, 404, false, 'Booking not found.');
+        return apiResponse(res, 404, false, "Booking not found.");
       }
-      if (booking.booking_status === 'cancelled') {
-        return apiResponse(res, 400, false, 'Booking is already cancelled.');
+      if (booking.booking_status === "cancelled") {
+        return apiResponse(res, 400, false, "Booking is already cancelled.");
       }
 
       const result = await Booking.cancel(req.params.id);
-      return apiResponse(res, 200, true, 'Booking cancelled successfully.', result);
+      return apiResponse(
+        res,
+        200,
+        true,
+        "Booking cancelled successfully.",
+        result,
+      );
     } catch (err) {
       next(err);
     }
@@ -257,7 +302,7 @@ const adminController = {
       const role = req.query.role || null;
 
       const result = await User.findAll({ page, limit, role });
-      return apiResponse(res, 200, true, 'Users retrieved.', result);
+      return apiResponse(res, 200, true, "Users retrieved.", result);
     } catch (err) {
       next(err);
     }
@@ -270,9 +315,40 @@ const adminController = {
     try {
       const user = await User.findById(req.params.id);
       if (!user) {
-        return apiResponse(res, 404, false, 'User not found.');
+        return apiResponse(res, 404, false, "User not found.");
       }
-      return apiResponse(res, 200, true, 'User retrieved.', { user });
+      return apiResponse(res, 200, true, "User retrieved.", { user });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  /**
+   * PATCH /api/admin/users/:id - Update user information
+   */
+  async updateUser(req, res, next) {
+    try {
+      const { id } = req.params;
+
+      // 1. Properly await the check and check for null
+      const existingUser = await User.findById(id);
+      if (!existingUser) {
+        return apiResponse(res, 404, false, "User not found");
+      }
+      const { first_name, last_name, email, phone, role, is_active } = req.body;
+
+      // 3. Map the body fields to the model's expected arguments
+      const updatedUser = await User.updateUser(id, {
+        firstName: first_name,
+        lastName: last_name,
+        email: email,
+        phone: phone,
+        role: role,
+        isActive: is_active,
+      });
+      return apiResponse(res, 200, true, "User type updated successfully.", {
+        user: updatedUser,
+      });
     } catch (err) {
       next(err);
     }
@@ -285,16 +361,23 @@ const adminController = {
     try {
       // Prevent admin from deactivating themselves
       if (req.params.id === req.session.user.id) {
-        return apiResponse(res, 400, false, 'You cannot deactivate your own account.');
+        return apiResponse(
+          res,
+          400,
+          false,
+          "You cannot deactivate your own account.",
+        );
       }
 
       const user = await User.toggleActive(req.params.id);
       if (!user) {
-        return apiResponse(res, 404, false, 'User not found.');
+        return apiResponse(res, 404, false, "User not found.");
       }
 
-      const status = user.is_active ? 'activated' : 'deactivated';
-      return apiResponse(res, 200, true, `User ${status} successfully.`, { user });
+      const status = user.is_active ? "activated" : "deactivated";
+      return apiResponse(res, 200, true, `User ${status} successfully.`, {
+        user,
+      });
     } catch (err) {
       next(err);
     }
@@ -310,7 +393,9 @@ const adminController = {
   async getRevenueSummary(req, res, next) {
     try {
       const summary = await Payment.getRevenueSummary();
-      return apiResponse(res, 200, true, 'Revenue summary retrieved.', { summary });
+      return apiResponse(res, 200, true, "Revenue summary retrieved.", {
+        summary,
+      });
     } catch (err) {
       next(err);
     }
@@ -321,11 +406,20 @@ const adminController = {
    */
   async getDailyRevenue(req, res, next) {
     try {
-      const startDate = req.query.startDate || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-      const endDate = req.query.endDate || new Date().toISOString().split('T')[0];
+      const startDate =
+        req.query.startDate ||
+        new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+          .toISOString()
+          .split("T")[0];
+      const endDate =
+        req.query.endDate || new Date().toISOString().split("T")[0];
 
       const data = await Payment.getDailyRevenue(startDate, endDate);
-      return apiResponse(res, 200, true, 'Daily revenue retrieved.', { data, startDate, endDate });
+      return apiResponse(res, 200, true, "Daily revenue retrieved.", {
+        data,
+        startDate,
+        endDate,
+      });
     } catch (err) {
       next(err);
     }
@@ -341,7 +435,7 @@ const adminController = {
       const status = req.query.status || null;
 
       const result = await Payment.findAll({ page, limit, status });
-      return apiResponse(res, 200, true, 'Payments retrieved.', result);
+      return apiResponse(res, 200, true, "Payments retrieved.", result);
     } catch (err) {
       next(err);
     }
