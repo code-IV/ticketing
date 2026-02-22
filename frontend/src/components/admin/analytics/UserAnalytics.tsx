@@ -1,5 +1,6 @@
 import { Card } from '@/components/ui/Card';
 import { Users, UserPlus, UserCheck, UserX } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface RegistrationData {
   date: string;
@@ -53,32 +54,31 @@ export function UserAnalytics({
             </div>
           </div>
           
-          <div className="h-64 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center">
-            <div className="text-center text-gray-500">
-              <div className="mb-4">
-                <div className="text-sm text-gray-600 mb-2">Registration chart will be implemented</div>
-                <div className="text-xs text-gray-500">Data points: {registrations.length}</div>
-              </div>
-              
-              {/* Simple line visualization placeholder */}
-              <div className="flex items-end justify-center space-x-1 h-32">
-                {registrations.slice(-7).map((item, index) => {
-                  const height = Math.max(10, (item.new_users / Math.max(...registrations.map(r => r.new_users))) * 100);
-                  return (
-                    <div key={index} className="flex flex-col items-center">
-                      <div 
-                        className="w-8 bg-blue-500 rounded-t"
-                        style={{ height: `${height}%` }}
-                        title={`${item.date}: ${item.new_users} users`}
-                      />
-                      <div className="text-xs text-gray-600 mt-1 rotate-45 origin-left">
-                        {new Date(item.date).toLocaleDateString('en', { month: 'short', day: 'numeric' })}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
+          {/* Registration Trends Chart */}
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={registrations} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <XAxis 
+                  dataKey="date" 
+                  tick={{ fontSize: 12 }}
+                  tickFormatter={(value) => new Date(value).toLocaleDateString('en', { month: 'short', day: 'numeric' })}
+                />
+                <YAxis tick={{ fontSize: 12 }} />
+                <Tooltip 
+                  formatter={(value: any) => [value.toLocaleString(), 'New Users']}
+                  labelFormatter={(value) => new Date(value).toLocaleDateString()}
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="new_users" 
+                  stroke="#3b82f6" 
+                  strokeWidth={2}
+                  dot={{ fill: '#3b82f6', r: 4 }}
+                  activeDot={{ r: 6 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
           </div>
         </div>
       </Card>

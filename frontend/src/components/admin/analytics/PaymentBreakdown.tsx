@@ -1,5 +1,6 @@
 import { Card } from '@/components/ui/Card';
 import { CreditCard, Smartphone, Wallet, DollarSign } from 'lucide-react';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 
 interface PaymentMethodData {
   payment_method: string;
@@ -14,6 +15,8 @@ interface PaymentBreakdownProps {
 export function PaymentBreakdown({ data }: PaymentBreakdownProps) {
   const totalRevenue = data.reduce((sum, item) => sum + parseFloat(item.revenue || '0'), 0);
   const totalTransactions = data.reduce((sum, item) => sum + item.count, 0);
+
+  const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444'];
 
   const getPaymentIcon = (method: string) => {
     switch (method) {
@@ -44,6 +47,13 @@ export function PaymentBreakdown({ data }: PaymentBreakdownProps) {
     }
   };
 
+  const chartData = data.map((item, index) => ({
+    name: getPaymentLabel(item.payment_method),
+    value: parseFloat(item.revenue || '0'),
+    percentage: (parseFloat(item.revenue || '0') / totalRevenue) * 100,
+    color: COLORS[index % COLORS.length]
+  }));
+
   return (
     <Card>
       <div className="p-6">
@@ -55,37 +65,27 @@ export function PaymentBreakdown({ data }: PaymentBreakdownProps) {
           </div>
         </div>
         
-        {/* Pie Chart Placeholder */}
-        <div className="h-64 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center mb-6">
-          <div className="text-center text-gray-500">
-            <div className="mb-4">
-              <div className="text-sm text-gray-600 mb-2">Payment breakdown chart will be implemented</div>
-              <div className="text-xs text-gray-500">Payment methods: {data.length}</div>
-            </div>
-            
-            {/* Simple pie visualization placeholder */}
-            <div className="flex justify-center space-x-2">
-              {data.map((item, index) => {
-                const percentage = (parseFloat(item.revenue || '0') / totalRevenue) * 100;
-                const colors = ['bg-blue-500', 'bg-green-500', 'bg-yellow-500', 'bg-purple-500', 'bg-orange-500'];
-                const color = colors[index % colors.length];
-                
-                return (
-                  <div key={item.payment_method} className="flex flex-col items-center">
-                    <div 
-                      className={`w-16 h-16 rounded-full ${color} flex items-center justify-center text-white text-xs font-bold`}
-                      title={`${getPaymentLabel(item.payment_method)}: ${percentage.toFixed(1)}%`}
-                    >
-                      {percentage.toFixed(1)}%
-                    </div>
-                    <div className="text-xs text-gray-600 mt-2 max-w-16 text-center">
-                      {getPaymentLabel(item.payment_method)}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+        {/* Pie Chart */}
+        <div className="h-64">
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={chartData}
+                cx="50%"
+                cy="50%"
+                labelLine={false}
+                label={(entry) => `${entry.name}: ${entry.percent?.toFixed(1)}%`}
+                outerRadius={80}
+                fill="#8884d8"
+                dataKey="value"
+              >
+                {chartData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.color} />
+                ))}
+              </Pie>
+              <Tooltip formatter={(value: any) => [`$${parseFloat(value || 0).toLocaleString()}`, 'Revenue']} />
+            </PieChart>
+          </ResponsiveContainer>
         </div>
         
         {/* Detailed Breakdown */}

@@ -1,5 +1,6 @@
 import { Card } from '@/components/ui/Card';
 import { DollarSign } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface RevenueData {
   date: string;
@@ -27,33 +28,37 @@ export function RevenueChart({ data, title = "Revenue Over Time" }: RevenueChart
           </div>
         </div>
         
-        {/* Chart Placeholder */}
-        <div className="h-64 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center">
-          <div className="text-center text-gray-500">
-            <div className="mb-4">
-              <div className="text-sm text-gray-600 mb-2">Chart will be implemented with chart library</div>
-              <div className="text-xs text-gray-500">Data points: {data.length}</div>
-            </div>
-            
-            {/* Simple bar visualization placeholder */}
-            <div className="flex items-end justify-center space-x-1 h-32">
-              {data.slice(-7).map((item, index) => {
-                const height = Math.max(20, (parseFloat(item.revenue || '0') / totalRevenue) * 100);
-                return (
-                  <div key={index} className="flex flex-col items-center">
-                    <div 
-                      className="w-8 bg-blue-500 rounded-t"
-                      style={{ height: `${height}%` }}
-                      title={`${item.date}: $${item.revenue}`}
-                    />
-                    <div className="text-xs text-gray-600 mt-1 rotate-45 origin-left">
-                      {new Date(item.date).toLocaleDateString('en', { month: 'short', day: 'numeric' })}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+        {/* Revenue Chart */}
+        <div className="h-64">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+              <XAxis 
+                dataKey="date" 
+                tick={{ fontSize: 12 }}
+                tickFormatter={(value) => new Date(value).toLocaleDateString('en', { month: 'short', day: 'numeric' })}
+              />
+              <YAxis 
+                tick={{ fontSize: 12 }}
+                tickFormatter={(value) => `$${value.toLocaleString()}`}
+              />
+              <Tooltip 
+                formatter={(value: any, name: any) => [
+                  name === 'revenue' ? `$${parseFloat(value || 0).toLocaleString()}` : value,
+                  name === 'revenue' ? 'Revenue' : 'Transactions'
+                ]}
+                labelFormatter={(value) => new Date(value).toLocaleDateString()}
+              />
+              <Line 
+                type="monotone" 
+                dataKey="revenue" 
+                stroke="#3b82f6" 
+                strokeWidth={2}
+                dot={{ fill: '#3b82f6', r: 4 }}
+                activeDot={{ r: 6 }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
         </div>
         
         {/* Summary Stats */}

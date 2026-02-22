@@ -1,5 +1,6 @@
 import { Card } from '@/components/ui/Card';
 import { Calendar, TrendingUp, TrendingDown } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 interface BookingData {
   date: string;
@@ -35,47 +36,32 @@ export function BookingTrends({ data, title = "Booking Trends" }: BookingTrendsP
           </div>
         </div>
         
-        {/* Chart Placeholder */}
-        <div className="h-64 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center">
-          <div className="text-center text-gray-500">
-            <div className="mb-4">
-              <div className="text-sm text-gray-600 mb-2">Booking trends chart will be implemented</div>
-              <div className="text-xs text-gray-500">Data points: {data.length}</div>
-            </div>
-            
-            {/* Simple stacked bar visualization placeholder */}
-            <div className="flex items-end justify-center space-x-1 h-32">
-              {data.slice(-7).map((item, index) => {
-                const maxHeight = 100;
-                const confirmedHeight = (item.confirmed_bookings / Math.max(...data.map(d => d.total_bookings))) * maxHeight;
-                const cancelledHeight = (item.cancelled_bookings / Math.max(...data.map(d => d.total_bookings))) * maxHeight;
-                
-                return (
-                  <div key={index} className="flex flex-col items-center">
-                    <div className="flex items-end">
-                      {confirmedHeight > 0 && (
-                        <div 
-                          className="w-6 bg-green-500 rounded-t"
-                          style={{ height: `${confirmedHeight}%` }}
-                          title={`Confirmed: ${item.confirmed_bookings}`}
-                        />
-                      )}
-                      {cancelledHeight > 0 && (
-                        <div 
-                          className="w-6 bg-red-500 rounded-t"
-                          style={{ height: `${cancelledHeight}%` }}
-                          title={`Cancelled: ${item.cancelled_bookings}`}
-                        />
-                      )}
-                    </div>
-                    <div className="text-xs text-gray-600 mt-1 rotate-45 origin-left">
-                      {new Date(item.date).toLocaleDateString('en', { month: 'short', day: 'numeric' })}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+        {/* Booking Trends Chart */}
+        <div className="h-64">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+              <XAxis 
+                dataKey="date" 
+                tick={{ fontSize: 12 }}
+                tickFormatter={(value) => new Date(value).toLocaleDateString('en', { month: 'short', day: 'numeric' })}
+              />
+              <YAxis tick={{ fontSize: 12 }} />
+              <Tooltip 
+                formatter={(value: any, name: any) => [
+                  value.toLocaleString(),
+                  name === 'confirmed_bookings' ? 'Confirmed' :
+                  name === 'cancelled_bookings' ? 'Cancelled' :
+                  name === 'pending_bookings' ? 'Pending' : 'Total'
+                ]}
+                labelFormatter={(value) => new Date(value).toLocaleDateString()}
+              />
+              <Legend />
+              <Bar dataKey="confirmed_bookings" stackId="a" fill="#10b981" name="Confirmed" />
+              <Bar dataKey="cancelled_bookings" stackId="a" fill="#ef4444" name="Cancelled" />
+              <Bar dataKey="pending_bookings" stackId="a" fill="#f59e0b" name="Pending" />
+            </BarChart>
+          </ResponsiveContainer>
         </div>
         
         {/* Summary Stats */}
