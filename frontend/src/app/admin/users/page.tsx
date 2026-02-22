@@ -33,7 +33,7 @@ export default function UserManagementPage() {
     try {
       setIsLoading(true); // Ensure loading state is active
       setError(null);
-      const response = await adminService.getAllUsers(1, 20, "admin");
+      const response = await adminService.getAllUsers();
       setUsers(response.data?.users || []);
     } catch (error) {
       console.error("Failed to load users:", error);

@@ -10,6 +10,9 @@ import {
   ShieldCheck,
   User as UserIcon,
   Mail,
+  Phone,
+  Calendar,
+  Clock,
   Info,
 } from "lucide-react";
 import { User } from "@/types";
@@ -20,7 +23,11 @@ export default function EditUserForm({ userId }: { userId: string }) {
     first_name: "",
     last_name: "",
     email: "",
+    phone: "",
     role: "visitor",
+    is_active: true,
+    created_at: "",
+    updated_at: "",
   });
   const [initialData, setInitialData] = useState<Partial<User>>({});
   const [loading, setLoading] = useState(true);
@@ -86,24 +93,52 @@ export default function EditUserForm({ userId }: { userId: string }) {
     <form onSubmit={handleSubmit} className="divide-y divide-gray-100">
       {/* Section 1: Identity */}
       <div className="p-8 space-y-6">
-        <div className="flex items-center gap-2 text-blue-800 font-semibold mb-2">
-          <UserIcon size={20} />
-          <h2>Personal Information</h2>
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-100 pb-6 mb-8">
+          <div className="flex items-center gap-3 text-blue-900">
+            <div className="p-2 bg-blue-50 rounded-lg">
+              <UserIcon size={24} className="text-blue-600" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold">Personal Information</h2>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-4 text-[11px] uppercase tracking-wider font-bold">
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-full border border-gray-200 text-gray-500">
+              <Calendar size={12} />
+              <span>
+                Created:{" "}
+                <span className="text-gray-900">
+                  {new Date(formData.created_at).toLocaleDateString()}
+                </span>
+              </span>
+            </div>
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 rounded-full border border-blue-100 text-blue-600">
+              <Clock size={12} />
+              <span>
+                Last Update:{" "}
+                <span className="text-blue-900">
+                  {new Date(formData.updated_at).toLocaleDateString()}
+                </span>
+              </span>
+            </div>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
             <label className="text-sm font-medium text-gray-700">
-              <input
-                type="text"
-                required
-                className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition"
-                value={formData.first_name ?? ""}
-                onChange={(e) =>
-                  setFormData({ ...formData, first_name: e.target.value })
-                }
-              />
+              First Name
             </label>
+            <input
+              type="text"
+              required
+              className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition"
+              value={formData.first_name ?? ""}
+              onChange={(e) =>
+                setFormData({ ...formData, first_name: e.target.value })
+              }
+            />
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium text-gray-700">
@@ -122,18 +157,34 @@ export default function EditUserForm({ userId }: { userId: string }) {
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-            <Mail size={16} /> Email Address
-          </label>
-          <input
-            type="email"
-            required
-            className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition"
-            value={formData.email}
-            onChange={(e) =>
-              setFormData({ ...formData, email: e.target.value })
-            }
-          />
+          <div>
+            <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+              <Mail size={16} /> Email Address
+            </label>
+            <input
+              type="email"
+              required
+              className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition"
+              value={formData.email}
+              onChange={(e) =>
+                setFormData({ ...formData, email: e.target.value })
+              }
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+              <Phone size={16} /> Phone number
+            </label>
+            <input
+              type="text"
+              required
+              className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition"
+              value={formData.phone}
+              onChange={(e) =>
+                setFormData({ ...formData, phone: e.target.value })
+              }
+            />
+          </div>
         </div>
       </div>
 
