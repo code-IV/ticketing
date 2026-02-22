@@ -15,6 +15,12 @@ const adminController = {
    */
   async getDashboard(req, res, next) {
     try {
+      // Disable caching for admin dashboard endpoint
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+      res.setHeader('ETag', ''); // Clear ETag to prevent 304 responses
+      
       const revenue = await Payment.getRevenueSummary();
       const { events } = await Event.findAll({ page: 1, limit: 5 });
       const { bookings } = await Booking.findAll({ page: 1, limit: 5 });

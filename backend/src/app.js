@@ -5,6 +5,7 @@ const morgan = require("morgan");
 const session = require("express-session");
 const sessionConfig = require("./config/session");
 const { errorHandler, notFoundHandler } = require("./middleware/errorHandler");
+const noCache = require("./middleware/noCache");
 
 // Import routes
 const authRoutes = require("./routes/authRoutes");
@@ -61,6 +62,9 @@ app.get("/api/health", (req, res) => {
 // ============================================
 // API ROUTES
 // ============================================
+
+// Apply no-cache middleware to all API routes
+app.use("/api", noCache);
 
 app.use("/api/auth", authRoutes);
 app.use("/api/events", eventRoutes);

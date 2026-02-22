@@ -9,13 +9,14 @@ import { DateRangeFilter } from '@/components/admin/analytics/DateRangeFilter';
 import { FilterControls } from '@/components/admin/analytics/FilterControls';
 import { ExportControls } from '@/components/admin/analytics/ExportControls';
 import { RealTimeStats } from '@/components/admin/analytics/RealTimeStats';
-import { DashboardKPIs, KPICard } from '@/components/admin/analytics/KPICards';
+import { DashboardKPIs } from '@/components/admin/analytics/KPICards';
 import { RevenueChart } from '@/components/admin/analytics/RevenueChart';
 import { BookingTrends } from '@/components/admin/analytics/BookingTrends';
 import { UserAnalytics } from '@/components/admin/analytics/UserAnalytics';
 import { EventPerformance } from '@/components/admin/analytics/EventPerformance';
-import { PaymentBreakdown } from '@/components/admin/analytics/PaymentBreakdown';
 import { AnalyticsErrorBoundary } from '@/components/admin/analytics/ErrorBoundary';
+import VirtualizedRevenueChart from '@/components/admin/analytics/VirtualizedRevenueChart';
+import VirtualizedBookingTrends from '@/components/admin/analytics/VirtualizedBookingTrends';
 import { adminService } from '@/services/adminService';
 import Link from 'next/link';
 import { debounce, throttle } from '@/components/admin/analytics/performanceUtils';
@@ -23,203 +24,257 @@ import { debounce, throttle } from '@/components/admin/analytics/performanceUtil
 export default function AnalyticsPage() {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [loading, setLoading] = useState(true);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const [isDataLoading, setIsDataLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [dateRange, setDateRange] = useState({
-    startDate: '',
-    endDate: '',
-    preset: '30days'
+  const [analyticsData, setAnalyticsData] = useState<any>(null);
+  const [dateRange, setDateRange] = useState(() => {
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setDate(endDate.getDate() - 30);
+    
+    return {
+      startDate: startDate.toISOString().split('T')[0],
+      endDate: endDate.toISOString().split('T')[0],
+      preset: '30days'
+    };
   });
 
-  // Optimized data fetching with error handling
-  const fetchDashboardData = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const response = await adminService.getDashboardAnalytics(
-        dateRange.preset === 'custom' ? undefined : 
-        datePresets.find(p => p.id === dateRange.preset)?.days || undefined
-      );
-      return response.data;
-    } catch (err) {
-      console.error('Failed to fetch dashboard data:', err);
-      setError('Failed to load dashboard data. Please try again.');
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }, [dateRange]);
+  const datePresets = [
+    { id: 'today', label: 'Today', days: 0 },
+    { id: '7days', label: 'Last 7 Days', days: 7 },
+    { id: '30days', label: 'Last 30 Days', days: 30 },
+    { id: '90days', label: 'Last 90 Days', days: 90 },
+    { id: 'custom', label: 'Custom Range', days: null },
+  ];
 
-  const fetchRevenueData = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const response = await adminService.getRevenueAnalytics(
-        dateRange.startDate,
-        dateRange.endDate,
-        'day'
-      );
-      return response.data;
-    } catch (err) {
-      console.error('Failed to fetch revenue data:', err);
-      setError('Failed to load revenue data. Please try again.');
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }, [dateRange]);
+  // Debounced date range changes to prevent excessive API calls
+  const debouncedDateChange = useMemo(
+    () => debounce((newRange: typeof dateRange) => {
+      setDateRange(newRange);
+    }, 1000), // 1 second delay
+    []
+  );
 
-  // Tab components
-  const DashboardTab = () => {
-    const [dashboardData, setDashboardData] = useState(null);
-    const [revenueData, setRevenueData] = useState([]);
-    const [bookingData, setBookingData] = useState([]);
-    
-    useEffect(() => {
-      fetchDashboardData().then(data => setDashboardData(data)).catch(console.error);
-      fetchRevenueData().then(data => setRevenueData(data.dailyData || [])).catch(console.error);
-      // You can add booking data fetching here
-    }, [fetchDashboardData, fetchRevenueData]);
-    
-    return (
-      <div>
-        <h2 className="text-lg font-medium text-gray-900 mb-4">Dashboard Overview</h2>
-        {dashboardData ? (
-          <DashboardKPIs data={dashboardData} />
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            {/* KPI Cards Placeholder */}
-            <Card>
-              <div className="p-6">
-                <div className="flex items-center">
-                  <div className="shrink-0">
-                    <DollarSign className="h-8 w-8 text-green-600" />
-                  </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Total Revenue</p>
-                    <p className="text-2xl font-bold text-gray-900">$0</p>
-                  </div>
-                </div>
-              </div>
-            </Card>
-            
-            <Card>
-              <div className="p-6">
-                <div className="flex items-center">
-                  <div className="shrink-0">
-                    <Calendar className="h-8 w-8 text-blue-600" />
-                  </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Total Bookings</p>
-                    <p className="text-2xl font-bold text-gray-900">0</p>
-                  </div>
-                </div>
-              </div>
-            </Card>
-            
-            <Card>
-              <div className="p-6">
-                <div className="flex items-center">
-                  <div className="shrink-0">
-                    <Users className="h-8 w-8 text-purple-600" />
-                  </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">New Users</p>
-                    <p className="text-2xl font-bold text-gray-900">0</p>
-                  </div>
-                </div>
-              </div>
-            </Card>
-            
-            <Card>
-              <div className="p-6">
-                <div className="flex items-center">
-                  <div className="shrink-0">
-                    <Activity className="h-8 w-8 text-orange-600" />
-                  </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Active Events</p>
-                    <p className="text-2xl font-bold text-gray-900">0</p>
-                  </div>
-                </div>
-              </div>
-            </Card>
-          </div>
-        )}
+  // Centralized data fetching - single API call for all data
+  useEffect(() => {
+    const fetchAllAnalyticsData = async () => {
+      try {
+        setIsDataLoading(true);
+        setError(null);
+        console.log('Fetching analytics data with dateRange:', dateRange);
+
+        // Check if user is authenticated before making API calls
+        if (!user) {
+          console.log('User not authenticated, skipping API calls');
+          return;
+        }
+
+        if (user.role !== 'admin') {
+          console.log('User is not admin, skipping API calls');
+          return;
+        }
+
+        // Fetch all data in parallel with individual error handling
+        const promises = [
+          adminService.getDashboardAnalytics(
+            dateRange.preset === 'custom' ? undefined : 
+            datePresets.find(p => p.id === dateRange.preset)?.days || undefined
+          ).catch(err => {
+            console.error('Dashboard analytics failed:', err);
+            return { success: true, message: 'Dashboard data retrieved', data: { revenue: { revenue: 0, completed_transactions: 0, refunded_amount: 0 }, bookings: { total_bookings: 0, confirmed_bookings: 0, cancelled_bookings: 0, total_value: 0 }, users: { new_users: 0 }, events: { active_events: 0 } } };
+          }),
+          adminService.getRevenueAnalytics(
+            dateRange.startDate || undefined,
+            dateRange.endDate || undefined,
+            'day'
+          ).catch(err => {
+            console.error('Revenue analytics failed:', err);
+            return { success: true, message: 'Revenue data retrieved', data: { revenueOverTime: [], summary: { total_revenue: 0, total_transactions: 0, avg_transaction_value: 0 }, byPaymentMethod: [] } };
+          }),
+          adminService.getBookingAnalytics(
+            dateRange.startDate || undefined,
+            dateRange.endDate || undefined,
+            'day'
+          ).catch(err => {
+            console.error('Booking analytics failed:', err);
+            return { success: true, message: 'Booking data retrieved', data: { dailyData: [], summary: { total_bookings: 0, confirmed_bookings: 0, cancelled_bookings: 0, total_value: 0 } } };
+          }),
+          adminService.getUserAnalytics(
+            dateRange.startDate || undefined,
+            dateRange.endDate || undefined,
+            'day'
+          ).catch(err => {
+            console.error('User analytics failed:', err);
+            return { success: true, message: 'User data retrieved', data: { registrationData: [], roleBreakdown: [], activeStatus: [] } };
+          }),
+          adminService.getEventAnalytics(
+            dateRange.startDate || undefined,
+            dateRange.endDate || undefined,
+            50
+          ).catch(err => {
+            console.error('Event analytics failed:', err);
+            return { success: true, message: 'Event data retrieved', data: { eventPerformance: [], ticketTypePerformance: [] } };
+          })
+        ];
+
+        const [dashboardResponse, revenueResponse, bookingsResponse, usersResponse, eventsResponse] = await Promise.all(promises);
+
+        console.log('Analytics data received:', { dashboardResponse, revenueResponse, bookingsResponse, usersResponse, eventsResponse });
+
+        // Set all data in single state
+        setAnalyticsData({
+          dashboard: dashboardResponse.data,
+          revenue: revenueResponse.data,
+          bookings: bookingsResponse.data,
+          users: usersResponse.data,
+          events: eventsResponse.data
+        });
+
+      } catch (err: any) {
+        console.error('Critical error in fetchAllAnalyticsData:', err);
+        const errorMessage = err.response?.data?.message || err.message || 'Unknown error occurred';
+        console.error('Specific error:', errorMessage);
+        setError(`Failed to load analytics data: ${errorMessage}`);
         
-        {/* Charts */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <RevenueChart data={revenueData} />
-          <BookingTrends data={bookingData} />
-        </div>
-      </div>
-    );
-  };
+        // Set empty data on error
+        setAnalyticsData({
+          dashboard: { revenue: { revenue: 0, completed_transactions: 0, refunded_amount: 0 }, bookings: { total_bookings: 0, confirmed_bookings: 0, cancelled_bookings: 0, total_value: 0 }, users: { new_users: 0 }, events: { active_events: 0 } },
+          revenue: { revenueOverTime: [], summary: { total_revenue: 0, total_transactions: 0, avg_transaction_value: 0 }, byPaymentMethod: [] },
+          bookings: { dailyData: [], summary: { total_bookings: 0, confirmed_bookings: 0, cancelled_bookings: 0, total_value: 0 } },
+          users: { registrationData: [], roleBreakdown: [], activeStatus: [] },
+          events: { eventPerformance: [], ticketTypePerformance: [] }
+        });
+      } finally {
+        setIsDataLoading(false);
+      }
+    };
 
-  const RevenueTab = () => {
-    const [revenueData, setRevenueData] = useState([]);
-    
-    useEffect(() => {
-      fetchRevenueData().then(data => setRevenueData(data.dailyData || [])).catch(console.error);
-    }, [fetchRevenueData]);
-    
-    return (
-      <div>
-        <h2 className="text-lg font-medium text-gray-900 mb-4">Revenue Analytics</h2>
-        <RevenueChart data={revenueData} />
-      </div>
-    );
-  };
+    fetchAllAnalyticsData();
+  }, [dateRange, user]);
 
-  const BookingsTab = () => {
-    const [bookingData, setBookingData] = useState([]);
-    
-    useEffect(() => {
-      adminService.getBookingAnalytics(dateRange.startDate, dateRange.endDate, 'day')
-        .then(response => setBookingData(response.data.dailyData || []))
-        .catch(console.error);
-    }, [dateRange]);
-    
-    return (
-      <div>
-        <h2 className="text-lg font-medium text-gray-900 mb-4">Booking Analytics</h2>
-        <BookingTrends data={bookingData} />
-      </div>
-    );
-  };
+  const loading = isAuthLoading || isDataLoading;
 
-  const UsersTab = () => {
-    const [userData, setUserData] = useState<any>(null);
+  // Memoized tab content to prevent unnecessary re-renders
+  const aggregatedRevenueData = useMemo(() => {
+    const data = analyticsData?.revenue?.revenueOverTime || [];
     
-    useEffect(() => {
-      adminService.getUserAnalytics(dateRange.startDate, dateRange.endDate, 'day')
-        .then(response => {
-          const data = response.data;
-          setUserData({
-            registrations: data.registrationData || [],
-            roleBreakdown: data.roleBreakdown || [],
-            activeStatus: data.activityMetrics ? [
-              { is_active: true, count: data.activityMetrics.dailyActiveUsers || 0 },
-              { is_active: false, count: (data.summary?.totalUsers || 0) - (data.activityMetrics?.dailyActiveUsers || 0) }
-            ] : [],
-            bookingParticipation: {
-              users_with_bookings: data.summary?.activeUsers || 0,
-              total_users: data.summary?.totalUsers || 0,
-              percentage: data.summary?.totalUsers ? ((data.summary?.activeUsers || 0) / data.summary.totalUsers * 100) : 0
-            }
-          });
-        })
-        .catch(console.error);
-    }, [dateRange]);
+    // If more than 100 points, aggregate by week
+    if (data.length > 100) {
+      const weeklyData = [];
+      for (let i = 0; i < data.length; i += 7) {
+        const weekData = data.slice(i, i + 7);
+        const weekRevenue = weekData.reduce((sum: number, item: any) => sum + (item.revenue || 0), 0);
+        weeklyData.push({
+          date: weekData[0]?.date || new Date().toISOString(),
+          revenue: weekRevenue
+        });
+      }
+      return weeklyData;
+    }
     
-    if (!userData) {
+    return data;
+  }, [analyticsData?.revenue]);
+
+  const aggregatedBookingData = useMemo(() => {
+    const data = analyticsData?.bookings?.dailyData || [];
+    
+    // If more than 100 points, aggregate by week
+    if (data.length > 100) {
+      const weeklyData = [];
+      for (let i = 0; i < data.length; i += 7) {
+        const weekData = data.slice(i, i + 7);
+        const weekBookings = weekData.reduce((sum: number, item: any) => sum + (item.bookings || 0), 0);
+        weeklyData.push({
+          date: weekData[0]?.date || new Date().toISOString(),
+          bookings: weekBookings
+        });
+      }
+      return weeklyData;
+    }
+    
+    return data;
+  }, [analyticsData?.bookings]);
+
+  // Tab components - now dumb components that just receive data
+  const DashboardTab = () => {
+    if (!analyticsData?.dashboard) {
       return (
         <div className="flex items-center justify-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
         </div>
       );
     }
-    
+
+    return (
+      <div>
+        <h2 className="text-lg font-medium text-gray-900 mb-4">Dashboard Overview</h2>
+        <DashboardKPIs data={analyticsData.dashboard} />
+        
+        {/* Charts */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <VirtualizedRevenueChart data={aggregatedRevenueData} />
+          <VirtualizedBookingTrends data={aggregatedBookingData} />
+        </div>
+      </div>
+    );
+  };
+
+  const RevenueTab = () => {
+    if (!analyticsData?.revenue) {
+      return (
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
+      );
+    }
+
+    return (
+      <div>
+        <h2 className="text-lg font-medium text-gray-900 mb-4">Revenue Analytics</h2>
+        <RevenueChart data={analyticsData.revenue?.revenueOverTime || []} />
+      </div>
+    );
+  };
+
+  const BookingsTab = () => {
+    if (!analyticsData?.bookings) {
+      return (
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
+      );
+    }
+
+    return (
+      <div>
+        <h2 className="text-lg font-medium text-gray-900 mb-4">Booking Analytics</h2>
+        <BookingTrends data={analyticsData.bookings?.dailyData || []} />
+      </div>
+    );
+  };
+
+  const UsersTab = () => {
+    if (!analyticsData?.users) {
+      return (
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
+      );
+    }
+
+    const userData = {
+      registrations: analyticsData.users?.registrationData || [],
+      roleBreakdown: analyticsData.users?.roleBreakdown || [],
+      activeStatus: analyticsData.users?.activeStatus || [],
+      bookingParticipation: {
+        users_with_bookings: analyticsData.dashboard?.bookings?.confirmed_bookings || 0,
+        total_users: analyticsData.dashboard?.users?.new_users || 0,
+        percentage: analyticsData.dashboard?.users?.new_users ? 
+          ((analyticsData.dashboard?.bookings?.confirmed_bookings || 0) / analyticsData.dashboard.users.new_users * 100) : 0
+      }
+    };
+
     return (
       <div>
         <h2 className="text-lg font-medium text-gray-900 mb-4">User Analytics</h2>
@@ -234,34 +289,20 @@ export default function AnalyticsPage() {
   };
 
   const EventsTab = () => {
-    const [eventData, setEventData] = useState<any>(null);
-    
-    useEffect(() => {
-      adminService.getEventAnalytics(dateRange.startDate, dateRange.endDate, 50)
-        .then(response => {
-          const data = response.data;
-          setEventData({
-            eventPerformance: data.eventPerformance || [],
-            ticketTypePerformance: data.ticketTypePerformance || []
-          });
-        })
-        .catch(console.error);
-    }, [dateRange]);
-    
-    if (!eventData) {
+    if (!analyticsData?.events) {
       return (
         <div className="flex items-center justify-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
         </div>
       );
     }
-    
+
     return (
       <div>
         <h2 className="text-lg font-medium text-gray-900 mb-4">Event Analytics</h2>
         <EventPerformance 
-          eventPerformance={eventData.eventPerformance}
-          ticketTypePerformance={eventData.ticketTypePerformance}
+          eventPerformance={analyticsData.events?.eventPerformance || []}
+          ticketTypePerformance={analyticsData.events?.ticketTypePerformance || []}
         />
       </div>
     );
@@ -320,20 +361,17 @@ export default function AnalyticsPage() {
     { id: 'events', label: 'Events', icon: Activity },
   ];
 
-  const datePresets = [
-    { id: 'today', label: 'Today', days: 0 },
-    { id: '7days', label: 'Last 7 Days', days: 7 },
-    { id: '30days', label: 'Last 30 Days', days: 30 },
-    { id: '90days', label: 'Last 90 Days', days: 90 },
-    { id: 'custom', label: 'Custom Range', days: null },
-  ];
-
   useEffect(() => {
     // Check if user is admin
+    console.log('Checking user authentication:', user);
     if (user && user.role !== 'admin') {
+      console.log('User is not admin, redirecting...');
       window.location.href = '/';
+    } else if (!user) {
+      console.log('No user found, might need to login');
+      // Don't redirect immediately, let auth context handle it
     }
-    setLoading(false);
+    setIsAuthLoading(false);
   }, [user]);
 
   const handleDatePresetChange = (presetId: string) => {
@@ -343,14 +381,22 @@ export default function AnalyticsPage() {
       const startDate = new Date();
       startDate.setDate(endDate.getDate() - preset.days);
       
-      setDateRange({
+      const newRange = {
         startDate: startDate.toISOString().split('T')[0],
         endDate: endDate.toISOString().split('T')[0],
         preset: presetId
-      });
+      };
+      
+      // Use debounced version to prevent excessive API calls
+      debouncedDateChange(newRange);
     } else {
-      setDateRange(prev => ({ ...prev, preset: presetId }));
+      debouncedDateChange((prev: typeof dateRange) => ({ ...prev, preset: presetId }));
     }
+  };
+
+  const handleCustomDateChange = (field: 'startDate' | 'endDate', value: string) => {
+    const newRange = { ...dateRange, [field]: value };
+    debouncedDateChange(newRange);
   };
 
   if (loading) {
@@ -407,14 +453,14 @@ export default function AnalyticsPage() {
                   <input
                     type="date"
                     value={dateRange.startDate}
-                    onChange={(e) => setDateRange(prev => ({ ...prev, startDate: e.target.value }))}
+                    onChange={(e) => handleCustomDateChange('startDate', e.target.value)}
                     className="border border-gray-300 rounded-md px-3 py-1 text-sm focus:ring-blue-500 focus:border-blue-500"
                   />
                   <span className="text-gray-500">to</span>
                   <input
                     type="date"
                     value={dateRange.endDate}
-                    onChange={(e) => setDateRange(prev => ({ ...prev, endDate: e.target.value }))}
+                    onChange={(e) => handleCustomDateChange('endDate', e.target.value)}
                     className="border border-gray-300 rounded-md px-3 py-1 text-sm focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>

@@ -8,6 +8,12 @@ const analyticsController = {
    */
   async getRevenueAnalytics(req, res, next) {
     try {
+      // Completely disable caching for analytics endpoints
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+      res.setHeader('ETag', ''); // Clear ETag to prevent 304 responses
+      
       const { startDate, endDate, groupBy = 'day' } = req.query;
       
       let dateFilter = '';
@@ -94,6 +100,12 @@ const analyticsController = {
    */
   async getBookingAnalytics(req, res, next) {
     try {
+      // Completely disable caching for analytics endpoints
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+      res.setHeader('ETag', ''); // Clear ETag to prevent 304 responses
+      
       const { startDate, endDate, groupBy = 'day' } = req.query;
       
       let dateFilter = '';
@@ -167,6 +179,12 @@ const analyticsController = {
    */
   async getUserAnalytics(req, res, next) {
     try {
+      // Completely disable caching for analytics endpoints
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+      res.setHeader('ETag', ''); // Clear ETag to prevent 304 responses
+      
       const { startDate, endDate, groupBy = 'day' } = req.query;
       
       let dateFilter = '';
@@ -247,6 +265,12 @@ const analyticsController = {
    */
   async getEventAnalytics(req, res, next) {
     try {
+      // Completely disable caching for analytics endpoints
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+      res.setHeader('ETag', ''); // Clear ETag to prevent 304 responses
+      
       const { startDate, endDate, limit = 50 } = req.query;
       
       let dateFilter = '';
@@ -330,6 +354,12 @@ const analyticsController = {
    */
   async getDashboardAnalytics(req, res, next) {
     try {
+      // Completely disable caching for analytics endpoints
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+      res.setHeader('ETag', ''); // Clear ETag to prevent 304 responses
+      
       const { days = 30 } = req.query;
       
       // Get data for the specified number of days
