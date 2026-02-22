@@ -110,6 +110,63 @@ npm start
 Server runs at `http://localhost:5000`
 
 ## API Endpoints
+## Setup
+
+### Prerequisites
+
+- Node.js 18+
+- PostgreSQL 14+
+
+### 1. Install Dependencies
+
+```bash
+npm install
+```
+
+### 2. Configure Environment
+
+Copy `.env.example` to `.env` and update the values:
+
+```bash
+cp .env.example .env
+```
+
+Update `DB_PASSWORD` and `SESSION_SECRET` in `.env`.
+
+### 3. Create Database
+
+```sql
+CREATE DATABASE bora_ticketing;
+```
+
+### 4. Run Migrations
+
+```bash
+npm run db:migrate
+```
+
+### 5. Seed Sample Data
+
+```bash
+npm run db:seed
+```
+
+This creates:
+- **Admin:** admin@borapark.com / admin123
+- **Visitor:** visitor@example.com / visitor123
+- Sample events and ticket types
+
+### 6. Start Server
+
+```bash
+# Development (with auto-reload)
+npm run dev
+
+# Production
+npm start
+```
+
+Server runs at `http://localhost:5000`
 
 ### Health Check
 | Method | Endpoint | Description |

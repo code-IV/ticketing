@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/Button';
-import { Ticket, User, LogOut, LayoutDashboard } from 'lucide-react';
+import { Ticket, User, LogOut, LayoutDashboard, Settings } from 'lucide-react';
 
 export function Navbar() {
   const { user, logout } = useAuth();
@@ -46,13 +46,13 @@ export function Navbar() {
           <div className="flex items-center space-x-4">
             {user ? (
               <>
-                <div className="hidden md:flex items-center space-x-2 text-sm text-gray-700">
+                <Link href="/profile" className="hidden md:flex items-center space-x-2 text-sm text-gray-700 hover:text-blue-600 transition-colors">
                   <User className="h-4 w-4" />
                   <span>{user.first_name} {user.last_name}</span>
                   {user.role === 'admin' && (
                     <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">Admin</span>
                   )}
-                </div>
+                </Link>
                 <Button variant="ghost" size="sm" onClick={handleLogout}>
                   <LogOut className="h-4 w-4 mr-2" />
                   Logout
