@@ -1,21 +1,118 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Calendar, TrendingUp, Users, DollarSign, BarChart3, PieChart, Activity } from 'lucide-react';
+import { DateRangeFilter } from '@/components/admin/analytics/DateRangeFilter';
+import { FilterControls } from '@/components/admin/analytics/FilterControls';
+import { ExportControls } from '@/components/admin/analytics/ExportControls';
+import { RealTimeStats } from '@/components/admin/analytics/RealTimeStats';
+import { DashboardKPIs, KPICard } from '@/components/admin/analytics/KPICards';
+import { RevenueChart } from '@/components/admin/analytics/RevenueChart';
+import { BookingTrends } from '@/components/admin/analytics/BookingTrends';
+import { UserAnalytics } from '@/components/admin/analytics/UserAnalytics';
+import { EventPerformance } from '@/components/admin/analytics/EventPerformance';
+import { PaymentBreakdown } from '@/components/admin/analytics/PaymentBreakdown';
+import { AnalyticsErrorBoundary } from '@/components/admin/analytics/ErrorBoundary';
+import { adminService } from '@/services/adminService';
 import Link from 'next/link';
+import { debounce, throttle } from '@/components/admin/analytics/performanceUtils';
 
 export default function AnalyticsPage() {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState({
     startDate: '',
     endDate: '',
-    preset: '30days' // today, 7days, 30days, 90days, custom
+    preset: '30days'
   });
+
+  // Optimized data fetching with error handling
+  const fetchDashboardData = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await adminService.getDashboardAnalytics(
+        dateRange.preset === 'custom' ? undefined : 
+        datePresets.find(p => p.id === dateRange.preset)?.days
+      );
+      return response.data;
+    } catch (err) {
+      console.error('Failed to fetch dashboard data:', err);
+      setError('Failed to load dashboard data. Please try again.');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, [dateRange]);
+
+  const fetchRevenueData = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await adminService.getRevenueAnalytics(
+        dateRange.startDate,
+        dateRange.endDate,
+        'day'
+      );
+      return response.data;
+    } catch (err) {
+      console.error('Failed to fetch revenue data:', err);
+      setError('Failed to load revenue data. Please try again.');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, [dateRange]);
+
+  // Memoized tab content to prevent unnecessary re-renders
+  const tabContent = useMemo(() => {
+    if (loading) {
+      return (
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
+      );
+    }
+
+    if (error) {
+      return (
+        <div className="flex items-center justify-center py-12">
+          <Card className="max-w-md">
+            <div className="p-6 text-center">
+              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <AlertTriangle className="h-6 w-6 text-red-600" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Loading Error</h3>
+              <p className="text-gray-600 mb-4">{error}</p>
+              <Button onClick={() => window.location.reload()}>
+                Try Again
+              </Button>
+            </div>
+          </Card>
+        </div>
+      );
+    }
+
+    switch (activeTab) {
+      case 'dashboard':
+        return <DashboardTab />;
+      case 'revenue':
+        return <RevenueTab />;
+      case 'bookings':
+        return <BookingsTab />;
+      case 'users':
+        return <UsersTab />;
+      case 'events':
+        return <EventsTab />;
+      default:
+        return null;
+    }
+  }, [activeTab, loading, error, dateRange]);
 
   const tabs = [
     { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
@@ -166,7 +263,7 @@ export default function AnalyticsPage() {
                 <Card>
                   <div className="p-6">
                     <div className="flex items-center">
-                      <div className="flex-shrink-0">
+                      <div className="shrink-0">
                         <DollarSign className="h-8 w-8 text-green-600" />
                       </div>
                       <div className="ml-4">
@@ -180,7 +277,7 @@ export default function AnalyticsPage() {
                 <Card>
                   <div className="p-6">
                     <div className="flex items-center">
-                      <div className="flex-shrink-0">
+                      <div className="shrink-0">
                         <Calendar className="h-8 w-8 text-blue-600" />
                       </div>
                       <div className="ml-4">
@@ -194,7 +291,7 @@ export default function AnalyticsPage() {
                 <Card>
                   <div className="p-6">
                     <div className="flex items-center">
-                      <div className="flex-shrink-0">
+                      <div className="shrink-0">
                         <Users className="h-8 w-8 text-purple-600" />
                       </div>
                       <div className="ml-4">
@@ -208,7 +305,7 @@ export default function AnalyticsPage() {
                 <Card>
                   <div className="p-6">
                     <div className="flex items-center">
-                      <div className="flex-shrink-0">
+                      <div className="shrink-0">
                         <Activity className="h-8 w-8 text-orange-600" />
                       </div>
                       <div className="ml-4">
