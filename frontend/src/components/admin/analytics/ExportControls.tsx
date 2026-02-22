@@ -156,8 +156,8 @@ export function ExportControls({
     }).join('\n');
     });
     
-    return csvHeaders + '\n' + csvRows.join('\n');
-  };;
+    return `${csvHeaders}\n${csvRows.join('\n')}`;
+  };
 
   const generateTableHTML = (data: any): string => {
     if (!data || Array.isArray(data) === false) return '<p>No data available</p>';

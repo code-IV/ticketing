@@ -1,11 +1,11 @@
 const express = require('express');
-const { requireAdmin } = require('../middleware/auth');
+const { isAdmin } = require('../middleware/auth');
 const analyticsController = require('../controllers/analyticsController');
 
 const router = express.Router();
 
 // Apply admin middleware to all analytics routes
-router.use(requireAdmin);
+router.use(isAdmin);
 
 /**
  * GET /api/analytics/revenue
