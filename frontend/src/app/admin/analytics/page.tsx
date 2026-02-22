@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { Calendar, TrendingUp, Users, DollarSign, BarChart3, PieChart, Activity } from 'lucide-react';
+import { Calendar, TrendingUp, Users, DollarSign, BarChart3, PieChart, Activity, AlertTriangle } from 'lucide-react';
 import { DateRangeFilter } from '@/components/admin/analytics/DateRangeFilter';
 import { FilterControls } from '@/components/admin/analytics/FilterControls';
 import { ExportControls } from '@/components/admin/analytics/ExportControls';
@@ -38,7 +38,7 @@ export default function AnalyticsPage() {
       setError(null);
       const response = await adminService.getDashboardAnalytics(
         dateRange.preset === 'custom' ? undefined : 
-        datePresets.find(p => p.id === dateRange.preset)?.days
+        datePresets.find(p => p.id === dateRange.preset)?.days || undefined
       );
       return response.data;
     } catch (err) {
@@ -68,6 +68,204 @@ export default function AnalyticsPage() {
       setLoading(false);
     }
   }, [dateRange]);
+
+  // Tab components
+  const DashboardTab = () => {
+    const [dashboardData, setDashboardData] = useState(null);
+    const [revenueData, setRevenueData] = useState([]);
+    const [bookingData, setBookingData] = useState([]);
+    
+    useEffect(() => {
+      fetchDashboardData().then(data => setDashboardData(data)).catch(console.error);
+      fetchRevenueData().then(data => setRevenueData(data.dailyData || [])).catch(console.error);
+      // You can add booking data fetching here
+    }, [fetchDashboardData, fetchRevenueData]);
+    
+    return (
+      <div>
+        <h2 className="text-lg font-medium text-gray-900 mb-4">Dashboard Overview</h2>
+        {dashboardData ? (
+          <DashboardKPIs data={dashboardData} />
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            {/* KPI Cards Placeholder */}
+            <Card>
+              <div className="p-6">
+                <div className="flex items-center">
+                  <div className="shrink-0">
+                    <DollarSign className="h-8 w-8 text-green-600" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-600">Total Revenue</p>
+                    <p className="text-2xl font-bold text-gray-900">$0</p>
+                  </div>
+                </div>
+              </div>
+            </Card>
+            
+            <Card>
+              <div className="p-6">
+                <div className="flex items-center">
+                  <div className="shrink-0">
+                    <Calendar className="h-8 w-8 text-blue-600" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-600">Total Bookings</p>
+                    <p className="text-2xl font-bold text-gray-900">0</p>
+                  </div>
+                </div>
+              </div>
+            </Card>
+            
+            <Card>
+              <div className="p-6">
+                <div className="flex items-center">
+                  <div className="shrink-0">
+                    <Users className="h-8 w-8 text-purple-600" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-600">New Users</p>
+                    <p className="text-2xl font-bold text-gray-900">0</p>
+                  </div>
+                </div>
+              </div>
+            </Card>
+            
+            <Card>
+              <div className="p-6">
+                <div className="flex items-center">
+                  <div className="shrink-0">
+                    <Activity className="h-8 w-8 text-orange-600" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-600">Active Events</p>
+                    <p className="text-2xl font-bold text-gray-900">0</p>
+                  </div>
+                </div>
+              </div>
+            </Card>
+          </div>
+        )}
+        
+        {/* Charts */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <RevenueChart data={revenueData} />
+          <BookingTrends data={bookingData} />
+        </div>
+      </div>
+    );
+  };
+
+  const RevenueTab = () => {
+    const [revenueData, setRevenueData] = useState([]);
+    
+    useEffect(() => {
+      fetchRevenueData().then(data => setRevenueData(data.dailyData || [])).catch(console.error);
+    }, [fetchRevenueData]);
+    
+    return (
+      <div>
+        <h2 className="text-lg font-medium text-gray-900 mb-4">Revenue Analytics</h2>
+        <RevenueChart data={revenueData} />
+      </div>
+    );
+  };
+
+  const BookingsTab = () => {
+    const [bookingData, setBookingData] = useState([]);
+    
+    useEffect(() => {
+      adminService.getBookingAnalytics(dateRange.startDate, dateRange.endDate, 'day')
+        .then(response => setBookingData(response.data.dailyData || []))
+        .catch(console.error);
+    }, [dateRange]);
+    
+    return (
+      <div>
+        <h2 className="text-lg font-medium text-gray-900 mb-4">Booking Analytics</h2>
+        <BookingTrends data={bookingData} />
+      </div>
+    );
+  };
+
+  const UsersTab = () => {
+    const [userData, setUserData] = useState<any>(null);
+    
+    useEffect(() => {
+      adminService.getUserAnalytics(dateRange.startDate, dateRange.endDate, 'day')
+        .then(response => {
+          const data = response.data;
+          setUserData({
+            registrations: data.registrationData || [],
+            roleBreakdown: data.roleBreakdown || [],
+            activeStatus: data.activityMetrics ? [
+              { is_active: true, count: data.activityMetrics.dailyActiveUsers || 0 },
+              { is_active: false, count: (data.summary?.totalUsers || 0) - (data.activityMetrics?.dailyActiveUsers || 0) }
+            ] : [],
+            bookingParticipation: {
+              users_with_bookings: data.summary?.activeUsers || 0,
+              total_users: data.summary?.totalUsers || 0,
+              percentage: data.summary?.totalUsers ? ((data.summary?.activeUsers || 0) / data.summary.totalUsers * 100) : 0
+            }
+          });
+        })
+        .catch(console.error);
+    }, [dateRange]);
+    
+    if (!userData) {
+      return (
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
+      );
+    }
+    
+    return (
+      <div>
+        <h2 className="text-lg font-medium text-gray-900 mb-4">User Analytics</h2>
+        <UserAnalytics 
+          registrations={userData.registrations}
+          roleBreakdown={userData.roleBreakdown}
+          activeStatus={userData.activeStatus}
+          bookingParticipation={userData.bookingParticipation}
+        />
+      </div>
+    );
+  };
+
+  const EventsTab = () => {
+    const [eventData, setEventData] = useState<any>(null);
+    
+    useEffect(() => {
+      adminService.getEventAnalytics(dateRange.startDate, dateRange.endDate, 50)
+        .then(response => {
+          const data = response.data;
+          setEventData({
+            eventPerformance: data.eventPerformance || [],
+            ticketTypePerformance: data.ticketTypePerformance || []
+          });
+        })
+        .catch(console.error);
+    }, [dateRange]);
+    
+    if (!eventData) {
+      return (
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
+      );
+    }
+    
+    return (
+      <div>
+        <h2 className="text-lg font-medium text-gray-900 mb-4">Event Analytics</h2>
+        <EventPerformance 
+          eventPerformance={eventData.eventPerformance}
+          ticketTypePerformance={eventData.ticketTypePerformance}
+        />
+      </div>
+    );
+  };
 
   // Memoized tab content to prevent unnecessary re-renders
   const tabContent = useMemo(() => {
@@ -253,139 +451,9 @@ export default function AnalyticsPage() {
 
       {/* Content Area */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Tab Content Placeholder */}
-        <div className="space-y-6">
-          {activeTab === 'dashboard' && (
-            <div>
-              <h2 className="text-lg font-medium text-gray-900 mb-4">Dashboard Overview</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                {/* KPI Cards Placeholder */}
-                <Card>
-                  <div className="p-6">
-                    <div className="flex items-center">
-                      <div className="shrink-0">
-                        <DollarSign className="h-8 w-8 text-green-600" />
-                      </div>
-                      <div className="ml-4">
-                        <p className="text-sm font-medium text-gray-600">Total Revenue</p>
-                        <p className="text-2xl font-bold text-gray-900">$0</p>
-                      </div>
-                    </div>
-                  </div>
-                </Card>
-                
-                <Card>
-                  <div className="p-6">
-                    <div className="flex items-center">
-                      <div className="shrink-0">
-                        <Calendar className="h-8 w-8 text-blue-600" />
-                      </div>
-                      <div className="ml-4">
-                        <p className="text-sm font-medium text-gray-600">Total Bookings</p>
-                        <p className="text-2xl font-bold text-gray-900">0</p>
-                      </div>
-                    </div>
-                  </div>
-                </Card>
-                
-                <Card>
-                  <div className="p-6">
-                    <div className="flex items-center">
-                      <div className="shrink-0">
-                        <Users className="h-8 w-8 text-purple-600" />
-                      </div>
-                      <div className="ml-4">
-                        <p className="text-sm font-medium text-gray-600">New Users</p>
-                        <p className="text-2xl font-bold text-gray-900">0</p>
-                      </div>
-                    </div>
-                  </div>
-                </Card>
-                
-                <Card>
-                  <div className="p-6">
-                    <div className="flex items-center">
-                      <div className="shrink-0">
-                        <Activity className="h-8 w-8 text-orange-600" />
-                      </div>
-                      <div className="ml-4">
-                        <p className="text-sm font-medium text-gray-600">Active Events</p>
-                        <p className="text-2xl font-bold text-gray-900">0</p>
-                      </div>
-                    </div>
-                  </div>
-                </Card>
-              </div>
-              
-              {/* Charts Placeholder */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <Card>
-                  <div className="p-6">
-                    <h3 className="text-lg font-medium text-gray-900 mb-4">Revenue Trend</h3>
-                    <div className="h-64 bg-gray-100 rounded-lg flex items-center justify-center text-gray-500">
-                      <div className="text-center">
-                        <TrendingUp className="h-12 w-12 mx-auto mb-2" />
-                        <p>Revenue chart will be displayed here</p>
-                      </div>
-                    </div>
-                  </div>
-                </Card>
-                
-                <Card>
-                  <div className="p-6">
-                    <h3 className="text-lg font-medium text-gray-900 mb-4">Booking Trends</h3>
-                    <div className="h-64 bg-gray-100 rounded-lg flex items-center justify-center text-gray-500">
-                      <div className="text-center">
-                        <BarChart3 className="h-12 w-12 mx-auto mb-2" />
-                        <p>Booking chart will be displayed here</p>
-                      </div>
-                    </div>
-                  </div>
-                </Card>
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'revenue' && (
-            <div>
-              <h2 className="text-lg font-medium text-gray-900 mb-4">Revenue Analytics</h2>
-              <div className="bg-gray-100 rounded-lg p-8 text-center text-gray-500">
-                <DollarSign className="h-16 w-16 mx-auto mb-4" />
-                <p>Revenue analytics components will be implemented here</p>
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'bookings' && (
-            <div>
-              <h2 className="text-lg font-medium text-gray-900 mb-4">Booking Analytics</h2>
-              <div className="bg-gray-100 rounded-lg p-8 text-center text-gray-500">
-                <Calendar className="h-16 w-16 mx-auto mb-4" />
-                <p>Booking analytics components will be implemented here</p>
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'users' && (
-            <div>
-              <h2 className="text-lg font-medium text-gray-900 mb-4">User Analytics</h2>
-              <div className="bg-gray-100 rounded-lg p-8 text-center text-gray-500">
-                <Users className="h-16 w-16 mx-auto mb-4" />
-                <p>User analytics components will be implemented here</p>
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'events' && (
-            <div>
-              <h2 className="text-lg font-medium text-gray-900 mb-4">Event Analytics</h2>
-              <div className="bg-gray-100 rounded-lg p-8 text-center text-gray-500">
-                <Activity className="h-16 w-16 mx-auto mb-4" />
-                <p>Event analytics components will be implemented here</p>
-              </div>
-            </div>
-          )}
-        </div>
+        <AnalyticsErrorBoundary>
+          {tabContent}
+        </AnalyticsErrorBoundary>
       </div>
     </div>
   );

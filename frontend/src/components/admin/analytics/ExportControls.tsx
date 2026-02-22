@@ -138,7 +138,7 @@ export function ExportControls({
     
     // Handle different data structures
     const headers = Object.keys(data[0] || {});
-    const csvHeaders = headers.join(',');
+    const headersRow = headers.join(',');
     
     const csvRows = data.map((row: any) => {
       return headers.map(header => {
@@ -153,10 +153,9 @@ export function ExportControls({
         }
         return value || '';
       }).join(',');
-    }).join('\n');
     });
     
-    return `${csvHeaders}\n${csvRows.join('\n')}`;
+    return `${headersRow}\n${csvRows.join('\n')}`;
   };
 
   const generateTableHTML = (data: any): string => {
