@@ -6,6 +6,7 @@ import {
   UserPlus,
   Mail,
   ShieldCheck,
+  ShieldX,
   Shield,
   CircleUser,
   Trash2,
@@ -14,13 +15,23 @@ import {
   Zap,
 } from "lucide-react";
 import { adminService } from "@/services/adminService";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/Button";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 export default function UserManagementPage() {
-  // Fix 1: Initialize as empty array to prevent .length errors
+  const { user: thisUser } = useAuth();
+  const router = useRouter();
   const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [search, setSearch] = useState("");
+  const [modalConfig, setModalConfig] = useState<{
+    isOpen: boolean;
+    userId: string | null;
+  }>({
+    isOpen: false,
+    userId: null,
+  });
+  const [isActionLoading, setIsActionLoading] = useState(false);
 
   // Fix 2: Wrap loadUsers in useEffect so it actually runs
   useEffect(() => {
@@ -43,6 +54,36 @@ export default function UserManagementPage() {
     }
   };
 
+  const handleToggleRequest = (id: string) => {
+    setModalConfig({ isOpen: true, userId: id });
+  };
+
+  const confirmToggle = async () => {
+    if (!modalConfig.userId) return;
+
+    setIsActionLoading(true);
+    try {
+      const response = await adminService.toggleUserActive(modalConfig.userId);
+      const updatedUser = response.data?.user;
+
+      // Update local state
+      setUsers((prev) =>
+        prev.map((u) =>
+          u.id === modalConfig.userId
+            ? { ...u, is_active: updatedUser?.is_active ?? !u.is_active }
+            : u,
+        ),
+      );
+
+      // Close modal
+      setModalConfig({ isOpen: false, userId: null });
+    } catch (error) {
+      alert("Failed to update user.");
+    } finally {
+      setIsActionLoading(false);
+    }
+  };
+
   const stats = useMemo(
     () => ({
       // Use fallback value to ensure it never breaks
@@ -53,12 +94,21 @@ export default function UserManagementPage() {
     [users],
   );
 
-  // Fix 3: Safely handle null/undefined users before filtering
-  const filteredUsers = (users || []).filter(
-    (u) =>
-      u.first_name?.toLowerCase().includes(search.toLowerCase()) ||
-      u.email?.toLowerCase().includes(search.toLowerCase()),
-  );
+  const filteredUsers = useMemo(() => {
+    if (!users) return [];
+
+    return users.filter((u) => {
+      // 1. Check if the user is NOT the currently logged-in admin
+      const isNotMe = u.id !== thisUser?.id;
+
+      // 2. Apply search criteria
+      const matchesSearch =
+        u.first_name?.toLowerCase().includes(search.toLowerCase()) ||
+        u.email?.toLowerCase().includes(search.toLowerCase());
+
+      return isNotMe && matchesSearch;
+    });
+  }, [users, search, thisUser]);
 
   if (isLoading) {
     return (
@@ -154,6 +204,12 @@ export default function UserManagementPage() {
                 {filteredUsers.map((user) => (
                   <tr
                     key={user.id}
+                    onClick={() => router.push(`/admin/users/${user.id}`)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter")
+                        router.push(`/admin/users/${user.id}`);
+                    }}
+                    tabIndex={0}
                     className="hover:bg-blue-50/30 transition-colors group"
                   >
                     <td className="px-6 py-4">
@@ -175,8 +231,17 @@ export default function UserManagementPage() {
                       <RoleBadge role={user.role} />
                     </td>
                     <td className="px-6 py-4">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                        Active
+                      <span
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider border ${
+                          user.is_active
+                            ? "bg-green-100 text-green-800 border-green-200"
+                            : "bg-red-100 text-red-800 border-red-200"
+                        }`}
+                      >
+                        <span
+                          className={`w-1.5 h-1.5 rounded-full mr-1.5 ${user.is_active ? "bg-green-500" : "bg-red-500"}`}
+                        ></span>
+                        {user.is_active ? "Active" : "Inactive"}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-500">
@@ -185,15 +250,32 @@ export default function UserManagementPage() {
                       ).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Link
-                          href={`/admin/users/${user.id}`}
-                          className="p-2 hover:bg-gray-100 rounded-lg text-gray-500"
+                      <div className="flex justify-end gap-2 transition-opacity">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleToggleRequest(user.id);
+                          }}
+                          className={`p-2 w-3/4 rounded-lg transition-all duration-200 transform 
+    hover:scale-110 hover:shadow-lg active:scale-95 ${
+      user.is_active
+        ? "hover:bg-red-50 text-red-600"
+        : "hover:bg-green-50 text-green-600"
+    }`}
+                          title={
+                            user.is_active ? "Deactivate User" : "Activate User"
+                          }
                         >
-                          <Edit2 className="h-4 w-4" />
-                        </Link>
-                        <button className="p-2 hover:bg-red-50 rounded-lg text-red-600">
-                          <Trash2 className="h-4 w-4" />
+                          {user.is_active ? (
+                            <div className="w-full flex items-center">
+                              <span>Deactivate </span>
+                              <ShieldX size={20} />
+                            </div>
+                          ) : (
+                            <div className="w-full flex items-center">
+                              <span>Activate </span> <ShieldCheck size={20} />
+                            </div>
+                          )}
                         </button>
                       </div>
                     </td>
@@ -204,11 +286,15 @@ export default function UserManagementPage() {
           </div>
         </div>
       </main>
+      <ConfirmModal
+        isOpen={modalConfig.isOpen}
+        isLoading={isActionLoading}
+        onClose={() => setModalConfig({ isOpen: false, userId: null })}
+        onConfirm={confirmToggle}
+      />
     </div>
   );
 }
-
-// ... (StatCard and RoleBadge components remain as you had them)
 
 // Helper Components
 interface StatCardProps {
@@ -244,5 +330,64 @@ function RoleBadge({ role }: RoleBadgeProps) {
     >
       {role}
     </span>
+  );
+}
+
+function ConfirmModal({
+  isOpen,
+  onClose,
+  onConfirm,
+  isLoading,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  isLoading: boolean;
+}) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden transform transition-all">
+        <div className="p-6 text-center">
+          {isLoading ? (
+            <div className="py-8">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+              <p className="mt-4 text-gray-600 font-medium">
+                Updating status...
+              </p>
+            </div>
+          ) : (
+            <>
+              <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                <ShieldCheck className="text-blue-600 h-8 w-8" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900">
+                Change User Status?
+              </h3>
+              <p className="text-gray-500 mt-2">
+                This will immediately change the user's ability to access the
+                park systems.
+              </p>
+
+              <div className="flex gap-3 mt-8">
+                <button
+                  onClick={onClose}
+                  className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-gray-600 font-semibold hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={onConfirm}
+                  className="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 shadow-lg shadow-blue-200 transition-all"
+                >
+                  Confirm
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
