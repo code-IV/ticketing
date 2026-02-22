@@ -78,7 +78,8 @@ export default function UserManagementPage() {
       // Close modal
       setModalConfig({ isOpen: false, userId: null });
     } catch (error) {
-      alert("Failed to update user.");
+      setError("Failed to update user status. Please try again.");
+      setModalConfig({ isOpen: false, userId: null });
     } finally {
       setIsActionLoading(false);
     }

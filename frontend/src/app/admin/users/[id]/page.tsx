@@ -463,7 +463,7 @@ function UpdateConfirmModal({
           <button
             onClick={onConfirm}
             disabled={isLoading}
-            className="flex-2 px-8 py-2.5 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-200 disabled:opacity-50 flex items-center justify-center gap-2"
+            className="flex-[2] px-8 py-2.5 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-200 disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {isLoading ? (
               <div className="animate-spin h-4 w-4 border-2 border-white/30 border-t-white rounded-full" />
