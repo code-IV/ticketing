@@ -20,10 +20,19 @@ import { adminService } from "@/services/adminService";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/Button";
 import { useRouter } from "next/navigation";
+
+interface UserMetricsResponse {
+  user_count: number;
+  period: string;
+}
+
 export default function UserManagementPage() {
   const { user: thisUser } = useAuth();
   const router = useRouter();
   const [users, setUsers] = useState<User[]>([]);
+  const [userCountMetrics, setUserCountMetrics] = useState<
+    Partial<UserMetricsResponse>
+  >({});
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [search, setSearch] = useState("");
   const [modalConfig, setModalConfig] = useState<{
@@ -44,6 +53,7 @@ export default function UserManagementPage() {
 
   // Fix 2: Wrap loadUsers in useEffect so it actually runs
   useEffect(() => {
+    loadMetrics("today");
     loadUsers();
   }, []);
 
@@ -60,6 +70,17 @@ export default function UserManagementPage() {
       setError("Failed to load users. Please try again.");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const loadMetrics = async (period: string) => {
+    setUserCountMetrics((prev) => ({ ...prev, user_count: undefined, period }));
+    try {
+      const response = await adminService.getUserCount(period);
+      setUserCountMetrics(response.data || {});
+    } catch (error) {
+      console.error("Failed to load users Count:", error);
+      setError("Failed to load users Count. Please try again.");
     }
   };
 
@@ -215,22 +236,77 @@ export default function UserManagementPage() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-8">
         <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <StatCard
-              title="Total Users"
-              value={stats.total}
-              icon={<CircleUser className="text-blue-600" />}
-            />
-            <StatCard
-              title="Administrators"
-              value={stats.admins}
-              icon={<ShieldCheck className="text-purple-600" />}
-            />
-            <StatCard
-              title="New Signups (24h)"
-              value={"+12"}
-              icon={<Zap className="text-yellow-600" />}
-            />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            {/* Total Users Card */}
+            <div className="group bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+                    Total Personnel
+                  </p>
+                  <p className="text-3xl font-black text-gray-900 mt-1 tabular-nums">
+                    {stats.total.toLocaleString()}
+                  </p>
+                </div>
+                <div className="p-4 bg-blue-50 rounded-2xl group-hover:bg-blue-600 transition-colors duration-300">
+                  <CircleUser className="h-6 w-6 text-blue-600 group-hover:text-white transition-colors" />
+                </div>
+              </div>
+            </div>
+
+            {/* Administrators Card */}
+            <div className="group bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+                    System Admins
+                  </p>
+                  <p className="text-3xl font-black text-gray-900 mt-1 tabular-nums">
+                    {stats.admins}
+                  </p>
+                </div>
+                <div className="p-4 bg-purple-50 rounded-2xl group-hover:bg-purple-600 transition-colors duration-300">
+                  <ShieldCheck className="h-6 w-6 text-purple-600 group-hover:text-white transition-colors" />
+                </div>
+              </div>
+            </div>
+
+            {/* Dynamic Metric Card */}
+            <div className="group bg-white p-6 rounded-2xl border border-blue-100 shadow-sm hover:shadow-md transition-all duration-300 ring-1 ring-blue-50">
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  <div className="relative inline-block w-full">
+                    <select
+                      value={userCountMetrics.period}
+                      onChange={(e) => loadMetrics(e.target.value)}
+                      className="appearance-none bg-transparent pr-8 text-xs font-bold text-blue-600 uppercase tracking-wider focus:outline-none cursor-pointer hover:text-blue-700"
+                    >
+                      <option value="today">New Today</option>
+                      <option value="this_week">New This Week</option>
+                      <option value="this_month">New This Month</option>
+                      <option value="this_year">New This Year</option>
+                      <option value="all_time">All time</option>
+                    </select>
+                    <div className="pointer-events-none absolute right-2 top-0 text-blue-400">
+                      {/* Small arrow icon could go here */}
+                    </div>
+                  </div>
+                  <div className="flex items-baseline gap-2">
+                    <p className="text-3xl font-black text-gray-900 mt-1 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                      {userCountMetrics.user_count || (
+                        <span className="animate-pulse">—</span>
+                      )}
+                    </p>
+                    <span className="text-[10px] font-bold text-green-500 bg-green-50 px-2 py-0.5 rounded-full">
+                      + Acquisition
+                    </span>
+                  </div>
+                </div>
+                <div className="p-4 bg-yellow-50 rounded-2xl group-hover:bg-yellow-500 transition-colors duration-300">
+                  <Zap className="h-6 w-6 text-yellow-600 group-hover:text-white transition-colors" />
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Search and Filters Section */}
@@ -414,9 +490,11 @@ export default function UserManagementPage() {
                       ).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-500">
-                      {user.updated_at 
-                        ? new Date(user.updated_at).toLocaleDateString() 
-                        : new Date(user.created_at || Date.now()).toLocaleDateString()}
+                      {user.updated_at
+                        ? new Date(user.updated_at).toLocaleDateString()
+                        : new Date(
+                            user.created_at || Date.now(),
+                          ).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex justify-end gap-2 transition-opacity">
@@ -426,11 +504,11 @@ export default function UserManagementPage() {
                             handleToggleRequest(user.id);
                           }}
                           className={`p-2 w-3/4 rounded-lg transition-all duration-200 transform 
-    hover:scale-110 hover:shadow-lg active:scale-95 ${
-      user.is_active
-        ? "hover:bg-red-50 text-red-600"
-        : "hover:bg-green-50 text-green-600"
-    }`}
+                            hover:scale-110 hover:shadow-lg active:scale-95 ${
+                              user.is_active
+                                ? "hover:bg-red-50 text-red-600"
+                                : "hover:bg-green-50 text-green-600"
+                            }`}
                           title={
                             user.is_active ? "Deactivate User" : "Activate User"
                           }
@@ -469,25 +547,6 @@ export default function UserManagementPage() {
         onClose={() => setModalConfig({ isOpen: false, userId: null })}
         onConfirm={confirmToggle}
       />
-    </div>
-  );
-}
-
-// Helper Components
-interface StatCardProps {
-  title: string;
-  value: string | number;
-  icon: React.ReactNode;
-}
-
-function StatCard({ title, value, icon }: StatCardProps) {
-  return (
-    <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between">
-      <div>
-        <p className="text-sm text-gray-500 font-medium">{title}</p>
-        <p className="text-2xl font-bold text-gray-900 mt-1">{value}</p>
-      </div>
-      <div className="p-3 bg-gray-50 rounded-lg">{icon}</div>
     </div>
   );
 }
