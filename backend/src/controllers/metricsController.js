@@ -27,12 +27,9 @@ const metricsController = {
       );
     }
     try {
-      const result = await metrics.countUsersCreated(period);
+      const result = await metrics.getUserAnalytics(period);
 
-      return apiResponse(res, 200, true, "User Count Received", {
-        user_count: result.user_count,
-        period: period,
-      });
+      return apiResponse(res, 200, true, "User Count Received", result);
     } catch (err) {
       next(err);
     }
