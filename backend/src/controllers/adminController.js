@@ -15,6 +15,12 @@ const adminController = {
    */
   async getDashboard(req, res, next) {
     try {
+      // Disable caching for admin dashboard endpoint
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+      res.setHeader('ETag', ''); // Clear ETag to prevent 304 responses
+      
       const revenue = await Payment.getRevenueSummary();
       const { events } = await Event.findAll({ page: 1, limit: 5 });
       const { bookings } = await Booking.findAll({ page: 1, limit: 5 });
@@ -75,6 +81,88 @@ const adminController = {
   },
 
   /**
+   * POST /api/admin/events-with-tickets - Create event with ticket types
+   */
+  async createEventWithTicketTypes(req, res, next) {
+    const { query } = require('../config/db');
+    
+    try {
+      const { 
+        name, 
+        description, 
+        eventDate, 
+        startTime, 
+        endTime, 
+        capacity,
+        ticketTypes 
+      } = req.body;
+
+      // Start transaction
+      await query('BEGIN');
+
+      // Create event
+      const event = await Event.create({
+        name,
+        description,
+        eventDate,
+        startTime,
+        endTime,
+        capacity,
+        createdBy: req.session.user.id,
+      });
+
+      // Create ticket types
+      const createdTicketTypes = [];
+      for (const ticketType of ticketTypes) {
+        const createdTicketType = await TicketType.create({
+          eventId: event.id,
+          name: ticketType.name,
+          category: ticketType.category,
+          price: ticketType.price,
+          description: ticketType.description,
+          maxQuantityPerBooking: ticketType.maxQuantityPerBooking || 10,
+        });
+        createdTicketTypes.push(createdTicketType);
+      }
+
+      // Commit transaction
+      await query('COMMIT');
+
+      return apiResponse(res, 201, true, "Event with ticket types created successfully.", {
+        event,
+        ticketTypes: createdTicketTypes,
+      });
+    } catch (err) {
+      // Rollback on error
+      try {
+        await query('ROLLBACK');
+      } catch (rollbackErr) {
+        console.error('Rollback failed:', rollbackErr);
+      }
+      next(err);
+    }
+  },
+
+  /**
+   * GET /api/admin/events/:id - Get event with ticket types
+   */
+  async getEventWithTicketTypes(req, res, next) {
+    try {
+      const event = await Event.findByIdWithTicketTypes(req.params.id);
+      if (!event) {
+        return apiResponse(res, 404, false, "Event not found.");
+      }
+
+      return apiResponse(res, 200, true, "Event retrieved successfully.", {
+        event,
+        ticketTypes: event.ticket_types || [],
+      });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  /**
    * PUT /api/admin/events/:id - Update an event
    */
   async updateEvent(req, res, next) {
@@ -108,6 +196,113 @@ const adminController = {
         event,
       });
     } catch (err) {
+      next(err);
+    }
+  },
+
+  /**
+   * PUT /api/admin/events/:id - Update an event with ticket types
+   */
+  async updateEventWithTicketTypes(req, res, next) {
+    const { query } = require('../config/db');
+    
+    try {
+      const { 
+        name, 
+        description, 
+        eventDate, 
+        startTime, 
+        endTime, 
+        capacity,
+        isActive,
+        ticketTypes 
+      } = req.body;
+
+      // Start transaction
+      await query('BEGIN');
+
+      // Update event
+      const event = await Event.update(req.params.id, {
+        name,
+        description,
+        eventDate,
+        startTime,
+        endTime,
+        capacity,
+        isActive,
+      });
+
+      if (!event) {
+        await query('ROLLBACK');
+        return apiResponse(res, 404, false, "Event not found.");
+      }
+
+      // Get existing ticket types to determine updates/deletes/additions
+      const existingTicketTypes = await TicketType.findByEventId(req.params.id);
+      const existingTicketTypeIds = existingTicketTypes.map(tt => tt.id);
+
+      // Update or create ticket types
+      const updatedTicketTypes = [];
+      for (const ticketType of ticketTypes) {
+        let updatedTicketType;
+        
+        if (ticketType.id) {
+          // Update existing ticket type
+          updatedTicketType = await TicketType.update(ticketType.id, {
+            name: ticketType.name,
+            category: ticketType.category,
+            price: ticketType.price,
+            description: ticketType.description,
+            maxQuantityPerBooking: ticketType.maxQuantityPerBooking,
+            isActive: true,
+          });
+        } else {
+          // Create new ticket type
+          updatedTicketType = await TicketType.create({
+            eventId: req.params.id,
+            name: ticketType.name,
+            category: ticketType.category,
+            price: ticketType.price,
+            description: ticketType.description,
+            maxQuantityPerBooking: ticketType.maxQuantityPerBooking,
+          });
+        }
+        
+        if (updatedTicketType) {
+          updatedTicketTypes.push(updatedTicketType);
+        }
+      }
+
+      // Delete ticket types that are no longer needed
+      const submittedTicketTypeIds = ticketTypes
+        .filter(tt => tt.id)
+        .map(tt => tt.id);
+      
+      const ticketTypesToDelete = existingTicketTypeIds.filter(
+        id => !submittedTicketTypeIds.includes(id)
+      );
+      
+      for (const ticketTypeId of ticketTypesToDelete) {
+        await TicketType.deactivate(ticketTypeId);
+      }
+
+      // Commit transaction
+      await query('COMMIT');
+
+      // Get final event with all ticket types
+      const finalEvent = await Event.findByIdWithTicketTypes(req.params.id);
+
+      return apiResponse(res, 200, true, "Event updated successfully.", {
+        event: finalEvent,
+        ticketTypes: finalEvent.ticket_types || [],
+      });
+    } catch (err) {
+      // Rollback on error
+      try {
+        await query('ROLLBACK');
+      } catch (rollbackErr) {
+        console.error('Rollback failed:', rollbackErr);
+      }
       next(err);
     }
   },

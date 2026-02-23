@@ -40,6 +40,24 @@ export interface TicketType {
   updated_at: string;
 }
 
+export interface CreateTicketTypeRequest {
+  name: string;
+  category: 'adult' | 'child' | 'senior' | 'student' | 'group';
+  price: number;
+  description?: string;
+  maxQuantityPerBooking?: number;
+}
+
+export interface CreateEventWithTicketTypesRequest {
+  name: string;
+  description?: string;
+  eventDate: string;
+  startTime: string;
+  endTime: string;
+  capacity: number;
+  ticketTypes: CreateTicketTypeRequest[];
+}
+
 export interface BookingItem {
   ticketTypeId: string;
   quantity: number;

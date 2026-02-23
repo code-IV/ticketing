@@ -99,6 +99,12 @@ const authController = {
    */
   async getMe(req, res, next) {
     try {
+      // Disable caching for auth endpoints
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+      res.setHeader('ETag', ''); // Clear ETag to prevent 304 responses
+      
       const user = await User.findById(req.session.user.id);
       if (!user) {
         return apiResponse(res, 404, false, 'User not found.');

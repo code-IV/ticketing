@@ -8,6 +8,7 @@ import {
   DashboardStats,
   PaginatedResponse,
   ApiResponse,
+  CreateEventWithTicketTypesRequest,
 } from "@/types";
 
 export const adminService = {
@@ -35,6 +36,28 @@ export const adminService = {
     return response.data;
   },
 
+  async createEventWithTicketTypes(
+    data: CreateEventWithTicketTypesRequest
+  ): Promise<ApiResponse<{ event: Event; ticketTypes: TicketType[] }>> {
+    const response = await api.post("/admin/events-with-tickets", data);
+    return response.data;
+  },
+
+  async getEventWithTicketTypes(
+    id: string
+  ): Promise<ApiResponse<{ event: Event; ticketTypes: TicketType[] }>> {
+    const response = await api.get(`/admin/events/${id}`);
+    return response.data;
+  },
+
+  async updateEventWithTicketTypes(
+    id: string,
+    data: CreateEventWithTicketTypesRequest & { isActive: boolean }
+  ): Promise<ApiResponse<{ event: Event; ticketTypes: TicketType[] }>> {
+    const response = await api.put(`/admin/events/${id}/ticket-types`, data);
+    return response.data;
+  },
+
   async updateEvent(
     id: string,
     data: Partial<{
@@ -48,6 +71,42 @@ export const adminService = {
     }>,
   ): Promise<ApiResponse<{ event: Event }>> {
     const response = await api.put(`/admin/events/${id}`, data);
+    return response.data;
+  },
+
+  // Analytics API calls
+  async getRevenueAnalytics(startDate?: string, endDate?: string, groupBy?: string): Promise<ApiResponse<any>> {
+    const response = await api.get("/analytics/revenue", {
+      params: { startDate, endDate, groupBy },
+    });
+    return response.data;
+  },
+
+  async getBookingAnalytics(startDate?: string, endDate?: string, groupBy?: string): Promise<ApiResponse<any>> {
+    const response = await api.get("/analytics/bookings", {
+      params: { startDate, endDate, groupBy },
+    });
+    return response.data;
+  },
+
+  async getUserAnalytics(startDate?: string, endDate?: string, groupBy?: string): Promise<ApiResponse<any>> {
+    const response = await api.get("/analytics/users", {
+      params: { startDate, endDate, groupBy },
+    });
+    return response.data;
+  },
+
+  async getEventAnalytics(startDate?: string, endDate?: string, limit?: number): Promise<ApiResponse<any>> {
+    const response = await api.get("/analytics/events", {
+      params: { startDate, endDate, limit },
+    });
+    return response.data;
+  },
+
+  async getDashboardAnalytics(days?: number): Promise<ApiResponse<any>> {
+    const response = await api.get("/analytics/dashboard", {
+      params: { days },
+    });
     return response.data;
   },
 

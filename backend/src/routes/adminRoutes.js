@@ -7,6 +7,7 @@ const {
   updateEventRules,
   createTicketTypeRules,
   updateTicketTypeRules,
+  createEventWithTicketTypesRules,
   uuidParamRule,
   paginationRules,
   handleValidation,
@@ -31,12 +32,31 @@ router.post(
   handleValidation,
   adminController.createEvent,
 );
+router.post(
+  "/events-with-tickets",
+  createEventWithTicketTypesRules,
+  handleValidation,
+  adminController.createEventWithTicketTypes,
+);
 router.put(
   "/events/:id",
   uuidParamRule("id"),
   updateEventRules,
   handleValidation,
   adminController.updateEvent,
+);
+router.get(
+  "/events/:id",
+  uuidParamRule("id"),
+  handleValidation,
+  adminController.getEventWithTicketTypes,
+);
+router.put(
+  "/events/:id/ticket-types",
+  uuidParamRule("id"),
+  createEventWithTicketTypesRules,
+  handleValidation,
+  adminController.updateEventWithTicketTypes,
 );
 router.delete(
   "/events/:id",

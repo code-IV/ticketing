@@ -63,9 +63,31 @@ const createEventRules = [
     .isLength({ max: 255 }),
   body('description').optional().trim(),
   body('eventDate').isISO8601().withMessage('Valid event date is required (YYYY-MM-DD)'),
-  body('startTime').matches(/^([01]\d|2[0-3]):([0-5]\d)$/).withMessage('Valid start time is required (HH:MM)'),
-  body('endTime').matches(/^([01]\d|2[0-3]):([0-5]\d)$/).withMessage('Valid end time is required (HH:MM)'),
+  body('startTime').matches(/^([01]\d|2[0-3]):([0-5]\d)(?::([0-5]\d))?$/).withMessage('Valid start time is required (HH:MM or HH:MM:SS)'),
+  body('endTime').matches(/^([01]\d|2[0-3]):([0-5]\d)(?::([0-5]\d))?$/).withMessage('Valid end time is required (HH:MM or HH:MM:SS)'),
   body('capacity').isInt({ min: 1 }).withMessage('Capacity must be a positive integer'),
+];
+
+const createEventWithTicketTypesRules = [
+  // Event validation rules
+  body('name').trim().notEmpty().withMessage('Event name is required')
+    .isLength({ max: 255 }),
+  body('description').optional().trim(),
+  body('eventDate').isISO8601().withMessage('Valid event date is required (YYYY-MM-DD)'),
+  body('startTime').matches(/^([01]\d|2[0-3]):([0-5]\d)(?::([0-5]\d))?$/).withMessage('Valid start time is required (HH:MM or HH:MM:SS)'),
+  body('endTime').matches(/^([01]\d|2[0-3]):([0-5]\d)(?::([0-5]\d))?$/).withMessage('Valid end time is required (HH:MM or HH:MM:SS)'),
+  body('capacity').isInt({ min: 1 }).withMessage('Capacity must be a positive integer'),
+  
+  // Ticket types validation
+  body('ticketTypes').isArray({ min: 1 }).withMessage('At least one ticket type is required'),
+  body('ticketTypes.*.name').trim().notEmpty().withMessage('Ticket type name is required')
+    .isLength({ max: 100 }),
+  body('ticketTypes.*.category').isIn(['adult', 'child', 'senior', 'student', 'group'])
+    .withMessage('Category must be one of: adult, child, senior, student, group'),
+  body('ticketTypes.*.price').isFloat({ min: 0 }).withMessage('Price must be a non-negative number'),
+  body('ticketTypes.*.description').optional().trim(),
+  body('ticketTypes.*.maxQuantityPerBooking').optional().isInt({ min: 1, max: 50 })
+    .withMessage('Max quantity per booking must be between 1 and 50'),
 ];
 
 const updateEventRules = [
@@ -142,6 +164,7 @@ module.exports = {
   updateProfileRules,
   changePasswordRules,
   createEventRules,
+  createEventWithTicketTypesRules,
   updateEventRules,
   createTicketTypeRules,
   updateTicketTypeRules,

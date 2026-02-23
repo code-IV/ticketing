@@ -5,6 +5,7 @@ const morgan = require("morgan");
 const session = require("express-session");
 const sessionConfig = require("./config/session");
 const { errorHandler, notFoundHandler } = require("./middleware/errorHandler");
+const noCache = require("./middleware/noCache");
 
 // Import routes
 const authRoutes = require("./routes/authRoutes");
@@ -12,6 +13,7 @@ const eventRoutes = require("./routes/eventRoutes");
 const bookingRoutes = require("./routes/bookingRoutes");
 const ticketRoutes = require("./routes/ticketRoutes");
 const adminRoutes = require("./routes/adminRoutes");
+const analyticsRoutes = require("./routes/analyticsRoutes");
 
 const app = express();
 
@@ -61,11 +63,15 @@ app.get("/api/health", (req, res) => {
 // API ROUTES
 // ============================================
 
+// Apply no-cache middleware to all API routes
+app.use("/api", noCache);
+
 app.use("/api/auth", authRoutes);
 app.use("/api/events", eventRoutes);
 app.use("/api/bookings", bookingRoutes);
 app.use("/api/tickets", ticketRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/analytics", analyticsRoutes);
 
 // ============================================
 // ERROR HANDLING
