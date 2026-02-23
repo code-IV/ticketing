@@ -4,11 +4,11 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { adminService } from "@/services/adminService";
-import { Event } from "@/types";
+import { Event, CreateTicketTypeRequest } from "@/types";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Card, CardHeader, CardBody } from "@/components/ui/Card";
-import { Plus, Edit, Trash2, Calendar } from "lucide-react";
+import { Plus, Edit, Trash2, Calendar, X } from "lucide-react";
 import { format } from "date-fns";
 
 export default function AdminEventsPage() {
@@ -25,6 +25,15 @@ export default function AdminEventsPage() {
     endTime: "",
     capacity: "",
   });
+  const [ticketTypes, setTicketTypes] = useState<CreateTicketTypeRequest[]>([
+    {
+      name: "",
+      category: "adult",
+      price: 0,
+      description: "",
+      maxQuantityPerBooking: 10,
+    },
+  ]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
@@ -50,20 +59,62 @@ export default function AdminEventsPage() {
     }
   };
 
+  const addTicketType = () => {
+    setTicketTypes([
+      ...ticketTypes,
+      {
+        name: "",
+        category: "adult",
+        price: 0,
+        description: "",
+        maxQuantityPerBooking: 10,
+      },
+    ]);
+  };
+
+  const removeTicketType = (index: number) => {
+    if (ticketTypes.length > 1) {
+      setTicketTypes(ticketTypes.filter((_, i) => i !== index));
+    }
+  };
+
+  const updateTicketType = (index: number, field: keyof CreateTicketTypeRequest, value: any) => {
+    const updatedTicketTypes = [...ticketTypes];
+    updatedTicketTypes[index] = {
+      ...updatedTicketTypes[index],
+      [field]: value,
+    };
+    setTicketTypes(updatedTicketTypes);
+  };
+
   const handleCreateEvent = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
     setError("");
 
     try {
-      await adminService.createEvent({
+      // Validate ticket types
+      const invalidTicketType = ticketTypes.find(
+        (tt) => !tt.name.trim() || tt.price <= 0
+      );
+      if (invalidTicketType) {
+        setError("All ticket types must have a name and price greater than 0");
+        return;
+      }
+
+      await adminService.createEventWithTicketTypes({
         name: formData.name,
         description: formData.description,
         eventDate: formData.eventDate,
         startTime: formData.startTime,
         endTime: formData.endTime,
         capacity: parseInt(formData.capacity, 10),
+        ticketTypes: ticketTypes.map((tt) => ({
+          ...tt,
+          price: parseFloat(tt.price.toString()),
+        })),
       });
+
       setShowCreateModal(false);
       setFormData({
         name: "",
@@ -73,6 +124,15 @@ export default function AdminEventsPage() {
         endTime: "",
         capacity: "",
       });
+      setTicketTypes([
+        {
+          name: "",
+          category: "adult",
+          price: 0,
+          description: "",
+          maxQuantityPerBooking: 10,
+        },
+      ]);
       await loadEvents();
     } catch (err: any) {
       setError(err.response?.data?.message || "Failed to create event");
@@ -203,6 +263,119 @@ export default function AdminEventsPage() {
                     min="1"
                     placeholder="500"
                   />
+                  
+                  {/* Ticket Types Section */}
+                  <div className="border-t pt-6">
+                    <div className="flex justify-between items-center mb-4">
+                      <h3 className="text-lg font-semibold text-gray-900">
+                        Ticket Types
+                      </h3>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        onClick={addTicketType}
+                      >
+                        <Plus className="h-4 w-4 mr-1" />
+                        Add Ticket Type
+                      </Button>
+                    </div>
+                    
+                    {ticketTypes.map((ticketType, index) => (
+                      <div
+                        key={index}
+                        className="border border-gray-200 rounded-lg p-4 mb-4"
+                      >
+                        <div className="flex justify-between items-start mb-3">
+                          <h4 className="font-medium text-gray-900">
+                            Ticket Type {index + 1}
+                          </h4>
+                          {ticketTypes.length > 1 && (
+                            <Button
+                              type="button"
+                              variant="danger"
+                              size="sm"
+                              onClick={() => removeTicketType(index)}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <Input
+                            label="Ticket Name"
+                            value={ticketType.name}
+                            onChange={(e) =>
+                              updateTicketType(index, "name", e.target.value)
+                            }
+                            required
+                            placeholder="e.g., Adult Ticket"
+                          />
+                          
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Category
+                            </label>
+                            <select
+                              value={ticketType.category}
+                              onChange={(e) =>
+                                updateTicketType(index, "category", e.target.value)
+                              }
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            >
+                              <option value="adult">Adult</option>
+                              <option value="child">Child</option>
+                              <option value="senior">Senior</option>
+                              <option value="student">Student</option>
+                              <option value="group">Group</option>
+                            </select>
+                          </div>
+                          
+                          <Input
+                            label="Price (ETB)"
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={ticketType.price}
+                            onChange={(e) =>
+                              updateTicketType(index, "price", parseFloat(e.target.value) || 0)
+                            }
+                            required
+                            placeholder="100.00"
+                          />
+                          
+                          <Input
+                            label="Max Quantity per Booking"
+                            type="number"
+                            min="1"
+                            max="50"
+                            value={ticketType.maxQuantityPerBooking}
+                            onChange={(e) =>
+                              updateTicketType(index, "maxQuantityPerBooking", parseInt(e.target.value) || 10)
+                            }
+                            placeholder="10"
+                          />
+                        </div>
+                        
+                        <div className="mt-3">
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Description (Optional)
+                          </label>
+                          <textarea
+                            value={ticketType.description}
+                            onChange={(e) =>
+                              updateTicketType(index, "description", e.target.value)
+                            }
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            rows={2}
+                            placeholder="Describe this ticket type..."
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  
                   <div className="flex gap-3 pt-4">
                     <Button
                       type="submit"

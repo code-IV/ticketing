@@ -8,6 +8,7 @@ import {
   DashboardStats,
   PaginatedResponse,
   ApiResponse,
+  CreateEventWithTicketTypesRequest,
 } from "@/types";
 
 export const adminService = {
@@ -32,6 +33,13 @@ export const adminService = {
     capacity: number;
   }): Promise<ApiResponse<{ event: Event }>> {
     const response = await api.post("/admin/events", data);
+    return response.data;
+  },
+
+  async createEventWithTicketTypes(
+    data: CreateEventWithTicketTypesRequest
+  ): Promise<ApiResponse<{ event: Event; ticketTypes: TicketType[] }>> {
+    const response = await api.post("/admin/events-with-tickets", data);
     return response.data;
   },
 

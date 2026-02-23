@@ -38,12 +38,18 @@ export function Navbar() {
               {user?.role === 'admin' && (
                 <>
                   <Link href="/admin" className="text-gray-700 hover:text-blue-600 px-3 py-2 text-sm font-medium">
-                    <LayoutDashboard className="h-4 w-4 mr-2" />
+                  
+                    <div className='flex'>
+                        <LayoutDashboard className="h-4 w-4 mr-2" />
                     Admin
+                    </div>
+
                   </Link>
                   <Link href="/admin/analytics" className="text-gray-700 hover:text-blue-600 px-3 py-2 text-sm font-medium">
+                    <div className='flex'>
                     <BarChart3 className="h-4 w-4 mr-2" />
                     Analytics
+                    </div>
                   </Link>
                 </>
               )}

@@ -81,6 +81,69 @@ const adminController = {
   },
 
   /**
+   * POST /api/admin/events-with-tickets - Create event with ticket types
+   */
+  async createEventWithTicketTypes(req, res, next) {
+    const { query } = require('../config/db');
+    
+    try {
+      const { 
+        name, 
+        description, 
+        eventDate, 
+        startTime, 
+        endTime, 
+        capacity,
+        ticketTypes 
+      } = req.body;
+
+      // Start transaction
+      await query('BEGIN');
+
+      // Create event
+      const event = await Event.create({
+        name,
+        description,
+        eventDate,
+        startTime,
+        endTime,
+        capacity,
+        createdBy: req.session.user.id,
+      });
+
+      // Create ticket types
+      const createdTicketTypes = [];
+      for (const ticketType of ticketTypes) {
+        const createdTicketType = await TicketType.create({
+          eventId: event.id,
+          name: ticketType.name,
+          category: ticketType.category,
+          price: ticketType.price,
+          description: ticketType.description,
+          maxQuantityPerBooking: ticketType.maxQuantityPerBooking || 10,
+        });
+        createdTicketTypes.push(createdTicketType);
+      }
+
+      // Commit transaction
+      await query('COMMIT');
+
+      return apiResponse(res, 201, true, "Event with ticket types created successfully.", {
+        event,
+        ticketTypes: createdTicketTypes,
+      });
+    } catch (err) {
+      // Rollback on error
+      try {
+        await query('ROLLBACK');
+      } catch (rollbackErr) {
+        console.error('Rollback failed:', rollbackErr);
+      }
+      next(err);
+    }
+  },
+
+  /**
    * PUT /api/admin/events/:id - Update an event
    */
   async updateEvent(req, res, next) {
