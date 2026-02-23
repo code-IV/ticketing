@@ -271,11 +271,10 @@ export default function AnalyticsPage() {
       registrations: analyticsData.users?.registrationData || [],
       roleBreakdown: analyticsData.users?.roleBreakdown || [],
       activeStatus: analyticsData.users?.activeStatus || [],
-      bookingParticipation: {
-        users_with_bookings: analyticsData.dashboard?.bookings?.confirmed_bookings || 0,
-        total_users: analyticsData.dashboard?.users?.new_users || 0,
-        percentage: analyticsData.dashboard?.users?.new_users ? 
-          ((analyticsData.dashboard?.bookings?.confirmed_bookings || 0) / analyticsData.dashboard.users.new_users * 100) : 0
+      bookingParticipation: analyticsData.users?.bookingParticipation || {
+        users_with_bookings: 0,
+        total_users: 0,
+        percentage: 0
       }
     };
 
