@@ -1,11 +1,11 @@
-const crypto = require('crypto');
+const crypto = require("crypto");
 
 /**
  * Generate a unique booking reference (e.g., BORA-XXXXXX)
  */
 const generateBookingReference = () => {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-  let result = 'BORA-';
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  let result = "BORA-";
   for (let i = 0; i < 8; i++) {
     result += chars.charAt(Math.floor(Math.random() * chars.length));
   }
@@ -16,7 +16,7 @@ const generateBookingReference = () => {
  * Generate a unique ticket code
  */
 const generateTicketCode = () => {
-  return 'TKT-' + crypto.randomBytes(8).toString('hex').toUpperCase();
+  return "TKT-" + crypto.randomBytes(8).toString("hex").toUpperCase();
 };
 
 /**
@@ -27,7 +27,7 @@ const generateQRData = (ticketCode, bookingReference, eventDate) => {
     code: ticketCode,
     ref: bookingReference,
     date: eventDate,
-    park: 'BORA',
+    park: "BORA",
     ts: Date.now(),
   });
 };
@@ -36,9 +36,9 @@ const generateQRData = (ticketCode, bookingReference, eventDate) => {
  * Format currency for ETB
  */
 const formatCurrency = (amount) => {
-  return new Intl.NumberFormat('en-ET', {
-    style: 'currency',
-    currency: 'ETB',
+  return new Intl.NumberFormat("en-ET", {
+    style: "currency",
+    currency: "ETB",
   }).format(amount);
 };
 
@@ -50,6 +50,21 @@ const apiResponse = (res, statusCode, success, message, data = null) => {
   if (data !== null) {
     response.data = data;
   }
+
+  const timestamp = new Date().toISOString();
+  const method = res.req ? res.req.method : "UNKNOWN";
+  const url = res.req ? res.req.originalUrl : "UNKNOWN";
+  const statusIcon = success ? "✅" : "❌";
+
+  console.log(
+    `${statusIcon} ${method} ${url} - Status: ${statusCode} - Msg: ${message} --- [${timestamp}]`,
+  );
+
+  // Only log data in development mode or for errors
+  if (!success && data) {
+    console.error("   Details:", JSON.stringify(data, null, 2));
+  }
+
   return res.status(statusCode).json(response);
 };
 

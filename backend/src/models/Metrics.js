@@ -9,19 +9,6 @@ const metrics = {
    * User Metrics
    */
   async countUsersCreated(period) {
-    const validPeriods = [
-      "today",
-      "this_week",
-      "this_month",
-      "this_year",
-      "all_time",
-    ];
-    if (!validPeriods.includes(period)) {
-      throw new Error(
-        `Invalid period: ${period}. Must be one of: ${validPeriods.join(", ")}`,
-      );
-    }
-
     const sql = `
             SELECT COUNT(*)::INT AS user_count
             FROM users
@@ -35,6 +22,8 @@ const metrics = {
                 THEN created_at >= DATE_TRUNC('month', CURRENT_DATE)
                 WHEN $1 = 'this_year' 
                 THEN created_at >= DATE_TRUNC('year', CURRENT_DATE)
+                WHEN $1 = 'all_time'
+                THEN TRUE
                 ELSE FALSE 
             END
         `;
