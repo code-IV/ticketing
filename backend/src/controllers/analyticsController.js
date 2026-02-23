@@ -237,16 +237,28 @@ const analyticsController = {
         GROUP BY u.is_active
       `;
 
-      const [registrationData, roleData, activeData] = await Promise.all([
+      // Booking participation - unique users with bookings
+      const bookingParticipationQuery = `
+        SELECT 
+          COUNT(DISTINCT b.user_id) as users_with_bookings,
+          (SELECT COUNT(*) FROM users WHERE is_active = true) as total_users,
+          ROUND(COUNT(DISTINCT b.user_id) * 100.0 / (SELECT COUNT(*) FROM users WHERE is_active = true), 2) as percentage
+        FROM bookings b
+        WHERE b.booking_status = 'confirmed'
+      `;
+
+      const [registrationData, roleData, activeData, bookingParticipationData] = await Promise.all([
         query(registrationQuery, queryParams),
         query(roleQuery, []),
-        query(activeQuery, [])
+        query(activeQuery, []),
+        query(bookingParticipationQuery, [])
       ]);
 
       return apiResponse(res, 200, true, 'User analytics retrieved.', {
         registrationData: registrationData.rows,
         roleBreakdown: roleData.rows,
-        activeStatus: activeData.rows
+        activeStatus: activeData.rows,
+        bookingParticipation: bookingParticipationData.rows[0] || { users_with_bookings: 0, total_users: 0, percentage: 0 }
       });
     } catch (err) {
       console.error('User analytics error:', err);
@@ -254,7 +266,8 @@ const analyticsController = {
       return apiResponse(res, 200, true, 'User analytics retrieved.', {
         registrationData: [],
         roleBreakdown: [],
-        activeStatus: []
+        activeStatus: [],
+        bookingParticipation: { users_with_bookings: 0, total_users: 0, percentage: 0 }
       });
     }
   },
