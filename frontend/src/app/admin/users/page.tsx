@@ -174,9 +174,7 @@ export default function UserManagementPage() {
               >
                 <Filter className="mr-2 h-4 w-4" /> Filter
               </Button>
-              <Button className="bg-blue-600 hover:bg-blue-700 text-white">
-                <UserPlus className="mr-2 h-4 w-4" /> Add User
-              </Button>
+
             </div>
           </div>
 
