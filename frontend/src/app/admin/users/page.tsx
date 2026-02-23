@@ -69,13 +69,12 @@ export interface UserAnalyticsResponse {
 
 export default function UserManagementPage() {
   const [activeTab, setActiveTab] = useState<"list" | "analytics">("analytics");
-  const [users, setUsers] = useState<User[]>([]);
   const [analyticsData, setUserCountMetrics] = useState<
     Partial<UserAnalyticsData>
   >({});
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  // Fix 2: Wrap loadUsers in useEffect so it actually runs
+  // Load analytics metrics on mount
   useEffect(() => {
     loadMetrics("today");
   }, []);
@@ -94,16 +93,6 @@ export default function UserManagementPage() {
       setIsLoading(false);
     }
   };
-
-  const stats = useMemo(
-    () => ({
-      // Use fallback value to ensure it never breaks
-      total: users?.length || 0,
-      admins: users?.filter((u) => u.role === "admin").length || 0,
-      activeToday: Math.floor((users?.length || 0) * 0.4),
-    }),
-    [users],
-  );
 
   if (isLoading) {
     return (
@@ -187,7 +176,11 @@ export default function UserManagementPage() {
                 </p>
                 <div className="flex items-baseline gap-2">
                   <p className="text-3xl font-black text-gray-900 mt-1">
-                    {analyticsData?.bookingEngagement?.percentage}%
+                    {analyticsData?.bookingEngagement?.percentage || (
+                      <span className="animate-pulse">—</span>
+                    )}
+                    {analyticsData?.bookingEngagement?.percentage != null &&
+                      "%"}
                   </p>
                 </div>
                 {/* Progress bar for visual engagement */}
@@ -195,7 +188,7 @@ export default function UserManagementPage() {
                   <div
                     className="bg-purple-500 h-full transition-all duration-1000"
                     style={{
-                      width: `${analyticsData?.bookingEngagement?.percentage}%`,
+                      width: `${analyticsData?.bookingEngagement?.percentage ?? 0}%`,
                     }}
                   />
                 </div>

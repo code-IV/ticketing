@@ -58,18 +58,14 @@ export interface UserAnalyticsResponse {
 
 export default function UserAnalyticsTab() {
   const COLORS = ["#3b82f6", "#8b5cf6", "#f59e0b", "#ef4444"];
-  const [isAnalyticsLoading, setIsAnalyticsLoading] = useState(false);
   const [data, setAnalyticsData] = useState<UserAnalyticsData>();
 
   const fetchAnalytics = async () => {
-    setIsAnalyticsLoading(true);
     try {
       const res = await adminService.getUserAnalytics();
       setAnalyticsData(res.data);
     } catch (err) {
       console.error("Failed to load insights", err);
-    } finally {
-      setIsAnalyticsLoading(false);
     }
   };
 
@@ -105,11 +101,11 @@ export default function UserAnalyticsTab() {
             </p>
             <div className="flex items-end gap-4 mt-2">
               <h3 className="text-4xl font-black">
-                {data?.bookingParticipation?.percentage}%
+                {data.bookingParticipation?.percentage}%
               </h3>
               <p className="text-blue-100 pb-1">
-                {data?.bookingParticipation.users_with_bookings} of{" "}
-                {data?.bookingParticipation.total_users} active users have made
+                {data.bookingParticipation?.users_with_bookings} of{" "}
+                {data.bookingParticipation?.total_users} active users have made
                 bookings
               </p>
             </div>

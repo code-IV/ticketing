@@ -50,13 +50,10 @@ const metrics = {
     return {
       bookingEngagement: {
         usersWithBookings: row.users_with_bookings,
-        totalActiveUsers: row.total_active_users,
+        totalActiveUsers: row.total_users,
         percentage:
-          row.total_active_users > 0
-            ? (
-                (row.users_with_bookings / row.total_active_users) *
-                100
-              ).toFixed(2)
+          row.total_users > 0
+            ? ((row.users_with_bookings / row.total_users) * 100).toFixed(2)
             : 0,
       },
       roleDistribution: row.role_distribution || [],
