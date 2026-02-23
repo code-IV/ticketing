@@ -13,6 +13,8 @@ import {
   Edit2,
   Filter,
   Zap,
+  ChevronDown,
+  X,
 } from "lucide-react";
 import { adminService } from "@/services/adminService";
 import { useAuth } from "@/contexts/AuthContext";
@@ -32,6 +34,13 @@ export default function UserManagementPage() {
     userId: null,
   });
   const [isActionLoading, setIsActionLoading] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
+  const [filters, setFilters] = useState({
+    role: "all",
+    status: "all",
+    sortBy: "firstName",
+    sortOrder: "asc",
+  });
 
   // Fix 2: Wrap loadUsers in useEffect so it actually runs
   useEffect(() => {
@@ -85,6 +94,20 @@ export default function UserManagementPage() {
     }
   };
 
+  const handleFilterChange = (key: string, value: string) => {
+    setFilters((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const clearFilters = () => {
+    setFilters({
+      role: "all",
+      status: "all",
+      sortBy: "firstName",
+      sortOrder: "asc",
+    });
+    setSearch("");
+  };
+
   const stats = useMemo(
     () => ({
       // Use fallback value to ensure it never breaks
@@ -98,18 +121,72 @@ export default function UserManagementPage() {
   const filteredUsers = useMemo(() => {
     if (!users) return [];
 
-    return users.filter((u) => {
-      // 1. Check if the user is NOT the currently logged-in admin
-      const isNotMe = u.id !== thisUser?.id;
+    let result = [...users];
 
-      // 2. Apply search criteria
-      const matchesSearch =
-        u.first_name?.toLowerCase().includes(search.toLowerCase()) ||
-        u.email?.toLowerCase().includes(search.toLowerCase());
+    // Exclude current user
+    result = result.filter((u) => u.id !== thisUser?.id);
 
-      return isNotMe && matchesSearch;
+    // Apply search filter
+    if (search) {
+      const searchTerm = search.toLowerCase();
+      result = result.filter(
+        (u) =>
+          u.first_name?.toLowerCase().includes(searchTerm) ||
+          u.last_name?.toLowerCase().includes(searchTerm) ||
+          u.email?.toLowerCase().includes(searchTerm) ||
+          u.phone?.toLowerCase().includes(searchTerm),
+      );
+    }
+
+    // Apply role filter
+    if (filters.role !== "all") {
+      result = result.filter((u) => u.role === filters.role);
+    }
+
+    // Apply status filter
+    if (filters.status !== "all") {
+      const isActive = filters.status === "active";
+      result = result.filter((u) => u.is_active === isActive);
+    }
+
+    // Apply sorting
+    result.sort((a, b) => {
+      let aValue, bValue;
+
+      switch (filters.sortBy) {
+        case "firstName":
+          aValue = a.first_name?.toLowerCase() || "";
+          bValue = b.first_name?.toLowerCase() || "";
+          break;
+        case "email":
+          aValue = a.email?.toLowerCase() || "";
+          bValue = b.email?.toLowerCase() || "";
+          break;
+        case "role":
+          aValue = a.role?.toLowerCase() || "";
+          bValue = b.role?.toLowerCase() || "";
+          break;
+        case "dateJoined":
+          aValue = new Date(a.created_at || "").getTime();
+          bValue = new Date(b.created_at || "").getTime();
+          break;
+        case "lastUpdated":
+          aValue = new Date(a.updated_at || "").getTime();
+          bValue = new Date(b.updated_at || "").getTime();
+          break;
+        default:
+          return 0;
+      }
+
+      if (filters.sortOrder === "asc") {
+        return aValue > bValue ? 1 : -1;
+      } else {
+        return aValue < bValue ? 1 : -1;
+      }
     });
-  }, [users, search, thisUser]);
+
+    return result;
+  }, [users, search, filters, thisUser]);
 
   if (isLoading) {
     return (
@@ -156,26 +233,111 @@ export default function UserManagementPage() {
             />
           </div>
 
-          {/* Fix 4: Corrected flex-row class */}
-          <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex flex-col md:flex-row justify-between gap-4">
-            <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search users..."
-                className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                onChange={(e) => setSearch(e.target.value)}
-              />
+          {/* Search and Filters Section */}
+          <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+            <div className="flex flex-col md:flex-row justify-between gap-4">
+              <div className="relative flex-1 max-w-md">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search by name or email..."
+                  className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="primary"
+                  onClick={() => setShowFilters(!showFilters)}
+                >
+                  <Filter className="mr-2 h-4 w-4" />
+                  Filter
+                  <ChevronDown
+                    className={`ml-2 h-4 w-4 transition-transform ${showFilters ? "rotate-180" : ""}`}
+                  />
+                </Button>
+              </div>
             </div>
-            <div className="flex gap-2">
-              <Button
-                variant="ghost"
-                className="border border-gray-200 text-gray-600"
-              >
-                <Filter className="mr-2 h-4 w-4" /> Filter
-              </Button>
 
-            </div>
+            {/* Filter Options Panel */}
+            {showFilters && (
+              <div className="mt-4 pt-4 border-t border-gray-200">
+                <div className="flex flex-wrap gap-4 items-center">
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm font-medium text-gray-700">
+                      Role:
+                    </label>
+                    <select
+                      value={filters.role}
+                      onChange={(e) =>
+                        handleFilterChange("role", e.target.value)
+                      }
+                      className="border border-gray-300 rounded-md px-3 py-1 text-sm"
+                    >
+                      <option value="all">All Roles</option>
+                      <option value="admin">Admin</option>
+                      <option value="user">User</option>
+                    </select>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm font-medium text-gray-700">
+                      Status:
+                    </label>
+                    <select
+                      value={filters.status}
+                      onChange={(e) =>
+                        handleFilterChange("status", e.target.value)
+                      }
+                      className="border border-gray-300 rounded-md px-3 py-1 text-sm"
+                    >
+                      <option value="all">All Statuses</option>
+                      <option value="active">Active</option>
+                      <option value="inactive">Inactive</option>
+                    </select>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm font-medium text-gray-700">
+                      Sort by:
+                    </label>
+                    <select
+                      value={filters.sortBy}
+                      onChange={(e) =>
+                        handleFilterChange("sortBy", e.target.value)
+                      }
+                      className="border border-gray-300 rounded-md px-3 py-1 text-sm"
+                    >
+                      <option value="firstName">Name</option>
+                      <option value="email">Email</option>
+                      <option value="role">Role</option>
+                      <option value="dateJoined">Date Joined</option>
+                      <option value="lastUpdated">Last Updated</option>
+                    </select>
+
+                    <select
+                      value={filters.sortOrder}
+                      onChange={(e) =>
+                        handleFilterChange("sortOrder", e.target.value)
+                      }
+                      className="border border-gray-300 rounded-md px-3 py-1 text-sm ml-1"
+                    >
+                      <option value="asc">Ascending</option>
+                      <option value="desc">Descending</option>
+                    </select>
+                  </div>
+
+                  <Button
+                    variant="ghost"
+                    className="text-red-600 hover:bg-red-50"
+                    onClick={clearFilters}
+                  >
+                    <X className="h-4 w-4 mr-1" /> Clear
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
@@ -193,6 +355,9 @@ export default function UserManagementPage() {
                   </th>
                   <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
                     Date Joined
+                  </th>
+                  <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                    Last Updated
                   </th>
                   <th className="px-6 py-4 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">
                     Actions
@@ -218,7 +383,7 @@ export default function UserManagementPage() {
                         </div>
                         <div>
                           <p className="text-sm font-semibold text-gray-900">
-                            {user.first_name}
+                            {user.first_name} {user.last_name}
                           </p>
                           <p className="text-xs text-gray-500 flex items-center gap-1">
                             <Mail className="h-3 w-3" /> {user.email}
@@ -247,6 +412,11 @@ export default function UserManagementPage() {
                       {new Date(
                         user.created_at || Date.now(),
                       ).toLocaleDateString()}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-500">
+                      {user.updated_at 
+                        ? new Date(user.updated_at).toLocaleDateString() 
+                        : new Date(user.created_at || Date.now()).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex justify-end gap-2 transition-opacity">
@@ -282,6 +452,14 @@ export default function UserManagementPage() {
                 ))}
               </tbody>
             </table>
+
+            {filteredUsers.length === 0 && (
+              <div className="text-center py-12">
+                <p className="text-gray-500">
+                  No users found matching your criteria
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </main>

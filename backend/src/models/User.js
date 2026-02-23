@@ -92,7 +92,7 @@ const User = {
   async findAll({ page = 1, limit = 20, role = null }) {
     const offset = (page - 1) * limit;
     let sql = `
-      SELECT id, first_name, last_name, email, phone, role, is_active, created_at
+      SELECT id, first_name, last_name, email, phone, role, is_active, created_at, updated_at
       FROM users`;
     const values = [];
     let paramIndex = 1;
