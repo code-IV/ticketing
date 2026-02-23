@@ -43,6 +43,21 @@ export const adminService = {
     return response.data;
   },
 
+  async getEventWithTicketTypes(
+    id: string
+  ): Promise<ApiResponse<{ event: Event; ticketTypes: TicketType[] }>> {
+    const response = await api.get(`/admin/events/${id}`);
+    return response.data;
+  },
+
+  async updateEventWithTicketTypes(
+    id: string,
+    data: CreateEventWithTicketTypesRequest & { isActive: boolean }
+  ): Promise<ApiResponse<{ event: Event; ticketTypes: TicketType[] }>> {
+    const response = await api.put(`/admin/events/${id}/ticket-types`, data);
+    return response.data;
+  },
+
   async updateEvent(
     id: string,
     data: Partial<{

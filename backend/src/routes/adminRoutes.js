@@ -45,6 +45,19 @@ router.put(
   handleValidation,
   adminController.updateEvent,
 );
+router.get(
+  "/events/:id",
+  uuidParamRule("id"),
+  handleValidation,
+  adminController.getEventWithTicketTypes,
+);
+router.put(
+  "/events/:id/ticket-types",
+  uuidParamRule("id"),
+  createEventWithTicketTypesRules,
+  handleValidation,
+  adminController.updateEventWithTicketTypes,
+);
 router.delete(
   "/events/:id",
   uuidParamRule("id"),

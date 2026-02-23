@@ -63,8 +63,8 @@ const createEventRules = [
     .isLength({ max: 255 }),
   body('description').optional().trim(),
   body('eventDate').isISO8601().withMessage('Valid event date is required (YYYY-MM-DD)'),
-  body('startTime').matches(/^([01]\d|2[0-3]):([0-5]\d)$/).withMessage('Valid start time is required (HH:MM)'),
-  body('endTime').matches(/^([01]\d|2[0-3]):([0-5]\d)$/).withMessage('Valid end time is required (HH:MM)'),
+  body('startTime').matches(/^([01]\d|2[0-3]):([0-5]\d)(?::([0-5]\d))?$/).withMessage('Valid start time is required (HH:MM or HH:MM:SS)'),
+  body('endTime').matches(/^([01]\d|2[0-3]):([0-5]\d)(?::([0-5]\d))?$/).withMessage('Valid end time is required (HH:MM or HH:MM:SS)'),
   body('capacity').isInt({ min: 1 }).withMessage('Capacity must be a positive integer'),
 ];
 
@@ -74,8 +74,8 @@ const createEventWithTicketTypesRules = [
     .isLength({ max: 255 }),
   body('description').optional().trim(),
   body('eventDate').isISO8601().withMessage('Valid event date is required (YYYY-MM-DD)'),
-  body('startTime').matches(/^([01]\d|2[0-3]):([0-5]\d)$/).withMessage('Valid start time is required (HH:MM)'),
-  body('endTime').matches(/^([01]\d|2[0-3]):([0-5]\d)$/).withMessage('Valid end time is required (HH:MM)'),
+  body('startTime').matches(/^([01]\d|2[0-3]):([0-5]\d)(?::([0-5]\d))?$/).withMessage('Valid start time is required (HH:MM or HH:MM:SS)'),
+  body('endTime').matches(/^([01]\d|2[0-3]):([0-5]\d)(?::([0-5]\d))?$/).withMessage('Valid end time is required (HH:MM or HH:MM:SS)'),
   body('capacity').isInt({ min: 1 }).withMessage('Capacity must be a positive integer'),
   
   // Ticket types validation
