@@ -40,7 +40,7 @@ export function memoize<T extends (...args: any[]) => any>(
 ): T {
   const cache = new Map<string, any>();
   
-  return (...args: any[]) => {
+  return ((...args: any[]): any => {
     const key = keyGenerator ? keyGenerator(...args) : JSON.stringify(args);
     
     if (cache.has(key)) {
@@ -50,7 +50,7 @@ export function memoize<T extends (...args: any[]) => any>(
     const result = func(...args);
     cache.set(key, result);
     return result;
-  };
+  }) as T;
 }
 
 // Format large numbers for better readability

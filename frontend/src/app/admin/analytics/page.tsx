@@ -16,7 +16,7 @@ import { UserAnalytics } from '@/components/admin/analytics/UserAnalytics';
 import { EventPerformance } from '@/components/admin/analytics/EventPerformance';
 import { AnalyticsErrorBoundary } from '@/components/admin/analytics/ErrorBoundary';
 import VirtualizedRevenueChart from '@/components/admin/analytics/VirtualizedRevenueChart';
-import VirtualizedBookingTrends from '@/components/admin/analytics/VirtualizedBookingTrends';
+import { BookingAnalyticsChart } from '@/components/admin/analytics/BookingAnalyticsChart';
 import { adminService } from '@/services/adminService';
 import Link from 'next/link';
 import { debounce, throttle } from '@/components/admin/analytics/performanceUtils';
@@ -184,10 +184,14 @@ export default function AnalyticsPage() {
       const weeklyData = [];
       for (let i = 0; i < data.length; i += 7) {
         const weekData = data.slice(i, i + 7);
-        const weekBookings = weekData.reduce((sum: number, item: any) => sum + (item.bookings || 0), 0);
+        const weekBookings = weekData.reduce((sum: number, item: any) => sum + (item.total_bookings || 0), 0);
         weeklyData.push({
           date: weekData[0]?.date || new Date().toISOString(),
-          bookings: weekBookings
+          total_bookings: weekBookings,
+          confirmed_bookings: weekData.reduce((sum: number, item: any) => sum + (item.confirmed_bookings || 0), 0),
+          cancelled_bookings: weekData.reduce((sum: number, item: any) => sum + (item.cancelled_bookings || 0), 0),
+          pending_bookings: weekData.reduce((sum: number, item: any) => sum + (item.pending_bookings || 0), 0),
+          total_value: weekData.reduce((sum: number, item: any) => sum + parseFloat(item.total_value || '0'), 0).toString()
         });
       }
       return weeklyData;
@@ -214,7 +218,7 @@ export default function AnalyticsPage() {
         {/* Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <VirtualizedRevenueChart data={aggregatedRevenueData} />
-          <VirtualizedBookingTrends data={aggregatedBookingData} />
+          <BookingAnalyticsChart data={aggregatedBookingData} />
         </div>
       </div>
     );

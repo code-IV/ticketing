@@ -1,6 +1,6 @@
 import { Card } from '@/components/ui/Card';
 import { Calendar, TrendingUp, TrendingDown } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, ComposedChart } from 'recharts';
 
 interface BookingData {
   date: string;
@@ -11,15 +11,16 @@ interface BookingData {
   total_value: string;
 }
 
-interface BookingTrendsProps {
+interface BookingAnalyticsChartProps {
   data: BookingData[];
   title?: string;
 }
 
-export function BookingTrends({ data, title = "Booking Trends" }: BookingTrendsProps) {
+export function BookingAnalyticsChart({ data, title = "Booking Analytics" }: BookingAnalyticsChartProps) {
   const totalBookings = data.reduce((sum, item) => sum + (item.total_bookings || 0), 0);
   const totalConfirmed = data.reduce((sum, item) => sum + (item.confirmed_bookings || 0), 0);
   const totalCancelled = data.reduce((sum, item) => sum + (item.cancelled_bookings || 0), 0);
+  const totalPending = data.reduce((sum, item) => sum + (item.pending_bookings || 0), 0);
   const totalValue = data.reduce((sum, item) => sum + parseFloat(item.total_value || '0'), 0);
 
   const confirmationRate = totalBookings > 0 ? (totalConfirmed / totalBookings * 100).toFixed(1) : '0.0';
@@ -36,10 +37,10 @@ export function BookingTrends({ data, title = "Booking Trends" }: BookingTrendsP
           </div>
         </div>
         
-        {/* Booking Trends Chart */}
+        {/* Booking Analytics Chart */}
         <div className="h-64">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+            <ComposedChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
               <XAxis 
                 dataKey="date" 
@@ -52,16 +53,24 @@ export function BookingTrends({ data, title = "Booking Trends" }: BookingTrendsP
                   value.toLocaleString(),
                   name === 'confirmed_bookings' ? 'Confirmed' :
                   name === 'cancelled_bookings' ? 'Cancelled' :
-                  name === 'pending_bookings' ? 'Pending' : 'Total'
+                  name === 'pending_bookings' ? 'Pending' :
+                  name === 'total_trend' ? 'Total Trend' : 'Total'
                 ]}
                 labelFormatter={(value) => new Date(value).toLocaleDateString()}
               />
               <Legend />
-              <Bar dataKey="total_bookings" fill="#6b7280" name="Total" />
-              <Bar dataKey="confirmed_bookings" fill="#10b981" name="Confirmed" />
-              <Bar dataKey="cancelled_bookings" fill="#ef4444" name="Cancelled" />
-              <Bar dataKey="pending_bookings" fill="#f59e0b" name="Pending" />
-            </BarChart>
+              <Bar dataKey="confirmed_bookings" stackId="a" fill="#10b981" name="Confirmed" />
+              <Bar dataKey="cancelled_bookings" stackId="a" fill="#ef4444" name="Cancelled" />
+              <Bar dataKey="pending_bookings" stackId="a" fill="#f59e0b" name="Pending" />
+              <Line 
+                type="monotone" 
+                dataKey="total_bookings" 
+                stroke="#3b82f6" 
+                strokeWidth={2}
+                dot={{ fill: '#3b82f6', r: 3 }}
+                name="Total Trend"
+              />
+            </ComposedChart>
           </ResponsiveContainer>
         </div>
         
