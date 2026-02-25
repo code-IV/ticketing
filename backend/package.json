@@ -6,10 +6,18 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
-    "db:migrate": "node src/database/migrate.js",
+    "db:migrate": "knex migrate:latest",
+    "db:rollback": "knex migrate:rollback",
+    "db:status": "knex migrate:status",
+    "db:reset": "node -e \"if(process.env.NODE_ENV==='production'){throw new Error('db:reset is not allowed in production')}\" && knex migrate:rollback --all && knex migrate:latest",
     "db:seed": "node src/database/seed.js"
   },
-  "keywords": ["ticketing", "amusement-park", "express", "postgresql"],
+  "keywords": [
+    "ticketing",
+    "amusement-park",
+    "express",
+    "postgresql"
+  ],
   "author": "",
   "license": "ISC",
   "dependencies": {
@@ -21,8 +29,9 @@
     "express-session": "^1.18.0",
     "express-validator": "^7.2.0",
     "helmet": "^7.1.0",
+    "knex": "^3.1.0",
     "morgan": "^1.10.0",
-    "pg": "^8.13.0",
+    "pg": "^8.18.0",
     "uuid": "^10.0.0"
   },
   "devDependencies": {
