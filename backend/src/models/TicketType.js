@@ -1,15 +1,29 @@
-const { query } = require('../config/db');
+const { query } = require("../config/db");
 
 const TicketType = {
   /**
    * Create a new ticket type
    */
-  async create({ eventId, name, category, price, description, maxQuantityPerBooking = 10 }) {
+  async create({
+    eventId,
+    name,
+    category,
+    price,
+    description,
+    maxQuantityPerBooking = 10,
+  }) {
     const sql = `
       INSERT INTO ticket_types (event_id, name, category, price, description, max_quantity_per_booking)
       VALUES ($1, $2, $3, $4, $5, $6)
       RETURNING *`;
-    const values = [eventId, name, category, price, description, maxQuantityPerBooking];
+    const values = [
+      eventId,
+      name,
+      category,
+      price,
+      description,
+      maxQuantityPerBooking,
+    ];
     const result = await query(sql, values);
     return result.rows[0];
   },
@@ -38,7 +52,10 @@ const TicketType = {
   /**
    * Update a ticket type
    */
-  async update(id, { name, category, price, description, maxQuantityPerBooking, isActive }) {
+  async update(
+    id,
+    { name, category, price, description, maxQuantityPerBooking, isActive },
+  ) {
     const sql = `
       UPDATE ticket_types
       SET name = COALESCE($2, name),
@@ -49,7 +66,15 @@ const TicketType = {
           is_active = COALESCE($7, is_active)
       WHERE id = $1
       RETURNING *`;
-    const values = [id, name, category, price, description, maxQuantityPerBooking, isActive];
+    const values = [
+      id,
+      name,
+      category,
+      price,
+      description,
+      maxQuantityPerBooking,
+      isActive,
+    ];
     const result = await query(sql, values);
     return result.rows[0] || null;
   },

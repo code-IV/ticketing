@@ -4,6 +4,8 @@ import {
   TicketType,
   Booking,
   User,
+  Game,
+  CreateGame,
   Payment,
   DashboardStats,
   PaginatedResponse,
@@ -249,6 +251,17 @@ export const adminService = {
     const response = await api.get("/admin/reports/payments", {
       params: { page, limit, status },
     });
+    return response.data;
+  },
+};
+
+export const gameService = {
+  async getAll(): Promise<ApiResponse<Game[]>> {
+    const response = await api.get("/admin/games");
+    return response.data;
+  },
+  async createGame(data: CreateGame): Promise<ApiResponse<{ game: Game }>> {
+    const response = await api.post("/admin/games", data);
     return response.data;
   },
 };

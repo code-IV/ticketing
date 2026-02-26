@@ -15,6 +15,7 @@ const ticketRoutes = require("./routes/ticketRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const analyticsRoutes = require("./routes/analyticsRoutes");
 const metricsRoute = require("./routes/metricsRoutes");
+const gameRoutes = require("./routes/gameRoutes");
 
 const app = express();
 
@@ -73,7 +74,8 @@ app.use("/api/bookings", bookingRoutes);
 app.use("/api/tickets", ticketRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/analytics", analyticsRoutes);
-app.use("/api/metrics/", metricsRoute);
+app.use("/api/metrics", metricsRoute);
+app.use("/api/admin", gameRoutes);
 
 // ============================================
 // ERROR HANDLING

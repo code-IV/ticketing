@@ -61,12 +61,35 @@ export default function EventDetailPage({
     if (!event?.ticket_types) return 0;
     return Object.entries(cart).reduce((total, [ticketTypeId, quantity]) => {
       const ticketType = event.ticket_types?.find((t) => t.id === ticketTypeId);
-      return total + (ticketType ? parseFloat(ticketType.price) * quantity : 0);
+      return total + (ticketType ? ticketType.price * quantity : 0);
     }, 0);
   };
 
   const getTotalTickets = () => {
     return Object.values(cart).reduce((sum, qty) => sum + qty, 0);
+  };
+
+  const combineDateAndTime = (
+    dateInput: string | undefined,
+    timeString: string | undefined,
+  ) => {
+    if (!dateInput || !timeString) {
+      return null;
+    }
+    // 1. Create a date object from the event date
+    const date = new Date(dateInput);
+
+    // 2. Parse the HH:mm from the time string
+    const [hours, minutes] = timeString.split(":").map(Number);
+
+    // 3. Update the date object with the new time
+    date.setHours(hours);
+    date.setMinutes(minutes);
+    date.setSeconds(0);
+    date.setMilliseconds(0);
+
+    // 4. Return as ISO string (Standard for DB timestamps)
+    return date.toISOString();
   };
 
   const handleBooking = async () => {
@@ -90,11 +113,12 @@ export default function EventDetailPage({
           quantity,
         }),
       );
-
       const response = await bookingService.createBooking({
         eventId: id,
         items,
         paymentMethod,
+        expires_at:
+          combineDateAndTime(event?.event_date, event?.end_time) || undefined,
       });
 
       router.push(`/bookings/${response.data?.booking.id}`);
@@ -227,7 +251,7 @@ export default function EventDetailPage({
                             {ticketType.description}
                           </p>
                           <p className="text-lg font-bold text-blue-600 mt-1">
-                            {parseFloat(ticketType.price).toFixed(2)} ETB
+                            {ticketType.price.toFixed(2)} ETB
                           </p>
                         </div>
                         <div className="flex items-center space-x-3">
@@ -301,10 +325,7 @@ export default function EventDetailPage({
                               {quantity}x {ticketType.name}
                             </span>
                             <span className="font-medium">
-                              {(
-                                parseFloat(ticketType.price) * quantity
-                              ).toFixed(2)}{" "}
-                              ETB
+                              {(ticketType.price * quantity).toFixed(2)} ETB
                             </span>
                           </div>
                         );

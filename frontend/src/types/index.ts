@@ -4,10 +4,28 @@ export interface User {
   last_name: string;
   email: string;
   phone?: string;
-  role: 'admin' | 'visitor';
+  role: "admin" | "visitor";
   is_active: boolean;
   created_at: string;
   updated_at: string;
+}
+
+export interface Game {
+  id: string;
+  name: string;
+  description: string;
+  rules: string;
+  status: "OPEN" | "ON_MAINTENANCE" | "UPCOMING" | "CLOSED";
+  ticket_types?: TicketType[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateGame {
+  name: string;
+  description: string;
+  rules: string;
+  status: "OPEN" | "ON_MAINTENANCE" | "UPCOMING" | "CLOSED";
 }
 
 export interface Event {
@@ -31,8 +49,8 @@ export interface TicketType {
   id: string;
   event_id: string;
   name: string;
-  category: 'adult' | 'child' | 'senior' | 'student' | 'group';
-  price: string;
+  category: "adult" | "child" | "senior" | "student" | "group";
+  price: number;
   description?: string;
   max_quantity_per_booking: number;
   is_active: boolean;
@@ -42,7 +60,7 @@ export interface TicketType {
 
 export interface CreateTicketTypeRequest {
   name: string;
-  category: 'adult' | 'child' | 'senior' | 'student' | 'group';
+  category: "adult" | "child" | "senior" | "student" | "group";
   price: number;
   description?: string;
   maxQuantityPerBooking?: number;
@@ -74,9 +92,9 @@ export interface Booking {
   start_time?: string;
   end_time?: string;
   total_amount: string;
-  booking_status: 'pending' | 'confirmed' | 'cancelled' | 'refunded';
-  payment_status: 'pending' | 'completed' | 'failed' | 'refunded';
-  payment_method?: 'credit_card' | 'debit_card' | 'telebirr' | 'cash';
+  booking_status: "pending" | "confirmed" | "cancelled" | "refunded";
+  payment_status: "pending" | "completed" | "failed" | "refunded";
+  payment_method?: "credit_card" | "debit_card" | "telebirr" | "cash";
   guest_email?: string;
   guest_name?: string;
   notes?: string;
@@ -117,8 +135,8 @@ export interface Payment {
   id: string;
   booking_id: string;
   amount: string;
-  payment_method: 'credit_card' | 'debit_card' | 'telebirr' | 'cash';
-  payment_status: 'pending' | 'completed' | 'failed' | 'refunded';
+  payment_method: "credit_card" | "debit_card" | "telebirr" | "cash";
+  payment_status: "pending" | "completed" | "failed" | "refunded";
   transaction_reference?: string;
   paid_at?: string;
   created_at: string;
