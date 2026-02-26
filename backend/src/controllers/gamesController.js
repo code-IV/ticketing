@@ -31,5 +31,30 @@ const gameController = {
       next(err);
     }
   },
+  /**
+   * GET api/admin/game/:id get game with id?
+   */
+  async getGameWithId(req, res, next) {
+    try {
+      const game = await Game.getById(req.params.id);
+      if (!game) {
+        return apiResponse(res, 404, false, "Game not found");
+      }
+      return apiResponse(res, 200, true, "GET successful", game);
+    } catch (err) {
+      next(err);
+    }
+  },
+  /**
+   * DELET api/admin/game/:id delete game with id?
+   */
+  async deleteGameWithId(req, res, next) {
+    try {
+      await Game.deleteById(req.params.id);
+      return apiResponse(res, 200, true, "DELETE successful");
+    } catch (err) {
+      next(err);
+    }
+  },
 };
 module.exports = gameController;

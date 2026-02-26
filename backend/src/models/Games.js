@@ -67,5 +67,30 @@ const Games = {
     const result = await query(sql);
     return result.rows;
   },
+
+  async deleteById(id) {
+    const sql = `
+      DELETE FROM games WHERE id=$1
+      RETURNING *
+    `;
+    const result = await query(sql, [id]);
+    return result;
+  },
+
+  async getById(id) {
+    const sql = `
+    SELECT g.*, 
+    COALESCE(
+        JSON_AGG(tt.*) FILTER (WHERE tt.id IS NOT NULL), 
+        '[]'
+    ) AS ticket_types
+    FROM games g
+    LEFT JOIN ticket_types tt ON g.id = tt.game_id
+    WHERE g.id = $1
+    GROUP BY g.id;
+    `;
+    const result = await query(sql, [id]);
+    return result.rows[0];
+  },
 };
 module.exports = Games;

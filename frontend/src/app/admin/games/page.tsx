@@ -14,32 +14,39 @@ import {
   Activity,
   Map,
   DollarSign,
+  Divide,
 } from "lucide-react";
 import { gameService } from "@/services/adminService";
-import { Game, TicketType } from "@/types";
+import { Game, CreateTicketTypeRequest, TicketType } from "@/types";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 const GamesManagementPage = () => {
+  const router = useRouter();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [games, setGames] = useState<Game[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    name: string;
+    description: string;
+    rules: string;
+    status: "OPEN" | "ON_MAINTENANCE" | "UPCOMING" | "CLOSED";
+    ticket_types: CreateTicketTypeRequest[];
+  }>({
     name: "",
     description: "",
     rules: "",
-    status: "OPEN" as "OPEN" | "ON_MAINTENANCE" | "UPCOMING" | "CLOSED",
-    ticket_types: [
-      { category: "adult", name: "Adult Access", price: 0, isActive: true }, // Always active
-      { category: "child", name: "Child Access", price: 0, isActive: false },
-      {
-        category: "student",
-        name: "Student Access",
-        price: 0,
-        isActive: false,
-      },
-      { category: "group", name: "Group Package", price: 0, isActive: false },
-    ],
+    status: "OPEN",
+    ticket_types: [],
+  });
+  const [newTicket, setNewTicket] = useState<CreateTicketTypeRequest>({
+    name: "",
+    category: "adult",
+    price: 0,
+    description: "",
+    maxQuantityPerBooking: 10,
   });
 
   useEffect(() => {
@@ -65,7 +72,6 @@ const GamesManagementPage = () => {
     e.preventDefault();
 
     // 1. Prepare the payload including the pricing matrix
-    // We ensure prices are numbers before sending to the backend
     const payload = {
       name: formData.name,
       description: formData.description,
@@ -86,27 +92,7 @@ const GamesManagementPage = () => {
         description: "",
         rules: "",
         status: "OPEN",
-        ticket_types: [
-          { category: "adult", name: "Adult Access", price: 0, isActive: true },
-          {
-            category: "child",
-            name: "Child Access",
-            price: 0,
-            isActive: false,
-          },
-          {
-            category: "student",
-            name: "Student Access",
-            price: 0,
-            isActive: false,
-          },
-          {
-            category: "group",
-            name: "Group Package",
-            price: 0,
-            isActive: false,
-          },
-        ],
+        ticket_types: [],
       });
 
       setIsDrawerOpen(false);
@@ -114,6 +100,45 @@ const GamesManagementPage = () => {
       console.error("Failed to create game:", error);
       // Optional: Add a toast notification here
     }
+  };
+
+  //add the draft to the actual list
+  const addCategory = () => {
+    if (!newTicket.name || newTicket.price == null || isNaN(newTicket.price)) {
+      alert("Please provide at least a name and price");
+      return;
+    }
+
+    const isDuplicate = formData.ticket_types.some(
+      (tt) => tt.category === newTicket.category,
+    );
+
+    if (isDuplicate) {
+      alert(
+        `A ticket for the "${newTicket.category}" category already exists. Please edit the existing one or choose a different category.`,
+      );
+      return;
+    }
+
+    setFormData({
+      ...formData,
+      ticket_types: [...formData.ticket_types, { ...newTicket }],
+    });
+
+    // Reset the form for the next entry
+    setNewTicket({
+      name: "",
+      category: "adult",
+      price: 0,
+      description: "",
+      maxQuantityPerBooking: 10,
+    });
+  };
+
+  //remove a category from the list
+  const removeCategory = (index: number) => {
+    const updated = formData.ticket_types.filter((_, i) => i !== index);
+    setFormData({ ...formData, ticket_types: updated });
   };
 
   // UI state for status styling
@@ -243,6 +268,7 @@ const GamesManagementPage = () => {
           {games.map((game) => (
             <div
               key={game.id}
+              onClick={() => router.push(`/admin/games/${game.id}`)}
               className="group bg-white rounded-3xl border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden"
             >
               <div className="p-6">
@@ -253,14 +279,7 @@ const GamesManagementPage = () => {
                     {statusConfig[game.status]?.icon}
                     {statusConfig[game.status]?.label}
                   </div>
-                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button className="p-2 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-indigo-600">
-                      <Edit3 size={18} />
-                    </button>
-                    <button className="p-2 hover:bg-red-50 rounded-lg text-slate-400 hover:text-red-600">
-                      <Trash2 size={18} />
-                    </button>
-                  </div>
+                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                 </div>
 
                 <h3 className="text-xl font-black text-slate-800 mb-1">
@@ -307,9 +326,12 @@ const GamesManagementPage = () => {
                       <span className="text-xs ml-1">ETB</span>
                     </div>
                   </div>
-                  <button className="bg-slate-900 text-white text-xs font-bold px-4 py-2 rounded-xl hover:bg-slate-800 transition-colors">
+                  <Link
+                    href={`/admin/games/${game.id}`}
+                    className="bg-slate-900 text-white text-xs font-bold px-4 py-2 rounded-xl hover:bg-slate-800 transition-colors"
+                  >
                     View Analytics
-                  </button>
+                  </Link>
                 </div>
               </div>
             </div>
@@ -387,115 +409,166 @@ const GamesManagementPage = () => {
                 </div>
 
                 {/* DYNAMIC PRICING MATRIX */}
-                <div className="p-5 bg-indigo-50/50 rounded-3xl space-y-4 border border-indigo-100">
-                  <div className="flex items-center gap-2 mb-2">
-                    <DollarSign size={16} className="text-indigo-600" />
-                    <h3 className="text-xs font-black text-indigo-900 uppercase tracking-widest">
-                      Pricing Matrix
-                    </h3>
-                  </div>
-
-                  <div className="space-y-4">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                      Pricing Categories
-                    </label>
-
-                    {/* 1. Category Selection Toggles */}
-                    <div className="flex flex-wrap gap-2 mb-4">
+                <div className="space-y-6">
+                  {/* --- 1. DISPLAY ADDED CATEGORIES --- */}
+                  {formData.ticket_types.length > 0 && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {formData.ticket_types.map((tt, index) => (
-                        <button
-                          key={tt.category}
-                          type="button"
-                          disabled={tt.category === "adult"} // Adult is mandatory
-                          onClick={() => {
-                            const newMatrix = [...formData.ticket_types];
-                            newMatrix[index].isActive =
-                              !newMatrix[index].isActive;
-                            setFormData({
-                              ...formData,
-                              ticket_types: newMatrix,
-                            });
-                          }}
-                          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all border-2 ${
-                            tt.isActive
-                              ? "bg-indigo-600 border-indigo-600 text-white shadow-md shadow-indigo-100"
-                              : "bg-white border-slate-100 text-slate-400 hover:border-slate-200"
-                          }`}
+                        <div
+                          key={index}
+                          className="flex items-center justify-between p-4 bg-white border border-indigo-100 rounded-2xl shadow-sm animate-in zoom-in-95 duration-200"
                         >
-                          {tt.isActive ? "✓ " : "+ "} {tt.name.split(" ")[0]}
-                        </button>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="px-2 py-0.5 bg-indigo-50 text-indigo-600 text-[10px] font-black uppercase rounded-md">
+                                {tt.category}
+                              </span>
+                              <h4 className="text-sm font-bold text-slate-800">
+                                {tt.name}
+                              </h4>
+                            </div>
+                            <p className="text-xs text-slate-500 font-medium">
+                              {tt.price} ETB
+                            </p>
+                          </div>
+                          <button
+                            onClick={() => removeCategory(index)}
+                            className="p-2 hover:bg-red-50 text-slate-300 hover:text-red-500 rounded-xl transition-all"
+                          >
+                            <X size={18} />
+                          </button>
+                        </div>
                       ))}
                     </div>
+                  )}
 
-                    {/* 2. Active Price Inputs */}
-                    <div className="space-y-3 p-4 bg-slate-50 rounded-3xl border border-slate-100">
-                      {formData.ticket_types
-                        .filter((tt) => tt.isActive)
-                        .map((tt, index) => {
-                          // Find original index in the main array to update state correctly
-                          const originalIndex = formData.ticket_types.findIndex(
-                            (item) => item.category === tt.category,
-                          );
-
-                          return (
-                            <div
-                              key={tt.category}
-                              className="flex items-center gap-3 animate-in fade-in slide-in-from-top-1 duration-200"
-                            >
-                              <div className="flex-1 bg-white p-3 rounded-xl shadow-sm border border-slate-200/50">
-                                <span className="text-[10px] font-black text-indigo-500 block uppercase tracking-tighter">
-                                  {tt.category}
-                                </span>
-                                <span className="text-sm font-bold text-slate-700">
-                                  {tt.name}
-                                </span>
-                              </div>
-
-                              <div className="w-28 relative">
-                                <input
-                                  type="number"
-                                  className="w-full p-3 pl-8 bg-white border-2 border-transparent rounded-xl outline-none focus:border-indigo-500 font-black text-sm shadow-sm"
-                                  placeholder="0"
-                                  value={tt.price || ""}
-                                  onChange={(e) => {
-                                    const newMatrix = [
-                                      ...formData.ticket_types,
-                                    ];
-                                    newMatrix[originalIndex].price =
-                                      parseFloat(e.target.value) || 0;
-                                    setFormData({
-                                      ...formData,
-                                      ticket_types: newMatrix,
-                                    });
-                                  }}
-                                />
-                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400">
-                                  ETB
-                                </span>
-                              </div>
-
-                              {/* Optional: Minus button to remove (if not adult) */}
-                              {tt.category !== "adult" && (
-                                <button
-                                  onClick={() => {
-                                    const newMatrix = [
-                                      ...formData.ticket_types,
-                                    ];
-                                    newMatrix[originalIndex].isActive = false;
-                                    setFormData({
-                                      ...formData,
-                                      ticket_types: newMatrix,
-                                    });
-                                  }}
-                                  className="p-2 text-slate-300 hover:text-red-500 transition-colors"
-                                >
-                                  <X size={16} />
-                                </button>
-                              )}
-                            </div>
-                          );
-                        })}
+                  {/* --- 2. THE ENTRY FORM --- */}
+                  <div className="p-6 bg-slate-50 rounded-[32px] border-2 border-dashed border-slate-200 space-y-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="p-2 bg-indigo-600 rounded-lg">
+                        <Plus size={16} className="text-white" />
+                      </div>
+                      <h3 className="text-sm font-black text-slate-800 uppercase tracking-tight">
+                        Add New Ticket Category
+                      </h3>
                     </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-black text-slate-400 uppercase ml-1">
+                          Ticket Name
+                        </label>
+                        <input
+                          placeholder="e.g., Adult Ticket"
+                          className="w-full p-3 bg-white rounded-xl border border-slate-200 focus:border-indigo-500 outline-none font-bold text-sm"
+                          value={newTicket.name}
+                          onChange={(e) =>
+                            setNewTicket({ ...newTicket, name: e.target.value })
+                          }
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-black text-slate-400 uppercase ml-1">
+                          Category
+                        </label>
+                        <select
+                          className="w-full p-3 bg-white rounded-xl border border-slate-200 focus:border-indigo-500 outline-none font-bold text-sm appearance-none"
+                          value={newTicket.category}
+                          onChange={(e) =>
+                            setNewTicket({
+                              ...newTicket,
+                              category: e.target.value as
+                                | "adult"
+                                | "student"
+                                | "child"
+                                | "group"
+                                | "senior",
+                            })
+                          }
+                        >
+                          {["adult", "child", "senior", "student", "group"].map(
+                            (cat) => {
+                              const isAlreadyAdded = formData.ticket_types.some(
+                                (tt) => tt.category === cat,
+                              );
+                              return (
+                                <option
+                                  key={cat}
+                                  value={cat}
+                                  disabled={isAlreadyAdded}
+                                >
+                                  {cat.charAt(0).toUpperCase() + cat.slice(1)}{" "}
+                                  {isAlreadyAdded ? "(Added)" : ""}
+                                </option>
+                              );
+                            },
+                          )}
+                        </select>
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-black text-slate-400 uppercase ml-1">
+                          Price (ETB)
+                        </label>
+                        <input
+                          type="number"
+                          placeholder="0.0"
+                          className="w-full p-3 bg-white rounded-xl border border-slate-200 focus:border-indigo-500 outline-none font-black text-sm"
+                          value={newTicket.price || ""}
+                          onChange={(e) =>
+                            setNewTicket({
+                              ...newTicket,
+                              price: parseFloat(e.target.value) || 0,
+                            })
+                          }
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-black text-slate-400 uppercase ml-1">
+                          Max Qty
+                        </label>
+                        <input
+                          type="number"
+                          className="w-full p-3 bg-white rounded-xl border border-slate-200 focus:border-indigo-500 outline-none font-bold text-sm"
+                          value={newTicket.maxQuantityPerBooking}
+                          onChange={(e) =>
+                            setNewTicket({
+                              ...newTicket,
+                              maxQuantityPerBooking:
+                                parseInt(e.target.value) || 1,
+                            })
+                          }
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black text-slate-400 uppercase ml-1">
+                        Description
+                      </label>
+                      <textarea
+                        placeholder="Short description for the customer..."
+                        rows={2}
+                        className="w-full p-3 bg-white rounded-xl border border-slate-200 focus:border-indigo-500 outline-none text-sm"
+                        value={newTicket.description}
+                        onChange={(e) =>
+                          setNewTicket({
+                            ...newTicket,
+                            description: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={addCategory}
+                      className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-indigo-600 transition-colors shadow-lg shadow-slate-200"
+                    >
+                      Add Category to List
+                    </button>
                   </div>
                 </div>
 
