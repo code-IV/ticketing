@@ -16,23 +16,30 @@ const Games = {
       const newGame = gameResult.rows[0];
 
       // 2. Insert the specific ticket categories provided for THIS game
-      // ticket_types is an array of objects: [{ category, price, name }, ...]
+      // ticket_types is an array of objects: [{ category, price, name, is_active }, ...]
       if (ticket_types && ticket_types.length > 0) {
-        for (const tt of ticket_types) {
-          const ttSql = `
-        INSERT INTO ticket_types (game_id, name, category, price, is_active)
-        VALUES ($1, $2, $3, $4, $5)
-      `;
-          // Use the specific price sent from the UI for this category
-          const ttValues = [
+        // Build a single INSERT statement with multiple rows to avoid
+        // sequential round-trips. We prepare placeholders and a flattened
+        // values array that repeats newGame.id for each ticket type.
+        let ttSql = `INSERT INTO ticket_types (game_id, name, category, price, is_active) VALUES `;
+        const ttValues = [];
+        let placeholderIdx = 1;
+
+        ticket_types.forEach((tt) => {
+          ttSql += `($${placeholderIdx++}, $${placeholderIdx++}, $${placeholderIdx++}, $${placeholderIdx++}, $${placeholderIdx++}),`;
+          ttValues.push(
             newGame.id,
             tt.name,
             tt.category,
             tt.price,
             tt.is_active,
-          ];
-          await client.query(ttSql, ttValues);
-        }
+          );
+        });
+
+        // remove trailing comma
+        ttSql = ttSql.slice(0, -1);
+
+        await client.query(ttSql, ttValues);
       }
 
       await client.query("COMMIT");

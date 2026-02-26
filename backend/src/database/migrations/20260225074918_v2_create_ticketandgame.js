@@ -78,6 +78,7 @@ exports.down = async function (knex) {
     table.text("qr_data");
 
     // 2. Remove new columns
+    table.dropIndex("expires_at");
     table.dropColumn("status");
     table.dropColumn("purchased_at");
     table.dropColumn("expires_at");

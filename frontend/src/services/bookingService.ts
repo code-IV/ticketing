@@ -15,7 +15,7 @@ export const bookingService = {
     guestEmail?: string;
     guestName?: string;
     notes?: string;
-    expires_at: string | undefined;
+    expires_at?: string;
   }): Promise<ApiResponse<{ booking: Booking }>> {
     const response = await api.post("/bookings", data);
     return response.data;

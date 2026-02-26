@@ -41,7 +41,6 @@ const GamesManagementPage = () => {
       { category: "group", name: "Group Package", price: 0, isActive: false },
     ],
   });
-  const [pricingMatrix, setPricingMatrix] = useState<TicketType[]>([]);
 
   useEffect(() => {
     loadGames();
@@ -77,7 +76,6 @@ const GamesManagementPage = () => {
 
     try {
       // 2. Call service with the combined data
-      console.log(payload);
       await gameService.createGame(payload);
       // 3. Refresh the list
       loadGames();
@@ -110,7 +108,6 @@ const GamesManagementPage = () => {
           },
         ],
       });
-      setPricingMatrix([]);
 
       setIsDrawerOpen(false);
     } catch (error) {

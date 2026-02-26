@@ -122,7 +122,7 @@ const bookingController = {
       );
       res.setHeader("Pragma", "no-cache");
       res.setHeader("Expires", "0");
-      res.setHeader("ETag", ""); // Clear ETag to prevent 304 responses
+      res.removeHeader("ETag"); // Clear ETag to prevent 304 responses
 
       const userId = req.session.user.id;
       const page = parseInt(req.query.page, 10) || 1;
