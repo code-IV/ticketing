@@ -346,13 +346,16 @@ const GamesManagementPage = () => {
             className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40"
             onClick={() => setIsDrawerOpen(false)}
           />
-          <div className="fixed right-0 top-0 h-full w-full max-w-md bg-white z-50 shadow-2xl animate-in slide-in-from-right duration-300">
+          <div className="fixed right-0 top-0 h-full w-full max-w-lg bg-white z-50 shadow-2xl animate-in slide-in-from-right duration-300">
             <div className="p-8 h-full flex flex-col">
               {/* Header */}
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-black text-slate-900 tracking-tight">
-                  Add New Attraction
-                </h2>
+                <button
+                  onClick={handleCreate}
+                  className="w-full bg-indigo-600 text-white font-black py-4 rounded-2xl hover:bg-indigo-700 shadow-xl shadow-indigo-100 transition-all transform active:scale-[0.98]"
+                >
+                  Create Attraction
+                </button>
                 <button
                   onClick={() => setIsDrawerOpen(false)}
                   className="p-2 hover:bg-slate-100 rounded-full text-slate-400"
@@ -585,16 +588,6 @@ const GamesManagementPage = () => {
                     }
                   />
                 </div>
-              </div>
-
-              {/* Action Button */}
-              <div className="pt-6 border-t border-slate-100 mt-auto">
-                <button
-                  onClick={handleCreate}
-                  className="w-full bg-indigo-600 text-white font-black py-4 rounded-2xl hover:bg-indigo-700 shadow-xl shadow-indigo-100 transition-all transform active:scale-[0.98]"
-                >
-                  Create Attraction
-                </button>
               </div>
             </div>
           </div>
