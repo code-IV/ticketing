@@ -30,6 +30,9 @@ export function Navbar() {
               <Link href="/events" className="text-gray-700 hover:text-blue-600 px-3 py-2 text-sm font-medium">
                 Events
               </Link>
+              <Link href="/buy" className="text-gray-700 hover:text-blue-600 px-3 py-2 text-sm font-medium">
+                Buy Tickets
+              </Link>
               {user && (
                 <Link href="/my-bookings" className="text-gray-700 hover:text-blue-600 px-3 py-2 text-sm font-medium">
                   My Bookings

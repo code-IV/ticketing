@@ -141,6 +141,15 @@ const createBookingRules = [
 ];
 
 // ============================================
+// BUY TICKET VALIDATORS
+// ============================================
+
+const purchaseTicketRules = [
+  body('game_id').isUUID().withMessage('Valid game ID is required'),
+  body('quantity').isInt({ min: 1, max: 50 }).withMessage('Quantity must be between 1 and 50'),
+];
+
+// ============================================
 // PAGINATION VALIDATORS
 // ============================================
 
@@ -169,6 +178,7 @@ module.exports = {
   createTicketTypeRules,
   updateTicketTypeRules,
   createBookingRules,
+  purchaseTicketRules,
   paginationRules,
   uuidParamRule,
 };

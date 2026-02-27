@@ -16,6 +16,7 @@ const adminRoutes = require("./routes/adminRoutes");
 const analyticsRoutes = require("./routes/analyticsRoutes");
 const metricsRoute = require("./routes/metricsRoutes");
 const gameRoutes = require("./routes/gameRoutes");
+const buyTicketRoutes = require("./routes/buyTicket");
 
 const app = express();
 
@@ -76,6 +77,7 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/analytics", analyticsRoutes);
 app.use("/api/metrics", metricsRoute);
 app.use("/api/admin", gameRoutes);
+app.use("/api/buy", buyTicketRoutes);
 
 // ============================================
 // ERROR HANDLING

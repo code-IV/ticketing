@@ -251,7 +251,7 @@ export default function EventDetailPage({
                             {ticketType.description}
                           </p>
                           <p className="text-lg font-bold text-blue-600 mt-1">
-                            {ticketType.price.toFixed(2)} ETB
+                            {ticketType.price} ETB
                           </p>
                         </div>
                         <div className="flex items-center space-x-3">

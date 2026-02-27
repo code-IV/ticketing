@@ -7,7 +7,7 @@ import { adminService } from '@/services/adminService';
 import { DashboardStats } from '@/types';
 import { Card, CardHeader, CardBody } from '@/components/ui/Card';
 import { DollarSign, TrendingUp, Calendar, Users } from 'lucide-react';
-
+import Link from 'next/link';
 export default function AdminDashboard() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
@@ -63,6 +63,9 @@ export default function AdminDashboard() {
     <div className="min-h-screen py-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-8">
+          <Link href="/admin/games" className="text-gray-700 hover:text-blue-600 px-3 py-2 text-sm font-medium">
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">Games</h1>
+          </Link>
           <h1 className="text-4xl font-bold text-gray-900 mb-2">Admin Dashboard</h1>
           <p className="text-lg text-gray-600">Manage events, bookings, and view reports</p>
         </div>
@@ -214,6 +217,8 @@ export default function AdminDashboard() {
             )}
           </CardBody>
         </Card>
+
+
       </div>
     </div>
   );
