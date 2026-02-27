@@ -1,5 +1,5 @@
 const { query, getClient } = require("../config/db");
-const { apiResponse } = require("../utils/helpers");
+const { apiResponse, generateTicketCode, generateQRData } = require("../utils/helpers");
 
 const buyTicketController = {
   /**
@@ -221,16 +221,17 @@ const buyTicketController = {
           RETURNING *
         `;
 
-        // Generate a simple ticket code and QR token
-        const ticketCode = `TCK-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
-        const qrToken = `QR-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        // Generate proper ticket code and QR data
+        const ticketCode = generateTicketCode();
+        const gameReference = `GAME-${game.id}-${Date.now()}`;
+        const qrData = generateQRData(ticketCode, gameReference, new Date().toISOString().split('T')[0]);
         const paymentReference = `PAY-${Date.now()}`;
         const buyerContact = req.session.user.email;
 
         const ticketValues = [
           null, // booking_id (can be null for direct game purchases)
           ticketCode,
-          qrToken,
+          qrData,
           'ACTIVE',
           totalPrice,
           paymentReference,

@@ -167,8 +167,8 @@ const Ticket = {
         rules: row.rules
       },
       ticket_type: {
-        name: row.ticket_type_name,
-        category: row.category,
+        name: row.ticket_type_name || 'Game Ticket',
+        category: row.category || 'standard',
         price: parseFloat(row.ticket_price) || parseFloat(row.total_price)
       }
     }));

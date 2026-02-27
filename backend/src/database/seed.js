@@ -92,6 +92,66 @@ const seed = async () => {
           [event2.rows[0].id, name, category, price, description]
         );
       }
+
+      // Create sample games
+      const game1 = await client.query(
+        `INSERT INTO games (name, description, rules, status)
+         VALUES ($1, $2, $3, $4)
+         RETURNING id`,
+        [
+          'Roller Coaster Thrill',
+          'Experience the ultimate adrenaline rush on our state-of-the-art roller coaster with multiple loops and drops.',
+          'Must be 120cm or taller. No loose items allowed. Follow all safety instructions.',
+          'OPEN'
+        ]
+      );
+
+      const game2 = await client.query(
+        `INSERT INTO games (name, description, rules, status)
+         VALUES ($1, $2, $3, $4)
+         RETURNING id`,
+        [
+          'Bumper Cars Arena',
+          'Classic bumper car fun for all ages. Drive around and bump into friends and family safely.',
+          'Maximum 2 people per car. Follow traffic signals. No aggressive bumping.',
+          'OPEN'
+        ]
+      );
+
+      const game3 = await client.query(
+        `INSERT INTO games (name, description, rules, status)
+         VALUES ($1, $2, $3, $4)
+         RETURNING id`,
+        [
+          'Ferris Wheel View',
+          'Get a breathtaking view of the entire park from our giant Ferris wheel.',
+          'No food or drinks allowed. Secure all loose items. Remain seated at all times.',
+          'OPEN'
+        ]
+      );
+
+      // Create ticket types for games
+      const gameTicketTypes = [
+        // Game 1 - Roller Coaster
+        [game1.rows[0].id, 'Single Ride', 'standard', 50.00, 'One ride on the roller coaster'],
+        [game1.rows[0].id, 'Express Pass', 'premium', 100.00, 'Skip the line for roller coaster'],
+        
+        // Game 2 - Bumper Cars
+        [game2.rows[0].id, '5 Minutes', 'standard', 30.00, '5 minutes of bumper car fun'],
+        [game2.rows[0].id, '10 Minutes', 'standard', 50.00, '10 minutes of extended play'],
+        
+        // Game 3 - Ferris Wheel
+        [game3.rows[0].id, 'Single Rotation', 'standard', 25.00, 'One complete rotation'],
+        [game3.rows[0].id, 'Unlimited Rides', 'premium', 60.00, 'Unlimited rides for the day'],
+      ];
+
+      for (const [gameId, name, category, price, description] of gameTicketTypes) {
+        await client.query(
+          `INSERT INTO ticket_types (game_id, name, category, price, description, is_active)
+           VALUES ($1, $2, $3, $4, $5, true)`,
+          [gameId, name, category, price, description]
+        );
+      }
     }
 
     await client.query('COMMIT');

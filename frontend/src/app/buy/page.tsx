@@ -50,11 +50,14 @@ const BuyTicketsPage = () => {
       try {
         setLoading(true);
         setError(null);
+        console.log('Fetching games for user:', user.id);
         const response = await gameService.getActiveGames(page, 12);
+        console.log('Games response:', response);
         setGames(response.data.games || []);
         setTotalPages(response.data.pagination.totalPages);
       } catch (err: any) {
         console.error('Error fetching games:', err);
+        console.error('Error response:', err.response);
         if (err.response?.status === 401) {
           setError('Please log in to view games');
           router.push('/login');

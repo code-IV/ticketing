@@ -1,78 +1,58 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter, useParams } from 'next/navigation';
-import { useAuth } from '@/contexts/AuthContext';
-import { GameTicketDetail } from '@/types';
-import { api } from '@/lib/api';
-import { Button } from '@/components/ui/Button';
-import { Card, CardHeader, CardBody } from '@/components/ui/Card';
-import { Gamepad2, Ticket, Clock, CheckCircle, XCircle, AlertCircle, Download, Calendar, CreditCard } from 'lucide-react';
-import { format } from 'date-fns';
-import { QRCodeSVG } from 'qrcode.react';
+import { use, useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/contexts/AuthContext";
+import { gameTicketService } from "@/services/gameTicketService";
+import { GameTicketDetail } from "@/types";
+import { Button } from "@/components/ui/Button";
+import { Card, CardHeader, CardBody } from "@/components/ui/Card";
+import {
+  Calendar,
+  Clock,
+  CreditCard,
+  Download,
+  CheckCircle,
+  Gamepad2,
+  Ticket,
+  XCircle,
+  AlertCircle,
+} from "lucide-react";
+import { format } from "date-fns";
+import { QRCodeSVG } from "qrcode.react";
 
-export default function GameTicketDetailsPage() {
+export default function GameTicketDetailsPage({
+  params,
+}: {
+  params: Promise<{ gameId: string }>;
+}) {
+  const resolvedParams = use(params);
+  const gameId = resolvedParams.gameId;
   const router = useRouter();
-  const params = useParams();
   const { user, loading: authLoading } = useAuth();
   const [gameData, setGameData] = useState<any>(null);
   const [tickets, setTickets] = useState<GameTicketDetail[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [gameId, setGameId] = useState<string>('');
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    const id = Array.isArray(params.gameId) ? params.gameId[0] : params.gameId;
-    setGameId(id || '');
-  }, [params.gameId]);
-
-  useEffect(() => {
-    if (!authLoading) {
-      if (!user) {
-        router.push('/login');
-        return;
-      }
-      
-      console.log('Params:', params); // Debug log
-      console.log('GameId:', gameId); // Debug log
-      
-      if (gameId) {
-        loadGameTickets();
-      } else {
-        setError('No game ID provided');
-        setLoading(false);
-      }
+    if (!authLoading && !user) {
+      router.push("/login");
+    } else if (user) {
+      loadGameTicketDetails();
     }
   }, [user, authLoading, gameId]);
 
-  const loadGameTickets = async () => {
+  const loadGameTicketDetails = async () => {
     try {
       setLoading(true);
-      setError('');
+      setError("");
       
-      console.log('Loading tickets for gameId:', gameId); // Debug log
-      
-      const response = await api.get(`/tickets/game/${gameId}`);
-      console.log('Response:', response); // Debug log
-      
-      if (response && response.data) {
-        setGameData(response.data.game);
-        setTickets(response.data.tickets);
-      } else {
-        setError('Invalid response from server');
-      }
+      const response = await gameTicketService.getGameTicketsDetails(gameId);
+      setGameData(response.game);
+      setTickets(response.tickets || []);
     } catch (err: any) {
-      console.error('Error loading game tickets:', err); // Debug log
-      console.error('Error response:', err.response); // Debug log
-      
-      if (err.response?.status === 401) {
-        setError('Please log in to view your tickets');
-        router.push('/login');
-      } else if (err.response?.status === 404) {
-        setError('No tickets found for this game');
-      } else {
-        setError(err.response?.data?.message || 'Failed to load game tickets');
-      }
+      setError(err.response?.data?.message || "Failed to load game ticket details");
     } finally {
       setLoading(false);
     }
@@ -80,25 +60,35 @@ export default function GameTicketDetailsPage() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'ACTIVE':
-      case 'AVAILABLE': return 'bg-green-100 text-green-800';
-      case 'PENDING_PAYMENT': return 'bg-yellow-100 text-yellow-800';
-      case 'USED': return 'bg-blue-100 text-blue-800';
-      case 'EXPIRED':
-      case 'CANCELLED': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case "ACTIVE":
+      case "AVAILABLE":
+        return "bg-green-100 text-green-800";
+      case "PENDING_PAYMENT":
+        return "bg-yellow-100 text-yellow-800";
+      case "USED":
+        return "bg-blue-100 text-blue-800";
+      case "EXPIRED":
+      case "CANCELLED":
+        return "bg-red-100 text-red-800";
+      default:
+        return "bg-gray-100 text-gray-800";
     }
   };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'ACTIVE':
-      case 'AVAILABLE': return <CheckCircle className="w-4 h-4" />;
-      case 'PENDING_PAYMENT': return <AlertCircle className="w-4 h-4" />;
-      case 'USED': return <Clock className="w-4 h-4" />;
-      case 'EXPIRED':
-      case 'CANCELLED': return <XCircle className="w-4 h-4" />;
-      default: return <AlertCircle className="w-4 h-4" />;
+      case "ACTIVE":
+      case "AVAILABLE":
+        return <CheckCircle className="w-4 h-4" />;
+      case "PENDING_PAYMENT":
+        return <AlertCircle className="w-4 h-4" />;
+      case "USED":
+        return <Clock className="w-4 h-4" />;
+      case "EXPIRED":
+      case "CANCELLED":
+        return <XCircle className="w-4 h-4" />;
+      default:
+        return <AlertCircle className="w-4 h-4" />;
     }
   };
 
@@ -107,23 +97,26 @@ export default function GameTicketDetailsPage() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading game tickets...</p>
+          <p className="text-gray-600">Loading game ticket details...</p>
         </div>
       </div>
     );
   }
 
-  if (error) {
+  if (!gameData) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <Card className="max-w-md w-full">
-          <CardBody className="text-center py-12">
-            <XCircle className="h-16 w-16 text-red-400 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">Error Loading Tickets</h3>
-            <p className="text-gray-600 mb-6">{error}</p>
-            <Button onClick={() => router.push('/my-bookings')}>Back to Bookings</Button>
-          </CardBody>
-        </Card>
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">
+            Game Tickets Not Found
+          </h2>
+          <p className="text-gray-600 mb-4">
+            The game tickets you're looking for don't exist.
+          </p>
+          <Button onClick={() => router.push("/my-bookings")}>
+            Back to My Bookings
+          </Button>
+        </div>
       </div>
     );
   }
@@ -131,7 +124,7 @@ export default function GameTicketDetailsPage() {
   return (
     <div className="min-h-screen py-12">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        {tickets.length > 0 && tickets.some(t => t.ticket_game_status === 'ACTIVE') && (
+        {tickets && tickets.length > 0 && tickets.some(t => t.ticket_game_status === 'ACTIVE') && (
           <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6 flex items-center">
             <CheckCircle className="h-6 w-6 text-green-600 mr-3" />
             <div>
@@ -161,7 +154,7 @@ export default function GameTicketDetailsPage() {
                 <p className="text-lg text-gray-600 mt-1">
                   Game Tickets:{" "}
                   <span className="font-semibold">
-                    {tickets.length} Ticket{tickets.length !== 1 ? 's' : ''}
+                    {tickets && tickets.length} Ticket{tickets && tickets.length !== 1 ? 's' : ''}
                   </span>
                 </p>
               </div>
@@ -204,7 +197,7 @@ export default function GameTicketDetailsPage() {
                 <div>
                   <p className="font-medium text-gray-900">Total Amount</p>
                   <p className="text-gray-600 font-semibold">
-                    {tickets.reduce((sum, ticket) => sum + parseFloat(ticket.total_price), 0).toFixed(2)} ETB
+                    {tickets.reduce((sum, ticket) => sum + (typeof ticket.total_price === 'string' ? parseFloat(ticket.total_price) : ticket.total_price), 0).toFixed(2)} ETB
                   </p>
                 </div>
               </div>
@@ -213,7 +206,7 @@ export default function GameTicketDetailsPage() {
                 <div>
                   <p className="font-medium text-gray-900">Quantity</p>
                   <p className="text-gray-600">
-                    {tickets.length} Ticket{tickets.length !== 1 ? 's' : ''}
+                    {tickets && tickets.length} Ticket{tickets && tickets.length !== 1 ? 's' : ''}
                   </p>
                 </div>
               </div>
@@ -248,7 +241,7 @@ export default function GameTicketDetailsPage() {
           </CardBody>
         </Card>
 
-        {tickets.length > 0 && (
+        {tickets && tickets.length > 0 && (
           <Card>
             <CardHeader>
               <h2 className="text-2xl font-bold text-gray-900">Your Game Tickets</h2>
@@ -267,10 +260,10 @@ export default function GameTicketDetailsPage() {
                       Game Ticket #{index + 1}
                     </h3>
                     <p className="text-sm text-gray-600 mb-4">
-                      {gameData?.name}
+                      {ticket.ticket_type?.name || gameData?.name || 'Game Ticket'}
                     </p>
                     <div className="bg-white p-4 inline-block rounded-lg border-2 border-gray-300">
-                      <QRCodeSVG value={ticket.ticket_code} size={200} />
+                      <QRCodeSVG value={ticket.qr_token} size={200} />
                     </div>
                     <p className="text-xs text-gray-500 mt-3 font-mono">
                       {ticket.ticket_code}

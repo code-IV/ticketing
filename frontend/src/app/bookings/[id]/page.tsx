@@ -256,7 +256,7 @@ export default function BookingDetailPage({
                       {ticket.ticket_type_name}
                     </p>
                     <div className="bg-white p-4 inline-block rounded-lg border-2 border-gray-300">
-                      <QRCodeSVG value={ticket.qr_data} size={200} />
+                      <QRCodeSVG value={ticket.qr_token || ticket.qr_data} size={200} />
                     </div>
                     <p className="text-xs text-gray-500 mt-3 font-mono">
                       {ticket.ticket_code}

@@ -170,6 +170,7 @@ export interface Ticket {
   booking_item_id: string;
   ticket_code: string;
   qr_data: string;
+  qr_token: string;
   is_used: boolean;
   used_at?: string;
   created_at: string;
