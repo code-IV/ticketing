@@ -7,10 +7,10 @@ const {
 
 const Booking = {
   /**
-   * Create a full booking with items and tickets (transactional)
+   * Create a full booking with items and tickets (transactional) for an Event
    * items: [{ ticketTypeId, quantity, unitPrice }]
    */
-  async create({
+  async bookEvent({
     userId,
     eventId,
     items,
@@ -137,6 +137,127 @@ const Booking = {
         ...booking,
         items: createdItems,
         tickets: createdTickets,
+      };
+    } catch (err) {
+      await client.query("ROLLBACK");
+      throw err;
+    } finally {
+      client.release();
+    }
+  },
+  /**
+   * Create a full booking with items and tickets (transactional) for Games
+   * items: [{ ticketTypeId, quantity, unitPrice }]
+   */
+  async bookGames({
+    items,
+    totalAmount,
+    paymentMethod,
+    guestEmail,
+    guestName,
+    notes,
+    expires_at, // e.g. 3 days
+  }) {
+    const client = await getClient();
+
+    try {
+      await client.query("BEGIN");
+
+      // 2️⃣ Create booking
+      const bookingReference = generateBookingReference();
+
+      const bookingResult = await client.query(
+        `INSERT INTO bookings
+       (booking_reference, total_amount, booking_status, payment_status, payment_method, guest_email, guest_name, notes)
+       VALUES ($1, $2, 'confirmed', 'completed', $3, $4, $5, $6)
+       RETURNING *`,
+        [
+          bookingReference,
+          totalAmount,
+          paymentMethod,
+          guestEmail,
+          guestName,
+          notes,
+        ],
+      );
+
+      const booking = bookingResult.rows[0];
+
+      // 3️⃣ Insert booking_items
+      const createdItems = [];
+
+      for (const item of items) {
+        const typeResult = await client.query(
+          `SELECT price, game_id
+         FROM ticket_types
+         WHERE id = $1`,
+          [item.ticketTypeId],
+        );
+
+        const { price, game_id } = typeResult.rows[0];
+        const subtotal = price * item.quantity;
+
+        const itemResult = await client.query(
+          `INSERT INTO booking_items
+         (booking_id, ticket_type_id, quantity, unit_price, subtotal)
+         VALUES ($1, $2, $3, $4, $5)
+         RETURNING *`,
+          [booking.id, item.ticketTypeId, item.quantity, price, subtotal],
+        );
+
+        createdItems.push({
+          ...itemResult.rows[0],
+          game_id,
+        });
+      }
+
+      // 4️⃣ Create ONE ticket container
+      const ticketCode = generateTicketCode();
+      const qrToken = generateQRData();
+
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate());
+
+      const ticketResult = await client.query(
+        `INSERT INTO tickets
+       (booking_id, ticket_code, qr_token,
+        status, total_price, expires_at)
+       VALUES ($1, $2, $3,
+               'ACTIVE', $4, $5)
+       RETURNING *`,
+        [booking.id, ticketCode, qrToken, totalAmount, expiresAt],
+      );
+
+      const ticket = ticketResult.rows[0];
+
+      // 5️⃣ Expand booking_items into ticket_games
+      for (const item of createdItems) {
+        for (let i = 0; i < item.quantity; i++) {
+          await client.query(
+            `INSERT INTO ticket_games
+           (ticket_id, game_id, status)
+           VALUES ($1, $2, 'AVAILABLE')`,
+            [ticket.id, item.game_id],
+          );
+        }
+      }
+
+      // 6️⃣ Create payment record
+      await client.query(
+        `INSERT INTO payments
+       (booking_id, amount, payment_method,
+        payment_status, paid_at)
+       VALUES ($1, $2, $3,
+               'completed', NOW())`,
+        [booking.id, totalAmount, paymentMethod],
+      );
+
+      await client.query("COMMIT");
+
+      return {
+        ...booking,
+        items: createdItems,
+        ticket,
       };
     } catch (err) {
       await client.query("ROLLBACK");

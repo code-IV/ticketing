@@ -84,6 +84,15 @@ export interface BookingItem {
   unitPrice?: number;
 }
 
+export interface GameBundle {
+  gameId: string;
+  ticketTypeId: string;
+  category: string;
+  quantity: number;
+  unitPrice?: number;
+  subtotal?: number;
+}
+
 export interface GameTicket {
   id: string;
   game_id: string;
@@ -97,7 +106,7 @@ export interface GameTicket {
   expires_at: string;
   payment_reference?: string;
   quantity: number;
-  type: 'GAME_CONSOLIDATED';
+  type: "GAME_CONSOLIDATED";
   ticket_type_name?: string;
   ticket_type_category?: string;
   ticket_price: number;

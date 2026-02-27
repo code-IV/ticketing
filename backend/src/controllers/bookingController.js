@@ -6,9 +6,9 @@ const { apiResponse } = require("../utils/helpers");
 
 const bookingController = {
   /**
-   * POST /api/bookings - Create a new booking
+   * POST /api/bookings/event - Create a new booking
    */
-  async createBooking(req, res, next) {
+  async createBookingEvent(req, res, next) {
     try {
       const {
         eventId,
@@ -91,7 +91,7 @@ const bookingController = {
       }
 
       // Create the booking (transactional)
-      const booking = await Booking.create({
+      const booking = await Booking.bookEvent({
         userId,
         eventId,
         items: resolvedItems,
@@ -105,6 +105,41 @@ const bookingController = {
       return apiResponse(res, 201, true, "Booking created successfully.", {
         booking,
       });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  async createBookingGames(req, res, next) {
+    try {
+      const {
+        items, // [{ ticketTypeId, quantity }]
+        totalAmount,
+        paymentMethod,
+        guestEmail,
+        guestName,
+        notes,
+      } = req.body;
+      const expiresAt = new Date(); //leave it like this for now
+
+      // 4️⃣ Call transactional booking service
+      const booking = await Booking.bookGames({
+        items,
+        totalAmount,
+        paymentMethod,
+        guestEmail,
+        guestName,
+        notes,
+        expires_at: expiresAt,
+      });
+
+      return apiResponse(
+        res,
+        201,
+        true,
+        "Game bundle booking created successfully.",
+        { booking },
+      );
     } catch (err) {
       next(err);
     }

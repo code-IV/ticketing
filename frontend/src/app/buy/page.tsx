@@ -11,6 +11,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { Game } from "@/types";
 import { gameService } from "@/services/adminService";
+import { bookingService } from "@/services/bookingService";
 
 const BuyTicketsPage = () => {
   const [games, setGames] = useState<Game[]>();
@@ -36,6 +37,60 @@ const BuyTicketsPage = () => {
       setError("Failed to load games. Please try again.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const [bookingLoading, setBookingLoading] = useState(false);
+
+  const handleCheckout = async () => {
+    if (total === 0) return;
+    setBookingLoading(true);
+
+    try {
+      const itemsPayload = [];
+
+      // Loop through the games in the cart
+      for (const [gameId, selections] of Object.entries(cart)) {
+        const gameData = games?.find((g) => g.id === gameId);
+
+        if (!gameData) continue;
+
+        // Loop through categories (adult, child, etc.) for this specific game
+        for (const [category, quantity] of Object.entries(selections)) {
+          const ticketType = gameData.ticket_types?.find(
+            (t) => t.category === category,
+          );
+
+          if (ticketType) {
+            itemsPayload.push({
+              ticketTypeId: ticketType.id, // The actual UUID from DB
+              category: category,
+              quantity: quantity,
+              unitPrice: ticketType.price, // Included for backend verification
+              gameId: gameId, // Helpful for analytics/logging
+            });
+          }
+        }
+      }
+
+      const response = await bookingService.createBookingGames({
+        items: itemsPayload,
+        totalAmount: total, // Sending the calculated total
+        paymentMethod: "telebirr", // Updated to your likely local preference
+        guestEmail: "guest@example.com", // You should probably collect this from a form!
+        guestName: "Guest User",
+        notes: `Purchase for ${itemsPayload.length} ticket types across multiple games.`,
+      });
+
+      console.log("Booking created successfully:", response.data);
+
+      // Suggestion: Redirect to a payment or success page
+      // router.push(`/checkout/success?ref=${response.data.booking_reference}`);
+    } catch (err) {
+      console.error("Booking failed:", err);
+      alert("Failed to create booking. Please check your connection.");
+    } finally {
+      setBookingLoading(false);
     }
   };
 
@@ -245,7 +300,7 @@ const BuyTicketsPage = () => {
           className="bg-gradient-to-b from-gray-900 to-black text-white p-8 rounded-3xl shadow-2xl h-fit sticky top-8"
         >
           <h2 className="text-2xl font-extrabold mb-8 flex items-center gap-3">
-            <ShoppingCart className="w-6 h-6 text-blue-400" /> Your Adventure
+            <ShoppingCart className="w-6 h-6 text-blue-400" /> Ticket Summary
           </h2>
 
           <div className="space-y-6 mb-10">
@@ -320,6 +375,7 @@ const BuyTicketsPage = () => {
           </div>
 
           <button
+            onClick={handleCheckout}
             disabled={total === 0}
             className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-gray-800 disabled:text-gray-600 text-white font-black py-5 rounded-2xl transition-all transform hover:scale-[1.02] active:scale-95 shadow-xl shadow-blue-900/20"
           >

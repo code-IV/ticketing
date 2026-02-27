@@ -2,6 +2,7 @@ import { api } from "@/lib/api";
 import {
   Booking,
   BookingItem,
+  GameBundle,
   Ticket,
   PaginatedResponse,
   ApiResponse,
@@ -17,10 +18,20 @@ export const bookingService = {
     notes?: string;
     expires_at?: string;
   }): Promise<ApiResponse<{ booking: Booking }>> {
-    const response = await api.post("/bookings", data);
+    const response = await api.post("/bookings/event", data);
     return response.data;
   },
-
+  async createBookingGames(data: {
+    items: GameBundle[];
+    totalAmount: number;
+    paymentMethod: "credit_card" | "debit_card" | "telebirr" | "cash";
+    guestEmail?: string;
+    guestName?: string;
+    notes?: string;
+  }): Promise<ApiResponse<{ booking: Booking }>> {
+    const response = await api.post("/bookings/games", data);
+    return response.data;
+  },
   async getMyBookings(
     page = 1,
     limit = 20,
