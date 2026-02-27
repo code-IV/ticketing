@@ -17,6 +17,8 @@ export interface Game {
   rules: string;
   status: "OPEN" | "ON_MAINTENANCE" | "UPCOMING" | "CLOSED";
   ticket_types?: TicketType[];
+  category?: string;
+  capacity?: number;
   created_at: string;
   updated_at: string;
 }
@@ -201,6 +203,7 @@ export interface PaginatedResponse<T> {
     bookings?: T[];
     users?: T[];
     payments?: T[];
+    games?: T[];
     pagination: {
       page: number;
       limit: number;

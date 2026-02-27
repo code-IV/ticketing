@@ -10,6 +10,9 @@ router.use(isAuthenticated);
 // GET /api/buy/games - Get all open games
 router.get("/games", handleValidation, buyTicketController.getOpenGames);
 
+// GET /api/buy/games/:id - Get single game details
+router.get("/games/:id", buyTicketController.getGameById);
+
 // POST /api/buy/purchase - Purchase tickets for games
 router.post("/purchase", purchaseTicketRules, handleValidation, buyTicketController.purchaseTickets);
 

@@ -3,6 +3,72 @@ const { apiResponse } = require("../utils/helpers");
 
 const buyTicketController = {
   /**
+   * GET /api/buy/games/:id - Get single game details with ticket types
+   */
+  async getGameById(req, res, next) {
+    try {
+      const { id } = req.params;
+      
+      // Query game with its ticket types
+      const sql = `
+        SELECT 
+          g.id,
+          g.name,
+          g.description,
+          g.rules,
+          g.status,
+          g.created_at,
+          g.updated_at,
+          tt.id as ticket_type_id,
+          tt.name as ticket_type_name,
+          tt.category,
+          tt.price,
+          tt.description as ticket_description,
+          tt.is_active
+        FROM games g
+        LEFT JOIN ticket_types tt ON g.id = tt.game_id AND tt.is_active = true
+        WHERE g.id = $1 AND g.status = 'OPEN'
+        ORDER BY tt.price
+      `;
+      
+      const result = await query(sql, [id]);
+      
+      if (result.rows.length === 0) {
+        return apiResponse(res, 404, false, "Game not found or not available");
+      }
+      
+      // Group ticket types by game
+      const game = {
+        id: result.rows[0].id,
+        name: result.rows[0].name,
+        description: result.rows[0].description,
+        rules: result.rows[0].rules,
+        status: result.rows[0].status,
+        created_at: result.rows[0].created_at,
+        updated_at: result.rows[0].updated_at,
+        ticket_types: []
+      };
+      
+      result.rows.forEach(row => {
+        if (row.ticket_type_id) {
+          game.ticket_types.push({
+            id: row.ticket_type_id,
+            name: row.ticket_type_name,
+            category: row.category,
+            price: parseFloat(row.price),
+            description: row.ticket_description,
+            is_active: row.is_active
+          });
+        }
+      });
+      
+      return apiResponse(res, 200, true, "Game retrieved successfully", { game });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  /**
    * GET /api/buy/games - Get all open games with their ticket prices
    */
   async getOpenGames(req, res, next) {
@@ -74,7 +140,7 @@ const buyTicketController = {
    */
   async purchaseTickets(req, res, next) {
     try {
-      const { game_id, quantity } = req.body;
+      const { game_id, quantity, ticket_type_id } = req.body;
       const userId = req.session.user.id;
 
       const client = await getClient();
@@ -82,21 +148,46 @@ const buyTicketController = {
         await client.query("BEGIN");
 
         // 1. Verify game exists and is open, get ticket type info
-        const gameCheckSql = `
-          SELECT 
-            g.id, 
-            g.name, 
-            g.status,
-            tt.id as ticket_type_id,
-            tt.name as ticket_type_name,
-            tt.price,
-            tt.category
-          FROM games g
-          LEFT JOIN ticket_types tt ON g.id = tt.game_id AND tt.is_active = true
-          WHERE g.id = $1 AND g.status = 'OPEN'
-          LIMIT 1
-        `;
-        const gameResult = await client.query(gameCheckSql, [game_id]);
+        let gameCheckSql;
+        let queryParams;
+        
+        if (ticket_type_id) {
+          // If specific ticket type is provided
+          gameCheckSql = `
+            SELECT 
+              g.id, 
+              g.name, 
+              g.status,
+              tt.id as ticket_type_id,
+              tt.name as ticket_type_name,
+              tt.price,
+              tt.category
+            FROM games g
+            LEFT JOIN ticket_types tt ON g.id = tt.game_id AND tt.is_active = true
+            WHERE g.id = $1 AND g.status = 'OPEN' AND tt.id = $2
+            LIMIT 1
+          `;
+          queryParams = [game_id, ticket_type_id];
+        } else {
+          // If no specific ticket type, get the first active one
+          gameCheckSql = `
+            SELECT 
+              g.id, 
+              g.name, 
+              g.status,
+              tt.id as ticket_type_id,
+              tt.name as ticket_type_name,
+              tt.price,
+              tt.category
+            FROM games g
+            LEFT JOIN ticket_types tt ON g.id = tt.game_id AND tt.is_active = true
+            WHERE g.id = $1 AND g.status = 'OPEN'
+            LIMIT 1
+          `;
+          queryParams = [game_id];
+        }
+        
+        const gameResult = await client.query(gameCheckSql, queryParams);
         
         if (gameResult.rows.length === 0) {
           await client.query("ROLLBACK");
@@ -140,7 +231,7 @@ const buyTicketController = {
           null, // booking_id (can be null for direct game purchases)
           ticketCode,
           qrToken,
-          'PENDING_PAYMENT',
+          'ACTIVE',
           totalPrice,
           paymentReference,
           buyerContact
