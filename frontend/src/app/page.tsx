@@ -199,7 +199,7 @@ export default function Home() {
                 </p>
               </div>
               <Link
-                href="/buy"
+                href="/games"
                 className="hidden md:flex items-center gap-2 text-blue-600 font-bold hover:underline"
               >
                 View All <ChevronRight size={22} />

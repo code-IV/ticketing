@@ -1,200 +1,339 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { useAuth } from "@/contexts/AuthContext";
-import { gameService } from "@/services/gameService";
-import { Game } from "@/types";
-import { Button } from "@/components/ui/Button";
-import { Card, CardHeader, CardBody, CardFooter } from "@/components/ui/Card";
-import { Gamepad2, Users, Ticket, Loader2, AlertCircle } from "lucide-react";
-import { format } from "date-fns";
+import {
+  Ticket,
+  ShoppingCart,
+  CheckCircle2,
+  Circle,
+  Info,
+  Zap,
+} from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import Link from "next/link";
-
-// Fallback emojis and images per index since backend doesn't return them
-const gameVisuals = [
-  { emoji: "🎢", image: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=250&fit=crop" },
-  { emoji: "🎡", image: "https://images.unsplash.com/photo-1563298723-dcfebaa392e3?w=400&h=250&fit=crop" },
-  { emoji: "🚗", image: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=400&h=250&fit=crop" },
-  { emoji: "👻", image: "https://images.unsplash.com/photo-1509557965875-b88c97052f0e?w=400&h=250&fit=crop" },
-  { emoji: "🎠", image: "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=400&h=250&fit=crop" },
-  { emoji: "🎯", image: "https://images.unsplash.com/photo-1533560904424-a0c61dc306fc?w=400&h=250&fit=crop" },
-];
-
-const cardVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.4 } },
-  hover: { y: -6, transition: { duration: 0.2 } },
-};
+import { Game } from "@/types";
+import { gameService } from "@/services/adminService";
 
 const BuyTicketsPage = () => {
-  const router = useRouter();
-  const { user, loading: authLoading } = useAuth();
-  const [games, setGames] = useState<Game[]>([]);
+  const [games, setGames] = useState<Game[]>();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
+  const [openGameId, setOpenGameId] = useState<string | null>(null);
+  const [selectedGames, setSelectedGames] = useState<string[]>([]);
+  const [cart, setCart] = useState<Record<string, Record<string, number>>>({});
 
-  // Redirect to login if not authenticated
   useEffect(() => {
-    if (!authLoading && !user) {
-      router.push('/login');
+    loadGames();
+  }, []);
+
+  const loadGames = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await gameService.getAll();
+      // console.log(response);
+      setGames(response.data || []);
+    } catch (error) {
+      console.error("Failed to load games:", error);
+      setError("Failed to load games. Please try again.");
+    } finally {
+      setLoading(false);
     }
-  }, [user, authLoading, router]);
+  };
 
-  useEffect(() => {
-    const fetchGames = async () => {
-      if (!user) return; // Don't fetch if not authenticated
-      
-      try {
-        setLoading(true);
-        setError(null);
-        console.log('Fetching games for user:', user.id);
-        const response = await gameService.getActiveGames(page, 12);
-        console.log('Games response:', response);
-        setGames(response.data.games || []);
-        setTotalPages(response.data.pagination.totalPages);
-      } catch (err: any) {
-        console.error('Error fetching games:', err);
-        console.error('Error response:', err.response);
-        if (err.response?.status === 401) {
-          setError('Please log in to view games');
-          router.push('/login');
-        } else {
-          setError(err.response?.data?.message || "Failed to load games");
-        }
-      } finally {
-        setLoading(false);
+  const updateQuantity = (gameId: string, category: string, delta: number) => {
+    setCart((prev) => {
+      const gameSelection = prev[gameId] || {};
+      const currentQty = gameSelection[category] || 0;
+      const newQty = Math.max(0, currentQty + delta);
+
+      const updatedGameSelection = { ...gameSelection, [category]: newQty };
+
+      // Remove category if qty is 0
+      if (newQty === 0) delete updatedGameSelection[category];
+
+      // Remove game from cart entirely if no tickets are selected
+      if (Object.keys(updatedGameSelection).length === 0) {
+        const { [gameId]: _, ...rest } = prev;
+        return rest;
       }
-    };
-    
-    if (!authLoading) {
-      fetchGames();
-    }
-  }, [user, authLoading, page]);
 
-  if (authLoading) {
-    return (
-      <div className="min-h-screen bg-linear-to-br from-indigo-50 via-purple-50 to-pink-50 flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="w-10 h-10 animate-spin text-purple-500 mb-3" />
-          <p className="text-gray-600">Checking authentication...</p>
-        </div>
-      </div>
-    );
-  }
+      return { ...prev, [gameId]: updatedGameSelection };
+    });
+  };
+
+  const toggleDrawer = (id: string) => {
+    setOpenGameId(openGameId === id ? null : id);
+  };
+
+  const gamesPrice = selectedGames.reduce(
+    (sum, id) =>
+      sum +
+      (games
+        ?.find((g) => g.id === id)
+        ?.ticket_types?.find((t) => t.category === "adult")?.price || 0),
+    0,
+  );
+  // Calculate Grand Total
+  const total = Object.entries(cart).reduce(
+    (grandTotal, [gameId, selections]) => {
+      const game = games?.find((g) => g.id === gameId);
+      const gameTotal = Object.entries(selections).reduce((sum, [cat, qty]) => {
+        const price =
+          game?.ticket_types?.find((t) => t.category === cat)?.price || 0;
+        return sum + price * qty;
+      }, 0);
+      return grandTotal + gameTotal;
+    },
+    0,
+  );
+
+  const cardVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.4 } },
+    hover: { scale: 1.04, transition: { duration: 0.25 } },
+    selected: {
+      scale: 1.03,
+      boxShadow: "0 20px 35px -10px rgba(59,130,246,0.4)",
+    },
+  };
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-indigo-50 via-purple-50 to-pink-50 py-12">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">Available Games</h1>
-          <p className="text-lg text-gray-600">
-            Choose your adventure and purchase tickets for exciting games at Bora Park
-          </p>
-        </div>
-
-        {error && !loading && (
-          <div className="flex items-center gap-3 bg-red-50 border border-red-200 text-red-700 rounded-2xl px-5 py-4">
-            <AlertCircle className="w-5 h-5 shrink-0" />
-            <div className="flex-1">
-              <p className="text-sm">{error}</p>
-              {error.includes('log in') && (
-                <button
-                  onClick={() => router.push('/login')}
-                  className="mt-2 text-sm underline hover:no-underline"
-                >
-                  Go to Login
-                </button>
-              )}
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 py-10 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8 xl:gap-12">
+        {/* Main content */}
+        <div className="lg:col-span-2 space-y-12">
+          {/* Games */}
+          <section>
+            <div className="flex items-center gap-4 mb-8">
+              <div className="bg-gradient-to-br from-purple-600 to-pink-600 p-4 rounded-2xl shadow-lg">
+                <Zap className="w-7 h-7 text-white" />
+              </div>
+              <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 tracking-tight">
+                Pick Your Adventures
+              </h2>
             </div>
-          </div>
-        )}
 
-        {games.length === 0 && !loading ? (
-          <div className="text-center py-12">
-            <Ticket className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">No Games Available</h3>
-            <p className="text-gray-600">Check back soon for available games!</p>
-          </div>
-        ) : (
-          <>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <AnimatePresence>
-                {games.map((game, index) => {
-                  const visual = gameVisuals[index % gameVisuals.length];
-                  return (
-                    <motion.div
-                      key={game.id}
-                      variants={cardVariants}
-                      initial="hidden"
-                      animate="visible"
-                      whileHover="hover"
-                      whileTap={{ scale: 0.97 }}
-                    >
-                      <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-                        <CardHeader>
-                          <h3 className="text-xl font-semibold text-gray-900">{game.name}</h3>
-                        </CardHeader>
-                        <CardBody className="space-y-3">
-                          <p className="text-gray-600 text-sm line-clamp-2">
-                            {game.description || 'Experience this amazing game at Bora Park!'}
-                          </p>
-                          <div className="space-y-2">
-                            <div className="flex items-center text-sm text-gray-700">
-                              <Gamepad2 className="h-4 w-4 mr-2 text-purple-600" />
-                              <span>{game.category || 'Adventure Game'}</span>
-                            </div>
-                            <div className="flex items-center text-sm text-gray-700">
-                              <Users className="h-4 w-4 mr-2 text-purple-600" />
-                              <span>{game.capacity || 'Unlimited'} players</span>
-                            </div>
-                            {game.ticket_types && game.ticket_types.length > 0 && (
-                              <div className="flex items-center text-sm text-gray-700">
-                                <Ticket className="h-4 w-4 mr-2 text-purple-600" />
-                                <span>Starting from {game.ticket_types[0]?.price} ETB</span>
-                              </div>
+                {games &&
+                  games.map((game) => {
+                    const isOpen = openGameId === game.id;
+                    const hasItems = !!cart[game.id];
+                    const isSelected = selectedGames.includes(game.id);
+                    return (
+                      <motion.div
+                        key={game.id}
+                        variants={cardVariants}
+                        initial="hidden"
+                        animate="visible"
+                        onClick={() => toggleDrawer(game.id)} // Only toggles THIS game
+                        className={`group cursor-pointer rounded-[32px] p-6 border-2 transition-all ${
+                          isOpen || hasItems
+                            ? "border-purple-600 bg-white shadow-xl"
+                            : "border-gray-100 bg-white shadow-sm hover:border-purple-200"
+                        }`}
+                      >
+                        <div className="flex items-center gap-5">
+                          <div
+                            className={`w-12 h-12 rounded-2xl flex items-center justify-center font-bold transition-colors ${
+                              hasItems
+                                ? "bg-purple-600 text-white"
+                                : "bg-slate-100 text-slate-400"
+                            }`}
+                          >
+                            {hasItems ? (
+                              <ShoppingCart size={20} />
+                            ) : (
+                              <Zap size={20} />
                             )}
                           </div>
-                        </CardBody>
-                        <CardFooter>
-                          <Link href={`/buy/${game.id}`} className="w-full">
-                            <Button className="w-full">
-                              View Details & Purchase
-                            </Button>
-                          </Link>
-                        </CardFooter>
-                      </Card>
-                    </motion.div>
-                  );
-                })}
+                          <div className="flex-1">
+                            <h4 className="font-black text-gray-900">
+                              {game.name}
+                            </h4>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                              {isOpen ? "Close options" : "Tap to see tickets"}
+                            </p>
+                          </div>
+                          <motion.div animate={{ rotate: isOpen ? 180 : 0 }}>
+                            <Info
+                              size={20}
+                              className={
+                                isOpen ? "text-purple-600" : "text-gray-300"
+                              }
+                            />
+                          </motion.div>
+                        </div>
+
+                        {/* TICKET DRAWER */}
+                        <AnimatePresence>
+                          {isOpen && (
+                            <motion.div
+                              initial={{ height: 0, opacity: 0 }}
+                              animate={{ height: "auto", opacity: 1 }}
+                              exit={{ height: 0, opacity: 0 }}
+                              className="overflow-hidden"
+                            >
+                              <div className="space-y-3 pt-6 mt-4 border-t border-slate-50">
+                                {game.ticket_types?.map((tt) => {
+                                  const qty = cart[game.id]?.[tt.category] || 0;
+                                  return (
+                                    <div
+                                      key={tt.category}
+                                      className="flex items-center justify-between p-3 bg-slate-50 rounded-2xl"
+                                    >
+                                      <div>
+                                        <span className="text-[10px] font-black text-purple-600 uppercase block">
+                                          {tt.category}
+                                        </span>
+                                        <span className="text-sm font-bold text-slate-700">
+                                          {tt.price} ETB
+                                        </span>
+                                      </div>
+
+                                      <div
+                                        className="flex items-center gap-3 bg-white px-2 py-1 rounded-xl border border-slate-200"
+                                        onClick={(e) => e.stopPropagation()} // CRITICAL: Prevents drawer from closing
+                                      >
+                                        <button
+                                          onClick={() =>
+                                            updateQuantity(
+                                              game.id,
+                                              tt.category,
+                                              -1,
+                                            )
+                                          }
+                                          className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-red-500 font-bold"
+                                        >
+                                          -
+                                        </button>
+                                        <span className="w-4 text-center font-black text-slate-800 text-sm">
+                                          {qty}
+                                        </span>
+                                        <button
+                                          onClick={() =>
+                                            updateQuantity(
+                                              game.id,
+                                              tt.category,
+                                              1,
+                                            )
+                                          }
+                                          className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-indigo-600 font-bold"
+                                        >
+                                          +
+                                        </button>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </motion.div>
+                    );
+                  })}
               </AnimatePresence>
             </div>
+          </section>
+        </div>
 
-            {totalPages > 1 && (
-              <div className="flex justify-center gap-2">
-                <Button
-                  variant="secondary"
-                  onClick={() => setPage(p => Math.max(1, p - 1))}
-                  disabled={page === 1 || loading}
-                >
-                  Previous
-                </Button>
-                <span className="px-4 py-2 text-gray-700">
-                  Page {page} of {totalPages}
-                </span>
-                <Button
-                  variant="secondary"
-                  onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                  disabled={page === totalPages || loading}
-                >
-                  Next
-                </Button>
+        {/* Sticky Checkout */}
+        <motion.div
+          initial={{ opacity: 0, x: 30 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.3, duration: 0.6 }}
+          className="bg-gradient-to-b from-gray-900 to-black text-white p-8 rounded-3xl shadow-2xl h-fit sticky top-8"
+        >
+          <h2 className="text-2xl font-extrabold mb-8 flex items-center gap-3">
+            <ShoppingCart className="w-6 h-6 text-blue-400" /> Your Adventure
+          </h2>
+
+          <div className="space-y-6 mb-10">
+            {/* If cart is empty */}
+            {Object.keys(cart).length === 0 && (
+              <div className="text-center py-8 border-2 border-dashed border-gray-800 rounded-2xl">
+                <Ticket className="w-8 h-8 text-gray-700 mx-auto mb-2" />
+                <p className="text-gray-500 text-sm">No tickets selected</p>
               </div>
             )}
-          </>
-        )}
+
+            {/* Map through the cart object */}
+            {Object.entries(cart).map(([gameId, selections]) => {
+              const game = games?.find((g) => g.id === gameId);
+
+              return (
+                <div
+                  key={gameId}
+                  className="space-y-3 pt-4 border-t border-gray-800 first:border-0 first:pt-0"
+                >
+                  {/* Game Title */}
+                  <p className="text-[10px] font-black text-purple-400 uppercase tracking-widest">
+                    {game?.name || "Loading..."}
+                  </p>
+
+                  {/* List categories for this game */}
+                  {Object.entries(selections).map(([category, qty]) => {
+                    const ticketInfo = game?.ticket_types?.find(
+                      (t) => t.category === category,
+                    );
+                    const lineTotal = (ticketInfo?.price || 0) * qty;
+
+                    return (
+                      <div
+                        key={category}
+                        className="flex justify-between items-center text-sm"
+                      >
+                        <div className="flex flex-col">
+                          <span className="text-gray-200 font-bold capitalize">
+                            {qty}x {category}
+                          </span>
+                          <span className="text-[10px] text-gray-500">
+                            @{ticketInfo?.price} ETB
+                          </span>
+                        </div>
+                        <span className="font-mono text-blue-400 font-bold">
+                          {lineTotal} <span className="text-[10px]">ETB</span>
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })}
+
+            {/* Final Total Section */}
+            <div className="pt-6 border-t border-gray-700">
+              <div className="flex justify-between items-end">
+                <span className="text-gray-400 font-bold uppercase text-xs tracking-widest">
+                  Total Amount
+                </span>
+                <div className="text-right">
+                  <span className="text-4xl font-black text-white">
+                    {total}
+                  </span>
+                  <span className="text-sm font-bold ml-1 text-blue-400">
+                    ETB
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <button
+            disabled={total === 0}
+            className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-gray-800 disabled:text-gray-600 text-white font-black py-5 rounded-2xl transition-all transform hover:scale-[1.02] active:scale-95 shadow-xl shadow-blue-900/20"
+          >
+            PROCEED TO CHECKOUT
+          </button>
+
+          <div className="mt-6 flex items-center justify-center gap-2 opacity-40">
+            <div className="h-1 w-1 bg-white rounded-full" />
+            <p className="text-[10px] font-bold uppercase tracking-widest">
+              Instant QR Delivery
+            </p>
+            <div className="h-1 w-1 bg-white rounded-full" />
+          </div>
+        </motion.div>
       </div>
     </div>
   );
