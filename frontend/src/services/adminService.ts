@@ -256,12 +256,27 @@ export const adminService = {
 };
 
 export const gameService = {
+  async createGame(data: CreateGame): Promise<ApiResponse<Game>> {
+    const response = await api.post("/admin/games", data);
+    return response.data;
+  },
+  async updateGame(
+    id: string,
+    data: Partial<Game>,
+  ): Promise<ApiResponse<Partial<Game>>> {
+    const response = await api.patch(`/admin/games/${id}`, data);
+    return response.data;
+  },
   async getAll(): Promise<ApiResponse<Game[]>> {
     const response = await api.get("/admin/games");
     return response.data;
   },
-  async createGame(data: CreateGame): Promise<ApiResponse<{ game: Game }>> {
-    const response = await api.post("/admin/games", data);
+  async getGame(id: string): Promise<ApiResponse<Partial<Game>>> {
+    const response = await api.get(`/admin/game/${id}`);
+    return response.data;
+  },
+  async deleteGame(id: string): Promise<ApiResponse> {
+    const response = await api.delete(`/admin/game/${id}`);
     return response.data;
   },
 };
