@@ -15,6 +15,25 @@ const gameController = {
         status,
         ticket_types,
       });
+      return apiResponse(res, 200, true, "Game updated successfully", { game });
+    } catch (err) {
+      next(err);
+    }
+  },
+  /**
+   * PATCH api/admin/games/:id to update game data
+   */
+  async updateGame(req, res, next) {
+    try {
+      const { id } = req.params;
+      const { name, description, rules, status, ticket_types } = req.body;
+      const game = await Game.update(id, {
+        name,
+        description,
+        rules,
+        status,
+        ticket_types,
+      });
       return apiResponse(res, 201, true, "Game created successfully", { game });
     } catch (err) {
       next(err);

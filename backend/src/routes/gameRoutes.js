@@ -7,6 +7,12 @@ const { uuidParamRule, handleValidation } = require("../middleware/validate");
 router.use(isAuthenticated);
 
 router.post("/games", handleValidation, gameController.createGame);
+router.patch(
+  "/games/:id",
+  uuidParamRule("id"),
+  handleValidation,
+  gameController.updateGame,
+);
 router.get("/games", handleValidation, gameController.getAllGames);
 router.get(
   "/game/:id",

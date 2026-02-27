@@ -52,6 +52,56 @@ const Games = {
     }
   },
 
+  async update(id, { name, description, rules, status, ticket_types }) {
+    const client = await getClient();
+    try {
+      await client.query("BEGIN");
+      const sql = `
+      UPDATE games 
+      SET
+        name = COALESCE($2, name),
+        description = COALESCE($3, description),
+        rules = COALESCE($4, rules),
+        status = COALESCE($5, status),
+        updated_at = CURRENT_TIMESTAMP
+      WHERE id = $1
+      RETURNING *
+    `;
+      const values = [id, name, description, rules, status];
+      const game = await client.query(sql, values);
+
+      if (ticket_types) {
+        // First, wipe the old ones
+        await client.query("DELETE FROM ticket_types WHERE game_id = $1", [id]);
+
+        // Then, insert the new matrix
+        if (ticket_types.length > 0) {
+          for (const tt of ticket_types) {
+            const ttSql = `
+            INSERT INTO ticket_types (game_id, name, category, price, description)
+            VALUES ($1, $2, $3, $4, $5)
+          `;
+            await client.query(ttSql, [
+              id,
+              tt.name,
+              tt.category,
+              tt.price,
+              tt.description,
+            ]);
+          }
+        }
+      }
+      await client.query("COMMIT");
+      return game.rows[0];
+    } catch (error) {
+      await client.query("ROLLBACK");
+      console.error("Transaction Error:", error);
+      throw error;
+    } finally {
+      client.release();
+    }
+  },
+
   async getAll() {
     const sql = `
       SELECT 
@@ -68,15 +118,6 @@ const Games = {
     return result.rows;
   },
 
-  async deleteById(id) {
-    const sql = `
-      DELETE FROM games WHERE id=$1
-      RETURNING *
-    `;
-    const result = await query(sql, [id]);
-    return result;
-  },
-
   async getById(id) {
     const sql = `
     SELECT g.*, 
@@ -91,6 +132,15 @@ const Games = {
     `;
     const result = await query(sql, [id]);
     return result.rows[0];
+  },
+
+  async deleteById(id) {
+    const sql = `
+      DELETE FROM games WHERE id=$1
+      RETURNING *
+    `;
+    const result = await query(sql, [id]);
+    return result;
   },
 };
 module.exports = Games;
