@@ -82,6 +82,50 @@ export interface BookingItem {
   unitPrice?: number;
 }
 
+export interface GameTicket {
+  id: string;
+  game_id: string;
+  game_name: string;
+  game_description: string;
+  game_rules: string;
+  total_price: number;
+  status: string;
+  ticket_game_status: string;
+  purchased_at: string;
+  expires_at: string;
+  payment_reference?: string;
+  quantity: number;
+  type: 'GAME_CONSOLIDATED';
+  ticket_type_name?: string;
+  ticket_type_category?: string;
+  ticket_price: number;
+  ticket_codes: string[];
+  game_used_at?: string;
+}
+
+export interface GameTicketDetail {
+  id: string;
+  ticket_code: string;
+  qr_token: string;
+  status: string;
+  ticket_game_status: string;
+  purchased_at: string;
+  expires_at: string;
+  total_price: number;
+  used_at?: string;
+  game: {
+    id: string;
+    name: string;
+    description: string;
+    rules: string;
+  };
+  ticket_type: {
+    name: string;
+    category: string;
+    price: number;
+  };
+}
+
 export interface Booking {
   id: string;
   booking_reference: string;

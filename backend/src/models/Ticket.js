@@ -56,6 +56,127 @@ const Ticket = {
   },
 
   /**
+   * Find all game tickets for a user (tickets not associated with bookings)
+   */
+  async findByUserId(userId, { page = 1, limit = 20 }) {
+    const offset = (page - 1) * limit;
+    const sql = `
+      SELECT t.*,
+             g.id AS game_id, g.name AS game_name, g.description AS game_description, g.rules,
+             tg.status AS ticket_game_status, tg.used_at AS game_used_at,
+             tt.name AS ticket_type_name, tt.category, tt.price as ticket_price
+      FROM tickets t
+      JOIN ticket_games tg ON t.id = tg.ticket_id
+      JOIN games g ON tg.game_id = g.id
+      LEFT JOIN ticket_types tt ON g.id = tt.game_id AND tt.is_active = true
+      WHERE t.buyer_contact = (SELECT email FROM users WHERE id = $1)
+        AND t.booking_id IS NULL
+      ORDER BY t.created_at DESC
+      LIMIT $2 OFFSET $3`;
+    const result = await query(sql, [userId, limit, offset]);
+
+    const countSql = `
+      SELECT COUNT(*) 
+      FROM tickets t
+      JOIN ticket_games tg ON t.id = tg.ticket_id
+      WHERE t.buyer_contact = (SELECT email FROM users WHERE id = $1)
+        AND t.booking_id IS NULL`;
+    const countResult = await query(countSql, [userId]);
+    const total = parseInt(countResult.rows[0].count, 10);
+
+    // Group tickets by game and format response
+    const gamesMap = new Map();
+    
+    result.rows.forEach(row => {
+      const gameKey = row.game_id;
+      
+      if (!gamesMap.has(gameKey)) {
+        gamesMap.set(gameKey, {
+          id: `game-${gameKey}`, // Composite ID for the group
+          game_id: row.game_id,
+          game_name: row.game_name,
+          game_description: row.game_description,
+          game_rules: row.rules,
+          total_price: 0, // Will be calculated
+          status: row.status,
+          ticket_game_status: row.ticket_game_status,
+          purchased_at: row.purchased_at,
+          expires_at: row.expires_at,
+          payment_reference: row.payment_reference,
+          quantity: 0, // Will be calculated
+          type: 'GAME_CONSOLIDATED',
+          ticket_type_name: row.ticket_type_name,
+          ticket_type_category: row.category,
+          ticket_price: parseFloat(row.ticket_price) || parseFloat(row.total_price),
+          ticket_codes: [], // Will collect all ticket codes
+          game_used_at: row.game_used_at
+        });
+      }
+      
+      const gameGroup = gamesMap.get(gameKey);
+      gameGroup.quantity += 1;
+      gameGroup.total_price += parseFloat(row.total_price);
+      gameGroup.ticket_codes.push(row.ticket_code);
+    });
+
+    return {
+      tickets: Array.from(gamesMap.values()),
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  },
+
+  /**
+   * Get all individual tickets for a specific game and user
+   */
+  async findByGameId(userId, gameId) {
+    const sql = `
+      SELECT t.*,
+             g.id AS game_id, g.name AS game_name, g.description AS game_description, g.rules,
+             tg.status AS ticket_game_status, tg.used_at AS game_used_at,
+             tt.name AS ticket_type_name, tt.category, tt.price as ticket_price
+      FROM tickets t
+      JOIN ticket_games tg ON t.id = tg.ticket_id
+      JOIN games g ON tg.game_id = g.id
+      LEFT JOIN ticket_types tt ON g.id = tt.game_id AND tt.is_active = true
+      WHERE t.buyer_contact = (SELECT email FROM users WHERE id = $1)
+        AND t.booking_id IS NULL
+        AND g.id = $2
+      ORDER BY t.created_at DESC`;
+    
+    const result = await query(sql, [userId, gameId]);
+    
+    const tickets = result.rows.map(row => ({
+      id: row.id,
+      ticket_code: row.ticket_code,
+      qr_token: row.qr_token,
+      status: row.status,
+      ticket_game_status: row.ticket_game_status,
+      purchased_at: row.purchased_at,
+      expires_at: row.expires_at,
+      total_price: parseFloat(row.total_price),
+      used_at: row.game_used_at,
+      game: {
+        id: row.game_id,
+        name: row.game_name,
+        description: row.game_description,
+        rules: row.rules
+      },
+      ticket_type: {
+        name: row.ticket_type_name,
+        category: row.category,
+        price: parseFloat(row.ticket_price) || parseFloat(row.total_price)
+      }
+    }));
+
+    return tickets;
+  },
+
+  /**
    * Validate (use) a ticket at park entry
    */
   async validate(ticketCode) {
