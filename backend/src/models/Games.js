@@ -32,7 +32,7 @@ const Games = {
             tt.name,
             tt.category,
             tt.price,
-            tt.is_active,
+            tt.is_active !== undefined ? tt.is_active : true, // Default to true if not provided
           );
         });
 
@@ -78,8 +78,8 @@ const Games = {
         if (ticket_types.length > 0) {
           for (const tt of ticket_types) {
             const ttSql = `
-            INSERT INTO ticket_types (game_id, name, category, price, description)
-            VALUES ($1, $2, $3, $4, $5)
+            INSERT INTO ticket_types (game_id, name, category, price, description, is_active)
+            VALUES ($1, $2, $3, $4, $5, $6)
           `;
             await client.query(ttSql, [
               id,
@@ -87,6 +87,7 @@ const Games = {
               tt.category,
               tt.price,
               tt.description,
+              tt.is_active !== undefined ? tt.is_active : true, // Default to true if not provided
             ]);
           }
         }
