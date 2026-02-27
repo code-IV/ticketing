@@ -13,6 +13,7 @@ import {
   X,
 } from "lucide-react";
 import { useState } from "react";
+import Image from "next/image";
 
 export function Navbar() {
   const { user, logout } = useAuth();
@@ -46,18 +47,19 @@ export function Navbar() {
       initial="hidden"
       animate="visible"
       variants={navVariants}
-      className="bg-white/80 backdrop-blur-md border-b border-gray-200/60 sticky top-0 z-50 shadow-sm"
+      className="bg-white backdrop-blur-md border-b border-gray-200/60 sticky top-0 z-50 shadow-sm"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2.5 group">
-            <div className="bg-gradient-to-br from-blue-600 to-indigo-600 p-2 rounded-xl shadow-md group-hover:scale-110 transition-transform">
-              <Ticket className="h-7 w-7 text-white" />
-            </div>
-            <span className="text-2xl font-extrabold bg-gradient-to-r from-blue-700 to-indigo-700 bg-clip-text text-transparent">
-              Bora Park
-            </span>
+            <Image
+              src="/BoraPark.png"
+              alt="BoraPark Logo"
+              width={160}
+              height={160}
+              className="bg-transparent group-hover:scale-110 transition-transform"
+            />
           </Link>
 
           {/* Desktop Nav */}
