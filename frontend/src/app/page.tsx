@@ -1,247 +1,194 @@
 "use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion, useScroll, useTransform } from "framer-motion";
 import { Button } from "@/components/ui/Button";
-import { Ticket, Star, MapPin, Zap, ChevronRight, Clock } from "lucide-react";
+import { Ticket, ChevronRight, Clock, Play, ArrowDownRight } from "lucide-react";
 import { gameService } from "@/services/adminService";
 import { eventService } from "@/services/eventService";
 import { Event, Game } from "@/types";
 
-const fadeUp = {
-  hidden: { opacity: 0, y: 30 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.7 } },
+const stagger = {
+  visible: { transition: { staggerChildren: 0.12 } },
 };
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 40 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: [0.16, 1, 0.3, 1] } },
+};
+
+const ACCENT = "#FFD84D";
 
 export default function Home() {
   const [featuredGames, setFeaturedGames] = useState<Game[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
+  const { scrollY } = useScroll();
+  const heroY = useTransform(scrollY, [0, 600], [0, 120]);
+  const heroOpacity = useTransform(scrollY, [0, 400], [1, 0]);
 
   useEffect(() => {
-    Promise.all([gameService.getAll(), eventService.getActiveEvents(1, 12)])
+    Promise.all([gameService.getAll(), eventService.getActiveEvents(1, 6)])
       .then(([gamesRes, eventsRes]) => {
-        setFeaturedGames(gamesRes.data || []);
+        setFeaturedGames(gamesRes.data?.slice(0, 3) || []);
         setEvents(eventsRes.data.events || []);
       })
       .catch(console.log);
   }, []);
 
   return (
-    <div className="min-h-screen bg-white">
-      {/* HERO */}
-      <section className="relative h-[95vh] flex items-center overflow-hidden">
-        <div className="absolute inset-0">
+    <div className="min-h-screen bg-[#0A0A0A] text-white overflow-x-hidden">
+
+      {/* ── HERO ─────────────────────────────────────────────────────────── */}
+      <section className="relative h-screen flex items-end pb-20 overflow-hidden">
+        {/* Background image with parallax */}
+        <motion.div style={{ y: heroY }} className="absolute inset-0">
           <img
             src="/bora.jpg"
-            className="w-full h-full object-cover brightness-[0.35] scale-105"
+            className="w-full h-full object-cover"
             alt="Bora Park"
           />
-        </div>
-        <div className="relative z-10 max-w-7xl mx-auto px-6 w-full">
+          <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A0A] via-[#0A0A0A]/50 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#0A0A0A]/60 to-transparent" />
+        </motion.div>
+
+        {/* Floating badge */}
+        <motion.div
+          style={{ opacity: heroOpacity }}
+          className="absolute top-48 right-8 md:right-46 bg-[#FFD84D] text-black px-5 py-3 rounded-full font-black text-s uppercase tracking-widest shadow-xl rotate-12"
+        >
+          Open Today · 9:00–22:00
+        </motion.div>
+
+        <div className="relative z-10 w-full px-6 sm:px-16 lg:px-28 mr-90">
           <motion.div
             initial="hidden"
             animate="visible"
-            variants={fadeUp}
-            className="max-w-3xl"
+            variants={stagger}
+            className="max-w-7xl mx-auto"
           >
-            <div className="inline-block px-5 py-2 bg-yellow-400/90 backdrop-blur-sm text-black font-black text-sm uppercase tracking-widest rounded-full mb-8 shadow-lg">
-              Open Today 9:00 – 22:00
-            </div>
-            <h1 className="text-6xl md:text-8xl lg:text-9xl font-black text-white leading-none mb-8">
-              UNLEASH
-              <br />
-              <span className="text-blue-500">THE THRILL</span>
-            </h1>
-            <p className="text-xl md:text-2xl text-gray-200/90 mb-12 max-w-xl leading-relaxed">
-              Ethiopia's premier amusement destination
-            </p>
-            <div className="flex flex-wrap gap-5">
+            <motion.p variants={fadeUp} className="text-[#FFD84D] font-black text-sm uppercase tracking-[0.3em] mb-6">
+              Ethiopia's Premier Amusement Park
+            </motion.p>
+
+            <motion.h1
+              variants={fadeUp}
+              className="text-[clamp(4rem,12vw,10rem)] font-black leading-[0.88] tracking-tight mb-10"
+              style={{ fontFamily: "'Arial Black', sans-serif" }}
+            >
+              UNLEASH<br />
+              <span style={{ color: ACCENT }}>THE</span><br />
+              THRILL
+            </motion.h1>
+
+            <motion.div variants={fadeUp} className="flex flex-wrap gap-4 items-center">
               <Link href="/buy">
-                <Button
-                  size="lg"
-                  className="h-16 px-10 text-lg font-black bg-blue-600 hover:bg-blue-700 rounded-2xl shadow-2xl shadow-blue-600/30"
-                >
-                  <Ticket className="mr-3 h-6 w-6" />
+                <button className="group flex items-center gap-3 bg-[#FFD84D] text-black font-black text-base px-8 py-4 rounded-full hover:bg-white transition-all duration-300 shadow-2xl shadow-yellow-400/20">
+                  <Ticket className="h-5 w-5" />
                   Buy Tickets
-                </Button>
+                  <ArrowDownRight className="h-4 w-4 group-hover:translate-x-0.5 group-hover:translate-y-0.5 transition-transform" />
+                </button>
               </Link>
               <Link href="/games">
-                <Button
-                  size="lg"
-                  variant="ghost"
-                  className="h-16 px-10 text-lg font-black border-2 border-white/30 text-white hover:bg-white/10 rounded-2xl backdrop-blur-md"
-                >
+                <button className="flex items-center gap-3 border-2 border-white/20 text-white font-bold text-base px-8 py-4 rounded-full hover:border-white/60 hover:bg-white/5 transition-all duration-300 backdrop-blur-sm">
+                  <Play className="h-4 w-4 fill-current" />
                   Explore Rides
-                </Button>
+                </button>
               </Link>
-            </div>
+            </motion.div>
           </motion.div>
         </div>
-      </section>
 
-      {/* UPCOMING EVENTS */}
-      <section className="py-24 max-w-7xl mx-auto px-6">
+        {/* Scroll indicator */}
         <motion.div
-          variants={fadeUp}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true }}
+          style={{ opacity: heroOpacity }}
+          className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2"
         >
-          <div className="flex justify-between items-end mb-12">
-            <div>
-              <h2 className="text-4xl md:text-5xl font-black text-slate-900">
-                Upcoming Events
-              </h2>
-              <p className="text-slate-500 mt-2">Don't miss the magic</p>
-            </div>
-            <Link
-              href="/events"
-              className="hidden md:flex items-center gap-2 text-blue-600 font-bold hover:underline"
-            >
-              Full Calendar <ChevronRight size={20} />
-            </Link>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {events.map((event) => (
-              <motion.div
-                key={event.id}
-                whileHover={{ y: -8, transition: { duration: 0.3 } }}
-                className="group bg-white rounded-3xl border border-slate-100 shadow-md hover:shadow-2xl transition-all overflow-hidden flex flex-col"
-              >
-                <div className="relative h-64">
-                  <img
-                    src="/api/placeholder/600/400"
-                    alt={event.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                  />
-                  <div className="absolute top-5 left-5 bg-white/90 backdrop-blur-md rounded-2xl px-4 py-2 shadow-lg text-center min-w-[68px]">
-                    <p className="text-xs font-black text-blue-600 uppercase tracking-tight">
-                      {new Date(event.start_time).toLocaleString("default", {
-                        month: "short",
-                      })}
-                    </p>
-                    <p className="text-2xl font-black text-slate-900 leading-none">
-                      {new Date(event.event_date).getDate()}
-                    </p>
-                  </div>
-                  {!event.is_active && (
-                    <div className="absolute inset-0 bg-black/65 flex items-center justify-center backdrop-blur-sm">
-                      <span className="px-8 py-3 bg-red-600 text-white font-black text-sm uppercase tracking-widest rounded-full border-2 border-white/40 rotate-[-4deg] shadow-xl">
-                        Sold Out
-                      </span>
-                    </div>
-                  )}
-                </div>
-
-                <div className="p-7 flex-1 flex flex-col">
-                  <div className="flex items-center gap-2 text-slate-500 text-xs font-bold uppercase mb-3">
-                    <Clock size={14} className="text-blue-600" />
-                    {new Date(event.start_time).toLocaleTimeString([], {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </div>
-                  <h3 className="text-2xl font-black text-slate-900 mb-3 line-clamp-2">
-                    {event.name}
-                  </h3>
-                  <p className="text-slate-600 mb-8 line-clamp-3 flex-1">
-                    {event.description}
-                  </p>
-
-                  <div className="pt-5 border-t border-slate-100 flex items-center justify-between">
-                    <div>
-                      <span className="text-xs font-black text-slate-400 uppercase block">
-                        From
-                      </span>
-                      <p className="text-2xl font-black text-slate-900">
-                        {event.ticket_types?.find((t) => t.category === "adult")
-                          ?.price ?? 0}
-                        <span className="text-base font-bold"> ETB</span>
-                      </p>
-                    </div>
-                    <Link href={`/buy?event=${event.id}`}>
-                      <Button
-                        disabled={!event.is_active}
-                        className={`rounded-2xl font-black px-8 h-12 ${
-                          !event.is_active
-                            ? "bg-slate-200 text-slate-400 cursor-not-allowed"
-                            : "bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-200/40"
-                        }`}
-                      >
-                        {event.is_active ? "Book Now" : "Full"}
-                      </Button>
-                    </Link>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
+          <div className="w-px h-16 bg-gradient-to-b from-white/0 via-white/40 to-white/0 animate-pulse" />
+          <span className="text-white/40 text-[10px] font-bold uppercase tracking-widest">Scroll</span>
         </motion.div>
       </section>
 
-      {/* FEATURED ATTRACTIONS */}
-      <section className="py-24 bg-gradient-to-b from-white to-slate-50">
-        <div className="max-w-7xl mx-auto px-6">
+      {/* ── EVENTS ───────────────────────────────────────────────────────── */}
+      <section className="py-28 px-6 sm:px-10 lg:px-16">
+        <div className="max-w-7xl mx-auto">
           <motion.div
-            variants={fadeUp}
             initial="hidden"
             whileInView="visible"
-            viewport={{ once: true }}
+            viewport={{ once: true, margin: "-80px" }}
+            variants={stagger}
           >
-            <div className="flex justify-between items-end mb-14">
+            <motion.div variants={fadeUp} className="flex justify-between items-end mb-16">
               <div>
-                <h2 className="text-5xl font-black text-gray-900">
-                  Must-Try Attractions
+                <p className="text-[#FFD84D] font-black text-xs uppercase tracking-[0.3em] mb-3">What's On</p>
+                <h2 className="text-5xl md:text-6xl font-black leading-tight" style={{ fontFamily: "'Arial Black', sans-serif" }}>
+                  Upcoming<br />Events
                 </h2>
-                <p className="text-gray-600 mt-3 text-lg">
-                  The rides everyone talks about
-                </p>
               </div>
-              <Link
-                href="/games"
-                className="hidden md:flex items-center gap-2 text-blue-600 font-bold hover:underline"
-              >
-                View All <ChevronRight size={22} />
+              <Link href="/events" className="hidden md:flex items-center gap-2 text-white/50 hover:text-[#FFD84D] font-bold text-sm transition-colors">
+                Full Calendar <ChevronRight size={16} />
               </Link>
-            </div>
+            </motion.div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
-              {featuredGames.map((game) => (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {events.map((event, i) => (
                 <motion.div
-                  key={game.id}
-                  whileHover={{ scale: 1.04, y: -10 }}
-                  className="group relative rounded-3xl overflow-hidden shadow-lg aspect-[4/5.2] hover:shadow-2xl transition-all duration-500"
+                  key={event.id}
+                  variants={fadeUp}
+                  whileHover={{ y: -6 }}
+                  transition={{ duration: 0.3 }}
+                  className="group bg-white/5 border border-white/8 rounded-3xl overflow-hidden hover:border-[#FFD84D]/30 hover:bg-white/8 transition-all duration-500"
                 >
-                  <img
-                    src="/api/placeholder/600/800"
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-800"
-                    alt={game.name}
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent flex flex-col justify-end p-9">
-                    <span className="text-blue-400 font-black text-xs uppercase tracking-widest mb-3">
-                      {"Thrill"}
-                    </span>
-                    <h3 className="text-3xl font-black text-white mb-5">
-                      {game.name}
-                    </h3>
-                    <div className="flex justify-between items-center">
-                      <p className="text-white/90 text-base">
-                        From{" "}
-                        <span className="text-2xl font-black text-white">
-                          {game.ticket_types?.find(
-                            (t) => t.category === "adult",
-                          )?.price ?? "—"}
-                        </span>{" "}
-                        ETB
+                  <div className="relative h-52 overflow-hidden">
+                    <img
+                      src="/api/placeholder/600/400"
+                      alt={event.name}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 opacity-60"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A0A] to-transparent" />
+                    <div className="absolute top-4 left-4 bg-[#FFD84D] text-black rounded-2xl px-4 py-2 text-center min-w-[56px] shadow-lg">
+                      <p className="text-[10px] font-black uppercase tracking-tight">
+                        {new Date(event.start_time).toLocaleString("default", { month: "short" })}
                       </p>
-                      <Link href="/buy">
-                        <Button
-                          size="sm"
-                          className="bg-white text-black font-black hover:bg-yellow-400 rounded-xl px-6"
+                      <p className="text-2xl font-black leading-none">
+                        {new Date(event.event_date).getDate()}
+                      </p>
+                    </div>
+                    {!event.is_active && (
+                      <div className="absolute inset-0 bg-black/70 flex items-center justify-center backdrop-blur-sm">
+                        <span className="px-6 py-2 bg-red-500 text-white font-black text-xs uppercase tracking-widest rounded-full -rotate-3">
+                          Sold Out
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="p-6">
+                    <div className="flex items-center gap-2 text-white/40 text-xs font-bold uppercase mb-3">
+                      <Clock size={12} className="text-[#FFD84D]" />
+                      {new Date(event.start_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                    </div>
+                    <h3 className="text-xl font-black mb-2 line-clamp-1">{event.name}</h3>
+                    <p className="text-white/50 text-sm mb-6 line-clamp-2 leading-relaxed">{event.description}</p>
+
+                    <div className="flex items-center justify-between pt-4 border-t border-white/8">
+                      <div>
+                        <span className="text-white/30 text-[10px] font-bold uppercase block mb-0.5">From</span>
+                        <p className="text-2xl font-black">
+                          {event.ticket_types?.find((t) => t.category === "adult")?.price ?? 0}
+                          <span className="text-sm font-bold text-white/50 ml-1">ETB</span>
+                        </p>
+                      </div>
+                      <Link href={`/buy?event=${event.id}`}>
+                        <button
+                          disabled={!event.is_active}
+                          className={`rounded-2xl font-black text-sm px-6 py-3 transition-all ${
+                            !event.is_active
+                              ? "bg-white/10 text-white/30 cursor-not-allowed"
+                              : "bg-[#FFD84D] text-black hover:bg-white"
+                          }`}
                         >
-                          BOOK
-                        </Button>
+                          {event.is_active ? "Book Now" : "Full"}
+                        </button>
                       </Link>
                     </div>
                   </div>
@@ -252,55 +199,130 @@ export default function Home() {
         </div>
       </section>
 
-      {/* STATS */}
-      <section className="bg-gradient-to-br from-slate-900 to-black py-24">
-        <div className="max-w-7xl mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-12 text-center">
-          {[
-            { num: "25+", label: "Thriller Rides" },
-            { num: "10k+", label: "Happy Visitors" },
-            { num: "100%", label: "Safe & Secure" },
-            { num: "4.9", label: "User Rating" },
-          ].map((stat, i) => (
-            <motion.div
-              key={stat.label}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.1 }}
-              viewport={{ once: true }}
-            >
-              <p className="text-5xl md:text-6xl font-black text-white mb-3">
-                {stat.num}
-              </p>
-              <p className="text-slate-400 text-sm md:text-base font-bold uppercase tracking-widest">
-                {stat.label}
-              </p>
+      {/* ── ATTRACTIONS ──────────────────────────────────────────────────── */}
+      <section className="py-28 px-6 sm:px-10 lg:px-16 bg-gradient-to-b from-transparent to-white/3">
+        <div className="max-w-7xl mx-auto">
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-80px" }}
+            variants={stagger}
+          >
+            <motion.div variants={fadeUp} className="flex justify-between items-end mb-16">
+              <div>
+                <p className="text-[#FFD84D] font-black text-xs uppercase tracking-[0.3em] mb-3">Top Picks</p>
+                <h2 className="text-5xl md:text-6xl font-black leading-tight" style={{ fontFamily: "'Arial Black', sans-serif" }}>
+                  Must-Try<br />Attractions
+                </h2>
+              </div>
+              <Link href="/games" className="hidden md:flex items-center gap-2 text-white/50 hover:text-[#FFD84D] font-bold text-sm transition-colors">
+                View All <ChevronRight size={16} />
+              </Link>
             </motion.div>
-          ))}
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {featuredGames.map((game, i) => (
+                <motion.div
+                  key={game.id}
+                  variants={fadeUp}
+                  whileHover={{ scale: 1.02, y: -8 }}
+                  transition={{ duration: 0.4 }}
+                  className="group relative rounded-3xl overflow-hidden aspect-[3/4] cursor-pointer"
+                >
+                  <img
+                    src="/api/placeholder/600/800"
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                    alt={game.name}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
+
+                  {/* Corner accent */}
+                  <div className="absolute top-4 right-4 w-10 h-10 rounded-full bg-[#FFD84D] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 scale-75 group-hover:scale-100">
+                    <ArrowDownRight className="w-5 h-5 text-black rotate-[-45deg]" />
+                  </div>
+
+                  <div className="absolute bottom-0 left-0 right-0 p-7">
+                    <span className="text-[#FFD84D] font-black text-[10px] uppercase tracking-[0.3em] block mb-2">
+                      Thrill Ride
+                    </span>
+                    <h3 className="text-2xl font-black mb-4 leading-tight">{game.name}</h3>
+                    <div className="flex items-center justify-between">
+                      <p className="text-white/70 text-sm">
+                        From{" "}
+                        <span className="text-xl font-black text-white">
+                          {game.ticket_types?.find((t) => t.category === "adult")?.price ?? "—"}
+                        </span>{" "}
+                        ETB
+                      </p>
+                      <Link href="/buy">
+                        <button className="bg-[#FFD84D] text-black font-black text-xs px-5 py-2.5 rounded-full hover:bg-white transition-colors">
+                          BOOK
+                        </button>
+                      </Link>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
         </div>
       </section>
 
-      {/* FINAL CTA */}
-      <section className="py-32 px-6">
+      {/* ── STATS ────────────────────────────────────────────────────────── */}
+      <section className="py-24 px-6 sm:px-10 lg:px-16">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-white/8 rounded-3xl overflow-hidden border border-white/8">
+            {[
+              { num: "25+", label: "Thriller Rides" },
+              { num: "10k+", label: "Happy Visitors" },
+              { num: "100%", label: "Safe & Secure" },
+              { num: "4.9★", label: "User Rating" },
+            ].map((stat, i) => (
+              <motion.div
+                key={stat.label}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.1, duration: 0.6 }}
+                viewport={{ once: true }}
+                className="bg-[#0A0A0A] py-12 px-8 text-center"
+              >
+                <p className="text-4xl md:text-5xl font-black text-[#FFD84D] mb-2" style={{ fontFamily: "'Arial Black', sans-serif" }}>
+                  {stat.num}
+                </p>
+                <p className="text-white/40 text-xs font-bold uppercase tracking-widest">{stat.label}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── CTA ──────────────────────────────────────────────────────────── */}
+      <section className="py-28 px-6 sm:px-10 lg:px-16">
         <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          whileInView={{ opacity: 1, scale: 1 }}
+          initial={{ opacity: 0, y: 40 }}
+          whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="max-w-6xl mx-auto bg-gradient-to-br from-blue-600 to-indigo-700 rounded-[3rem] p-12 md:p-20 text-center relative overflow-hidden shadow-2xl"
+          transition={{ duration: 0.8 }}
+          className="max-w-6xl mx-auto relative overflow-hidden rounded-[2.5rem] bg-[#FFD84D] p-12 md:p-20 text-center"
         >
-          <Zap className="absolute -top-20 -right-20 text-white/5 w-96 h-96" />
-          <h2 className="text-5xl md:text-7xl font-black text-white mb-10 relative z-10">
-            Ready to skip the lines?
+          {/* Background decoration */}
+          <div className="absolute -top-24 -right-24 w-72 h-72 rounded-full bg-black/8" />
+          <div className="absolute -bottom-16 -left-16 w-56 h-56 rounded-full bg-black/5" />
+
+          <h2
+            className="text-5xl md:text-7xl font-black text-black mb-10 relative z-10 leading-tight"
+            style={{ fontFamily: "'Arial Black', sans-serif" }}
+          >
+            Ready to skip<br />the lines?
           </h2>
-          <Link href="/buy">
-            <Button
-              size="lg"
-              className="bg-white text-blue-700 hover:bg-yellow-400 hover:text-black font-black px-16 h-18 text-2xl rounded-3xl shadow-2xl relative z-10"
-            >
-              GET TICKETS NOW
-            </Button>
+          <Link href="/buy" className="relative z-10 inline-block">
+            <button className="bg-black text-[#FFD84D] font-black text-xl px-14 py-5 rounded-full hover:bg-white hover:text-black transition-all duration-300 shadow-2xl">
+              GET TICKETS NOW →
+            </button>
           </Link>
         </motion.div>
       </section>
+
     </div>
   );
 }
