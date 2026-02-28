@@ -120,10 +120,12 @@ const bookingController = {
         guestName,
         notes,
       } = req.body;
+      const userId = req.session.user.id;
       const expiresAt = new Date(); //leave it like this for now
 
       // 4️⃣ Call transactional booking service
       const booking = await Booking.bookGames({
+        userId,
         items,
         totalAmount,
         paymentMethod,

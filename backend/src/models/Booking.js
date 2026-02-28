@@ -150,6 +150,7 @@ const Booking = {
    * items: [{ ticketTypeId, quantity, unitPrice }]
    */
   async bookGames({
+    userId,
     items,
     totalAmount,
     paymentMethod,
@@ -168,10 +169,11 @@ const Booking = {
 
       const bookingResult = await client.query(
         `INSERT INTO bookings
-       (booking_reference, total_amount, booking_status, payment_status, payment_method, guest_email, guest_name, notes)
-       VALUES ($1, $2, 'confirmed', 'completed', $3, $4, $5, $6)
+       (user_id, booking_reference, total_amount, booking_status, payment_status, payment_method, guest_email, guest_name, notes)
+       VALUES ($1, $2, $3, 'confirmed', 'completed', $4, $5, $6, $7)
        RETURNING *`,
         [
+          userId,
           bookingReference,
           totalAmount,
           paymentMethod,
@@ -335,13 +337,28 @@ const Booking = {
   async findByUserId(userId, { page = 1, limit = 20 }) {
     const offset = (page - 1) * limit;
     const sql = `
-      SELECT b.*,
-             e.name AS event_name, e.event_date, e.start_time, e.end_time
+      SELECT 
+        b.*,
+        e.name AS event_name, 
+        e.event_date, 
+        e.start_time, 
+        e.end_time,
+        g.name AS game_name,
+        COALESCE(e.name, g.name, 'Park Pass') AS activity_name
       FROM bookings b
-      JOIN events e ON b.event_id = e.id
+      LEFT JOIN events e ON b.event_id = e.id
+      LEFT JOIN LATERAL (
+        SELECT DISTINCT g_inner.name
+        FROM booking_items bi
+        JOIN ticket_types tt ON bi.ticket_type_id = tt.id
+        JOIN games g_inner ON tt.game_id = g_inner.id
+        WHERE bi.booking_id = b.id
+        LIMIT 1
+      ) g ON true
       WHERE b.user_id = $1
       ORDER BY b.created_at DESC
-      LIMIT $2 OFFSET $3`;
+      LIMIT $2 OFFSET $3
+      `;
     const result = await query(sql, [userId, limit, offset]);
 
     const countSql = `SELECT COUNT(*) FROM bookings WHERE user_id = $1`;

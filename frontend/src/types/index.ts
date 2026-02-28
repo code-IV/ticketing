@@ -141,7 +141,7 @@ export interface Booking {
   id: string;
   booking_reference: string;
   user_id: string;
-  event_id: string;
+  event_id?: string;
   event_name?: string;
   event_date?: string;
   start_time?: string;
