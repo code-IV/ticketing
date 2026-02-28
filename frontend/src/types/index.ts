@@ -173,6 +173,59 @@ export interface BookingItemDetail {
   created_at: string;
 }
 
+export type BookingType = "EVENT" | "GAME";
+
+export interface BaseBooking {
+  id: string;
+  booking_reference: string;
+  user_id: string;
+  total_amount: string;
+  booking_status: "pending" | "confirmed" | "cancelled" | "refunded";
+  payment_status: "pending" | "completed" | "failed" | "refunded";
+  payment_method?: "credit_card" | "debit_card" | "telebirr" | "cash";
+  guest_email?: string;
+  guest_name?: string;
+  notes?: string;
+  booked_at: string;
+  created_at: string;
+  updated_at: string;
+  // Shared relations
+  tickets?: Ticket[];
+}
+
+// 1. Specific interface for Single-Event bookings
+export interface EventBooking extends BaseBooking {
+  type: "EVENT";
+  event_id: string;
+  event_name: string;
+  event_date: string;
+  start_time: string;
+  end_time: string;
+}
+
+// 2. Specific interface for Multi-Game bookings
+export interface GameBooking extends BaseBooking {
+  type: "GAME";
+  // For games, the details live inside the items array
+  items: GameBookingItemDetail[];
+}
+
+// 3. The Union Type used in your components
+export type Bookings = EventBooking | GameBooking;
+
+// Supporting interface for game items
+export interface GameBookingItemDetail {
+  id: string;
+  booking_id: string;
+  ticket_type_id: string;
+  game_id: string;
+  game_name: string; // From our SQL Join
+  category?: string;
+  quantity: number;
+  unit_price: string;
+  subtotal: string;
+}
+
 export interface Ticket {
   id: string;
   booking_id: string;

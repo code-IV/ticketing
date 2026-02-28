@@ -337,36 +337,53 @@ const Booking = {
   async findByUserId(userId, { page = 1, limit = 20 }) {
     const offset = (page - 1) * limit;
     const sql = `
-      SELECT 
-        b.*,
-        e.name AS event_name, 
-        e.event_date, 
-        e.start_time, 
-        e.end_time,
-        g.name AS game_name,
-        COALESCE(e.name, g.name, 'Park Pass') AS activity_name
-      FROM bookings b
-      LEFT JOIN events e ON b.event_id = e.id
-      LEFT JOIN LATERAL (
-        SELECT DISTINCT g_inner.name
-        FROM booking_items bi
-        JOIN ticket_types tt ON bi.ticket_type_id = tt.id
-        JOIN games g_inner ON tt.game_id = g_inner.id
-        WHERE bi.booking_id = b.id
-        LIMIT 1
-      ) g ON true
-      WHERE b.user_id = $1
-      ORDER BY b.created_at DESC
-      LIMIT $2 OFFSET $3
-      `;
+    SELECT 
+      b.*,
+      e.name AS event_name, 
+      e.event_date, 
+      e.start_time, 
+      e.end_time,
+      -- Determine the Discriminator Type
+      CASE 
+        WHEN b.event_id IS NOT NULL THEN 'EVENT'
+        ELSE 'GAME'
+      END as type,
+      -- Fetch all items for this booking as a JSON array
+      (
+        SELECT json_agg(item_details)
+        FROM (
+          SELECT 
+            bi.*, 
+            g_inner.name as game_name,
+            tt.category
+          FROM booking_items bi
+          JOIN ticket_types tt ON bi.ticket_type_id = tt.id
+          LEFT JOIN games g_inner ON tt.game_id = g_inner.id
+          WHERE bi.booking_id = b.id
+        ) item_details
+      ) as items
+    FROM bookings b
+    LEFT JOIN events e ON b.event_id = e.id
+    WHERE b.user_id = $1
+    ORDER BY b.created_at DESC
+    LIMIT $2 OFFSET $3
+  `;
+
     const result = await query(sql, [userId, limit, offset]);
+
+    // Clean up the result for the frontend
+    const bookings = result.rows.map((row) => ({
+      ...row,
+      // Ensure items is an empty array if null
+      items: row.items || [],
+    }));
 
     const countSql = `SELECT COUNT(*) FROM bookings WHERE user_id = $1`;
     const countResult = await query(countSql, [userId]);
     const total = parseInt(countResult.rows[0].count, 10);
 
     return {
-      bookings: result.rows,
+      bookings,
       pagination: {
         page,
         limit,
