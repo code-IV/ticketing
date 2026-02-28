@@ -2,7 +2,7 @@ const { query, getClient } = require("../config/db");
 const {
   generateBookingReference,
   generateTicketCode,
-  generateQRData,
+  generateQRToken,
 } = require("../utils/helpers");
 
 const Booking = {
@@ -102,17 +102,17 @@ const Booking = {
         // Create individual tickets for each quantity
         for (let i = 0; i < item.quantity; i++) {
           const ticketCode = generateTicketCode();
-          const qrData = generateQRData(
+          const qrToken = generateQRToken(
             ticketCode,
             bookingReference,
-            eventDate,
+            expires_at,
           );
 
           const ticketResult = await client.query(
             `INSERT INTO tickets (booking_id, booking_item_id, ticket_code, qr_token, expires_at)
              VALUES ($1, $2, $3, $4, $5)
              RETURNING *`,
-            [booking.id, bookingItem.id, ticketCode, qrData, expires_at],
+            [booking.id, bookingItem.id, ticketCode, qrToken, expires_at],
           );
           createdTickets.push(ticketResult.rows[0]);
         }
@@ -212,13 +212,11 @@ const Booking = {
           game_id,
         });
       }
-
-      // 4️⃣ Create ONE ticket container
-      const ticketCode = generateTicketCode();
-      const qrToken = generateQRData();
-
       const expiresAt = new Date();
       expiresAt.setDate(expiresAt.getDate());
+      // 4️⃣ Create ONE ticket container
+      const ticketCode = generateTicketCode();
+      const qrToken = generateQRToken(ticketCode, bookingReference, expiresAt);
 
       const ticketResult = await client.query(
         `INSERT INTO tickets

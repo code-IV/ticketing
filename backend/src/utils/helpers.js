@@ -20,16 +20,31 @@ const generateTicketCode = () => {
 };
 
 /**
- * Generate QR data string for a ticket
+ * Generate a secure signed QR token
  */
-const generateQRData = (ticketCode, bookingReference, eventDate) => {
-  return JSON.stringify({
+const generateQRToken = (ticketCode, bookingReference, eventDate) => {
+  const secret = process.env.QR_SECRET_KEY;
+  if (!secret) {
+    throw new Error("QR_SECRET_KEY is not defined in environment variables");
+  }
+  const payload = {
     code: ticketCode,
     ref: bookingReference,
     date: eventDate,
     park: "BORA",
-    ts: Date.now(),
-  });
+    ts: Math.floor(Date.now() / 1000), // Use Unix timestamp for brevity
+  };
+
+  // 1. Stringify the payload
+  const message = JSON.stringify(payload);
+
+  // 2. Create the HMAC signature
+  const hmac = crypto.createHmac("sha256", secret);
+  hmac.update(message);
+  const signature = hmac.digest("hex");
+
+  // 4. Return both the data and the signature
+  return `${Buffer.from(message).toString("base64")}.${signature}`;
 };
 
 /**
@@ -71,7 +86,7 @@ const apiResponse = (res, statusCode, success, message, data = null) => {
 module.exports = {
   generateBookingReference,
   generateTicketCode,
-  generateQRData,
+  generateQRToken,
   formatCurrency,
   apiResponse,
 };
