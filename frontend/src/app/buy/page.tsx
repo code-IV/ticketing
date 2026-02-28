@@ -6,6 +6,7 @@ import { Game } from "@/types";
 import { gameService } from "@/services/adminService";
 import { bookingService } from "@/services/bookingService";
 
+// Fallback visuals cycled by index
 const gameVisuals = [
   { emoji: "🎢", image: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600&h=400&fit=crop" },
   { emoji: "🎡", image: "https://images.unsplash.com/photo-1563298723-dcfebaa392e3?w=600&h=400&fit=crop" },
@@ -15,18 +16,6 @@ const gameVisuals = [
   { emoji: "🎯", image: "https://images.unsplash.com/photo-1533560904424-a0c61dc306fc?w=600&h=400&fit=crop" },
 ];
 
-const palettes = [
-  ['#E8431A', '#FAF0DC', '#FAF0DC'],
-  ['#FAF0DC', '#1A1A2E', '#E8431A'],
-  ['#1A1A2E', '#F5C842', '#E8431A'],
-  ['#F5C842', '#1A1A2E', '#E8431A'],
-  ['#2D6A4F', '#FAF0DC', '#F5C842'],
-  ['#7B2D8B', '#FAF0DC', '#F5C842'],
-  ['#E8431A', '#1A1A2E', '#F5C842'],
-  ['#1A1A2E', '#FAF0DC', '#F5C842'],
-  ['#F5C842', '#E8431A', '#1A1A2E'],
-];
-
 const BuyTicketsPage = () => {
   const [games, setGames] = useState<Game[]>();
   const [loading, setLoading] = useState(true);
@@ -34,7 +23,9 @@ const BuyTicketsPage = () => {
   const [openGameId, setOpenGameId] = useState<string | null>(null);
   const [cart, setCart] = useState<Record<string, Record<string, number>>>({});
 
-  useEffect(() => { loadGames(); }, []);
+  useEffect(() => {
+    loadGames();
+  }, []);
 
   const loadGames = async () => {
     setLoading(true);
@@ -132,104 +123,42 @@ const BuyTicketsPage = () => {
     return grandTotal + gameTotal;
   }, 0);
 
-  if (loading && !games) {
-    return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: '#FAF0DC' }}>
-        <motion.p
-          animate={{ opacity: [1, 0.3, 1] }}
-          transition={{ repeat: Infinity, duration: 1 }}
-          className="text-[#E8431A] font-black text-2xl uppercase tracking-widest"
-          style={{ fontFamily: "'Arial Black', sans-serif" }}
-        >
-          LOADING GAMES…
-        </motion.p>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen" style={{ background: '#FAF0DC' }}>
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 py-10 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8 xl:gap-12">
 
-      {/* ── RETRO HEADER ── */}
-      <div className="relative overflow-hidden pt-20 pb-4" style={{ background: '#1A1A2E' }}>
-        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2">
-          {[520, 420, 320, 220].map((size, i) => (
-            <div
-              key={size}
-              className="absolute rounded-full border-2 -translate-x-1/2 -translate-y-1/2"
-              style={{
-                width: size, height: size,
-                borderColor: i % 2 === 0 ? 'rgba(245,200,66,0.12)' : 'rgba(232,67,26,0.12)',
-                top: '50%', left: '50%',
-              }}
-            />
-          ))}
-        </div>
-
-        <div className="relative z-10 max-w-5xl mx-auto px-6 sm:px-10 text-center pb-10 pt-4">
-          <motion.div
-            initial={{ opacity: 0, y: 40 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-          >
-            <p className="text-[#F5C842] text-[10px] font-black uppercase tracking-[0.6em] mb-4">
-              ✦ Bora Park Amusements ✦
-            </p>
-            <h1
-              className="font-black uppercase leading-none text-[#FAF0DC]"
-              style={{ fontFamily: "'Arial Black', sans-serif", fontSize: 'clamp(2.5rem, 10vw, 7rem)', letterSpacing: '-0.02em' }}
-            >
-              PICK YOUR
-            </h1>
-            <div className="flex items-center justify-center gap-4 my-1">
-              <div className="h-0.5 flex-1 max-w-32" style={{ background: '#E8431A' }} />
-              <p className="text-[#E8431A] font-black text-sm uppercase tracking-[0.4em]">
-                {format(new Date(), 'yyyy')}
-              </p>
-              <div className="h-0.5 flex-1 max-w-32" style={{ background: '#E8431A' }} />
+        {/* ── Main content ── */}
+        <div className="lg:col-span-2 space-y-12">
+          <section>
+            <div className="flex items-center gap-4 mb-8">
+              <div className="bg-gradient-to-br from-purple-600 to-pink-600 p-4 rounded-2xl shadow-lg">
+                <Zap className="w-7 h-7 text-white" />
+              </div>
+              <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 tracking-tight">
+                Pick Your Adventures
+              </h2>
             </div>
-            <h1
-              className="font-black uppercase leading-none"
-              style={{ fontFamily: "'Arial Black', sans-serif", fontSize: 'clamp(2.5rem, 10vw, 7rem)', letterSpacing: '-0.02em', color: '#F5C842' }}
-            >
-              ADVENTURES
-            </h1>
-          </motion.div>
-        </div>
 
-        {/* Zigzag border */}
-        <svg viewBox="0 0 1200 30" className="w-full" preserveAspectRatio="none" style={{ display: 'block' }}>
-          <polyline
-            points={Array.from({ length: 61 }, (_, i) => `${i * 20},${i % 2 === 0 ? 30 : 0}`).join(' ')}
-            fill="none" stroke="#FAF0DC" strokeWidth="2"
-          />
-          <polygon
-            points={`0,30 ${Array.from({ length: 61 }, (_, i) => `${i * 20},${i % 2 === 0 ? 30 : 0}`).join(' ')} 1200,30`}
-            fill="#FAF0DC"
-          />
-        </svg>
-      </div>
-
-      {/* ── MAIN CONTENT ── */}
-      <div className="max-w-7xl mx-auto px-6 sm:px-10 lg:px-16 py-14 pb-28">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 xl:gap-12 items-start">
-
-          {/* Games Grid */}
-          <div className="lg:col-span-2">
-            {error && (
-              <p className="text-[#E8431A] text-sm mb-8 p-4 border-2 border-[#E8431A] font-sans">{error}</p>
+            {/* Loading */}
+            {loading && (
+              <div className="flex flex-col items-center justify-center py-24 text-gray-400">
+                <div className="w-10 h-10 border-4 border-purple-300 border-t-purple-600 rounded-full animate-spin mb-4" />
+                <p className="text-sm font-medium">Loading games…</p>
+              </div>
             )}
 
-            {!error && (
-              <motion.div
-                initial="hidden"
-                animate="visible"
-                variants={{ visible: { transition: { staggerChildren: 0.06 } } }}
-                className="grid grid-cols-1 sm:grid-cols-2 gap-4"
-              >
+            {/* Error */}
+            {error && !loading && (
+              <div className="bg-red-50 border border-red-200 text-red-700 rounded-2xl px-5 py-4 text-sm">
+                {error}
+              </div>
+            )}
+
+            {/* Games grid */}
+            {!loading && !error && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <AnimatePresence>
                   {games?.map((game, index) => {
-                    const [bg, text, accent] = palettes[index % palettes.length];
                     const isOpen = openGameId === game.id;
                     const hasItems = !!cart[game.id];
                     const visual = gameVisuals[index % gameVisuals.length];
@@ -240,155 +169,122 @@ const BuyTicketsPage = () => {
                     return (
                       <motion.div
                         key={game.id}
-                        variants={{
-                          hidden: { opacity: 0, rotate: -1, scale: 0.97 },
-                          visible: { opacity: 1, rotate: 0, scale: 1, transition: { duration: 0.5 } },
-                        }}
-                        whileHover={{ scale: 1.02, rotate: index % 2 === 0 ? 0.6 : -0.6, transition: { duration: 0.2 } }}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.4, delay: index * 0.05 }}
+                        onClick={() => toggleDrawer(game.id)}
+                        className={`group cursor-pointer rounded-3xl overflow-hidden border-2 transition-all shadow-md ${
+                          isOpen || hasItems
+                            ? "border-purple-600 shadow-purple-200 shadow-xl"
+                            : "border-transparent bg-white hover:shadow-xl"
+                        }`}
                       >
-                        <div
-                          className="group relative cursor-pointer overflow-hidden"
-                          style={{ background: bg, border: `3px solid ${text}` }}
-                          onClick={() => toggleDrawer(game.id)}
-                        >
-                          {/* Top bar */}
-                          <div
-                            className="px-4 py-2 flex items-center justify-between"
-                            style={{ background: text, color: accent }}
-                          >
-                            <span className="font-black text-[10px] uppercase tracking-[0.4em]">ATTRACTION</span>
-                            {lowestPrice !== null && (
-                              <div className="flex items-center gap-1.5">
-                                <span className="font-black text-[10px] uppercase tracking-[0.2em]">from</span>
-                                <div
-                                  className="w-10 h-10 rounded-full border-2 flex items-center justify-center shrink-0"
-                                  style={{ borderColor: accent }}
-                                >
-                                  <span className="font-black text-[9px] text-center leading-tight" style={{ color: accent }}>
-                                    {lowestPrice}<br />ETB
-                                  </span>
-                                </div>
+                        {/* ── Picture ── */}
+                        <div className="relative w-full h-44 overflow-hidden">
+                          <img
+                            src={visual.image}
+                            alt={game.name}
+                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                            onError={(e) => {
+                              const target = e.currentTarget as HTMLImageElement;
+                              target.style.display = "none";
+                              const parent = target.parentElement;
+                              if (parent) {
+                                parent.style.background = "linear-gradient(135deg, #a855f7, #ec4899)";
+                                parent.innerHTML = `<div class="w-full h-full flex items-center justify-center text-6xl">${visual.emoji}</div>`;
+                              }
+                            }}
+                          />
+
+                          {/* Selected / has-items overlay */}
+                          {hasItems && (
+                            <div className="absolute inset-0 bg-purple-600/20 flex items-end p-3">
+                              <span className="bg-purple-600 text-white text-xs font-black px-2 py-1 rounded-full">
+                                {Object.values(cart[game.id]).reduce((a, b) => a + b, 0)} in cart
+                              </span>
+                            </div>
+                          )}
+
+                          {/* Price badge */}
+                          {lowestPrice !== null && (
+                            <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm text-purple-700 font-extrabold text-xs px-3 py-1 rounded-full shadow">
+                              from {lowestPrice} ETB
+                            </div>
+                          )}
+                        </div>
+
+                        {/* ── Label ── */}
+                        <div className={`p-4 transition-colors ${isOpen || hasItems ? "bg-gradient-to-br from-purple-50 to-pink-50" : "bg-white"}`}>
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span className="text-lg shrink-0">{visual.emoji}</span>
+                              <div className="min-w-0">
+                                <h4 className="font-bold text-gray-900 text-sm leading-tight truncate">
+                                  {game.name}
+                                </h4>
+                                <p className="text-[10px] font-bold text-purple-500 uppercase tracking-widest mt-0.5">
+                                  {isOpen ? "Tap to close" : "Tap to select"}
+                                </p>
                               </div>
-                            )}
+                            </div>
+                            <motion.div
+                              animate={{ rotate: isOpen ? 180 : 0 }}
+                              transition={{ duration: 0.25 }}
+                              className="shrink-0"
+                            >
+                              <Zap size={16} className={isOpen ? "text-purple-500" : "text-gray-300"} />
+                            </motion.div>
                           </div>
 
-                          {/* ── PICTURE ── */}
-                          <div className="relative w-full h-44 overflow-hidden">
-                            <img
-                              src={visual.image}
-                              alt={game.name}
-                              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                              onError={(e) => {
-                                const target = e.currentTarget as HTMLImageElement;
-                                target.style.display = "none";
-                                const parent = target.parentElement;
-                                if (parent) {
-                                  parent.style.background = bg;
-                                  parent.style.display = "flex";
-                                  parent.style.alignItems = "center";
-                                  parent.style.justifyContent = "center";
-                                  parent.innerHTML = `<div style="font-size:5rem">${visual.emoji}</div>`;
-                                }
-                              }}
-                            />
-                            {/* Color tint overlay matching card palette */}
-                            <div className="absolute inset-0 opacity-25 transition-opacity group-hover:opacity-10" style={{ background: bg }} />
-                            {/* Emoji badge */}
-                            <div className="absolute top-3 left-3 text-3xl drop-shadow-lg">{visual.emoji}</div>
-                            {/* "In cart" badge */}
-                            {hasItems && (
-                              <div
-                                className="absolute bottom-3 right-3 text-[10px] font-black uppercase px-2 py-1"
-                                style={{ background: accent, color: text === '#FAF0DC' ? '#1A1A2E' : bg }}
-                              >
-                                {Object.values(cart[game.id]).reduce((a, b) => a + b, 0)} IN CART
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Label area */}
-                          <div className="p-5">
-                            <h3
-                              className="font-black uppercase leading-tight mb-2"
-                              style={{
-                                fontFamily: "'Arial Black', sans-serif",
-                                fontSize: 'clamp(1.1rem, 3vw, 1.5rem)',
-                                color: text,
-                                letterSpacing: '-0.01em',
-                              }}
-                            >
-                              {game.name}
-                            </h3>
-
-                            <p
-                              className="text-xs leading-relaxed line-clamp-2 mb-4"
-                              style={{ color: text, opacity: 0.5, fontFamily: 'sans-serif', fontWeight: 300 }}
-                            >
-                              {game.description || 'Step right up and experience the thrill!'}
-                            </p>
-
-                            <span
-                              className="text-[10px] font-black uppercase tracking-[0.3em]"
-                              style={{ color: text, opacity: 0.4 }}
-                            >
-                              {isOpen ? '▼ TAP TO CLOSE' : '► TAP FOR TICKETS'}
-                            </span>
-                          </div>
-
-                          {/* ── Ticket drawer ── */}
+                          {/* ── Ticket drawer (expands below label) ── */}
                           <AnimatePresence>
                             {isOpen && (
                               <motion.div
                                 initial={{ height: 0, opacity: 0 }}
-                                animate={{ height: 'auto', opacity: 1 }}
+                                animate={{ height: "auto", opacity: 1 }}
                                 exit={{ height: 0, opacity: 0 }}
                                 transition={{ duration: 0.3 }}
                                 className="overflow-hidden"
                               >
-                                <div className="flex items-center overflow-hidden border-t-2 border-dashed" style={{ borderColor: `${text}50` }}>
-                                  {Array.from({ length: 20 }, (_, k) => (
-                                    <div key={k} className="h-2 flex-1" style={{ background: k % 2 === 0 ? `${text}15` : 'transparent' }} />
-                                  ))}
-                                </div>
-
-                                <div className="p-5 space-y-2" style={{ background: `${bg}CC` }}>
+                                <div className="space-y-2  mt-3 border-t border-purple-100">
                                   {game.ticket_types?.map((tt) => {
                                     const qty = cart[game.id]?.[tt.category] || 0;
                                     return (
                                       <div
                                         key={tt.category}
-                                        className="flex items-center justify-between p-3"
-                                        style={{ background: text === '#FAF0DC' ? '#1A1A2E' : '#FAF0DC', border: `2px solid ${accent}` }}
+                                        className="flex items-center justify-between p-3 bg-white rounded-2xl border border-purple-100 shadow-sm"
                                         onClick={(e) => e.stopPropagation()}
                                       >
                                         <div>
-                                          <span className="text-[10px] font-black uppercase tracking-widest block" style={{ color: accent }}>
+                                          <span className="text-[10px] font-black text-purple-600 uppercase tracking-widest block">
                                             {tt.category}
                                           </span>
-                                          <span className="text-sm font-black" style={{ color: text === '#FAF0DC' ? '#FAF0DC' : bg }}>
+                                          <span className="text-sm font-bold text-gray-800">
                                             {tt.price} ETB
                                           </span>
                                         </div>
-                                        <div className="flex items-center gap-2">
+
+                                        <div className="flex items-center gap-2 bg-slate-50 px-2 py-1 rounded-xl border border-slate-200">
                                           <button
                                             onClick={() => updateQuantity(game.id, tt.category, -1)}
-                                            className="w-8 h-8 flex items-center justify-center font-black text-lg"
-                                            style={{ background: accent, color: text === '#FAF0DC' ? '#1A1A2E' : bg }}
-                                          >−</button>
+                                            className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-red-500 font-black text-lg leading-none"
+                                          >
+                                            −
+                                          </button>
                                           <motion.span
                                             key={qty}
-                                            initial={{ scale: 1.4 }}
-                                            animate={{ scale: 1 }}
-                                            className="w-6 text-center font-black text-sm"
-                                            style={{ color: text }}
+                                            initial={{ scale: 1.4, opacity: 0 }}
+                                            animate={{ scale: 1, opacity: 1 }}
+                                            className="w-5 text-center font-black text-slate-800 text-sm"
                                           >
                                             {qty}
                                           </motion.span>
                                           <button
                                             onClick={() => updateQuantity(game.id, tt.category, 1)}
-                                            className="w-8 h-8 flex items-center justify-center font-black text-lg"
-                                            style={{ background: accent, color: text === '#FAF0DC' ? '#1A1A2E' : bg }}
-                                          >+</button>
+                                            className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-purple-600 font-black text-lg leading-none"
+                                          >
+                                            +
+                                          </button>
                                         </div>
                                       </div>
                                     );
@@ -397,21 +293,15 @@ const BuyTicketsPage = () => {
                               </motion.div>
                             )}
                           </AnimatePresence>
-
-                          {/* Perforated ticket bottom */}
-                          <div className="flex items-center overflow-hidden" style={{ borderTop: `2px dashed ${text}30` }}>
-                            {Array.from({ length: 24 }, (_, k) => (
-                              <div key={k} className="h-3 flex-1" style={{ background: k % 2 === 0 ? `${text}08` : 'transparent' }} />
-                            ))}
-                          </div>
                         </div>
                       </motion.div>
                     );
                   })}
                 </AnimatePresence>
-              </motion.div>
+              </div>
             )}
-          </div>
+          </section>
+        </div>
 
         {/* ── Sticky Checkout ── */}
         <motion.div
@@ -467,16 +357,16 @@ const BuyTicketsPage = () => {
               </AnimatePresence>
             )}
 
-              <div className="mt-6 pt-4 border-t-2" style={{ borderColor: '#F5C842' }}>
-                <div className="flex justify-between items-end">
-                  <span className="font-black uppercase text-xs tracking-widest" style={{ color: '#F5C84280' }}>TOTAL</span>
-                  <div className="text-right">
-                    <span className="text-4xl font-black" style={{ color: '#F5C842' }}>{total}</span>
-                    <span className="text-sm font-bold ml-1" style={{ color: '#E8431A' }}>ETB</span>
-                  </div>
+            <div className="pt-6 border-t border-gray-700">
+              <div className="flex justify-between items-end">
+                <span className="text-gray-400 font-bold uppercase text-xs tracking-widest">Total Amount</span>
+                <div className="text-right">
+                  <span className="text-4xl font-black text-white">{total}</span>
+                  <span className="text-sm font-bold ml-1 text-blue-400">ETB</span>
                 </div>
               </div>
             </div>
+          </div>
 
           <button
             onClick={handleCheckout}
@@ -486,18 +376,13 @@ const BuyTicketsPage = () => {
             PROCEED TO CHECKOUT
           </button>
 
-              <div className="mt-6 flex items-center overflow-hidden">
-                {Array.from({ length: 20 }, (_, k) => (
-                  <div key={k} className="h-2 flex-1" style={{ background: k % 2 === 0 ? '#F5C84230' : 'transparent' }} />
-                ))}
-              </div>
-              <p className="text-[8px] font-black uppercase tracking-widest text-center mt-2" style={{ color: '#F5C84260' }}>
-                ✦ INSTANT QR DELIVERY ✦
-              </p>
-            </div>
-          </motion.div>
+          <div className="mt-6 flex items-center justify-center gap-2 opacity-40">
+            <div className="h-1 w-1 bg-white rounded-full" />
+            <p className="text-[10px] font-bold uppercase tracking-widest">Instant QR Delivery</p>
+            <div className="h-1 w-1 bg-white rounded-full" />
+          </div>
+        </motion.div>
 
-        </div>
       </div>
     </div>
   );
