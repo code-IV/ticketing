@@ -1,37 +1,44 @@
-"use client";
+'use client';
 
 import { use, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { eventService } from "@/services/eventService";
 import { bookingService } from "@/services/bookingService";
-import { Event, TicketType, BookingItem } from "@/types";
-import { Button } from "@/components/ui/Button";
-import { Card, CardHeader, CardBody, CardFooter } from "@/components/ui/Card";
-import { Calendar, Clock, MapPin, Users, ShoppingCart } from "lucide-react";
+import { Event, BookingItem } from "@/types";
+import { motion } from 'framer-motion';
+import { 
+  Clock, MapPin, Calendar, ArrowLeft, 
+  Ticket, Play, Share2, Plus, Minus, ShoppingCart, ArrowRight 
+} from 'lucide-react';
+import Link from 'next/link';
 import { format } from "date-fns";
 
-export default function EventDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const resolvedparams = use(params);
-  const id = resolvedparams.id;
+export default function EventDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = use(params);
+  const id = resolvedParams.id;
   const router = useRouter();
   const { user } = useAuth();
+
+  // ── STATE ──
   const [event, setEvent] = useState<Event | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [cart, setCart] = useState<{ [key: string]: number }>({});
   const [booking, setBooking] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<
-    "credit_card" | "debit_card" | "telebirr" | "cash"
-  >("telebirr");
+  const [paymentMethod, setPaymentMethod] = useState<"credit_card" | "debit_card" | "telebirr" | "cash">("telebirr");
 
-  useEffect(() => {
-    loadEvent();
-  }, [id]);
+  // ── MOCK MEDIA ──
+  const MOCK_VID = "https://player.vimeo.com/external/434045526.sd.mp4?s=c27ee37da9897116710497645167f536968d876d&profile_id=164&oauth2_token_id=57447761";
+  const VIDEO_POSTER = "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?q=80&w=2000&auto=format&fit=crop";
+  const MOCK_GALLERY = [
+    "https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?q=80&w=600&auto=format&fit=crop",
+    "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?q=80&w=600&auto=format&fit=crop",
+    "https://images.unsplash.com/photo-1514525253361-bee8a19740c1?q=80&w=600&auto=format&fit=crop",
+    "https://images.unsplash.com/photo-1429962714451-bb934ecdc4ec?q=80&w=600&auto=format&fit=crop"
+  ];
+
+  useEffect(() => { loadEvent(); }, [id]);
 
   const loadEvent = async () => {
     try {
@@ -48,11 +55,8 @@ export default function EventDetailPage({
   const updateCart = (ticketTypeId: string, quantity: number) => {
     setCart((prev) => {
       const newCart = { ...prev };
-      if (quantity <= 0) {
-        delete newCart[ticketTypeId];
-      } else {
-        newCart[ticketTypeId] = quantity;
-      }
+      if (quantity <= 0) delete newCart[ticketTypeId];
+      else newCart[ticketTypeId] = quantity;
       return newCart;
     });
   };
@@ -65,322 +69,221 @@ export default function EventDetailPage({
     }, 0);
   };
 
-  const getTotalTickets = () => {
-    return Object.values(cart).reduce((sum, qty) => sum + qty, 0);
-  };
-
-  const combineDateAndTime = (
-    dateInput: string | undefined,
-    timeString: string | undefined,
-  ) => {
-    if (!dateInput || !timeString) {
-      return null;
-    }
-    // 1. Create a date object from the event date
-    const date = new Date(dateInput);
-
-    // 2. Parse the HH:mm from the time string
-    const [hours, minutes] = timeString.split(":").map(Number);
-
-    // 3. Update the date object with the new time
-    date.setHours(hours);
-    date.setMinutes(minutes);
-    date.setSeconds(0);
-    date.setMilliseconds(0);
-
-    // 4. Return as ISO string (Standard for DB timestamps)
-    return date.toISOString();
-  };
+  const getTotalTickets = () => Object.values(cart).reduce((sum, qty) => sum + qty, 0);
 
   const handleBooking = async () => {
-    if (!user) {
-      router.push("/login");
-      return;
-    }
-
-    if (getTotalTickets() === 0) {
-      setError("Please select at least one ticket");
-      return;
-    }
-
+    if (!user) { router.push("/login"); return; }
+    if (getTotalTickets() === 0) { setError("Please select at least one ticket"); return; }
     setBooking(true);
     setError("");
-
     try {
-      const items: BookingItem[] = Object.entries(cart).map(
-        ([ticketTypeId, quantity]) => ({
-          ticketTypeId,
-          quantity,
-        }),
-      );
+      const items: BookingItem[] = Object.entries(cart).map(([ticketTypeId, quantity]) => ({
+        ticketTypeId, quantity,
+      }));
       const response = await bookingService.createBooking({
         eventId: id,
         items,
         paymentMethod,
-        expires_at:
-          combineDateAndTime(event?.event_date, event?.end_time) || undefined,
       });
-
       router.push(`/bookings/${response.data?.booking.id}`);
     } catch (err: any) {
-      setError(
-        err.response?.data?.message || "Booking failed. Please try again.",
-      );
+      setError(err.response?.data?.message || "Booking failed.");
     } finally {
       setBooking(false);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading event details...</p>
-        </div>
-      </div>
-    );
-  }
+  // ── SHARED COMPONENT: ORDER SUMMARY ──
+  const OrderSummaryUI = () => (
+    <div className="space-y-6">
+      {getTotalTickets() === 0 ? (
+        <p className="text-slate-300 font-medium italic py-4">Select your passes to review your order...</p>
+      ) : (
+        <>
+          {Object.entries(cart).map(([tid, qty]) => {
+            const t = event?.ticket_types?.find(x => x.id === tid);
+            return (
+              <div key={tid} className="flex justify-between items-center pb-4 border-b border-slate-50">
+                <div>
+                  <p className="font-black text-slate-900 uppercase text-sm">{t?.name}</p>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{qty} Tickets</p>
+                </div>
+                <p className="font-black text-slate-900">{(t?.price || 0) * qty} ETB</p>
+              </div>
+            );
+          })}
+          <div className="flex justify-between items-center pt-6">
+            <p className="text-2xl font-black text-slate-900 uppercase tracking-tighter">Grand Total</p>
+            <div className="text-right">
+              <p className="text-4xl lg:text-5xl font-black text-indigo-600 tracking-tighter">{getTotalAmount()}</p>
+              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Birr</p>
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
 
-  if (!event) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">
-            Event Not Found
-          </h2>
-          <p className="text-gray-600 mb-4">
-            The event you're looking for doesn't exist.
-          </p>
-          <Button onClick={() => router.push("/events")}>Back to Events</Button>
-        </div>
-      </div>
-    );
-  }
+  if (loading) return (
+    <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC]">
+      <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
 
-  const availableTickets = event.capacity - event.tickets_sold;
-  const isSoldOut = availableTickets <= 0;
+  if (!event) return <div className="p-20 text-center font-black uppercase tracking-widest">Event not found.</div>;
+
+  const isSoldOut = (event.capacity - event.tickets_sold) <= 0;
 
   return (
-    <div className="min-h-screen py-12">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2">
-            <Card>
-              <CardHeader>
-                <h1 className="text-3xl font-bold text-gray-900">
-                  {event.name}
-                </h1>
-              </CardHeader>
-              <CardBody className="space-y-6">
-                <p className="text-gray-700 text-lg">
-                  {event.description ||
-                    "Join us for an amazing experience at Bora Park!"}
-                </p>
+    <div className="min-h-screen bg-[#F8FAFC] pb-20 pt-10 px-4">
+      <div className="max-w-7xl mx-auto">
+        
+        {/* ── HEADER ── */}
+        <header className="mb-8 flex items-center justify-between">
+          <Link href="/events" className="group flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-white border border-slate-100 flex items-center justify-center text-slate-900 group-hover:bg-indigo-600 group-hover:text-white transition-all">
+              <ArrowLeft size={18} />
+            </div>
+            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Back to Lineup</span>
+          </Link>
+          <button className="w-10 h-10 rounded-full bg-white border border-slate-100 flex items-center justify-center text-slate-900 shadow-sm hover:scale-110 transition-transform">
+            <Share2 size={18} />
+          </button>
+        </header>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="flex items-start space-x-3">
-                    <Calendar className="h-5 w-5 text-blue-600 mt-1" />
-                    <div>
-                      <p className="font-medium text-gray-900">Date</p>
-                      <p className="text-gray-600">
-                        {format(
-                          new Date(event.event_date),
-                          "EEEE, MMMM dd, yyyy",
-                        )}
-                      </p>
-                    </div>
+        <div className="flex flex-col gap-8">
+          
+          {/* ── MEDIA SECTION (2/3 Video, 1/3 Gallery) ── */}
+          <section className="relative w-full rounded-[48px] overflow-hidden border border-slate-100 bg-white shadow-sm">
+            <div className="flex flex-col h-[650px] md:h-[800px]">
+              <div className="relative h-2/3 w-full bg-slate-900 overflow-hidden">
+                <video 
+                  src={event.video_url || MOCK_VID} 
+                  poster={VIDEO_POSTER}
+                  autoPlay muted loop playsInline 
+                  className="w-full h-full object-cover opacity-70 scale-105" 
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent opacity-60" />
+                <div className="absolute top-8 left-8">
+                  <span className="flex items-center gap-2 px-4 py-2 bg-indigo-600 rounded-full text-white text-[10px] font-black uppercase tracking-widest shadow-xl">
+                    <Play size={12} fill="currentColor" /> Event Trailer
+                  </span>
+                </div>
+              </div>
+              <div className="relative h-1/3 w-full p-4 md:p-6 bg-white flex gap-4 overflow-x-auto no-scrollbar scroll-smooth">
+                {MOCK_GALLERY.map((img, idx) => (
+                  <motion.div key={idx} whileHover={{ scale: 1.02, y: -5 }} className="flex-shrink-0 w-64 md:w-80 h-full rounded-[28px] overflow-hidden border border-slate-100 shadow-sm">
+                    <img src={img} alt={`gallery-${idx}`} className="w-full h-full object-cover" />
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          {/* ── CONTENT & BOOKING GRID ── */}
+          <section className="grid grid-cols-1 lg:grid-cols-12 gap-12 mt-4">
+            
+            {/* ── LEFT COLUMN: INFO ── */}
+            <div className="lg:col-span-7">
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+                <h1 className="text-5xl md:text-8xl font-black text-slate-900 tracking-tighter leading-[0.85] mb-8 uppercase">
+                  {event.name.split(' ')[0]} <br /> 
+                  <span className="text-indigo-600">{event.name.split(' ').slice(1).join(' ')}</span>
+                </h1>
+                
+                <p className="text-slate-500 text-xl font-medium leading-relaxed mb-10 max-w-2xl">
+                  {event.description || "Experience a world-class production at Bora Park. Featuring state-of-the-art visuals and performances that redefine entertainment."}
+                </p>
+                
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-12">
+                  <div className="p-6 rounded-[32px] bg-white border border-slate-100 shadow-sm">
+                    <Calendar className="text-indigo-600 mb-2" size={20} />
+                    <p className="text-[9px] font-black text-slate-400 uppercase">Date</p>
+                    <p className="text-lg font-black text-slate-900">{format(new Date(event.event_date), "MMM dd, yyyy")}</p>
                   </div>
-                  <div className="flex items-start space-x-3">
-                    <Clock className="h-5 w-5 text-blue-600 mt-1" />
-                    <div>
-                      <p className="font-medium text-gray-900">Time</p>
-                      <p className="text-gray-600">
-                        {event.start_time} - {event.end_time}
-                      </p>
-                    </div>
+                  <div className="p-6 rounded-[32px] bg-white border border-slate-100 shadow-sm">
+                    <Clock className="text-indigo-600 mb-2" size={20} />
+                    <p className="text-[9px] font-black text-slate-400 uppercase">Time</p>
+                    <p className="text-lg font-black text-slate-900">{event.start_time}</p>
                   </div>
-                  <div className="flex items-start space-x-3">
-                    <MapPin className="h-5 w-5 text-blue-600 mt-1" />
-                    <div>
-                      <p className="font-medium text-gray-900">Location</p>
-                      <p className="text-gray-600">
-                        Bora Amusement Park, Addis Ababa
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-start space-x-3">
-                    <Users className="h-5 w-5 text-blue-600 mt-1" />
-                    <div>
-                      <p className="font-medium text-gray-900">Availability</p>
-                      <p className="text-gray-600">
-                        {availableTickets} / {event.capacity} tickets remaining
-                      </p>
-                    </div>
+                  <div className="p-6 rounded-[32px] bg-white border border-slate-100 shadow-sm">
+                    <MapPin className="text-indigo-600 mb-2" size={20} />
+                    <p className="text-[9px] font-black text-slate-400 uppercase">Venue</p>
+                    <p className="text-lg font-black text-slate-900">Bora Stage</p>
                   </div>
                 </div>
 
-                {isSoldOut && (
-                  <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-                    This event is sold out. Please check other available events.
-                  </div>
-                )}
-              </CardBody>
-            </Card>
+                {/* ── FINAL ORDER REVIEW (Desktop Only) ── */}
+                <div className="hidden lg:block p-8 md:p-12 rounded-[48px] bg-white border border-slate-100 shadow-sm">
+                  <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-400 mb-8 flex items-center gap-2">
+                    <ShoppingCart size={16} /> Final Order Review
+                  </h3>
+                  <OrderSummaryUI />
+                </div>
+              </motion.div>
+            </div>
 
-            {!isSoldOut &&
-              event.ticket_types &&
-              event.ticket_types.length > 0 && (
-                <Card className="mt-6">
-                  <CardHeader>
-                    <h2 className="text-2xl font-bold text-gray-900">
-                      Select Tickets
-                    </h2>
-                  </CardHeader>
-                  <CardBody className="space-y-4">
-                    {event.ticket_types.map((ticketType) => (
-                      <div
-                        key={ticketType.id}
-                        className="flex items-center justify-between p-4 border border-gray-200 rounded-lg"
-                      >
-                        <div className="flex-1">
-                          <h3 className="font-semibold text-gray-900">
-                            {ticketType.name}
-                          </h3>
-                          <p className="text-sm text-gray-600">
-                            {ticketType.description}
-                          </p>
-                          <p className="text-lg font-bold text-blue-600 mt-1">
-                            {ticketType.price} ETB
-                          </p>
+            {/* ── RIGHT COLUMN: PASS SELECTION & CHECKOUT ── */}
+            <aside className="lg:col-span-5">
+              <div className="sticky top-10 flex flex-col gap-6">
+                
+                {/* 1. SELECT YOUR PASSES */}
+                <div className="p-8 rounded-[40px] bg-white border border-slate-100 shadow-sm">
+                  <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-900 mb-6">Select Your Passes</h3>
+                  <div className="space-y-4">
+                    {event.ticket_types?.map((type) => (
+                      <div key={type.id} className="p-5 rounded-[28px] bg-[#F8FAFC] border border-slate-100 flex items-center justify-between hover:border-indigo-200 transition-all">
+                        <div>
+                          <p className="text-[10px] font-black text-indigo-600 uppercase mb-1">{type.name}</p>
+                          <p className="text-xl font-black text-slate-900">{type.price} <span className="text-[10px] opacity-40">ETB</span></p>
                         </div>
-                        <div className="flex items-center space-x-3">
-                          <Button
-                            variant="secondary"
-                            size="sm"
-                            onClick={() =>
-                              updateCart(
-                                ticketType.id,
-                                (cart[ticketType.id] || 0) - 1,
-                              )
-                            }
-                            disabled={!cart[ticketType.id]}
-                          >
-                            -
-                          </Button>
-                          <span className="w-8 text-center font-medium">
-                            {cart[ticketType.id] || 0}
-                          </span>
-                          <Button
-                            variant="secondary"
-                            size="sm"
-                            onClick={() =>
-                              updateCart(
-                                ticketType.id,
-                                (cart[ticketType.id] || 0) + 1,
-                              )
-                            }
-                            disabled={
-                              (cart[ticketType.id] || 0) >=
-                              ticketType.max_quantity_per_booking
-                            }
-                          >
-                            +
-                          </Button>
+                        <div className="flex items-center gap-3 bg-white p-1.5 rounded-2xl shadow-sm">
+                          <button onClick={() => updateCart(type.id, (cart[type.id] || 0) - 1)} className="w-8 h-8 flex items-center justify-center rounded-xl text-slate-400 hover:bg-red-50 hover:text-red-500 transition-colors"><Minus size={14}/></button>
+                          <span className="font-black text-sm w-4 text-center">{cart[type.id] || 0}</span>
+                          <button onClick={() => updateCart(type.id, (cart[type.id] || 0) + 1)} className="w-8 h-8 flex items-center justify-center rounded-xl text-slate-900 hover:bg-indigo-600 hover:text-white transition-colors"><Plus size={14}/></button>
                         </div>
                       </div>
                     ))}
-                  </CardBody>
-                </Card>
-              )}
-          </div>
-
-          <div className="lg:col-span-1">
-            <Card className="sticky top-4">
-              <CardHeader>
-                <h2 className="text-xl font-bold text-gray-900 flex items-center">
-                  <ShoppingCart className="h-5 w-5 mr-2" />
-                  Booking Summary
-                </h2>
-              </CardHeader>
-              <CardBody className="space-y-4">
-                {getTotalTickets() === 0 ? (
-                  <p className="text-gray-600 text-center py-4">
-                    No tickets selected
-                  </p>
-                ) : (
-                  <>
-                    <div className="space-y-2">
-                      {Object.entries(cart).map(([ticketTypeId, quantity]) => {
-                        const ticketType = event.ticket_types?.find(
-                          (t) => t.id === ticketTypeId,
-                        );
-                        if (!ticketType) return null;
-                        return (
-                          <div
-                            key={ticketTypeId}
-                            className="flex justify-between text-sm"
-                          >
-                            <span className="text-gray-700">
-                              {quantity}x {ticketType.name}
-                            </span>
-                            <span className="font-medium">
-                              {(ticketType.price * quantity).toFixed(2)} ETB
-                            </span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                    <div className="border-t pt-4">
-                      <div className="flex justify-between text-lg font-bold">
-                        <span>Total</span>
-                        <span className="text-blue-600">
-                          {getTotalAmount().toFixed(2)} ETB
-                        </span>
-                      </div>
-                      <p className="text-sm text-gray-600 mt-1">
-                        {getTotalTickets()} ticket(s)
-                      </p>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Payment Method
-                      </label>
-                      <select
-                        value={paymentMethod}
-                        onChange={(e) =>
-                          setPaymentMethod(e.target.value as any)
-                        }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      >
-                        <option value="telebirr">Telebirr</option>
-                        <option value="credit_card">Credit Card</option>
-                        <option value="debit_card">Debit Card</option>
-                        <option value="cash">Cash (Pay at Park)</option>
-                      </select>
-                    </div>
-                  </>
-                )}
-
-                {error && (
-                  <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-lg text-sm">
-                    {error}
                   </div>
-                )}
-              </CardBody>
-              <CardFooter>
-                <Button
-                  className="w-full"
-                  onClick={handleBooking}
-                  disabled={getTotalTickets() === 0 || booking || isSoldOut}
-                  isLoading={booking}
-                >
-                  {user ? "Complete Booking" : "Login to Book"}
-                </Button>
-              </CardFooter>
-            </Card>
-          </div>
+                </div>
+
+                {/* ── FINAL ORDER REVIEW (Mobile Only: Appears under selector) ── */}
+                <div className="lg:hidden p-8 rounded-[40px] bg-white border border-slate-100 shadow-sm">
+                  <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-400 mb-6 flex items-center gap-2">
+                    <ShoppingCart size={16} /> Your Selection
+                  </h3>
+                  <OrderSummaryUI />
+                </div>
+
+                {/* 2. CHECKOUT CARD */}
+                <div className="p-8 rounded-[40px] bg-slate-900 text-white shadow-2xl">
+                  <div className="mb-6">
+                    <label className="block text-[8px] font-black uppercase text-indigo-400 mb-2 tracking-widest">Payment Method</label>
+                    <select 
+                      value={paymentMethod} 
+                      onChange={(e) => setPaymentMethod(e.target.value as any)}
+                      className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-xs font-black uppercase tracking-widest outline-none focus:border-indigo-500 transition-all appearance-none cursor-pointer"
+                    >
+                      <option value="telebirr" className="bg-slate-900">Telebirr SuperApp</option>
+                      <option value="credit_card" className="bg-slate-900">Credit Card</option>
+                      <option value="cash" className="bg-slate-900">Pay at Gate</option>
+                    </select>
+                  </div>
+
+                  {error && <div className="p-4 bg-red-500/10 border border-red-500/20 text-red-400 text-[10px] font-black uppercase rounded-2xl mb-6">{error}</div>}
+
+                  <button 
+                    onClick={handleBooking}
+                    disabled={getTotalTickets() === 0 || booking || isSoldOut}
+                    className="group w-full py-6 rounded-[24px] bg-indigo-600 text-white font-black uppercase text-xs tracking-[0.2em] hover:bg-indigo-500 transition-all flex items-center justify-center gap-3 disabled:opacity-30 disabled:cursor-not-allowed"
+                  >
+                    {booking ? "Processing..." : user ? "Confirm Order" : "Login to Book"} 
+                    <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                  </button>
+                </div>
+              </div>
+            </aside>
+          </section>
         </div>
       </div>
     </div>
