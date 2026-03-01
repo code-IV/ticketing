@@ -140,7 +140,7 @@ export default function MyBookingsPage() {
                       </span>
                       <span className="text-sm font-bold text-slate-700">
                         {item.type === "EVENT"
-                          ? format(new Date(item.event_date), "MMM dd, yyyy")
+                          ? item.event_name
                           : "Anytime Access"}
                       </span>
                     </div>

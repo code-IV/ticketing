@@ -1,27 +1,27 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/contexts/AuthContext';
-import { adminService } from '@/services/adminService';
-import { Booking } from '@/types';
-import { Button } from '@/components/ui/Button';
-import { Card, CardHeader, CardBody } from '@/components/ui/Card';
-import { Eye, XCircle, Filter } from 'lucide-react';
-import { format } from 'date-fns';
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/contexts/AuthContext";
+import { adminService } from "@/services/adminService";
+import { Booking } from "@/types";
+import { Button } from "@/components/ui/Button";
+import { Card, CardHeader, CardBody } from "@/components/ui/Card";
+import { Eye, XCircle, Filter } from "lucide-react";
+import { format } from "date-fns";
 
 export default function AdminBookingsPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState<string>('');
+  const [statusFilter, setStatusFilter] = useState<string>("");
   const [cancelling, setCancelling] = useState<string | null>(null);
 
   useEffect(() => {
     if (!authLoading) {
-      if (!user || user.role !== 'admin') {
-        router.push('/');
+      if (!user || user.role !== "ADMIN") {
+        router.push("/");
       } else {
         loadBookings();
       }
@@ -31,24 +31,28 @@ export default function AdminBookingsPage() {
   const loadBookings = async () => {
     try {
       setLoading(true);
-      const response = await adminService.getAllBookings(1, 100, statusFilter || undefined);
+      const response = await adminService.getAllBookings(
+        1,
+        100,
+        statusFilter || undefined,
+      );
       setBookings(response.data.bookings || []);
     } catch (err: any) {
-      console.error('Failed to load bookings:', err);
+      console.error("Failed to load bookings:", err);
     } finally {
       setLoading(false);
     }
   };
 
   const handleCancelBooking = async (bookingId: string) => {
-    if (!confirm('Are you sure you want to cancel this booking?')) return;
+    if (!confirm("Are you sure you want to cancel this booking?")) return;
 
     setCancelling(bookingId);
     try {
       await adminService.cancelBooking(bookingId);
       await loadBookings();
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Failed to cancel booking');
+      alert(err.response?.data?.message || "Failed to cancel booking");
     } finally {
       setCancelling(null);
     }
@@ -56,10 +60,14 @@ export default function AdminBookingsPage() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'confirmed': return 'bg-green-100 text-green-800';
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'cancelled': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case "confirmed":
+        return "bg-green-100 text-green-800";
+      case "pending":
+        return "bg-yellow-100 text-yellow-800";
+      case "cancelled":
+        return "bg-red-100 text-red-800";
+      default:
+        return "bg-gray-100 text-gray-800";
     }
   };
 
@@ -78,8 +86,12 @@ export default function AdminBookingsPage() {
     <div className="min-h-screen py-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">Manage Bookings</h1>
-          <p className="text-lg text-gray-600">View and manage all customer bookings</p>
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">
+            Manage Bookings
+          </h1>
+          <p className="text-lg text-gray-600">
+            View and manage all customer bookings
+          </p>
         </div>
 
         <div className="mb-6 flex items-center gap-4">
@@ -94,7 +106,9 @@ export default function AdminBookingsPage() {
             <option value="pending">Pending</option>
             <option value="cancelled">Cancelled</option>
           </select>
-          <span className="text-sm text-gray-600">{bookings.length} bookings</span>
+          <span className="text-sm text-gray-600">
+            {bookings.length} bookings
+          </span>
         </div>
 
         <Card>
@@ -103,35 +117,64 @@ export default function AdminBookingsPage() {
           </CardHeader>
           <CardBody>
             {bookings.length === 0 ? (
-              <p className="text-gray-600 text-center py-8">No bookings found</p>
+              <p className="text-gray-600 text-center py-8">
+                No bookings found
+              </p>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Reference</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Event</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Reference
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Customer
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Event
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Date
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Amount
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Status
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Actions
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
                     {bookings.map((booking) => (
                       <tr key={booking.id} className="hover:bg-gray-50">
-                        <td className="px-4 py-3 text-sm font-medium text-gray-900">{booking.booking_reference}</td>
-                        <td className="px-4 py-3 text-sm text-gray-600">{(booking as any).customer_name || 'N/A'}</td>
-                        <td className="px-4 py-3 text-sm text-gray-600">{booking.event_name}</td>
+                        <td className="px-4 py-3 text-sm font-medium text-gray-900">
+                          {booking.booking_reference}
+                        </td>
                         <td className="px-4 py-3 text-sm text-gray-600">
-                          {booking.event_date ? format(new Date(booking.event_date), 'MMM dd, yyyy') : 'N/A'}
+                          {(booking as any).customer_name || "N/A"}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-600">
+                          {booking.event_name}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-600">
+                          {booking.event_date
+                            ? format(
+                                new Date(booking.event_date),
+                                "MMM dd, yyyy",
+                              )
+                            : "N/A"}
                         </td>
                         <td className="px-4 py-3 text-sm font-medium text-gray-900">
                           {parseFloat(booking.total_amount).toFixed(2)} ETB
                         </td>
                         <td className="px-4 py-3">
-                          <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(booking.booking_status)}`}>
+                          <span
+                            className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(booking.booking_status)}`}
+                          >
                             {booking.booking_status}
                           </span>
                         </td>
@@ -140,11 +183,13 @@ export default function AdminBookingsPage() {
                             <Button
                               variant="secondary"
                               size="sm"
-                              onClick={() => router.push(`/bookings/${booking.id}`)}
+                              onClick={() =>
+                                router.push(`/bookings/${booking.id}`)
+                              }
                             >
                               <Eye className="h-4 w-4" />
                             </Button>
-                            {booking.booking_status === 'confirmed' && (
+                            {booking.booking_status === "confirmed" && (
                               <Button
                                 variant="danger"
                                 size="sm"

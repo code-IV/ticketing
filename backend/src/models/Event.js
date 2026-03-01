@@ -1,15 +1,31 @@
-const { query } = require('../config/db');
+const { query } = require("../config/db");
 
 const Event = {
   /**
    * Create a new event
    */
-  async create({ name, description, eventDate, startTime, endTime, capacity, createdBy }) {
+  async create({
+    name,
+    description,
+    eventDate,
+    startTime,
+    endTime,
+    capacity,
+    createdBy,
+  }) {
     const sql = `
       INSERT INTO events (name, description, event_date, start_time, end_time, capacity, created_by)
       VALUES ($1, $2, $3, $4, $5, $6, $7)
       RETURNING *`;
-    const values = [name, description, eventDate, startTime, endTime, capacity, createdBy];
+    const values = [
+      name,
+      description,
+      eventDate,
+      startTime,
+      endTime,
+      capacity,
+      createdBy,
+    ];
     const result = await query(sql, values);
     return result.rows[0];
   },
@@ -33,9 +49,14 @@ const Event = {
     if (!event) return null;
 
     const ticketTypesSql = `
-      SELECT * FROM ticket_types
-      WHERE event_id = $1 AND is_active = true
-      ORDER BY price ASC`;
+      SELECT tt.*, 
+        p.name as product_name,
+        p.product_type
+      FROM ticket_types tt
+      JOIN products p ON tt.product_id = p.id
+      WHERE p.event_id = $1
+        AND p.is_active = true
+      ORDER BY tt.price ASC;`;
     const ticketTypesResult = await query(ticketTypesSql, [id]);
 
     return {
@@ -108,7 +129,10 @@ const Event = {
   /**
    * Update an event
    */
-  async update(id, { name, description, eventDate, startTime, endTime, capacity, isActive }) {
+  async update(
+    id,
+    { name, description, eventDate, startTime, endTime, capacity, isActive },
+  ) {
     const sql = `
       UPDATE events
       SET name = COALESCE($2, name),
@@ -120,7 +144,16 @@ const Event = {
           is_active = COALESCE($8, is_active)
       WHERE id = $1
       RETURNING *`;
-    const values = [id, name, description, eventDate, startTime, endTime, capacity, isActive];
+    const values = [
+      id,
+      name,
+      description,
+      eventDate,
+      startTime,
+      endTime,
+      capacity,
+      isActive,
+    ];
     const result = await query(sql, values);
     return result.rows[0] || null;
   },

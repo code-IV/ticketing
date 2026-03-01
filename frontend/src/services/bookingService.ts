@@ -62,7 +62,7 @@ export const bookingService = {
 
   async getBookingTickets(
     id: string,
-  ): Promise<ApiResponse<{ tickets: Ticket[] }>> {
+  ): Promise<ApiResponse<{ tickets: Ticket }>> {
     const response = await api.get(`/bookings/${id}/tickets`);
     return response.data;
   },

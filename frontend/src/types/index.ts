@@ -4,7 +4,7 @@ export interface User {
   last_name: string;
   email: string;
   phone?: string;
-  role: "admin" | "visitor";
+  role: "ADMIN" | "STAFF" | "VISITOR";
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -228,16 +228,19 @@ export interface GameBookingItemDetail {
 
 export interface Ticket {
   id: string;
-  booking_id: string;
-  booking_item_id: string;
   ticket_code: string;
-  qr_data: string;
   qr_token: string;
-  is_used: boolean;
-  used_at?: string;
-  created_at: string;
-  ticket_type_name?: string;
-  category?: string;
+  status: "ACTIVE" | "EXPIRED" | "CANCELLED" | "FULLY_USED";
+  expires_at: string;
+  entitlements: Ticket_Product[];
+}
+
+export interface Ticket_Product {
+  id: string;
+  activity_name: string;
+  total_quantity: number;
+  used_quantity: number;
+  status: "AVAILABLE" | "USED";
 }
 
 export interface Payment {

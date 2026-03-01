@@ -2,7 +2,15 @@
 import Link from "next/link";
 import { motion, useScroll, useMotionValueEvent } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
-import { LayoutDashboard, BarChart3, Menu, X, User, LogOut, Ticket } from "lucide-react";
+import {
+  LayoutDashboard,
+  BarChart3,
+  Menu,
+  X,
+  User,
+  LogOut,
+  Ticket,
+} from "lucide-react";
 import { useState } from "react";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
@@ -52,7 +60,6 @@ export function Navbar() {
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-
             {/* Logo */}
             <Link href="/" className="flex items-center group">
               <Image
@@ -68,6 +75,7 @@ export function Navbar() {
             <div className="hidden md:flex items-center gap-8">
               {[
                 { href: "/events", label: "Events" },
+                { href: "/games", label: "Games" },
                 { href: "/my-bookings", label: "My Bookings" },
               ].map((item) => (
                 <Link
@@ -88,12 +96,18 @@ export function Navbar() {
                 </Link>
               )}
 
-              {user?.role === "admin" && (
+              {user?.role === "ADMIN" && (
                 <>
-                  <Link href="/admin" className={`flex items-center gap-1.5 text-sm font-semibold transition-colors ${linkColor}`}>
+                  <Link
+                    href="/admin"
+                    className={`flex items-center gap-1.5 text-sm font-semibold transition-colors ${linkColor}`}
+                  >
                     <LayoutDashboard className="h-4 w-4" /> Admin
                   </Link>
-                  <Link href="/admin/analytics" className={`flex items-center gap-1.5 text-sm font-semibold transition-colors ${linkColor}`}>
+                  <Link
+                    href="/admin/analytics"
+                    className={`flex items-center gap-1.5 text-sm font-semibold transition-colors ${linkColor}`}
+                  >
                     <BarChart3 className="h-4 w-4" /> Analytics
                   </Link>
                 </>
@@ -108,11 +122,15 @@ export function Navbar() {
                     href="/profile"
                     className={`flex items-center gap-2 text-sm font-semibold transition-colors ${linkColor}`}
                   >
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${isHomePage ? "bg-white/15" : "bg-gray-100"}`}>
-                      <User className={`h-4 w-4 ${isHomePage ? "text-white" : "text-gray-700"}`} />
+                    <div
+                      className={`w-8 h-8 rounded-full flex items-center justify-center ${isHomePage ? "bg-white/15" : "bg-gray-100"}`}
+                    >
+                      <User
+                        className={`h-4 w-4 ${isHomePage ? "text-white" : "text-gray-700"}`}
+                      />
                     </div>
                     {user.first_name}
-                    {user.role === "admin" && (
+                    {user.role === "ADMIN" && (
                       <span className="px-2 py-0.5 bg-yellow-400 text-black text-[10px] font-black rounded-full uppercase tracking-wide">
                         Admin
                       </span>
@@ -134,11 +152,13 @@ export function Navbar() {
               ) : (
                 <>
                   <Link href="/login">
-                    <button className={`text-sm font-semibold px-5 py-2 rounded-full transition-all ${
-                      isHomePage
-                        ? "text-white/80 hover:text-white hover:bg-white/10"
-                        : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
-                    }`}>
+                    <button
+                      className={`text-sm font-semibold px-5 py-2 rounded-full transition-all ${
+                        isHomePage
+                          ? "text-white/80 hover:text-white hover:bg-white/10"
+                          : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                      }`}
+                    >
                       Login
                     </button>
                   </Link>
@@ -156,7 +176,11 @@ export function Navbar() {
               onClick={() => setMobileOpen(!mobileOpen)}
               className={`md:hidden p-2 rounded-xl transition-colors ${isHomePage ? "hover:bg-white/10 text-white" : "hover:bg-gray-100 text-gray-800"}`}
             >
-              {mobileOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+              {mobileOpen ? (
+                <X className="h-6 w-6" />
+              ) : (
+                <Menu className="h-6 w-6" />
+              )}
             </button>
           </div>
         </div>
@@ -187,12 +211,20 @@ export function Navbar() {
               </Link>
             ))}
 
-            {user?.role === "admin" && (
+            {user?.role === "ADMIN" && (
               <>
-                <Link href="/admin" onClick={() => setMobileOpen(false)} className="flex items-center gap-2 text-white/80 hover:text-[#FFD84D] font-semibold py-1 text-lg">
+                <Link
+                  href="/admin"
+                  onClick={() => setMobileOpen(false)}
+                  className="flex items-center gap-2 text-white/80 hover:text-[#FFD84D] font-semibold py-1 text-lg"
+                >
                   <LayoutDashboard className="h-5 w-5" /> Admin
                 </Link>
-                <Link href="/admin/analytics" onClick={() => setMobileOpen(false)} className="flex items-center gap-2 text-white/80 hover:text-[#FFD84D] font-semibold py-1 text-lg">
+                <Link
+                  href="/admin/analytics"
+                  onClick={() => setMobileOpen(false)}
+                  className="flex items-center gap-2 text-white/80 hover:text-[#FFD84D] font-semibold py-1 text-lg"
+                >
                   <BarChart3 className="h-5 w-5" /> Analytics
                 </Link>
               </>
@@ -206,14 +238,21 @@ export function Navbar() {
                       <User className="h-5 w-5 text-white" />
                     </div>
                     <div>
-                      <p className="font-bold text-white">{user.first_name} {user.last_name}</p>
-                      {user.role === "admin" && (
-                        <span className="text-[10px] bg-[#FFD84D] text-black px-2 py-0.5 rounded-full font-black uppercase">Admin</span>
+                      <p className="font-bold text-white">
+                        {user.first_name} {user.last_name}
+                      </p>
+                      {user.role === "ADMIN" && (
+                        <span className="text-[10px] bg-[#FFD84D] text-black px-2 py-0.5 rounded-full font-black uppercase">
+                          Admin
+                        </span>
                       )}
                     </div>
                   </div>
                   <button
-                    onClick={() => { handleLogout(); setMobileOpen(false); }}
+                    onClick={() => {
+                      handleLogout();
+                      setMobileOpen(false);
+                    }}
                     className="w-full flex items-center justify-center gap-2 border border-white/20 text-white/70 font-semibold py-3 rounded-2xl hover:bg-white/10 transition-colors"
                   >
                     <LogOut className="h-4 w-4" /> Logout

@@ -43,20 +43,12 @@ const bookingController = {
 
       for (const item of items) {
         const ticketType = await TicketType.findById(item.ticketTypeId);
-        if (!ticketType || !ticketType.is_active) {
+        if (!ticketType) {
           return apiResponse(
             res,
             400,
             false,
             `Ticket type ${item.ticketTypeId} not found or inactive.`,
-          );
-        }
-        if (ticketType.event_id !== eventId) {
-          return apiResponse(
-            res,
-            400,
-            false,
-            `Ticket type ${ticketType.name} does not belong to this event.`,
           );
         }
         if (item.quantity > ticketType.max_quantity_per_booking) {

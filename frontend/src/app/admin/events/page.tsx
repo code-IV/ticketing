@@ -39,7 +39,7 @@ export default function AdminEventsPage() {
 
   useEffect(() => {
     if (!authLoading) {
-      if (!user || user.role !== "admin") {
+      if (!user || user.role !== "ADMIN") {
         router.push("/");
       } else {
         loadEvents();
@@ -78,7 +78,11 @@ export default function AdminEventsPage() {
     }
   };
 
-  const updateTicketType = (index: number, field: keyof CreateTicketTypeRequest, value: any) => {
+  const updateTicketType = (
+    index: number,
+    field: keyof CreateTicketTypeRequest,
+    value: any,
+  ) => {
     const updatedTicketTypes = [...ticketTypes];
     updatedTicketTypes[index] = {
       ...updatedTicketTypes[index],
@@ -95,7 +99,7 @@ export default function AdminEventsPage() {
     try {
       // Validate ticket types
       const invalidTicketType = ticketTypes.find(
-        (tt) => !tt.name.trim() || tt.price <= 0
+        (tt) => !tt.name.trim() || tt.price <= 0,
       );
       if (invalidTicketType) {
         setError("All ticket types must have a name and price greater than 0");
@@ -263,7 +267,7 @@ export default function AdminEventsPage() {
                     min="1"
                     placeholder="500"
                   />
-                  
+
                   {/* Ticket Types Section */}
                   <div className="border-t pt-6">
                     <div className="flex justify-between items-center mb-4">
@@ -280,7 +284,7 @@ export default function AdminEventsPage() {
                         Add Ticket Type
                       </Button>
                     </div>
-                    
+
                     {ticketTypes.map((ticketType, index) => (
                       <div
                         key={index}
@@ -301,7 +305,7 @@ export default function AdminEventsPage() {
                             </Button>
                           )}
                         </div>
-                        
+
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <Input
                             label="Ticket Name"
@@ -312,7 +316,7 @@ export default function AdminEventsPage() {
                             required
                             placeholder="e.g., Adult Ticket"
                           />
-                          
+
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
                               Category
@@ -320,7 +324,11 @@ export default function AdminEventsPage() {
                             <select
                               value={ticketType.category}
                               onChange={(e) =>
-                                updateTicketType(index, "category", e.target.value)
+                                updateTicketType(
+                                  index,
+                                  "category",
+                                  e.target.value,
+                                )
                               }
                               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                             >
@@ -331,7 +339,7 @@ export default function AdminEventsPage() {
                               <option value="group">Group</option>
                             </select>
                           </div>
-                          
+
                           <Input
                             label="Price (ETB)"
                             type="number"
@@ -339,12 +347,16 @@ export default function AdminEventsPage() {
                             min="0"
                             value={ticketType.price}
                             onChange={(e) =>
-                              updateTicketType(index, "price", parseFloat(e.target.value) || 0)
+                              updateTicketType(
+                                index,
+                                "price",
+                                parseFloat(e.target.value) || 0,
+                              )
                             }
                             required
                             placeholder="100.00"
                           />
-                          
+
                           <Input
                             label="Max Quantity per Booking"
                             type="number"
@@ -352,12 +364,16 @@ export default function AdminEventsPage() {
                             max="50"
                             value={ticketType.maxQuantityPerBooking}
                             onChange={(e) =>
-                              updateTicketType(index, "maxQuantityPerBooking", parseInt(e.target.value) || 10)
+                              updateTicketType(
+                                index,
+                                "maxQuantityPerBooking",
+                                parseInt(e.target.value) || 10,
+                              )
                             }
                             placeholder="10"
                           />
                         </div>
-                        
+
                         <div className="mt-3">
                           <label className="block text-sm font-medium text-gray-700 mb-1">
                             Description (Optional)
@@ -365,7 +381,11 @@ export default function AdminEventsPage() {
                           <textarea
                             value={ticketType.description}
                             onChange={(e) =>
-                              updateTicketType(index, "description", e.target.value)
+                              updateTicketType(
+                                index,
+                                "description",
+                                e.target.value,
+                              )
                             }
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                             rows={2}
@@ -375,7 +395,7 @@ export default function AdminEventsPage() {
                       </div>
                     ))}
                   </div>
-                  
+
                   <div className="flex gap-3 pt-4">
                     <Button
                       type="submit"

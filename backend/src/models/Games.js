@@ -105,16 +105,24 @@ const Games = {
 
   async getAll() {
     const sql = `
-      SELECT 
-      g.*,
+      SELECT g.*,
       COALESCE(
-        JSON_AGG(tt.*) FILTER (WHERE tt.id IS NOT NULL), 
+        JSON_AGG(
+          JSON_BUILD_OBJECT(
+            'id', tt.id,
+            'category', tt.category,
+            'price', tt.price
+          )
+        ) FILTER (WHERE tt.id IS NOT NULL), 
         '[]'
       ) AS ticket_types
     FROM games g
-    LEFT JOIN ticket_types tt ON g.id = tt.game_id
+    -- 1. Link Game to its Product wrapper
+    LEFT JOIN products p ON g.id = p.game_id
+    -- 2. Link Product to its various Price points
+    LEFT JOIN ticket_types tt ON p.id = tt.product_id
     GROUP BY g.id
-    ORDER BY g.created_at DESC`;
+    ORDER BY g.created_at DESC;`;
     const result = await query(sql);
     return result.rows;
   },

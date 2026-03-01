@@ -27,7 +27,7 @@ export default function BookingDetailPage({
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const [booking, setBooking] = useState<Booking | null>(null);
-  const [tickets, setTickets] = useState<Ticket[]>([]);
+  const [tickets, setTickets] = useState<Ticket | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -47,7 +47,7 @@ export default function BookingDetailPage({
         bookingService.getBookingTickets(id),
       ]);
       setBooking(bookingRes.data?.booking || null);
-      setTickets(ticketsRes.data?.tickets || []);
+      setTickets(ticketsRes.data?.tickets || null);
     } catch (err: any) {
       setError(err.response?.data?.message || "Failed to load booking details");
     } finally {
@@ -234,7 +234,7 @@ export default function BookingDetailPage({
           </CardBody>
         </Card>
 
-        {tickets.length > 0 && booking.booking_status === "confirmed" && (
+        {tickets && booking.booking_status.toLowerCase() === "confirmed" && (
           <Card>
             <CardHeader>
               <h2 className="text-2xl font-bold text-gray-900">Your Tickets</h2>
@@ -244,36 +244,21 @@ export default function BookingDetailPage({
             </CardHeader>
             <CardBody>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {tickets.map((ticket, index) => (
-                  <div
-                    key={ticket.id}
-                    className="border border-gray-200 rounded-lg p-6 text-center"
-                  >
-                    <h3 className="font-semibold text-gray-900 mb-2">
-                      Ticket #{index + 1}
-                    </h3>
-                    <p className="text-sm text-gray-600 mb-4">
-                      {ticket.ticket_type_name}
-                    </p>
-                    <div className="bg-white p-4 inline-block rounded-lg border-2 border-gray-300">
-                      <QRCodeSVG value={ticket.qr_token || ticket.qr_data} size={200} />
-                    </div>
-                    <p className="text-xs text-gray-500 mt-3 font-mono">
-                      {ticket.ticket_code}
-                    </p>
-                    {ticket.is_used && (
-                      <p className="text-sm text-green-600 font-medium mt-2">
-                        ✓ Used on{" "}
-                        {ticket.used_at
-                          ? format(
-                              new Date(ticket.used_at),
-                              "MMM dd, yyyy HH:mm",
-                            )
-                          : "N/A"}
-                      </p>
-                    )}
+                <div className="border border-gray-200 rounded-lg p-6 text-center">
+                  <h3 className="font-semibold text-gray-900 mb-2">Ticket #</h3>
+                  <p className="text-sm text-gray-600 mb-4">
+                    {tickets.entitlements?.map((e) => e.activity_name)}
+                  </p>
+                  <div className="bg-white p-4 inline-block rounded-lg border-2 border-gray-300">
+                    <QRCodeSVG value={tickets.qr_token} size={200} />
                   </div>
-                ))}
+                  <p className="text-xs text-gray-500 mt-3 font-mono">
+                    {tickets.ticket_code}
+                  </p>
+                  <p className="text-sm text-green-600 font-medium mt-2">
+                    {tickets.status}
+                  </p>
+                </div>
               </div>
               <div className="mt-6 text-center">
                 <Button variant="secondary" onClick={() => window.print()}>

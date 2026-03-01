@@ -12,82 +12,53 @@ const Booking = {
    */
   async bookEvent({
     userId,
-    eventId,
-    items,
+    items, // Array of { ticketTypeId, quantity, unitPrice, productId }
     paymentMethod,
     guestEmail,
     guestName,
-    notes,
     expires_at,
   }) {
     const client = await getClient();
     try {
       await client.query("BEGIN");
 
-      // Calculate total
-      let totalAmount = 0;
-      for (const item of items) {
-        totalAmount += item.quantity * item.unitPrice;
-      }
-
-      // Calculate total ticket quantity
-      const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
-
-      // Check event availability
-      const availCheck = await client.query(
-        `SELECT capacity, tickets_sold, (capacity - tickets_sold) AS available
-         FROM events WHERE id = $1 AND is_active = true FOR UPDATE`,
-        [eventId],
+      // 1. Calculate Totals
+      const totalAmount = items.reduce(
+        (sum, item) => sum + item.quantity * item.unitPrice,
+        0,
       );
-
-      if (!availCheck.rows[0]) {
-        throw new Error("Event not found or is inactive");
-      }
-
-      const available = parseInt(availCheck.rows[0].available, 10);
-      if (available < totalQuantity) {
-        throw new Error(`Only ${available} tickets remaining for this event`);
-      }
-
-      // Generate booking reference
       const bookingReference = generateBookingReference();
 
-      // Create booking
+      // 2. Create Booking (Order Header)
+      // Removed event_id as the product catalog handles the relationship
       const bookingResult = await client.query(
-        `INSERT INTO bookings (booking_reference, user_id, event_id, total_amount, booking_status, payment_status, payment_method, guest_email, guest_name, notes)
-         VALUES ($1, $2, $3, $4, 'confirmed', 'completed', $5, $6, $7, $8)
-         RETURNING *`,
-        [
-          bookingReference,
-          userId,
-          eventId,
-          totalAmount,
-          paymentMethod,
-          guestEmail,
-          guestName,
-          notes,
-        ],
+        `INSERT INTO bookings (booking_reference, user_id, total_amount, status, guest_email, guest_name)
+       VALUES ($1, $2, $3, 'CONFIRMED', $4, $5)
+       RETURNING *`,
+        [bookingReference, userId, totalAmount, guestEmail, guestName],
       );
       const booking = bookingResult.rows[0];
 
-      // Get event date for QR
-      const eventResult = await client.query(
-        `SELECT event_date FROM events WHERE id = $1`,
-        [eventId],
+      // 3. Create Master Ticket (The only QR the user needs)
+      const ticketCode = generateTicketCode();
+      const qrToken = generateQRToken(ticketCode, bookingReference, expires_at);
+
+      const ticketResult = await client.query(
+        `INSERT INTO tickets (booking_id, ticket_code, qr_token, status, expires_at)
+       VALUES ($1, $2, $3, 'ACTIVE', $4)
+       RETURNING *`,
+        [booking.id, ticketCode, qrToken, expires_at],
       );
-      const eventDate = eventResult.rows[0].event_date;
+      const masterTicket = ticketResult.rows[0];
 
-      // Create booking items and individual tickets
-      const createdItems = [];
-      const createdTickets = [];
-
+      // 4. Process Items & Entitlements
       for (const item of items) {
         const subtotal = item.quantity * item.unitPrice;
 
-        const itemResult = await client.query(
+        // Save the line item record
+        await client.query(
           `INSERT INTO booking_items (booking_id, ticket_type_id, quantity, unit_price, subtotal)
-           VALUES ($1, $2, $3, $4, $5)
-           RETURNING *`,
+         VALUES ($1, $2, $3, $4, $5)`,
           [
             booking.id,
             item.ticketTypeId,
@@ -96,47 +67,35 @@ const Booking = {
             subtotal,
           ],
         );
-        const bookingItem = itemResult.rows[0];
-        createdItems.push(bookingItem);
 
-        // Create individual tickets for each quantity
-        for (let i = 0; i < item.quantity; i++) {
-          const ticketCode = generateTicketCode();
-          const qrToken = generateQRToken(
-            ticketCode,
-            bookingReference,
-            expires_at,
-          );
+        // Link the Product to the Master Ticket with the purchased quantity
+        // This is your "Digital Punch Card"
+        await client.query(
+          `INSERT INTO ticket_products (ticket_id, product_id, total_quantity, status)
+         VALUES ($1, (SELECT product_id FROM ticket_types WHERE id = $2), $3, 'AVAILABLE')`,
+          [masterTicket.id, item.ticketTypeId, item.quantity],
+        );
 
-          const ticketResult = await client.query(
-            `INSERT INTO tickets (booking_id, booking_item_id, ticket_code, qr_token, expires_at)
-             VALUES ($1, $2, $3, $4, $5)
-             RETURNING *`,
-            [booking.id, bookingItem.id, ticketCode, qrToken, expires_at],
-          );
-          createdTickets.push(ticketResult.rows[0]);
-        }
+        // If this is an Event, update the capacity
+        await client.query(
+          `UPDATE events SET tickets_sold = tickets_sold + $1 
+         WHERE id = (SELECT event_id FROM products p JOIN ticket_types tt ON tt.product_id = p.id WHERE tt.id = $2)`,
+          [item.quantity, item.ticketTypeId],
+        );
       }
 
-      // Create payment record
+      // 5. Record Payment
       await client.query(
-        `INSERT INTO payments (booking_id, amount, payment_method, payment_status, paid_at)
-         VALUES ($1, $2, $3, 'completed', NOW())`,
-        [booking.id, totalAmount, paymentMethod],
-      );
-
-      // Update event tickets_sold
-      await client.query(
-        `UPDATE events SET tickets_sold = tickets_sold + $2 WHERE id = $1`,
-        [eventId, totalQuantity],
+        `INSERT INTO payments (booking_id, amount, method, status, paid_at)
+       VALUES ($1, $2, $3, 'COMPLETED', NOW())`,
+        [booking.id, totalAmount, paymentMethod.toUpperCase()],
       );
 
       await client.query("COMMIT");
 
       return {
         ...booking,
-        items: createdItems,
-        tickets: createdTickets,
+        ticket: masterTicket,
       };
     } catch (err) {
       await client.query("ROLLBACK");
@@ -169,18 +128,10 @@ const Booking = {
 
       const bookingResult = await client.query(
         `INSERT INTO bookings
-       (user_id, booking_reference, total_amount, booking_status, payment_status, payment_method, guest_email, guest_name, notes)
-       VALUES ($1, $2, $3, 'confirmed', 'completed', $4, $5, $6, $7)
+       (user_id, booking_reference, total_amount, status, guest_email, guest_name)
+       VALUES ($1, $2, $3, 'CONFIRMED', $4, $5)
        RETURNING *`,
-        [
-          userId,
-          bookingReference,
-          totalAmount,
-          paymentMethod,
-          guestEmail,
-          guestName,
-          notes,
-        ],
+        [userId, bookingReference, totalAmount, guestEmail, guestName],
       );
 
       const booking = bookingResult.rows[0];
@@ -190,7 +141,7 @@ const Booking = {
 
       for (const item of items) {
         const typeResult = await client.query(
-          `SELECT price, game_id
+          `SELECT price, product_id
          FROM ticket_types
          WHERE id = $1`,
           [item.ticketTypeId],
@@ -221,35 +172,33 @@ const Booking = {
       const ticketResult = await client.query(
         `INSERT INTO tickets
        (booking_id, ticket_code, qr_token,
-        status, total_price, expires_at)
+        status, expires_at)
        VALUES ($1, $2, $3,
-               'ACTIVE', $4, $5)
+               'ACTIVE', $4)
        RETURNING *`,
-        [booking.id, ticketCode, qrToken, totalAmount, expiresAt],
+        [booking.id, ticketCode, qrToken, expiresAt],
       );
 
       const ticket = ticketResult.rows[0];
 
-      // 5️⃣ Expand booking_items into ticket_games
+      // 5️⃣ Expand booking_items into ticket_prodcts
       for (const item of createdItems) {
-        for (let i = 0; i < item.quantity; i++) {
-          await client.query(
-            `INSERT INTO ticket_games
-           (ticket_id, game_id, status)
-           VALUES ($1, $2, 'AVAILABLE')`,
-            [ticket.id, item.game_id],
-          );
-        }
+        await client.query(
+          `INSERT INTO ticket_products
+           (ticket_id, product_id, total_quantity, status)
+           VALUES ($1, $2, $3, 'AVAILABLE')`,
+          [ticket.id, item.game_id, item.quantity],
+        );
       }
 
       // 6️⃣ Create payment record
       await client.query(
         `INSERT INTO payments
-       (booking_id, amount, payment_method,
-        payment_status, paid_at)
+       (booking_id, amount, method,
+        status, paid_at)
        VALUES ($1, $2, $3,
-               'completed', NOW())`,
-        [booking.id, totalAmount, paymentMethod],
+               'COMPLETED', NOW())`,
+        [booking.id, totalAmount, paymentMethod.toUpperCase()],
       );
 
       await client.query("COMMIT");
@@ -272,11 +221,25 @@ const Booking = {
    */
   async findById(id) {
     const sql = `
-      SELECT b.*,
-             e.name AS event_name, e.event_date, e.start_time, e.end_time
+      SELECT 
+          b.*,
+          -- Get Event details if they exist
+          e.name AS event_name, 
+          e.event_date, 
+          e.start_time, 
+          e.end_time,
+          -- Get Game details if they exist
+          g.name AS game_name,
+          -- Determine the type for your Frontend Interface
+          p.product_type AS type
       FROM bookings b
-      JOIN events e ON b.event_id = e.id
-      WHERE b.id = $1`;
+      JOIN booking_items bi ON b.id = bi.booking_id
+      JOIN ticket_types tt ON bi.ticket_type_id = tt.id
+      JOIN products p ON tt.product_id = p.id
+      LEFT JOIN events e ON p.event_id = e.id
+      LEFT JOIN games g ON p.game_id = g.id
+      WHERE b.id = $1;
+      `;
     const result = await query(sql, [id]);
     return result.rows[0] || null;
   },
@@ -299,33 +262,77 @@ const Booking = {
    * Find booking by ID with full details (items + tickets)
    */
   async findByIdWithDetails(id) {
+    // 1. Fetch Booking Header
+    // We map 'status' to 'booking_status' to match your interface
     const bookingSql = `
-      SELECT b.*,
-             e.name AS event_name, e.event_date, e.start_time, e.end_time,
-             u.first_name, u.last_name, u.email AS user_email
-      FROM bookings b
-      JOIN events e ON b.event_id = e.id
-      JOIN users u ON b.user_id = u.id
-      WHERE b.id = $1`;
+    SELECT b.*, b.status AS booking_status, b.created_at as booked_at,
+           u.first_name, u.last_name, u.email AS user_email
+    FROM bookings b
+    LEFT JOIN users u ON b.user_id = u.id
+    WHERE b.id = $1`;
+
     const bookingResult = await query(bookingSql, [id]);
     const booking = bookingResult.rows[0];
     if (!booking) return null;
 
+    // 2. Fetch Items
     const itemsSql = `
-      SELECT bi.*, tt.name AS ticket_type_name, tt.category
-      FROM booking_items bi
-      JOIN ticket_types tt ON bi.ticket_type_id = tt.id
-      WHERE bi.booking_id = $1`;
+    SELECT bi.*, 
+           tt.category, 
+           p.name AS product_name, p.product_type, p.event_id, p.game_id,
+           e.event_date, e.start_time, e.end_time
+    FROM booking_items bi
+    JOIN ticket_types tt ON bi.ticket_type_id = tt.id
+    JOIN products p ON tt.product_id = p.id
+    LEFT JOIN events e ON p.event_id = e.id
+    WHERE bi.booking_id = $1`;
     const itemsResult = await query(itemsSql, [id]);
 
+    // 3. Fetch Master Ticket & Entitlements
     const ticketsSql = `
-      SELECT * FROM tickets WHERE booking_id = $1 ORDER BY created_at`;
+    SELECT t.*,
+           (
+             SELECT json_agg(ent) 
+             FROM (
+               SELECT tp.*, p_inner.name as activity_name 
+               FROM ticket_products tp
+               JOIN products p_inner ON tp.product_id = p_inner.id
+               WHERE tp.ticket_id = t.id
+             ) ent
+           ) as entitlements
+    FROM tickets t 
+    WHERE t.booking_id = $1`;
     const ticketsResult = await query(ticketsSql, [id]);
+
+    // 4. Fetch Latest Payment to fill top-level status
+    const paymentsSql = `SELECT * FROM payments WHERE booking_id = $1 ORDER BY created_at DESC LIMIT 1`;
+    const paymentsResult = await query(paymentsSql, [id]);
+    const latestPayment = paymentsResult.rows[0];
+
+    // 5. Transform for Frontend
+    // If the booking contains an event, we pull it to the top level for backward compatibility
+    const eventItem = itemsResult.rows.find((i) => i.product_type === "EVENT");
 
     return {
       ...booking,
+      // Mapping for the interface
+      payment_status: latestPayment?.status?.toLowerCase() || "pending",
+      payment_method: latestPayment?.method?.toLowerCase() || null,
+
+      // Top-level event info (if it exists in the order)
+      event_id: eventItem?.event_id || null,
+      event_name: eventItem?.product_name || null,
+      event_date: eventItem?.event_date || null,
+      start_time: eventItem?.start_time || null,
+      end_time: eventItem?.end_time || null,
+
       items: itemsResult.rows,
-      tickets: ticketsResult.rows,
+      tickets: ticketsResult.rows.map((t) => ({
+        ...t,
+        // Ensure entitlements is never null for the UI
+        entitlements: t.entitlements || [],
+      })),
+      payments: paymentsResult.rows,
     };
   },
 
@@ -336,35 +343,40 @@ const Booking = {
     const offset = (page - 1) * limit;
     const sql = `
     SELECT 
-      b.*,
-      e.name AS event_name, 
-      e.event_date, 
-      e.start_time, 
-      e.end_time,
-      -- Determine the Discriminator Type
-      CASE 
-        WHEN b.event_id IS NOT NULL THEN 'EVENT'
-        ELSE 'GAME'
-      END as type,
-      -- Fetch all items for this booking as a JSON array
-      (
-        SELECT json_agg(item_details)
-        FROM (
-          SELECT 
-            bi.*, 
-            g_inner.name as game_name,
-            tt.category
-          FROM booking_items bi
-          JOIN ticket_types tt ON bi.ticket_type_id = tt.id
-          LEFT JOIN games g_inner ON tt.game_id = g_inner.id
-          WHERE bi.booking_id = b.id
-        ) item_details
-      ) as items
-    FROM bookings b
-    LEFT JOIN events e ON b.event_id = e.id
-    WHERE b.user_id = $1
-    ORDER BY b.created_at DESC
-    LIMIT $2 OFFSET $3
+  b.*,
+  -- Determine the primary type based on the first product in the booking
+  (
+    SELECT p.product_type 
+    FROM booking_items bi
+    JOIN ticket_types tt ON bi.ticket_type_id = tt.id
+    JOIN products p ON tt.product_id = p.id
+    WHERE bi.booking_id = b.id
+    LIMIT 1
+  ) as type,
+  -- Fetch all items for this booking as a JSON array
+  (
+    SELECT json_agg(item_details)
+    FROM (
+      SELECT 
+        bi.*, 
+        p.name as product_name,
+        p.product_type,
+        tt.category,
+        e.event_date,
+        e.start_time,
+        g.name as game_name
+      FROM booking_items bi
+      JOIN ticket_types tt ON bi.ticket_type_id = tt.id
+      JOIN products p ON tt.product_id = p.id
+      LEFT JOIN events e ON p.event_id = e.id
+      LEFT JOIN games g ON p.game_id = g.id
+      WHERE bi.booking_id = b.id
+    ) item_details
+  ) as items
+FROM bookings b
+WHERE b.user_id = $1
+ORDER BY b.created_at DESC
+LIMIT $2 OFFSET $3;
   `;
 
     const result = await query(sql, [userId, limit, offset]);

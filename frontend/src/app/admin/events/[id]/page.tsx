@@ -16,12 +16,12 @@ export default function EditEventPage() {
   const params = useParams();
   const { user, loading: authLoading } = useAuth();
   const eventId = params.id as string;
-  
+
   const [event, setEvent] = useState<Event | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
-  
+
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -31,7 +31,7 @@ export default function EditEventPage() {
     capacity: "",
     isActive: true,
   });
-  
+
   const [ticketTypes, setTicketTypes] = useState<CreateTicketTypeRequest[]>([
     {
       name: "",
@@ -44,7 +44,7 @@ export default function EditEventPage() {
 
   useEffect(() => {
     if (!authLoading) {
-      if (!user || user.role !== "admin") {
+      if (!user || user.role !== "ADMIN") {
         router.push("/");
       } else {
         loadEvent();
@@ -56,14 +56,14 @@ export default function EditEventPage() {
     try {
       setLoading(true);
       const response = await adminService.getEventWithTicketTypes(eventId);
-      
+
       if (!response.success || !response.data) {
         setError("Failed to load event data");
         return;
       }
-      
+
       const eventData = response.data;
-      
+
       setEvent(eventData.event);
       setFormData({
         name: eventData.event.name,
@@ -74,15 +74,17 @@ export default function EditEventPage() {
         capacity: eventData.event.capacity.toString(),
         isActive: eventData.event.is_active,
       });
-      
+
       if (eventData.ticketTypes && eventData.ticketTypes.length > 0) {
-        setTicketTypes(eventData.ticketTypes.map((tt: any) => ({
-          name: tt.name,
-          category: tt.category,
-          price: parseFloat(tt.price),
-          description: tt.description || "",
-          maxQuantityPerBooking: tt.max_quantity_per_booking || 10,
-        })));
+        setTicketTypes(
+          eventData.ticketTypes.map((tt: any) => ({
+            name: tt.name,
+            category: tt.category,
+            price: parseFloat(tt.price),
+            description: tt.description || "",
+            maxQuantityPerBooking: tt.max_quantity_per_booking || 10,
+          })),
+        );
       }
     } catch (err: any) {
       setError(err.response?.data?.message || "Failed to load event");
@@ -110,7 +112,11 @@ export default function EditEventPage() {
     }
   };
 
-  const updateTicketType = (index: number, field: keyof CreateTicketTypeRequest, value: any) => {
+  const updateTicketType = (
+    index: number,
+    field: keyof CreateTicketTypeRequest,
+    value: any,
+  ) => {
     const updatedTicketTypes = [...ticketTypes];
     updatedTicketTypes[index] = {
       ...updatedTicketTypes[index],
@@ -127,7 +133,7 @@ export default function EditEventPage() {
     try {
       // Validate ticket types
       const invalidTicketType = ticketTypes.find(
-        (tt) => !tt.name.trim() || tt.price <= 0
+        (tt) => !tt.name.trim() || tt.price <= 0,
       );
       if (invalidTicketType) {
         setError("All ticket types must have a name and price greater than 0");
@@ -200,12 +206,8 @@ export default function EditEventPage() {
               Back to Events
             </Button>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">
-                Edit Event
-              </h1>
-              <p className="text-gray-600">
-                {event.name}
-              </p>
+              <h1 className="text-3xl font-bold text-gray-900">Edit Event</h1>
+              <p className="text-gray-600">{event.name}</p>
             </div>
           </div>
         </div>
@@ -219,9 +221,7 @@ export default function EditEventPage() {
         {/* Edit Form */}
         <Card>
           <CardHeader>
-            <h2 className="text-2xl font-bold text-gray-900">
-              Event Details
-            </h2>
+            <h2 className="text-2xl font-bold text-gray-900">Event Details</h2>
           </CardHeader>
           <CardBody>
             <form onSubmit={handleUpdateEvent} className="space-y-6">
@@ -236,7 +236,7 @@ export default function EditEventPage() {
                   required
                   placeholder="e.g., Summer Festival"
                 />
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Description
@@ -254,7 +254,7 @@ export default function EditEventPage() {
                     placeholder="Event description..."
                   />
                 </div>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <Input
                     label="Event Date"
@@ -265,7 +265,7 @@ export default function EditEventPage() {
                     }
                     required
                   />
-                  
+
                   <Input
                     label="Start Time"
                     type="time"
@@ -275,7 +275,7 @@ export default function EditEventPage() {
                     }
                     required
                   />
-                  
+
                   <Input
                     label="End Time"
                     type="time"
@@ -286,7 +286,7 @@ export default function EditEventPage() {
                     required
                   />
                 </div>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Input
                     label="Capacity"
@@ -299,7 +299,7 @@ export default function EditEventPage() {
                     min="1"
                     placeholder="500"
                   />
-                  
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Status
@@ -307,7 +307,10 @@ export default function EditEventPage() {
                     <select
                       value={formData.isActive.toString()}
                       onChange={(e) =>
-                        setFormData({ ...formData, isActive: e.target.value === "true" })
+                        setFormData({
+                          ...formData,
+                          isActive: e.target.value === "true",
+                        })
                       }
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
@@ -334,7 +337,7 @@ export default function EditEventPage() {
                     Add Ticket Type
                   </Button>
                 </div>
-                
+
                 {ticketTypes.map((ticketType, index) => (
                   <div
                     key={index}
@@ -355,7 +358,7 @@ export default function EditEventPage() {
                         </Button>
                       )}
                     </div>
-                    
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <Input
                         label="Ticket Name"
@@ -366,7 +369,7 @@ export default function EditEventPage() {
                         required
                         placeholder="e.g., Adult Ticket"
                       />
-                      
+
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                           Category
@@ -385,7 +388,7 @@ export default function EditEventPage() {
                           <option value="group">Group</option>
                         </select>
                       </div>
-                      
+
                       <Input
                         label="Price (ETB)"
                         type="number"
@@ -393,12 +396,16 @@ export default function EditEventPage() {
                         min="0"
                         value={ticketType.price}
                         onChange={(e) =>
-                          updateTicketType(index, "price", parseFloat(e.target.value) || 0)
+                          updateTicketType(
+                            index,
+                            "price",
+                            parseFloat(e.target.value) || 0,
+                          )
                         }
                         required
                         placeholder="100.00"
                       />
-                      
+
                       <Input
                         label="Max Quantity per Booking"
                         type="number"
@@ -406,12 +413,16 @@ export default function EditEventPage() {
                         max="50"
                         value={ticketType.maxQuantityPerBooking}
                         onChange={(e) =>
-                          updateTicketType(index, "maxQuantityPerBooking", parseInt(e.target.value) || 10)
+                          updateTicketType(
+                            index,
+                            "maxQuantityPerBooking",
+                            parseInt(e.target.value) || 10,
+                          )
                         }
                         placeholder="10"
                       />
                     </div>
-                    
+
                     <div className="mt-3">
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Description (Optional)
@@ -432,11 +443,7 @@ export default function EditEventPage() {
 
               {/* Action Buttons */}
               <div className="flex gap-3 pt-6 border-t">
-                <Button
-                  type="submit"
-                  isLoading={submitting}
-                  className="flex-1"
-                >
+                <Button type="submit" isLoading={submitting} className="flex-1">
                   Update Event
                 </Button>
                 <Button

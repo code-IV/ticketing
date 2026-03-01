@@ -1,4 +1,4 @@
-const { query } = require('../config/db');
+const { query } = require("../config/db");
 
 const Ticket = {
   /**
@@ -44,13 +44,35 @@ const Ticket = {
    */
   async findByBookingId(bookingId) {
     const sql = `
-      SELECT t.*,
-             tt.name AS ticket_type_name, tt.category
-      FROM tickets t
-      JOIN booking_items bi ON t.booking_item_id = bi.id
-      JOIN ticket_types tt ON bi.ticket_type_id = tt.id
-      WHERE t.booking_id = $1
-      ORDER BY t.created_at`;
+      SELECT 
+    t.id AS ticket_id,
+    t.ticket_code,
+    t.qr_token,
+    t.status AS ticket_status,
+    t.expires_at,
+    -- Aggregate the specific game/event entitlements into a list
+    (
+        SELECT json_agg(entitlements)
+        FROM (
+            SELECT 
+                tp.id AS entitlement_id,
+                p.name AS product_name,
+                p.product_type,
+                tp.total_quantity,
+                tp.used_quantity,
+                tp.status AS usage_status,
+                tt.category -- e.g., 'ADULT'
+            FROM ticket_products tp
+            JOIN products p ON tp.product_id = p.id
+            -- Link back to booking_items to get the specific category/price context
+            JOIN booking_items bi ON bi.booking_id = t.booking_id
+            JOIN ticket_types tt ON bi.ticket_type_id = tt.id AND tt.product_id = p.id
+            WHERE tp.ticket_id = t.id
+        ) entitlements
+    ) AS products_included
+FROM tickets t
+WHERE t.booking_id = $1
+ORDER BY t.created_at DESC;`;
     const result = await query(sql, [bookingId]);
     return result.rows;
   },
@@ -86,10 +108,10 @@ const Ticket = {
 
     // Group tickets by game and format response
     const gamesMap = new Map();
-    
-    result.rows.forEach(row => {
+
+    result.rows.forEach((row) => {
       const gameKey = row.game_id;
-      
+
       if (!gamesMap.has(gameKey)) {
         gamesMap.set(gameKey, {
           id: `game-${gameKey}`, // Composite ID for the group
@@ -104,15 +126,16 @@ const Ticket = {
           expires_at: row.expires_at,
           payment_reference: row.payment_reference,
           quantity: 0, // Will be calculated
-          type: 'GAME_CONSOLIDATED',
+          type: "GAME_CONSOLIDATED",
           ticket_type_name: row.ticket_type_name,
           ticket_type_category: row.category,
-          ticket_price: parseFloat(row.ticket_price) || parseFloat(row.total_price),
+          ticket_price:
+            parseFloat(row.ticket_price) || parseFloat(row.total_price),
           ticket_codes: [], // Will collect all ticket codes
-          game_used_at: row.game_used_at
+          game_used_at: row.game_used_at,
         });
       }
-      
+
       const gameGroup = gamesMap.get(gameKey);
       gameGroup.quantity += 1;
       gameGroup.total_price += parseFloat(row.total_price);
@@ -147,10 +170,10 @@ const Ticket = {
         AND t.booking_id IS NULL
         AND g.id = $2
       ORDER BY t.created_at DESC`;
-    
+
     const result = await query(sql, [userId, gameId]);
-    
-    const tickets = result.rows.map(row => ({
+
+    const tickets = result.rows.map((row) => ({
       id: row.id,
       ticket_code: row.ticket_code,
       qr_token: row.qr_token,
@@ -164,13 +187,13 @@ const Ticket = {
         id: row.game_id,
         name: row.game_name,
         description: row.game_description,
-        rules: row.rules
+        rules: row.rules,
       },
       ticket_type: {
-        name: row.ticket_type_name || 'Game Ticket',
-        category: row.category || 'standard',
-        price: parseFloat(row.ticket_price) || parseFloat(row.total_price)
-      }
+        name: row.ticket_type_name || "Game Ticket",
+        category: row.category || "standard",
+        price: parseFloat(row.ticket_price) || parseFloat(row.total_price),
+      },
     }));
 
     return tickets;
@@ -191,13 +214,21 @@ const Ticket = {
     const ticket = checkResult.rows[0];
 
     if (!ticket) {
-      return { valid: false, reason: 'Ticket not found' };
+      return { valid: false, reason: "Ticket not found" };
     }
-    if (ticket.booking_status !== 'confirmed') {
-      return { valid: false, reason: 'Booking is not confirmed (status: ' + ticket.booking_status + ')' };
+    if (ticket.booking_status !== "confirmed") {
+      return {
+        valid: false,
+        reason:
+          "Booking is not confirmed (status: " + ticket.booking_status + ")",
+      };
     }
     if (ticket.is_used) {
-      return { valid: false, reason: 'Ticket has already been used', usedAt: ticket.used_at };
+      return {
+        valid: false,
+        reason: "Ticket has already been used",
+        usedAt: ticket.used_at,
+      };
     }
 
     // Mark ticket as used
