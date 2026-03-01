@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { bookingService } from "@/services/bookingService";
-import { Bookings, GameBookingItemDetail } from "@/types";
+import { Booking, GameBookingItemDetail } from "@/types";
 import { Button } from "@/components/ui/Button";
 import { Calendar, Gamepad2, ChevronDown } from "lucide-react";
 import { CiFilter } from "react-icons/ci";
@@ -14,11 +14,9 @@ import { motion, AnimatePresence } from "framer-motion";
 export default function MyBookingsPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
-  const [bookings, setBookings] = useState<Bookings[]>([]);
+  const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<
-    "ALL" | "Available" | "Fully Used" | "Pending"
-  >("ALL");
+  const [activeTab, setActiveTab] = useState<"ALL" | "EVENT" | "GAME">("ALL");
   const [usageFilter, setUsageFilter] = useState<
     "ALL" | "Available" | "Fully Used" | "Pending"
   >("ALL");
@@ -53,9 +51,14 @@ export default function MyBookingsPage() {
 
   const filteredItems = bookings.filter((item) => {
     const matchesTab = activeTab === "ALL" || item.type === activeTab;
-    const totalQty = item.items?.reduce((acc, i) => acc + i.quantity, 0) || 0;
+    const totalQty =
+      (item.type === "GAME" &&
+        item.items?.reduce((acc, i) => acc + i.quantity, 0)) ||
+      0;
     const totalUsed =
-      item.items?.reduce((acc, i) => acc + (i.used_quantity || 0), 0) || 0;
+      (item.type === "GAME" &&
+        item.items?.reduce((acc, i) => acc + (i.quantity || 0), 0)) ||
+      0;
 
     let matchesUsage = true;
     if (usageFilter === "Available") matchesUsage = totalUsed === 0;
@@ -152,12 +155,13 @@ export default function MyBookingsPage() {
           <AnimatePresence mode="popLayout">
             {filteredItems.map((item) => {
               const totalQty =
-                item.items?.reduce((acc, i) => acc + i.quantity, 0) || 0;
+                (item.type === "GAME" &&
+                  item.items?.reduce((acc, i) => acc + i.quantity, 0)) ||
+                0;
               const totalUsed =
-                item.items?.reduce(
-                  (acc, i) => acc + (i.used_quantity || 0),
-                  0,
-                ) || 0;
+                (item.type === "GAME" &&
+                  item.items?.reduce((acc, i) => acc + (i.quantity || 0), 0)) ||
+                0;
               const isFinished = totalUsed === totalQty;
 
               return (
@@ -236,7 +240,7 @@ export default function MyBookingsPage() {
                           Date
                         </span>
                         <span className="text-sm font-bold text-slate-700">
-                          {item.type === "EVENT"
+                          {item.type === "EVENT" && item.event_date
                             ? format(new Date(item.event_date), "MMM dd")
                             : "Anytime"}
                         </span>

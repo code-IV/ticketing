@@ -81,6 +81,8 @@ const bookingController = {
           `Not enough tickets available. Only ${availability.remaining} remaining.`,
         );
       }
+      const expires = new Date();
+      expires.setMonth(expires.getMonth() + 1);
 
       // Create the booking (transactional)
       const booking = await Booking.bookEvent({
@@ -91,7 +93,7 @@ const bookingController = {
         guestEmail,
         guestName,
         notes,
-        expires_at,
+        expires_at: expires,
       });
 
       return apiResponse(res, 201, true, "Booking created successfully.", {
