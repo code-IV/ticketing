@@ -158,10 +158,12 @@ export default function AdminBookingsPage() {
                           {(booking as any).customer_name || "N/A"}
                         </td>
                         <td className="px-4 py-3 text-sm text-gray-600">
-                          {booking.event_name}
+                          {booking.type === "EVENT"
+                            ? booking.event_name
+                            : "Game bundle"}
                         </td>
                         <td className="px-4 py-3 text-sm text-gray-600">
-                          {booking.event_date
+                          {booking.type === "EVENT" && booking.event_date
                             ? format(
                                 new Date(booking.event_date),
                                 "MMM dd, yyyy",
@@ -189,7 +191,7 @@ export default function AdminBookingsPage() {
                             >
                               <Eye className="h-4 w-4" />
                             </Button>
-                            {booking.booking_status === "confirmed" && (
+                            {booking.booking_status === "CONFIRMED" && (
                               <Button
                                 variant="danger"
                                 size="sm"

@@ -41,7 +41,10 @@ const isOwnerOrAdmin = (paramName = "userId") => {
     const resourceUserId = req.params[paramName];
     const sessionUser = req.session.user;
 
-    if (sessionUser.role === "admin" || sessionUser.id === resourceUserId) {
+    if (
+      sessionUser.role === "ADMIN" ||
+      String(sessionUser.id) === resourceUserId
+    ) {
       return next();
     }
     return apiResponse(

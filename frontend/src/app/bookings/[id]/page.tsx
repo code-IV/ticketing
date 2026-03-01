@@ -100,7 +100,7 @@ export default function BookingDetailPage({
   return (
     <div className="min-h-screen py-12">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        {booking.booking_status === "confirmed" && (
+        {booking.booking_status === "CONFIRMED" && (
           <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6 flex items-center">
             <CheckCircle className="h-6 w-6 text-green-600 mr-3" />
             <div>
@@ -125,7 +125,7 @@ export default function BookingDetailPage({
             <div className="flex items-start justify-between">
               <div>
                 <h1 className="text-3xl font-bold text-gray-900">
-                  {booking.event_name}
+                  {booking.type === "EVENT" && booking.event_name}
                 </h1>
                 <p className="text-lg text-gray-600 mt-1">
                   Booking Reference:{" "}
@@ -155,7 +155,7 @@ export default function BookingDetailPage({
                 <div>
                   <p className="font-medium text-gray-900">Event Date</p>
                   <p className="text-gray-600">
-                    {booking.event_date
+                    {booking.type === "EVENT" && booking.event_date
                       ? format(
                           new Date(booking.event_date),
                           "EEEE, MMMM dd, yyyy",
@@ -169,7 +169,8 @@ export default function BookingDetailPage({
                 <div>
                   <p className="font-medium text-gray-900">Time</p>
                   <p className="text-gray-600">
-                    {booking.start_time} - {booking.end_time}
+                    {booking.type === "EVENT" && booking.start_time} -{" "}
+                    {booking.type === "EVENT" && booking.end_time}
                   </p>
                 </div>
               </div>
@@ -193,35 +194,37 @@ export default function BookingDetailPage({
               </div>
             </div>
 
-            {booking.items && booking.items.length > 0 && (
-              <div>
-                <h3 className="font-semibold text-gray-900 mb-3">
-                  Ticket Breakdown
-                </h3>
-                <div className="space-y-2">
-                  {booking.items.map((item) => (
-                    <div
-                      key={item.id}
-                      className="flex justify-between text-sm border-b border-gray-200 pb-2"
-                    >
-                      <span className="text-gray-700">
-                        {item.quantity}x {item.ticket_type_name}
-                      </span>
-                      <span className="font-medium">
-                        {parseFloat(item.subtotal).toFixed(2)} ETB
-                      </span>
-                    </div>
-                  ))}
+            {booking.type === "GAME" &&
+              booking.items &&
+              booking.items.length > 0 && (
+                <div>
+                  <h3 className="font-semibold text-gray-900 mb-3">
+                    Ticket Breakdown
+                  </h3>
+                  <div className="space-y-2">
+                    {booking.items.map((item) => (
+                      <div
+                        key={item.id}
+                        className="flex justify-between text-sm border-b border-gray-200 pb-2"
+                      >
+                        <span className="text-gray-700">
+                          {item.quantity}x {item.ticket_type_id}
+                        </span>
+                        <span className="font-medium">
+                          {parseFloat(item.subtotal).toFixed(2)} ETB
+                        </span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
             <div className="text-sm text-gray-600">
               <p>
                 Booked on:{" "}
                 {format(new Date(booking.booked_at), "MMMM dd, yyyy HH:mm")}
               </p>
-              {booking.cancelled_at && (
+              {booking.type === "GAME" && booking.cancelled_at && (
                 <p className="text-red-600">
                   Cancelled on:{" "}
                   {format(
