@@ -1,4 +1,4 @@
-const { query } = require('../config/db');
+const { query } = require("../config/db");
 
 const Payment = {
   /**
@@ -66,17 +66,18 @@ const Payment = {
   },
 
   /**
-   * Get revenue summary (admin)
+   * Get revenue summary (admin)/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
    */
   async getRevenueSummary() {
     const sql = `
       SELECT
-        COUNT(*) FILTER (WHERE payment_status = 'completed') AS total_transactions,
-        COALESCE(SUM(amount) FILTER (WHERE payment_status = 'completed'), 0) AS total_revenue,
-        COALESCE(SUM(amount) FILTER (WHERE payment_status = 'refunded'), 0) AS total_refunded,
-        COALESCE(SUM(amount) FILTER (WHERE payment_status = 'completed' AND paid_at >= CURRENT_DATE), 0) AS today_revenue,
-        COUNT(*) FILTER (WHERE payment_status = 'completed' AND paid_at >= CURRENT_DATE) AS today_transactions
-      FROM payments`;
+        COUNT(*) FILTER (WHERE status = 'COMPLETED')::INT AS total_transactions,
+        COALESCE(SUM(amount) FILTER (WHERE status = 'COMPLETED'), 0)::TEXT AS total_revenue,
+        COALESCE(SUM(amount) FILTER (WHERE status = 'REFUNDED'), 0)::TEXT AS total_refunded,
+        COALESCE(SUM(amount) FILTER (WHERE status = 'COMPLETED' AND paid_at >= CURRENT_DATE), 0)::TEXT AS today_revenue,
+        COUNT(*) FILTER (WHERE status = 'COMPLETED' AND paid_at >= CURRENT_DATE)::INT AS today_transactions
+      FROM payments;
+`;
     const result = await query(sql);
     return result.rows[0];
   },

@@ -408,43 +408,90 @@ LIMIT $2 OFFSET $3;
    */
   async findAll({ page = 1, limit = 20, status = null }) {
     const offset = (page - 1) * limit;
-    let sql = `
-      SELECT b.*,
-             e.name AS event_name, e.event_date,
-             u.first_name || ' ' || u.last_name AS customer_name, u.email AS customer_email
-      FROM bookings b
-      JOIN events e ON b.event_id = e.id
-      JOIN users u ON b.user_id = u.id`;
     const values = [];
     let paramIndex = 1;
 
+    // 1. Build the dynamic WHERE clause
+    let whereClause = "";
     if (status) {
-      sql += ` WHERE b.booking_status = $${paramIndex}`;
-      values.push(status);
+      whereClause = `WHERE b.status = $${paramIndex}`;
+      values.push(status.toUpperCase());
       paramIndex++;
     }
 
-    sql += ` ORDER BY b.created_at DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
-    values.push(limit, offset);
+    const sql = `
+    SELECT 
+      b.id,
+      b.booking_reference,
+      b.user_id,
+      b.total_amount,
+      b.status AS booking_status,
+      b.guest_email,
+      b.guest_name,
+      b.created_at,
+      b.updated_at,
+      u.first_name || ' ' || u.last_name AS customer_name,
+      -- Determine Type: If any item is an EVENT, label as EVENT. Else GAME.
+      CASE 
+        WHEN EXISTS (
+          SELECT 1 FROM booking_items bi 
+          JOIN ticket_types tt ON bi.ticket_type_id = tt.id
+          JOIN products p ON tt.product_id = p.id
+          WHERE bi.booking_id = b.id AND p.product_type = 'EVENT'
+        ) THEN 'EVENT'
+        ELSE 'GAME'
+      END as type,
+      -- Get Payment Info (Latest payment)
+      (SELECT status FROM payments WHERE booking_id = b.id ORDER BY created_at DESC LIMIT 1) as payment_status,
+      (SELECT method FROM payments WHERE booking_id = b.id ORDER BY created_at DESC LIMIT 1) as payment_method,
+      -- Aggregate Items
+      (
+        SELECT json_agg(item_row)
+        FROM (
+          SELECT 
+            bi.id,
+            bi.booking_id,
+            bi.ticket_type_id,
+            bi.quantity,
+            bi.unit_price,
+            bi.subtotal,
+            p.name as game_name,
+            p.id as game_id,
+            tt.category
+          FROM booking_items bi
+          JOIN ticket_types tt ON bi.ticket_type_id = tt.id
+          JOIN products p ON tt.product_id = p.id
+          WHERE bi.booking_id = b.id
+        ) item_row
+      ) as items
+    FROM bookings b
+    JOIN users u ON b.user_id = u.id
+    ${whereClause}
+    ORDER BY b.created_at DESC 
+    LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
+  `;
 
+    values.push(limit, offset);
     const result = await query(sql, values);
 
-    let countSql = `SELECT COUNT(*) FROM bookings`;
-    const countValues = [];
-    if (status) {
-      countSql += ` WHERE booking_status = $1`;
-      countValues.push(status);
-    }
-    const countResult = await query(countSql, countValues);
-    const total = parseInt(countResult.rows[0].count, 10);
+    // Count logic
+    let countSql = `SELECT COUNT(*) FROM bookings b`;
+    if (status) countSql += ` WHERE b.status = $1`;
+    const countResult = await query(
+      countSql,
+      status ? [status.toUpperCase()] : [],
+    );
 
     return {
-      bookings: result.rows,
+      bookings: result.rows.map((row) => ({
+        ...row,
+        items: row.items || [], // Ensure array is never null
+      })),
       pagination: {
         page,
         limit,
-        total,
-        totalPages: Math.ceil(total / limit),
+        total: parseInt(countResult.rows[0].count, 10),
+        totalPages: Math.ceil(parseInt(countResult.rows[0].count, 10) / limit),
       },
     };
   },

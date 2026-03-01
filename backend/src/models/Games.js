@@ -2,50 +2,65 @@ const { query, getClient } = require("../config/db");
 
 const Games = {
   async create({ name, description, rules, status, ticket_types }) {
-    const client = await getClient();
+    const client = await getClient(); // Assuming pool.connect() for the client
     try {
       await client.query("BEGIN");
-      // 1. Insert the Game
+
+      // 1. Insert the Physical Game
       const gameSql = `
       INSERT INTO games (name, description, rules, status)
       VALUES ($1, $2, $3, $4)
-      RETURNING *
-  `;
-      const gameValues = [name, description, rules, status];
-      const gameResult = await client.query(gameSql, gameValues);
+      RETURNING id, name, status
+    `;
+      const gameResult = await client.query(gameSql, [
+        name,
+        description,
+        rules,
+        status || "OPEN",
+      ]);
       const newGame = gameResult.rows[0];
 
-      // 2. Insert the specific ticket categories provided for THIS game
-      // ticket_types is an array of objects: [{ category, price, name, is_active }, ...]
+      // 2. Create the Commercial Product wrapper
+      // This makes the game "buyable" in the shop
+      const productSql = `
+      INSERT INTO products (name, product_type, game_id, is_active)
+      VALUES ($1, 'GAME', $2, true)
+      RETURNING id
+    `;
+      const productResult = await client.query(productSql, [
+        newGame.name,
+        newGame.id,
+      ]);
+      const productId = productResult.rows[0].id;
+
+      // 3. Insert the Ticket Types (Prices) linked to the PRODUCT
       if (ticket_types && ticket_types.length > 0) {
-        // Build a single INSERT statement with multiple rows to avoid
-        // sequential round-trips. We prepare placeholders and a flattened
-        // values array that repeats newGame.id for each ticket type.
-        let ttSql = `INSERT INTO ticket_types (game_id, name, category, price, is_active) VALUES `;
         const ttValues = [];
-        let placeholderIdx = 1;
+        const placeholders = ticket_types
+          .map((tt, i) => {
+            const offset = i * 3; // product_id, category, price
+            ttValues.push(productId, tt.category.toUpperCase(), tt.price);
+            return `($${offset + 1}, $${offset + 2}, $${offset + 3})`;
+          })
+          .join(",");
 
-        ticket_types.forEach((tt) => {
-          ttSql += `($${placeholderIdx++}, $${placeholderIdx++}, $${placeholderIdx++}, $${placeholderIdx++}, $${placeholderIdx++}),`;
-          ttValues.push(
-            newGame.id,
-            tt.name,
-            tt.category,
-            tt.price,
-            tt.is_active !== undefined ? tt.is_active : true, // Default to true if not provided
-          );
-        });
-
-        // remove trailing comma
-        ttSql = ttSql.slice(0, -1);
+        const ttSql = `
+        INSERT INTO ticket_types (product_id, category, price) 
+        VALUES ${placeholders}
+      `;
 
         await client.query(ttSql, ttValues);
       }
 
       await client.query("COMMIT");
-      return { ...newGame, ticket_types_count: ticket_types?.length ?? 0 };
+      return {
+        ...newGame,
+        product_id: productId,
+        ticket_types_count: ticket_types?.length ?? 0,
+      };
     } catch (error) {
       await client.query("ROLLBACK");
+      console.error("Error creating game product:", error);
       throw error;
     } finally {
       client.release();
@@ -129,27 +144,40 @@ const Games = {
 
   async getById(id) {
     const sql = `
-    SELECT g.*, 
-    COALESCE(
-        JSON_AGG(tt.*) FILTER (WHERE tt.id IS NOT NULL), 
-        '[]'
-    ) AS ticket_types
+    SELECT 
+      g.*, 
+      COALESCE(
+          JSON_AGG(
+            JSON_BUILD_OBJECT(
+              'id', tt.id,
+              'product_id', tt.product_id,
+              'category', tt.category,
+              'price', tt.price,
+              'created_at', tt.created_at
+            )
+          ) FILTER (WHERE tt.id IS NOT NULL), 
+          '[]'
+      ) AS ticket_types
     FROM games g
-    LEFT JOIN ticket_types tt ON g.id = tt.game_id
+    -- Hop through products to get to ticket_types
+    LEFT JOIN products p ON g.id = p.game_id
+    LEFT JOIN ticket_types tt ON p.id = tt.product_id
     WHERE g.id = $1
     GROUP BY g.id;
-    `;
+  `;
     const result = await query(sql, [id]);
     return result.rows[0];
   },
 
   async deleteById(id) {
     const sql = `
-      DELETE FROM games WHERE id=$1
-      RETURNING *
-    `;
+    DELETE FROM games 
+    WHERE id = $1
+    RETURNING *;
+  `;
     const result = await query(sql, [id]);
-    return result;
+    // result.rows[0] contains the deleted game data
+    return result.rows[0];
   },
 };
 module.exports = Games;

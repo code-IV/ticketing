@@ -16,11 +16,14 @@ const adminController = {
   async getDashboard(req, res, next) {
     try {
       // Disable caching for admin dashboard endpoint
-      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
-      res.setHeader('Pragma', 'no-cache');
-      res.setHeader('Expires', '0');
-      res.setHeader('ETag', ''); // Clear ETag to prevent 304 responses
-      
+      res.setHeader(
+        "Cache-Control",
+        "no-cache, no-store, must-revalidate, max-age=0",
+      );
+      res.setHeader("Pragma", "no-cache");
+      res.setHeader("Expires", "0");
+      res.setHeader("ETag", ""); // Clear ETag to prevent 304 responses
+
       const revenue = await Payment.getRevenueSummary();
       const { events } = await Event.findAll({ page: 1, limit: 5 });
       const { bookings } = await Booking.findAll({ page: 1, limit: 5 });
@@ -81,64 +84,66 @@ const adminController = {
   },
 
   /**
-   * POST /api/admin/events-with-tickets - Create event with ticket types
+   * POST /api/admin/events-with-tickets
+   * Updated for the Product Catalog Model
    */
   async createEventWithTicketTypes(req, res, next) {
-    const { query } = require('../config/db');
-    
+    const { query } = require("../config/db");
+
     try {
-      const { 
-        name, 
-        description, 
-        eventDate, 
-        startTime, 
-        endTime, 
-        capacity,
-        ticketTypes 
-      } = req.body;
-
-      // Start transaction
-      await query('BEGIN');
-
-      // Create event
-      const event = await Event.create({
+      const {
         name,
-        description,
         eventDate,
         startTime,
         endTime,
         capacity,
-        createdBy: req.session.user.id,
-      });
+        ticketTypes, // Array of { category, price }
+      } = req.body;
 
-      // Create ticket types
+      await query("BEGIN");
+
+      // 1. Create the Physical Event
+      const eventRes = await query(
+        `INSERT INTO events (name, event_date, start_time, end_time, capacity)
+         VALUES ($1, $2, $3, $4, $5) RETURNING id, name`,
+        [name, eventDate, startTime, endTime, capacity],
+      );
+      const event = eventRes.rows[0];
+
+      // 2. Create the Product Wrapper (This makes it "Purchasable")
+      const productRes = await query(
+        `INSERT INTO products (name, product_type, event_id, valid_days)
+         VALUES ($1, 'EVENT', $2, 1) RETURNING id`,
+        [event.name, event.id],
+      );
+      const productId = productRes.rows[0].id;
+
+      // 3. Create Ticket Types (Linked to Product, not Event)
       const createdTicketTypes = [];
-      for (const ticketType of ticketTypes) {
-        const createdTicketType = await TicketType.create({
-          eventId: event.id,
-          name: ticketType.name,
-          category: ticketType.category,
-          price: ticketType.price,
-          description: ticketType.description,
-          maxQuantityPerBooking: ticketType.maxQuantityPerBooking || 10,
-        });
-        createdTicketTypes.push(createdTicketType);
+      for (const tt of ticketTypes) {
+        const ttRes = await query(
+          `INSERT INTO ticket_types (product_id, category, price)
+           VALUES ($1, $2, $3) RETURNING *`,
+          [productId, tt.category.toUpperCase(), tt.price],
+        );
+        createdTicketTypes.push(ttRes.rows[0]);
       }
 
-      // Commit transaction
-      await query('COMMIT');
+      await query("COMMIT");
 
-      return apiResponse(res, 201, true, "Event with ticket types created successfully.", {
-        event,
-        ticketTypes: createdTicketTypes,
-      });
+      return apiResponse(
+        res,
+        201,
+        true,
+        "Event product created successfully.",
+        {
+          event,
+          productId,
+          ticketTypes: createdTicketTypes,
+        },
+      );
     } catch (err) {
-      // Rollback on error
-      try {
-        await query('ROLLBACK');
-      } catch (rollbackErr) {
-        console.error('Rollback failed:', rollbackErr);
-      }
+      await query("ROLLBACK");
       next(err);
     }
   },
@@ -204,105 +209,99 @@ const adminController = {
    * PUT /api/admin/events/:id - Update an event with ticket types
    */
   async updateEventWithTicketTypes(req, res, next) {
-    const { query } = require('../config/db');
-    
+    const { query } = require("../config/db");
+
     try {
-      const { 
-        name, 
-        description, 
-        eventDate, 
-        startTime, 
-        endTime, 
+      const {
+        name,
+        event_date,
+        start_time,
+        end_time,
         capacity,
-        isActive,
-        ticketTypes 
+        ticketTypes, // Array of { id?, category, price }
       } = req.body;
 
-      // Start transaction
-      await query('BEGIN');
+      await query("BEGIN");
 
-      // Update event
-      const event = await Event.update(req.params.id, {
-        name,
-        description,
-        eventDate,
-        startTime,
-        endTime,
-        capacity,
-        isActive,
-      });
+      // 1. Update the Physical Event
+      const eventResult = await query(
+        `UPDATE events 
+       SET name = $1, event_date = $2, start_time = $3, end_time = $4, capacity = $5, updated_at = NOW()
+       WHERE id = $6 RETURNING *`,
+        [name, event_date, start_time, end_time, capacity, req.params.id],
+      );
 
-      if (!event) {
-        await query('ROLLBACK');
+      if (eventResult.rowCount === 0) {
+        await query("ROLLBACK");
         return apiResponse(res, 404, false, "Event not found.");
       }
 
-      // Get existing ticket types to determine updates/deletes/additions
-      const existingTicketTypes = await TicketType.findByEventId(req.params.id);
-      const existingTicketTypeIds = existingTicketTypes.map(tt => tt.id);
-
-      // Update or create ticket types
-      const updatedTicketTypes = [];
-      for (const ticketType of ticketTypes) {
-        let updatedTicketType;
-        
-        if (ticketType.id) {
-          // Update existing ticket type
-          updatedTicketType = await TicketType.update(ticketType.id, {
-            name: ticketType.name,
-            category: ticketType.category,
-            price: ticketType.price,
-            description: ticketType.description,
-            maxQuantityPerBooking: ticketType.maxQuantityPerBooking,
-            isActive: true,
-          });
-        } else {
-          // Create new ticket type
-          updatedTicketType = await TicketType.create({
-            eventId: req.params.id,
-            name: ticketType.name,
-            category: ticketType.category,
-            price: ticketType.price,
-            description: ticketType.description,
-            maxQuantityPerBooking: ticketType.maxQuantityPerBooking,
-          });
-        }
-        
-        if (updatedTicketType) {
-          updatedTicketTypes.push(updatedTicketType);
-        }
-      }
-
-      // Delete ticket types that are no longer needed
-      const submittedTicketTypeIds = ticketTypes
-        .filter(tt => tt.id)
-        .map(tt => tt.id);
-      
-      const ticketTypesToDelete = existingTicketTypeIds.filter(
-        id => !submittedTicketTypeIds.includes(id)
+      // 2. Sync the Product Wrapper
+      // We ensure a Product exists for this event and update its name to match
+      let productResult = await query(
+        `UPDATE products SET name = $1 WHERE event_id = $2 RETURNING id`,
+        [name, req.params.id],
       );
-      
-      for (const ticketTypeId of ticketTypesToDelete) {
-        await TicketType.deactivate(ticketTypeId);
+
+      let productId;
+      if (productResult.rowCount === 0) {
+        // Fallback: Create product if it was missing
+        const newProduct = await query(
+          `INSERT INTO products (name, product_type, event_id) VALUES ($1, 'EVENT', $2) RETURNING id`,
+          [name, req.params.id],
+        );
+        productId = newProduct.rows[0].id;
+      } else {
+        productId = productResult.rows[0].id;
       }
 
-      // Commit transaction
-      await query('COMMIT');
+      // 3. Sync Ticket Types (Prices)
+      const existingTicketTypes = await query(
+        `SELECT id FROM ticket_types WHERE product_id = $1`,
+        [productId],
+      );
+      const existingIds = existingTicketTypes.rows.map((t) => t.id);
 
-      // Get final event with all ticket types
-      const finalEvent = await Event.findByIdWithTicketTypes(req.params.id);
+      const submittedIds = [];
 
-      return apiResponse(res, 200, true, "Event updated successfully.", {
-        event: finalEvent,
-        ticketTypes: finalEvent.ticket_types || [],
-      });
+      for (const tt of ticketTypes) {
+        if (tt.id && existingIds.includes(tt.id)) {
+          // UPDATE existing price
+          await query(
+            `UPDATE ticket_types SET category = $1, price = $2, updated_at = NOW() WHERE id = $3`,
+            [tt.category.toUpperCase(), tt.price, tt.id],
+          );
+          submittedIds.push(tt.id);
+        } else {
+          // INSERT new price
+          const newTt = await query(
+            `INSERT INTO ticket_types (product_id, category, price) VALUES ($1, $2, $3) RETURNING id`,
+            [productId, tt.category.toUpperCase(), tt.price],
+          );
+          submittedIds.push(newTt.rows[0].id);
+        }
+      }
+
+      // 4. DELETE (or Deactivate) ticket types not in the new list
+      const idsToDelete = existingIds.filter(
+        (id) => !submittedIds.includes(id),
+      );
+      if (idsToDelete.length > 0) {
+        await query(`DELETE FROM ticket_types WHERE id = ANY($1)`, [
+          idsToDelete,
+        ]);
+      }
+
+      await query("COMMIT");
+
+      return apiResponse(
+        res,
+        200,
+        true,
+        "Event and Pricing updated successfully.",
+      );
     } catch (err) {
-      // Rollback on error
-      try {
-        await query('ROLLBACK');
-      } catch (rollbackErr) {
-        console.error('Rollback failed:', rollbackErr);
-      }
+      await query("ROLLBACK");
       next(err);
     }
   },

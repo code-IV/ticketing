@@ -1,4 +1,4 @@
-const { query } = require("../config/db");
+const { query, getClient } = require("../config/db");
 
 const Event = {
   /**
@@ -12,22 +12,55 @@ const Event = {
     endTime,
     capacity,
     createdBy,
+    validDays = 1, // Default validity for event tickets
   }) {
-    const sql = `
+    const client = await getClient();
+    try {
+      await client.query("BEGIN");
+
+      // 1. Insert the physical Event
+      const eventSql = `
       INSERT INTO events (name, description, event_date, start_time, end_time, capacity, created_by)
       VALUES ($1, $2, $3, $4, $5, $6, $7)
       RETURNING *`;
-    const values = [
-      name,
-      description,
-      eventDate,
-      startTime,
-      endTime,
-      capacity,
-      createdBy,
-    ];
-    const result = await query(sql, values);
-    return result.rows[0];
+
+      const eventValues = [
+        name,
+        description,
+        eventDate,
+        startTime,
+        endTime,
+        capacity,
+        createdBy,
+      ];
+      const eventResult = await client.query(eventSql, eventValues);
+      const newEvent = eventResult.rows[0];
+
+      // 2. Automatically create a Product for this event
+      // This allows ticket_types to be attached to it
+      const productSql = `
+      INSERT INTO products (name, product_type, event_id, valid_days)
+      VALUES ($1, 'EVENT', $2, $3)
+      RETURNING id`;
+
+      const productResult = await client.query(productSql, [
+        name,
+        newEvent.id,
+        validDays,
+      ]);
+
+      // Attach the product_id to the event object returned to the frontend
+      newEvent.product_id = productResult.rows[0].id;
+
+      await client.query("COMMIT");
+      return newEvent;
+    } catch (error) {
+      await client.query("ROLLBACK");
+      console.error("Error creating event and product:", error);
+      throw error;
+    } finally {
+      client.release();
+    }
   },
 
   /**
@@ -102,13 +135,24 @@ const Event = {
   async findAll({ page = 1, limit = 20 }) {
     const offset = (page - 1) * limit;
     const sql = `
-      SELECT e.*,
-             (e.capacity - e.tickets_sold) AS available_tickets,
-             u.first_name || ' ' || u.last_name AS created_by_name
-      FROM events e
-      LEFT JOIN users u ON e.created_by = u.id
-      ORDER BY e.event_date DESC
-      LIMIT $1 OFFSET $2`;
+      SELECT 
+    e.*,
+    u.first_name || ' ' || u.last_name AS created_by_name,
+    p.id AS product_id,
+    -- Calculate total tickets sold across all ticket types for this event's product
+    COALESCE(SUM(bi.quantity), 0) AS tickets_sold,
+    -- Calculate remaining capacity
+    (e.capacity - COALESCE(SUM(bi.quantity), 0)) AS available_tickets
+FROM events e
+LEFT JOIN users u ON e.created_by = u.id
+LEFT JOIN products p ON p.event_id = e.id AND p.product_type = 'EVENT'
+LEFT JOIN ticket_types tt ON tt.product_id = p.id
+LEFT JOIN booking_items bi ON bi.ticket_type_id = tt.id
+-- Optional: Only count items from confirmed bookings
+LEFT JOIN bookings b ON bi.booking_id = b.id AND b.status = 'CONFIRMED'
+GROUP BY e.id, u.id, p.id
+ORDER BY e.event_date DESC
+LIMIT $1 OFFSET $2;`;
     const result = await query(sql, [limit, offset]);
 
     const countSql = `SELECT COUNT(*) FROM events`;

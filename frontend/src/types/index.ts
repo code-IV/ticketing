@@ -51,7 +51,7 @@ export interface TicketType {
   id: string;
   event_id: string;
   name: string;
-  category: "adult" | "child" | "senior" | "student" | "group";
+  category: "ADULT" | "CHILD" | "SENIOR" | "STUDENT" | "GROUP";
   price: number;
   description?: string;
   max_quantity_per_booking: number;
@@ -62,7 +62,7 @@ export interface TicketType {
 
 export interface CreateTicketTypeRequest {
   name: string;
-  category: "adult" | "child" | "senior" | "student" | "group";
+  category: "ADULT" | "CHILD" | "SENIOR" | "STUDENT" | "GROUP";
   price: number;
   description?: string;
   maxQuantityPerBooking?: number;
@@ -137,29 +137,29 @@ export interface GameTicketDetail {
   };
 }
 
-export interface Booking {
-  id: string;
-  booking_reference: string;
-  user_id: string;
-  event_id?: string;
-  event_name?: string;
-  event_date?: string;
-  start_time?: string;
-  end_time?: string;
-  total_amount: string;
-  booking_status: "pending" | "confirmed" | "cancelled" | "refunded";
-  payment_status: "pending" | "completed" | "failed" | "refunded";
-  payment_method?: "credit_card" | "debit_card" | "telebirr" | "cash";
-  guest_email?: string;
-  guest_name?: string;
-  notes?: string;
-  booked_at: string;
-  cancelled_at?: string;
-  created_at: string;
-  updated_at: string;
-  items?: BookingItemDetail[];
-  tickets?: Ticket[];
-}
+// export interface Booking {
+//   id: string;
+//   booking_reference: string;
+//   user_id: string;
+//   event_id?: string;
+//   event_name?: string;
+//   event_date?: string;
+//   start_time?: string;
+//   end_time?: string;
+//   total_amount: string;
+//   booking_status: "PENDING" | "CONFIRMED" | "CANCELLED" | "REFUNDED";
+//   payment_status: "PENDING" | "COMPLETED" | "FAILED" | "REFUNDED";
+//   payment_method?: "CREDIT_CARD" | "DEBIT_CARD" | "TELEBIRR" | "CASH";
+//   guest_email?: string;
+//   guest_name?: string;
+//   notes?: string;
+//   booked_at: string;
+//   cancelled_at?: string;
+//   created_at: string;
+//   updated_at: string;
+//   items?: BookingItemDetail[];
+//   tickets?: Ticket[];
+// }
 
 export interface BookingItemDetail {
   id: string;
@@ -180,9 +180,9 @@ export interface BaseBooking {
   booking_reference: string;
   user_id: string;
   total_amount: string;
-  booking_status: "pending" | "confirmed" | "cancelled" | "refunded";
-  payment_status: "pending" | "completed" | "failed" | "refunded";
-  payment_method?: "credit_card" | "debit_card" | "telebirr" | "cash";
+  booking_status: "PENDING" | "CONFIRMED" | "CANCELLED" | "REFUNDED";
+  payment_status: "PENDING" | "COMPLETED" | "FAILED" | "REFUNDED";
+  payment_method?: "CREDIT_CARD" | "DEBIT_CARD" | "TELEBIRR" | "CASH";
   guest_email?: string;
   guest_name?: string;
   notes?: string;
@@ -211,7 +211,7 @@ export interface GameBooking extends BaseBooking {
 }
 
 // 3. The Union Type used in your components
-export type Bookings = EventBooking | GameBooking;
+export type Booking = EventBooking | GameBooking;
 
 // Supporting interface for game items
 export interface GameBookingItemDetail {
@@ -247,8 +247,8 @@ export interface Payment {
   id: string;
   booking_id: string;
   amount: string;
-  payment_method: "credit_card" | "debit_card" | "telebirr" | "cash";
-  payment_status: "pending" | "completed" | "failed" | "refunded";
+  payment_method: "CREDIT_CARD" | "DEBIT_CARD" | "TELEBIRR" | "CASH";
+  payment_status: "PENDING" | "COMPLETED" | "FAILED" | "REFUNDED";
   transaction_reference?: string;
   paid_at?: string;
   created_at: string;
