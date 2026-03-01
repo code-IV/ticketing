@@ -6,7 +6,6 @@ import {
   Ticket,
   PaginatedResponse,
   ApiResponse,
-  Bookings,
 } from "@/types";
 
 export const bookingService = {
@@ -36,7 +35,7 @@ export const bookingService = {
   async getMyBookings(
     page = 1,
     limit = 20,
-  ): Promise<PaginatedResponse<Bookings>> {
+  ): Promise<PaginatedResponse<Booking>> {
     const response = await api.get("/bookings/my", { params: { page, limit } });
     return response.data;
   },
