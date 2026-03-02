@@ -15,6 +15,7 @@ import {
   Map,
   DollarSign,
   Divide,
+  BarChart3,
 } from "lucide-react";
 import { gameService } from "@/services/adminService";
 import { Game, CreateTicketTypeRequest, TicketType } from "@/types";
@@ -207,15 +208,15 @@ const GamesManagementPage = () => {
             color: "text-orange-600",
           },
           {
-            label: "Average Price",
-            value: "125 ETB",
-            icon: <DollarSign />,
-            color: "text-indigo-600",
+            label: "CLOSED",
+            value: "5",
+            icon: <AlertTriangle />,
+            color: "text-red-600",
           },
           {
-            label: "Total Capacity",
-            value: "450",
-            icon: <Map />,
+            label: "ANALYTICS",
+            value: "",
+            icon: <BarChart3 />,
             color: "text-blue-600",
           },
         ].map((stat, i) => (
@@ -269,17 +270,42 @@ const GamesManagementPage = () => {
             <div
               key={game.id}
               onClick={() => router.push(`/admin/games/${game.id}`)}
-              className="group bg-white rounded-3xl border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden"
+              className="group bg-white rounded-3xl border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden cursor-pointer"
             >
               <div className="p-6">
                 <div className="flex justify-between items-start mb-4">
+                  {/* Status chip (always visible) */}
                   <div
                     className={`flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${statusConfig[game.status]?.bg} ${statusConfig[game.status]?.text}`}
                   >
                     {statusConfig[game.status]?.icon}
                     {statusConfig[game.status]?.label}
                   </div>
-                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+
+                  {/* Hover actions: status dropdown, edit, delete */}
+                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    {/* Status Dropdown */}
+                    <select
+                      className={`text-[10px] font-bold uppercase px-2 py-1 rounded-full border-none outline-none cursor-pointer ${statusConfig[game.status]?.bg} ${statusConfig[game.status]?.text}`}
+                      value={game.status}
+                      onClick={(e) => e.stopPropagation()}
+                      onChange={(e) => e.stopPropagation()} // dummy, prevents state change
+                    >
+                      <option value="OPEN">OPEN</option>
+                      <option value="ON_MAINTENANCE">MAINTENANCE</option>
+                      <option value="UPCOMING">UPCOMING</option>
+                      <option value="CLOSED">CLOSED</option>
+                    </select>
+
+
+                    {/* Delete Button */}
+                    <button
+                      className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-red-600"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
                 </div>
 
                 <h3 className="text-xl font-black text-slate-800 mb-1">
@@ -329,6 +355,7 @@ const GamesManagementPage = () => {
                   <Link
                     href={`/admin/games/${game.id}`}
                     className="bg-slate-900 text-white text-xs font-bold px-4 py-2 rounded-xl hover:bg-slate-800 transition-colors"
+                    onClick={(e) => e.stopPropagation()}
                   >
                     View Analytics
                   </Link>
@@ -403,7 +430,7 @@ const GamesManagementPage = () => {
                         }
                       >
                         <option value="OPEN">Open</option>
-                        <option value="ON_MAINTENENCE">Maintenance</option>
+                        <option value="ON_MAINTENANCE">Maintenance</option>
                         <option value="UPCOMING">Coming Soon</option>
                         <option value="CLOSED">Closed</option>
                       </select>

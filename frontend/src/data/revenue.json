@@ -1,0 +1,35 @@
+
+// static 
+{
+  "totalRevenue": 125000, // total revenue
+  "avrageRevenue": 132000, // avrage revenue per transaction 
+  "projectedChange": 5.6 // changee between last time and current time  .....time is dynamic  meaning its the time period i set and give you  like 7 days 1 month 3 moth and cusotme 
+}
+
+// graph data
+
+[
+  { "date": "2026-02-01", "revenue": 8200 },
+  { "date": "2026-02-02", "revenue": 7900 },
+  { "date": "2026-02-03", "revenue": 9100 },
+  ...
+]
+
+
+// 3. Revenue by Ticket Type (Pie Chart)
+[
+  { "child": "Support", "revenue": 45000 },
+  { "adult": "Maintenance", "revenue": 38000 },
+  { "group": "Consulting", "revenue": 22000 },
+  { "senior": "Development", "revenue": 20000 }
+]
+
+// 4. Revenue by Category (Bar Chart)
+// top 5 games 
+[
+  { "game": "Cyber Realm", "revenue": 85000 },
+  { "game": "Speed Racer", "revenue": 42000 },
+  { "game": "Fantasy Quest", "revenue": 120000 },
+  { "game": "Zombie Survival", "revenue": 95000 },
+  { "game": "Space Odyssey", "revenue": 68000 }
+]

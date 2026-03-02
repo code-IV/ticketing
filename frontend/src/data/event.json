@@ -1,0 +1,21 @@
+// 2. Events List (Table)
+[
+  {
+    "id": 101,
+    "name": "Summer Pro League",
+    "date": "2026-08-15",
+    "status": "Active",
+    "revenue": 12000,
+    "ticketsSold": 85,
+    "capacity": 100
+  },
+  {
+    "id": 102,
+    "name": "Midnight Scrims",
+    "date": "2026-08-20",
+    "status": "Sold Out",
+    "revenue": 18000,
+    "ticketsSold": 120,
+    "capacity": 120
+  }
+]

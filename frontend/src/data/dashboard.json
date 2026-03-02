@@ -1,0 +1,34 @@
+// dashboard
+// // date will be fetched from frontend
+
+// Static data 
+{
+  "totalRevenue": 247000,
+  "totalTicketsSold": 8250,
+  "activeGames": 4
+}
+
+// graph data 
+// total revenue
+
+[
+  { "date": "2026-02-01", "revenue": 8200 },
+  { "date": "2026-02-02", "revenue": 7900 },
+  { "date": "2026-02-03", "revenue": 9100 },
+]
+
+// top games by revenue
+// top 6 games 
+[
+  { "game": "Fantasy Quest", "revenue": 120000 },
+  { "game": "Dragon Warriors", "revenue": 95000 },
+  { "game": "Cyber Realm", "revenue": 85000 },
+]
+
+// Tickets Sold Trend 
+[
+  { "date": "2026-02-01", "ticketsSold": 185 },
+  { "date": "2026-02-02", "ticketsSold": 172 },
+  { "date": "2026-02-03", "ticketsSold": 210 },
+]
+
