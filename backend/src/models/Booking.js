@@ -327,12 +327,7 @@ const Booking = {
       end_time: eventItem?.end_time || null,
 
       items: itemsResult.rows,
-      tickets: ticketsResult.rows.map((t) => ({
-        ...t,
-        // Ensure entitlements is never null for the UI
-        entitlements: t.entitlements || [],
-      })),
-      payments: paymentsResult.rows,
+      tickets: ticketsResult.rows[0],
     };
   },
 

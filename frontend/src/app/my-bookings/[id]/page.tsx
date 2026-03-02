@@ -35,12 +35,9 @@ interface CollectorGameCardProps {
     game_name: string;
     image: string;
     location: string;
-    ticket_types: Array<{
-      id: string;
-      category: string;
-      purchased: number;
-      used: number;
-    }>;
+    category: string;
+    purchased: number;
+    used: number;
   };
   index: number;
 }
@@ -88,14 +85,16 @@ const QRModal = ({
 
           <div className="p-10 flex flex-col items-center">
             <div className="bg-slate-50 p-6 rounded-[32px] border-4 border-slate-100 mb-8 relative group">
-              {qr_token && (
+              {qr_token ? (
                 <QRCodeCanvas
-                  value={`${process.env.NEXT_PUBLIC_API_URL}/ticket/scan/${qr_token}`}
+                  value={`${window.location.origin}/scan/${qr_token}`}
                   size={220}
                   level="H"
                   includeMargin={true}
                   className="text-slate-900"
                 />
+              ) : (
+                <div>loading...</div>
               )}
             </div>
 
@@ -115,8 +114,8 @@ const QRModal = ({
 );
 
 const CollectorGameCard = ({ item, index }: CollectorGameCardProps) => {
-  const totalPurchased = item.ticket_types.reduce((s, t) => s + t.purchased, 0);
-  const totalUsed = item.ticket_types.reduce((s, t) => s + t.used, 0);
+  const totalPurchased = item.purchased;
+  const totalUsed = 0;
   const available = totalPurchased - totalUsed;
   const isFullyUsed = available === 0;
 
@@ -181,38 +180,24 @@ const CollectorGameCard = ({ item, index }: CollectorGameCardProps) => {
 // ── PAGE ───────────────────────────────────────────────────────────────────
 
 export default function GameBookingDetailPage() {
-  const params = useParams();
+  const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { user } = useAuth();
-  const [booking, setBooking] = useState<Booking | null>(null);
+  const [booking, setBooking] = useState<Booking>();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [isQRModalOpen, setIsQRModalOpen] = useState(false);
 
   useEffect(() => {
-    if (!user) {
-      router.push("/login");
-      return;
-    }
-    if (params.id) {
-      loadBooking(params.id as string);
-    }
-  }, [user, params.id]);
+    loadBooking(id);
+  }, []);
 
-  const loadBooking = async (bookingId: string) => {
+  const loadBooking = async (id: string) => {
     try {
       setLoading(true);
-      console.log("🔍 Fetching booking with ID:", bookingId);
-      const response = await bookingService.getBookingById(bookingId);
-      console.log("📦 Full API Response:", response);
-      console.log("📋 Booking Data:", response.data);
-      console.log("🎯 Booking Type:", response.data?.booking.type);
-      console.log("📝 Booking Items:", response.data?.booking.items);
-
-      if (response.data) {
-        setBooking(response.data?.booking);
-        console.log("✅ Booking set successfully");
-      }
+      const response = await bookingService.getBookingById(id);
+      setBooking(response.data?.booking);
+      console.log("✅ Booking set successfully:", booking);
     } catch (err: any) {
       console.error("❌ Error loading booking:", err);
       setError(err.response?.data?.message || "Failed to load booking details");
@@ -220,8 +205,25 @@ export default function GameBookingDetailPage() {
       setLoading(false);
     }
   };
+  console.log("🚀 State officially updated:", booking);
+  console.log("🚀 State officially updated:", booking?.items);
 
-  if (loading) {
+  const gameItems = booking?.items?.map((item: GameBookingItemDetail) => {
+    const transformedItem = {
+      id: item.id,
+      game_name: item.game_name || "Unknown Game",
+      image:
+        "https://images.unsplash.com/photo-1616091216791-a5360b5fc78a?q=80&w=600&auto=format&fit=crop",
+      location: (item as any).location || "Main Zone", // Type assertion for missing property
+      category: item.category || "general",
+      purchased: item.quantity || 1,
+      used: 0, // We'll need to calculate this from tickets
+    };
+
+    return transformedItem;
+  });
+
+  if (loading && !booking) {
     return (
       <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center">
         <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
@@ -229,7 +231,7 @@ export default function GameBookingDetailPage() {
     );
   }
 
-  if (error || !booking) {
+  if (error) {
     return (
       <div className="min-h-screen bg-[#345271] flex items-center justify-center">
         <div className="text-center">
@@ -249,40 +251,6 @@ export default function GameBookingDetailPage() {
       </div>
     );
   }
-
-  // Transform booking items to match expected format for CollectorGameCard
-  console.log("🔄 Starting data transformation...");
-  console.log("🎮 Booking type check:", (booking as any)?.type);
-  console.log("📦 Available items:", (booking as any)?.items);
-
-  const gameItems =
-    (booking as any)?.type === "GAME"
-      ? (booking as any)?.items?.map((item: GameBookingItemDetail) => {
-          console.log("🎯 Processing item:", item);
-          console.log("📋 Item properties:", Object.keys(item));
-
-          const transformedItem = {
-            id: item.id,
-            game_name: item.game_name || "Unknown Game",
-            image:
-              "https://images.unsplash.com/photo-1616091216791-a5360b5fc78a?q=80&w=600&auto=format&fit=crop",
-            location: (item as any).location || "Main Zone", // Type assertion for missing property
-            ticket_types: [
-              {
-                id: item.id,
-                category: "general",
-                purchased: item.quantity || 1,
-                used: 0, // We'll need to calculate this from tickets
-              },
-            ],
-          };
-
-          console.log("✨ Transformed item:", transformedItem);
-          return transformedItem;
-        }) || []
-      : [];
-
-  console.log("🎪 Final gameItems array:", gameItems);
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] pb-20 pt-10 px-4">
@@ -318,7 +286,7 @@ export default function GameBookingDetailPage() {
                     : "Guest"}
                 </span>{" "}
                 · ID:{" "}
-                <span className="font-mono">{booking.booking_reference}</span>
+                <span className="font-mono">{booking?.booking_reference}</span>
               </p>
             </div>
           </div>
@@ -388,8 +356,8 @@ export default function GameBookingDetailPage() {
         guestName={
           user?.first_name ? `${user.first_name} ${user.last_name}` : "Guest"
         }
-        refId={booking.booking_reference}
-        qr_token={booking.tickets?.[0]?.qr_token}
+        refId={booking?.booking_reference || ""}
+        qr_token={booking?.tickets?.qr_token}
       />
     </div>
   );

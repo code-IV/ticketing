@@ -31,7 +31,7 @@ export default function EditUserPage({
     last_name: "",
     email: "",
     phone: "",
-    role: "visitor",
+    role: "VISITOR",
     is_active: true,
     created_at: "",
     updated_at: "",
