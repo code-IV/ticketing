@@ -129,7 +129,7 @@ export default function EventsAnalyticsPage() {
                   <tr
                     key={event.id}
                     className="border-t border-gray-100 hover:bg-gray-50 cursor-pointer"
-                    onClick={() => router.push(`/newanalitics/events/${event.id}`)}
+                    onClick={() => router.push(`/analitics/events/${event.id}`)}
                   >
                     <td className="px-4 py-3 font-medium text-blue-600 hover:text-blue-800">{event.name}</td>
                     <td className="px-4 py-3">{event.date}</td>

@@ -228,16 +228,16 @@ export default function AnalyticsDashboardPage() {
         {/* Navigation Links */}
         <div className="bg-white border border-gray-200 rounded-xl p-4 mb-6">
           <div className="flex flex-wrap gap-4">
-            <Link href="/newanalitics/revenue" className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+            <Link href="/analitics/revenue" className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
               Revenue Analytics
             </Link>
-            <Link href="/newanalitics/games" className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+            <Link href="/analitics/games" className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
               Games Analytics
             </Link>
-            <Link href="/newanalitics/events" className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
+            <Link href="/analitics/events" className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
               Events Analytics
             </Link>
-            <Link href="/newanalitics/bookings" className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700">
+            <Link href="/analitics/bookings" className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700">
               Booking Analytics
             </Link>
           </div>

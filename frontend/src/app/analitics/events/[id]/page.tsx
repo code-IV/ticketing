@@ -195,7 +195,7 @@ export default function EventDetailPage() {
             <h1 className="text-2xl font-bold text-gray-900 mb-4">Event Not Found</h1>
             <p className="text-gray-600">The event you're looking for doesn't exist.</p>
             <button
-              onClick={() => router.push('/newanalitics/events')}
+              onClick={() => router.push('/analitics/events')}
               className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
             >
               Back to Events
@@ -220,7 +220,7 @@ export default function EventDetailPage() {
             onDateRangeChange={setDateRange} 
           />
           <button
-            onClick={() => router.push('/newanalitics/events')}
+            onClick={() => router.push('/analitics/events')}
             className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900"
           >
             <ChevronLeft size={16} /> Back to Events
