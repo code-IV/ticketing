@@ -1,0 +1,69 @@
+
+// static 
+{
+  "revenue": 12000,
+  "ticketsSold": 85,
+  "capacity": 100
+}
+// . Revenue Trend
+//  this shoudl only send data for the event creation to the event date 
+[
+  { "date": "2026-02-01", "revenue": 8200 },
+  { "date": "2026-02-02", "revenue": 7900 },
+  { "date": "2026-02-03", "revenue": 9100 }
+]
+// . booking Trend
+//  this shoudl only send data for the event creation to the event date 
+[
+  { "date": "2026-02-01", "bookings": 45 },
+  { "date": "2026-02-02", "bookings": 38 },
+  { "date": "2026-02-03", "bookings": 52 }
+]
+
+// 4. Revenue by Ticket Type (Pie Chart)
+//  this is the total revenue not by time 
+[
+  { "type": "Adult", "revenue": 6800 },
+  { "type": "Child", "revenue": 1500 },
+  { "type": "Senior", "revenue": 900 },
+  { "type": "Group", "revenue": 250 }
+]
+
+// 5. Bookings by Ticket Type (Pie Chart)
+//  this is the total tickets sold not by time 
+
+[
+  { "type": "Adult", "sold": 40 },
+  { "type": "Child", "sold": 25 },
+  { "type": "Senior", "sold": 15 },
+  { "type": "Group", "sold": 5 }
+]
+
+//  Ticket Types Table
+
+[
+  {"id": 1,
+    "type": "Adult",
+    "avgPrice": 85,
+    "sold": 40,
+    "revenue": 6800
+  },
+  {"id": 2,
+    "type": "Child",
+    "avgPrice": 60,
+    "sold": 25,
+    "revenue": 1500
+  },
+  {"id": 3,
+    "type": "Senior",
+    "avgPrice": 60,
+    "sold": 15,
+    "revenue": 900
+  },
+  {"id": 4,
+    "type": "Group",
+    "avgPrice": 50,
+    "sold": 5,
+    "revenue": 250
+  }
+]

@@ -1,0 +1,54 @@
+// static 
+
+[
+    {
+        "total tickets sold": 1000,
+        "avrage ticket per day": 150,
+        "peak ticket within time frame": 10,
+        "total revenue form tickets sold": 5
+    }
+]
+
+
+// 1. Tickets Trend (Line Chart)
+[
+  { "date": "2026-02-01", "tickets": 185, "revenue": 8325 },
+  { "date": "2026-02-02", "tickets": 172, "revenue": 7740 },
+  { "date": "2026-02-03", "tickets": 210, "revenue": 9450 }
+]
+
+// 3. Event Bookings (Composed Chart)
+[
+  { "id": 101,
+    "event": "Summer Pro League",
+    "tickets bought": 80,
+    "capacity": 100,
+    "revenue": 12000
+  },
+  { "id": 102,
+    "event": "Midnight Scrims",
+    "tickets bought": 120,
+    "capacity": 120,
+    "revenue": 18000
+  }
+]
+
+// 4. Top Games Summary (Table)
+//  top 5 ticket types sold
+[
+  { "id": 1,
+    "game": "Fantasy Quest",
+    "revenue": 120000,
+    "ticket type": "VIP Pass",
+    "ticket price": 150,
+    "ticket sold": 800
+  },
+  { "id": 2,
+    "game": "Cyber Realm",
+    "tickets": 2100,
+    "revenue": 85000,
+    "topTicketType": "Premium Session",
+    "topTicketPrice": 85,
+    "topTicketSold": 600
+  }
+]

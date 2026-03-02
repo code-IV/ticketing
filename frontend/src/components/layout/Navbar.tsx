@@ -105,7 +105,7 @@ export function Navbar() {
                     <LayoutDashboard className="h-4 w-4" /> Admin
                   </Link>
                   <Link
-                    href="/admin/analytics"
+                    href="/analitics"
                     className={`flex items-center gap-1.5 text-sm font-semibold transition-colors ${linkColor}`}
                   >
                     <BarChart3 className="h-4 w-4" /> Analytics
@@ -199,6 +199,7 @@ export function Navbar() {
             {[
               { href: "/events", label: "Events" },
               { href: "/my-bookings", label: "My Bookings" },
+              { href: "/analitics", label: "Analytics" },
               ...(user ? [{ href: "/buy", label: "Buy Tickets" }] : []),
             ].map((item) => (
               <Link
@@ -209,6 +210,7 @@ export function Navbar() {
               >
                 {item.label}
               </Link>
+
             ))}
 
             {user?.role === "ADMIN" && (
@@ -221,12 +223,13 @@ export function Navbar() {
                   <LayoutDashboard className="h-5 w-5" /> Admin
                 </Link>
                 <Link
-                  href="/admin/analytics"
+                  href="/analitics"
                   onClick={() => setMobileOpen(false)}
                   className="flex items-center gap-2 text-white/80 hover:text-[#FFD84D] font-semibold py-1 text-lg"
                 >
                   <BarChart3 className="h-5 w-5" /> Analytics
                 </Link>
+
               </>
             )}
 

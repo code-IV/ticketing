@@ -1,0 +1,41 @@
+// static data
+
+{
+  "totalRevenue": 85000,
+  "totalBookings": 2100,
+}
+
+//  Revenue Trend (Line Chart)
+[
+  { "date": "2026-02-01", "revenue": 8200 },
+  { "date": "2026-02-02", "revenue": 7900 },
+  { "date": "2026-02-03", "revenue": 9100 }
+]
+
+
+// Bookings Trend (Line Chart)
+[
+  { "date": "2026-02-01", "bookings": 45 },
+  { "date": "2026-02-02", "bookings": 38 },
+  { "date": "2026-02-03", "bookings": 52 }
+]
+
+// Top Performing Ticket Types (Bar Chart)
+// fetch all ticketstypes for that game 
+[
+  {
+    "id": "1",
+    "category": "Adult",
+    "ticket sold": 600,
+    "revenue": 51000,
+    "price": 85,
+  },
+  {
+    "id": "2",
+    "category": "Child",
+    "ticket sold": 450,
+    "revenue": 13500,
+    "price": 30,
+    "performance": 75
+  }
+]

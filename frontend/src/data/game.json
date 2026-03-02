@@ -1,0 +1,40 @@
+// Revenue by Game (Bar Chart)
+// top 5 games revenue
+[
+  { "game": "Cyber Realm", "revenue": 85000 },
+  { "game": "Speed Racer", "revenue": 42000 },
+  { "game": "Fantasy Quest", "revenue": 120000 }
+]
+
+// Tickets Sold by Game (Bar Chart)
+// top 5 games sold
+[
+  { "game": "Cyber Realm", "tickets": 2100 },
+  { "game": "Speed Racer", "tickets": 1100 },
+  { "game": "Fantasy Quest", "tickets": 3200 }
+]
+
+//  Games Table Data
+// all the games 
+[
+  {
+    "id": 1,
+    "name": "Cyber Realm",
+    "status": "active",
+    "totalRevenue": 85000,  // at the time period
+    "ticketsSold": 2100,  // at the time period
+    "topTicketType": "Premium Session",
+    "topTicketPrice": 85,
+    "topTicketSold": 600
+  },
+    {
+    "id": 1,
+    "name": "Cyber Realm",
+    "status": "active",
+    "totalRevenue": 85000,  // at the time period
+    "ticketsSold": 2100,  // at the time period
+    "topTicketType": "Premium Session",
+    "topTicketPrice": 85,
+    "topTicketSold": 600
+  },
+]
