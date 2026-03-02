@@ -41,7 +41,7 @@ const Booking = {
 
       // 3. Create Master Ticket (The only QR the user needs)
       const ticketCode = generateTicketCode();
-      const qrToken = generateQRToken(ticketCode, bookingReference, expires_at);
+      const qrToken = generateQRToken();
 
       const ticketResult = await client.query(
         `INSERT INTO tickets (booking_id, ticket_code, qr_token, status, expires_at)
@@ -167,7 +167,7 @@ const Booking = {
       expiresAt.setDate(expiresAt.getDate());
       // 4️⃣ Create ONE ticket container
       const ticketCode = generateTicketCode();
-      const qrToken = generateQRToken(ticketCode, bookingReference, expiresAt);
+      const qrToken = generateQRToken();
 
       const ticketResult = await client.query(
         `INSERT INTO tickets

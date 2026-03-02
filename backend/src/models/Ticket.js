@@ -1,4 +1,4 @@
-const { query } = require("../config/db");
+const { query, getClient } = require("../config/db");
 
 const Ticket = {
   /**
@@ -45,34 +45,34 @@ const Ticket = {
   async findByBookingId(bookingId) {
     const sql = `
       SELECT 
-    t.id AS ticket_id,
-    t.ticket_code,
-    t.qr_token,
-    t.status AS ticket_status,
-    t.expires_at,
-    -- Aggregate the specific game/event entitlements into a list
-    (
-        SELECT json_agg(entitlements)
-        FROM (
-            SELECT 
-                tp.id AS entitlement_id,
-                p.name AS product_name,
-                p.product_type,
-                tp.total_quantity,
-                tp.used_quantity,
-                tp.status AS usage_status,
-                tt.category -- e.g., 'ADULT'
-            FROM ticket_products tp
-            JOIN products p ON tp.product_id = p.id
-            -- Link back to booking_items to get the specific category/price context
-            JOIN booking_items bi ON bi.booking_id = t.booking_id
-            JOIN ticket_types tt ON bi.ticket_type_id = tt.id AND tt.product_id = p.id
-            WHERE tp.ticket_id = t.id
-        ) entitlements
-    ) AS products_included
-FROM tickets t
-WHERE t.booking_id = $1
-ORDER BY t.created_at DESC;`;
+          t.id AS ticket_id,
+          t.ticket_code,
+          t.qr_token,
+          t.status AS ticket_status,
+          t.expires_at,
+          -- Aggregate the specific game/event passes into a list
+          (
+              SELECT json_agg(passes)
+              FROM (
+                  SELECT 
+                      tp.id AS pass_id,
+                      p.name AS product_name,
+                      p.product_type,
+                      tp.total_quantity,
+                      tp.used_quantity,
+                      tp.status AS usage_status,
+                      tt.category -- e.g., 'ADULT'
+                  FROM ticket_products tp
+                  JOIN products p ON tp.product_id = p.id
+                  -- Link back to booking_items to get the specific category/price context
+                  JOIN booking_items bi ON bi.booking_id = t.booking_id
+                  JOIN ticket_types tt ON bi.ticket_type_id = tt.id AND tt.product_id = p.id
+                  WHERE tp.ticket_id = t.id
+              ) passes
+          ) AS products_included
+      FROM tickets t
+      WHERE t.booking_id = $1
+      ORDER BY t.created_at DESC;`;
     const result = await query(sql, [bookingId]);
     return result.rows;
   },
@@ -197,6 +197,138 @@ ORDER BY t.created_at DESC;`;
     }));
 
     return tickets;
+  },
+  /**
+   * scan qr code and return ticket information
+   */
+  async scan(qrToken) {
+    const ticketSql = `
+    SELECT 
+      t.id,
+      t.ticket_code,
+      t.status,
+      t.expires_at,
+      b.booking_reference,
+      b.status AS booking_status,
+      b.guest_name,
+      b.guest_email
+    FROM tickets t
+    JOIN bookings b ON t.booking_id = b.id
+    WHERE t.qr_token = $1
+  `;
+
+    const ticketResult = await query(ticketSql, [qrToken]);
+    const ticket = ticketResult.rows[0];
+
+    if (!ticket) {
+      return { success: false, error: "NOT_FOUND" };
+    }
+
+    if (ticket.booking_status !== "CONFIRMED") {
+      return { success: false, error: "BOOKING_NOT_CONFIRMED" };
+    }
+
+    if (ticket.status === "CANCELLED") {
+      return { success: false, error: "CANCELLED" };
+    }
+
+    if (
+      ticket.status === "EXPIRED" ||
+      new Date(ticket.expires_at) < new Date()
+    ) {
+      return { success: false, error: "EXPIRED" };
+    }
+
+    const passesSql = `
+    SELECT 
+      tp.product_id,
+      p.name,
+      p.product_type,
+      tp.total_quantity,
+      tp.used_quantity,
+      tp.status
+    FROM ticket_products tp
+    JOIN products p ON tp.product_id = p.id
+    WHERE tp.ticket_id = $1
+  `;
+
+    const passesResult = await query(passesSql, [ticket.id]);
+
+    return {
+      success: true,
+      data: {
+        ticket,
+        ticket_passes: passesResult.rows,
+      },
+    };
+  },
+  /**
+   * Consume 1 unit of a ticket Pass
+   */
+  async punchPass(ticketId, productId) {
+    const client = await getClient();
+
+    try {
+      await client.query("BEGIN");
+
+      // Lock the row to prevent race conditions
+      const selectSql = `
+      SELECT *
+      FROM ticket_products
+      WHERE ticket_id = $1 AND product_id = $2
+      FOR UPDATE
+    `;
+
+      const selectResult = await client.query(selectSql, [ticketId, productId]);
+      const Pass = selectResult.rows[0];
+
+      if (!Pass) {
+        await client.query("ROLLBACK");
+        return { success: false, error: "PASS_NOT_FOUND" };
+      }
+
+      if (Pass.used_quantity >= Pass.total_quantity || Pass.status === "USED") {
+        await client.query("ROLLBACK");
+        return { success: false, error: "NO_REMAINING_USES" };
+      }
+
+      // Safe increment
+      const updateSql = `
+        UPDATE ticket_products
+        SET 
+          used_quantity = used_quantity + 1,
+          last_used_at = NOW(),
+          -- If the new count equals the total, mark as USED
+          status = CASE 
+                    WHEN (used_quantity + 1) >= total_quantity THEN 'USED'::ticket_product_status 
+                    ELSE 'AVAILABLE'::ticket_product_status 
+                  END
+        WHERE ticket_id = $1 
+          AND product_id = $2 
+          AND used_quantity < total_quantity -- Safety: Prevent over-scanning
+          AND status = 'AVAILABLE'
+        RETURNING *;
+      `;
+
+      const updateResult = await client.query(updateSql, [ticketId, productId]);
+
+      if (updateResult.rowCount === 0) {
+        await client.query("ROLLBACK");
+        return { success: false, error: "UPDATE_FAILED" };
+      }
+
+      await client.query("COMMIT");
+
+      return {
+        success: true,
+        data: updateResult.rows[0],
+      };
+    } catch (err) {
+      await client.query("ROLLBACK");
+      throw err;
+    } finally {
+      client.release();
+    }
   },
 
   /**

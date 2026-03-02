@@ -1,5 +1,5 @@
-const Ticket = require('../models/Ticket');
-const { apiResponse } = require('../utils/helpers');
+const Ticket = require("../models/Ticket");
+const { apiResponse } = require("../utils/helpers");
 
 const ticketController = {
   /**
@@ -9,9 +9,9 @@ const ticketController = {
     try {
       const ticket = await Ticket.findById(req.params.id);
       if (!ticket) {
-        return apiResponse(res, 404, false, 'Ticket not found.');
+        return apiResponse(res, 404, false, "Ticket not found.");
       }
-      return apiResponse(res, 200, true, 'Ticket retrieved.', { ticket });
+      return apiResponse(res, 200, true, "Ticket retrieved.", { ticket });
     } catch (err) {
       next(err);
     }
@@ -24,15 +24,18 @@ const ticketController = {
     try {
       const ticket = await Ticket.findByCode(req.params.code);
       if (!ticket) {
-        return apiResponse(res, 404, false, 'Ticket not found.');
+        return apiResponse(res, 404, false, "Ticket not found.");
       }
 
       // Visitors can only view their own tickets
-      if (req.session.user.role !== 'admin' && ticket.user_id !== req.session.user.id) {
-        return apiResponse(res, 403, false, 'Access denied.');
+      if (
+        req.session.user.role !== "admin" &&
+        ticket.user_id !== req.session.user.id
+      ) {
+        return apiResponse(res, 403, false, "Access denied.");
       }
 
-      return apiResponse(res, 200, true, 'Ticket retrieved.', { ticket });
+      return apiResponse(res, 200, true, "Ticket retrieved.", { ticket });
     } catch (err) {
       next(err);
     }
@@ -81,18 +84,125 @@ const ticketController = {
       const gameId = req.params.gameId;
 
       const tickets = await Ticket.findByGameId(userId, gameId);
-      
+
       if (tickets.length === 0) {
         return apiResponse(res, 404, false, "No tickets found for this game");
       }
 
       // Group by game to get game info
       const game = tickets[0].game;
-      
+
       return apiResponse(res, 200, true, "Game tickets details retrieved.", {
         game,
-        tickets
+        tickets,
       });
+    } catch (err) {
+      next(err);
+    }
+  },
+  /**
+   * GET /api/tickets/scan/:token
+   */
+  async scanTicket(req, res, next) {
+    try {
+      const token = req.params.token;
+
+      if (!token) {
+        return apiResponse(res, 400, false, "QR token is required.", {
+          valid: false,
+          reason: "MISSING_TOKEN",
+        });
+      }
+
+      const result = await Ticket.scan(token);
+
+      if (!result.success) {
+        return apiResponse(res, 400, false, "Ticket scan failed.", {
+          valid: false,
+          reason: result.error,
+        });
+      }
+
+      const { ticket, ticket_passes } = result.data;
+
+      const formatted = {
+        valid: true,
+        ticket: {
+          id: ticket.id,
+          ticket_code: ticket.ticket_code,
+          status: ticket.status,
+          expires_at: ticket.expires_at,
+          booking_reference: ticket.booking_reference,
+          guest_name: ticket.guest_name,
+          guest_email: ticket.guest_email,
+          ticket_passes: ticket_passes.map((e) => ({
+            product_id: e.product_id,
+            product_name: e.name,
+            product_type: e.product_type,
+            total_quantity: e.total_quantity,
+            used_quantity: e.used_quantity,
+            remaining_quantity: e.total_quantity - e.used_quantity,
+            status: e.status,
+          })),
+        },
+      };
+
+      return apiResponse(res, 200, true, "Ticket scan successful.", formatted);
+    } catch (err) {
+      next(err);
+    }
+  },
+  /**
+   * POST api/ticket/punch  punch ticket pass
+   * Body {ticketId, productId}
+   */
+  async punchTicketPass(req, res, next) {
+    try {
+      const { ticketId, productId } = req.body;
+
+      if (!productId || ticketId) {
+        return apiResponse(
+          res,
+          400,
+          false,
+          "Product ID and Ticker ID are required.",
+          {
+            success: false,
+            reason: "MISSING_FIELDS",
+          },
+        );
+      }
+
+      const result = await Ticket.punchPass(ticketId, productId);
+
+      if (!result.success) {
+        return apiResponse(res, 400, false, "Consumption failed.", {
+          success: false,
+          reason: result.error,
+        });
+      }
+
+      const e = result.data;
+
+      const responseModel = {
+        success: true,
+        ticket_pass: {
+          ticket_id: e.ticket_id,
+          product_id: e.product_id,
+          total_quantity: e.total_quantity,
+          used_quantity: e.used_quantity,
+          remaining_quantity: e.total_quantity - e.used_quantity,
+          status: e.status,
+        },
+      };
+
+      return apiResponse(
+        res,
+        200,
+        true,
+        "Pass consumed successfully.",
+        responseModel,
+      );
     } catch (err) {
       next(err);
     }
@@ -106,14 +216,20 @@ const ticketController = {
       const result = await Ticket.validate(req.params.code);
 
       if (!result.valid) {
-        return apiResponse(res, 400, false, `Ticket validation failed: ${result.reason}`, {
-          valid: false,
-          reason: result.reason,
-          usedAt: result.usedAt || null,
-        });
+        return apiResponse(
+          res,
+          400,
+          false,
+          `Ticket validation failed: ${result.reason}`,
+          {
+            valid: false,
+            reason: result.reason,
+            usedAt: result.usedAt || null,
+          },
+        );
       }
 
-      return apiResponse(res, 200, true, 'Ticket validated successfully.', {
+      return apiResponse(res, 200, true, "Ticket validated successfully.", {
         valid: true,
         ticket: result.ticket,
       });
