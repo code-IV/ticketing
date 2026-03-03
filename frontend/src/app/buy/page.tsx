@@ -15,7 +15,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { Game } from "@/types";
 import { gameService } from "@/services/adminService";
-import { bookingService } from "@/services/bookingService";
+import { useTheme } from "@/contexts/ThemeContext";
 
 const gameVisuals = [
   { emoji: "🎢", image: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600&h=800&fit=crop" },
@@ -37,6 +37,7 @@ const BuyTicketsPage = () => {
   // Visibility Tracking
   const [isSummaryVisible, setIsSummaryVisible] = useState(false);
   const summaryRef = useRef<HTMLDivElement>(null);
+  const { isDarkTheme } = useTheme();
 
   useEffect(() => {
     loadGames();
@@ -132,29 +133,29 @@ const BuyTicketsPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] pb-32 pt-10 px-4">
+    <div className={`min-h-screen ${isDarkTheme ? 'bg-[#0A0A0A]' : 'bg-[#F8FAFC]'} pb-32 pt-10 px-4`}>
       <div className="max-w-7xl mx-auto">
         
         {/* HEADER */}
         <header className="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-8">
           <div className="flex flex-col md:flex-row items-center gap-6">
-            <div className="bg-accent p-4 rounded-3xl shadow-xl shadow-accent/20">
+            <div className="bg-accent2 p-4 rounded-3xl shadow-xl shadow-accent2/20">
               <Zap className="w-8 h-8 text-white" />
             </div>
             <div className="text-center md:text-left">
-              <h1 className="text-4xl md:text-6xl font-black text-slate-900 tracking-tighter uppercase italic">
-                Pick Your <span className="text-accent">Adventures</span>
+              <h1 className={`text-4xl md:text-6xl font-black tracking-tighter uppercase italic ${isDarkTheme ? 'text-white' : 'text-slate-900'}`}>
+                Pick Your <span className="text-accent2">Adventures</span>
               </h1>
-              <p className="text-slate-500 mt-1 text-sm font-medium tracking-wide">
+              <p className={`text-sm font-medium tracking-wide mt-1 ${isDarkTheme ? 'text-gray-400' : 'text-slate-500'}`}>
                 Select attraction passes to build your custom experience.
               </p>
             </div>
           </div>
           
-          <div className="hidden sm:flex items-center gap-4 bg-white p-5 rounded-4xl border border-slate-100 shadow-sm">
+          <div className={`hidden sm:flex items-center gap-4 p-5  border rounded-4xl shadow-sm ${isDarkTheme ? 'bg-bg3 border-accent' : 'bg-white border-accent'}`}>
             <div className="text-right">
-              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Selected</p>
-              <p className="text-xl font-black text-slate-900 italic">{Object.keys(cart).length} Games</p>
+              <p className={`text-[9px] font-black uppercase tracking-widest ${isDarkTheme ? 'text-gray-400' : 'text-slate-400'}`}>Selected</p>
+              <p className={`text-xl font-black italic ${isDarkTheme ? 'text-white' : 'text-slate-900'}`}>{Object.keys(cart).length} Games</p>
             </div>
           </div>
         </header>
@@ -165,7 +166,7 @@ const BuyTicketsPage = () => {
           <div className="lg:col-span-7">
             {loading ? (
               <div className="flex items-center justify-center py-40">
-                <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+                <div className="w-12 h-12 border-4  border-t-transparent rounded-full animate-spin" />
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -182,7 +183,7 @@ const BuyTicketsPage = () => {
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         className={`group relative min-h-[400px] rounded-[40px] overflow-hidden border-2 transition-all cursor-pointer ${
-                          hasItems ? "border-indigo-600 ring-4 ring-indigo-50" : "border-transparent bg-white shadow-sm hover:shadow-xl"
+                          hasItems ? " ring-4 ring-indigo-50" : `border-transparent shadow-sm hover:shadow-xl ${isDarkTheme ? 'bg-gray-800' : 'bg-white'}`
                         }`}
                         onClick={() => setOpenGameId(isOpen ? null : game.id)}
                       >
@@ -196,13 +197,13 @@ const BuyTicketsPage = () => {
                             {lowestPrice} ETB+
                           </div>
                           {hasItems && (
-                            <div className="bg-indigo-600 text-white p-2 rounded-xl shadow-lg animate-pulse">
+                            <div className="bg-accent2 text-white p-2 rounded-xl shadow-lg animate-pulse">
                               <Sparkles size={16} />
                             </div>
                           )}
                         </div>
 
-                        <div className="absolute bottom-0 left-0 right-0 p-8 z-10">
+                        <div className="absolute bottom-0  left-0 right-0 p-8 z-10">
                           <h3 className="font-black text-3xl text-white tracking-tighter leading-none uppercase italic mb-2">
                             {game.name}
                           </h3>
@@ -248,20 +249,20 @@ const BuyTicketsPage = () => {
           </div>
 
           {/* ELEGANT FINAL SUMMARY SIDEBAR */}
-          <aside ref={summaryRef} className="lg:col-span-5 scroll-mt-20">
+          <aside ref={summaryRef} className="lg:col-span-5  scroll-mt-20">
             <div className="sticky top-10 flex flex-col gap-8">
-              <div className="relative bg-white rounded-[48px] p-10 border border-slate-100 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.05)] overflow-hidden">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-50/50 rounded-bl-[80px] -z-10" />
+              <div className={`relative rounded-[48px]  p-10 border shadow-[0_32px_64px_-16px_rgba(0,0,0,0.05)] overflow-hidden ${isDarkTheme ? 'bg-bg3 border-accent ' : 'bg-white border-accent2'}`}>
+                <div className={`absolute top-0 right-0 w-32 h-32 rounded-bl-[80px] -z-10 ${isDarkTheme ? 'bg-bg3' : 'bg-indigo-50/50'}`} />
                 
                 <div className="relative">
                   <header className="flex items-center justify-between mb-8">
                     <div>
-                      <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-indigo-600 mb-1">Final Review</h3>
-                      <h2 className="text-3xl font-black text-slate-900 tracking-tighter italic uppercase">
-                        Your <span className="text-slate-400">Order</span>
+                      <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-accent2 mb-1">Final Review</h3>
+                      <h2 className={`text-3xl font-black tracking-tighter italic uppercase ${isDarkTheme ? 'text-white' : 'text-slate-900'}`}>
+                        Your <span className={`${isDarkTheme ? 'text-gray-400' : 'text-slate-400'}`}>Order</span>
                       </h2>
                     </div>
-                    <div className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-900 border border-slate-100">
+                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center border stroke-2 ${isDarkTheme ? 'bg-bg1 text-accent  border-gray-600' : 'bg-slate-50 text-slate-900 border-slate-100'}`}>
                       <ShoppingCart size={20} />
                     </div>
                   </header>
@@ -269,10 +270,10 @@ const BuyTicketsPage = () => {
                   <div className="space-y-8 mb-10">
                     {Object.keys(cart).length === 0 ? (
                       <div className="py-12 text-center">
-                        <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-dashed border-slate-200">
-                          <Ticket className="text-slate-300" size={24} />
+                        <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 border border-dashed ${isDarkTheme ? 'bg-gray-700 border-gray-600' : 'bg-slate-50 border-slate-200'}`}>
+                          <Ticket className={`${isDarkTheme ? 'text-gray-500' : 'text-slate-300'}`} size={24} />
                         </div>
-                        <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">Cart is empty</p>
+                        <p className={`text-sm font-bold uppercase tracking-widest ${isDarkTheme ? 'text-gray-400' : 'text-slate-400'}`}>Cart is empty</p>
                       </div>
                     ) : (
                       <AnimatePresence mode="popLayout">
@@ -282,20 +283,20 @@ const BuyTicketsPage = () => {
                             <motion.div key={gameId} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }} className="group">
                               <div className="flex items-start justify-between gap-4 mb-2">
                                 <div className="flex items-center gap-3">
-                                  <div className="w-2 h-2 rounded-full bg-indigo-500" />
-                                  <p className="text-xs font-black text-slate-900 uppercase tracking-tight">{game?.name}</p>
+                                  <div className="w-2 h-2 rounded-full bg-accent" />
+                                  <p className={`text-xs font-black uppercase tracking-tight ${isDarkTheme ? 'text-white' : 'text-slate-900'}`}>{game?.name}</p>
                                 </div>
-                                <div className="h-px flex-1 bg-slate-100 mt-2" />
+                                <div className={`h-px flex-1 ${isDarkTheme ? 'bg-gray-700' : 'bg-slate-100'} mt-2`} />
                               </div>
                               <div className="pl-5 space-y-2">
                                 {Object.entries(selections).map(([category, qty]) => {
                                   const ticketInfo = game?.ticket_types?.find((t) => t.category === category);
                                   return (
                                     <div key={category} className="flex justify-between items-center text-[11px]">
-                                      <p className="text-slate-500 font-bold uppercase tracking-wider">
-                                        <span className="text-slate-900">{qty}x</span> {category}
+                                      <p className={`font-bold uppercase tracking-wider ${isDarkTheme ? 'text-gray-400' : 'text-slate-500'}`}>
+                                        <span className={`${isDarkTheme ? 'text-white' : 'text-slate-900'}`}>{qty}x</span> {category}
                                       </p>
-                                      <p className="font-mono font-bold text-slate-900">{(ticketInfo?.price || 0) * qty} ETB</p>
+                                      <p className={`font-mono font-bold ${isDarkTheme ? 'text-white' : 'text-slate-900'}`}>{(ticketInfo?.price || 0) * qty} ETB</p>
                                     </div>
                                   );
                                 })}
@@ -307,11 +308,11 @@ const BuyTicketsPage = () => {
                     )}
                   </div>
 
-                  <div className="bg-slate-50 rounded-[32px] p-8 border border-slate-100">
-                    <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-1">Amount Due</p>
+                  <div className={`rounded-[32px] p-8 border ${isDarkTheme ? 'bg-bg3 border-gray-600' : 'bg-slate-50 border-slate-100'}`}>
+                    <p className={`text-[10px] font-black uppercase tracking-widest mb-1 ${isDarkTheme ? 'text-accent' : 'text-accent2'}`}>Amount Due</p>
                     <div className="flex items-baseline gap-1">
-                      <span className="text-5xl font-black text-slate-900 tracking-tighter italic">{total}</span>
-                      <span className="text-xs font-black text-slate-400 uppercase tracking-widest">ETB</span>
+                      <span className={`text-5xl font-black tracking-tighter italic ${isDarkTheme ? 'text-white' : 'text-slate-900'}`}>{total}</span>
+                      <span className={`text-xs font-black uppercase tracking-widest ${isDarkTheme ? 'text-gray-400' : 'text-slate-400'}`}>ETB</span>
                     </div>
                   </div>
 
@@ -320,7 +321,7 @@ const BuyTicketsPage = () => {
                     whileTap={{ scale: 0.98 }}
                     disabled={total === 0 || bookingLoading}
                     onClick={handleCheckout}
-                    className="w-full mt-8 py-6 bg-indigo-600 text-white rounded-[24px] font-black uppercase text-xs tracking-[0.3em] flex items-center justify-center gap-4 hover:bg-indigo-700 transition-all shadow-xl disabled:opacity-20 disabled:grayscale"
+                    className="w-full mt-8 py-6 bg-accent text-white rounded-[24px] font-black uppercase text-xs tracking-[0.3em] flex items-center justify-center gap-4 hover:bg-yellow-400 transition-all shadow-xl disabled:opacity-20 disabled:grayscale"
                   >
                     {bookingLoading ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <>Confirm & Book <ArrowRight size={18} /></>}
                   </motion.button>
@@ -343,22 +344,22 @@ const BuyTicketsPage = () => {
           >
             <button
               onClick={scrollToSummary}
-              className="w-full relative py-6 rounded-[32px] shadow-[0_25px_50px_rgba(0,0,0,0.15)] flex items-center justify-between px-8 overflow-hidden group border border-indigo-100/50"
+              className="w-full relative py-6 rounded-[32px] shadow-[0_25px_50px_rgba(0,0,0,0.15)] flex items-center justify-between px-8 overflow-hidden group border border-accent"
             >
               {/* Cinematic Frosted Glass Background */}
-              <div className="absolute inset-0 bg-white/20 backdrop-blur-xl group-hover:bg-white/30 transition-colors" />
+              <div className={`absolute inset-0 backdrop-blur-xl transition-colors ${isDarkTheme ? 'bg-gray-800/20 group-hover:bg-gray-700/30' : 'bg-white/20 group-hover:bg-white/30'}`} />
               
               {/* Indigo Shimmer Accent */}
-              <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-200/40 rounded-full blur-2xl -z-10" />
+              <div className={`absolute top-0 right-0 w-24 h-24 rounded-full blur-2xl -z-10 ${isDarkTheme ? 'bg-indigo-900/20' : 'bg-indigo-200/40'}`} />
 
               {/* Text - High Contrast */}
               <div className="relative flex flex-col items-start">
-                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600 opacity-90 mb-0.5">Adventure Total</span>
-                <span className="text-2xl font-black italic tracking-tighter text-slate-950">{total} ETB</span>
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-accent opacity-90 mb-0.5">Adventure Total</span>
+                <span className={`text-2xl font-black italic tracking-tighter ${isDarkTheme ? 'text-white' : 'text-slate-950'}`}>{total} ETB</span>
               </div>
               
               {/* Action Badge */}
-              <div className="relative flex items-center gap-2 font-black uppercase text-[10px] tracking-widest bg-indigo-600 text-white px-5 py-2.5 rounded-2xl shadow-lg shadow-indigo-200 border border-indigo-700/50">
+              <div className="relative flex items-center gap-2 font-black uppercase text-[10px] tracking-widest bg-accent text-white px-5 py-2.5 rounded-2xl shadow-lg shadow-indigo-200 border border-indigo-700/50">
                 Summary <ChevronDown size={14} className="animate-bounce" />
               </div>
             </button>

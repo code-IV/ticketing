@@ -20,9 +20,11 @@ import { Event, CreateTicketTypeRequest, TicketType } from "@/types";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
+import { useTheme } from '@/contexts/ThemeContext';
 
 const EventsManagementPage = () => {
   const router = useRouter();
+  const { isDarkTheme } = useTheme();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [events, setEvents] = useState<Event[]>([]);
@@ -47,7 +49,7 @@ const EventsManagementPage = () => {
   });
   const [newTicket, setNewTicket] = useState<CreateTicketTypeRequest>({
     name: "",
-    category: "adult",
+    category: "ADULT",
     price: 0,
     description: "",
     maxQuantityPerBooking: 10,
@@ -131,7 +133,7 @@ const EventsManagementPage = () => {
 
     setNewTicket({
       name: "",
-      category: "adult",
+      category: "ADULT",
       price: 0,
       description: "",
       maxQuantityPerBooking: 10,
@@ -155,37 +157,37 @@ const EventsManagementPage = () => {
   };
 
   // UI state for status styling
-  const statusConfig = {
+  const statusConfig = (isDarkTheme: boolean) => ({
     active: {
-      bg: "bg-green-50",
-      text: "text-green-700",
+      bg: isDarkTheme ? 'bg-green-900/50' : 'bg-green-50',
+      text: isDarkTheme ? 'text-green-400' : 'text-green-700',
       icon: <CheckCircle2 size={14} />,
       label: "ACTIVE",
     },
     inactive: {
-      bg: "bg-red-50",
-      text: "text-red-700",
+      bg: isDarkTheme ? 'bg-red-900/50' : 'bg-red-50',
+      text: isDarkTheme ? 'text-red-400' : 'text-red-700',
       icon: <AlertTriangle size={14} />,
       label: "INACTIVE",
     },
-  };
+  });
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] p-8">
+    <div className={`min-h-screen p-8 ${isDarkTheme ? 'bg-[#0A0A0A]' : 'bg-[#F8FAFC]'}`}>
       {/* HEADER SECTION */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-10">
         <div>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight">
+          <h1 className={`text-3xl font-black tracking-tight ${isDarkTheme ? 'text-white' : 'text-slate-900'}`}>
             Park Events
           </h1>
-          <p className="text-slate-500 font-medium">
+          <p className={`font-medium ${isDarkTheme ? 'text-gray-400' : 'text-slate-500'}`}>
             Manage special events, pricing, and scheduling
           </p>
         </div>
 
         <button
           onClick={() => setIsDrawerOpen(true)}
-          className="flex items-center justify-center gap-2 style={{ backgroundColor: 'var(--accent)' }} hover:bg-indigo-700 text-white px-6 py-3 rounded-2xl font-bold shadow-lg shadow-indigo-200 transition-all active:scale-95"
+          className={`flex items-center justify-center gap-2 ${isDarkTheme? "bg-indigo-600" : "bg-gray-800"} hover:bg-indigo-700 text-white px-6 py-3 rounded-2xl font-bold  transition-all active:scale-95`}
         >
           <Plus size={20} />
           <span>Add New Event</span>
@@ -205,34 +207,34 @@ const EventsManagementPage = () => {
             label: "Upcoming",
             value: events.filter(e => new Date(e.event_date) > new Date()).length.toString(),
             icon: <Calendar />,
-            color: "style={{ color: 'var(--accent)' }}",
+            color: "text-blue-600",
           },
           {
             label: "Total Attendees",
             value: events.reduce((sum, e) => sum + e.tickets_sold, 0).toString(),
             icon: <Users />,
-            color: "style={{ color: 'var(--accent)' }}",
+            color: "text-purple-600",
           },
           {
             label: "ANALYTICS",
             value: "",
             icon: <BarChart3 />,
-            color: "style={{ color: 'var(--accent)' }}",
+            color: "text-yellow-600",
           },
         ].map((stat, i) => (
           <div
             key={i}
-            className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm"
+            className={`p-5 rounded-2xl border shadow-sm ${isDarkTheme ? 'bg-[#0A0A0A] border-gray-700' : 'bg-white border-slate-100'}`}
           >
             <div className="flex items-center gap-3 mb-2">
               <div className={`${stat.color} bg-opacity-10 p-2 rounded-lg`}>
                 {stat.icon}
               </div>
-              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+              <span className={`text-xs font-bold uppercase tracking-wider ${isDarkTheme ? 'text-gray-500' : 'text-slate-400'}`}>
                 {stat.label}
               </span>
             </div>
-            <div className="text-2xl font-black text-slate-800">
+            <div className={`text-2xl font-black ${isDarkTheme ? 'text-white' : 'text-slate-800'}`}>
               {stat.value}
             </div>
           </div>
@@ -240,16 +242,16 @@ const EventsManagementPage = () => {
       </div>
 
       {/* SEARCH & FILTERS */}
-      <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm mb-6 flex items-center gap-4">
+      <div className={`p-4 rounded-2xl border shadow-sm mb-6 flex items-center gap-4 ${isDarkTheme ? 'bg-[#0A0A0A] border-gray-700' : 'bg-white border-slate-100'}`}>
         <div className="relative flex-1">
           <Search
-            className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+            className={`absolute left-4 top-1/2 -translate-y-1/2 ${isDarkTheme ? 'text-gray-500' : 'text-slate-400'}`}
             size={18}
           />
           <input
             type="text"
             placeholder="Search by event name or description..."
-            className="w-full pl-12 pr-4 py-3 bg-slate-50 border-none rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-medium"
+            className={`w-full pl-12 pr-4 py-3 border-none rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-medium ${isDarkTheme ? 'bg-bg3 text-white' : 'bg-slate-50'}`}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -261,7 +263,7 @@ const EventsManagementPage = () => {
         <div className="min-h-screen flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading events...</p>
+            <p className={`${isDarkTheme ? 'text-gray-400' : 'text-gray-600'}`}>Loading events...</p>
           </div>
         </div>
       ) : (
@@ -270,28 +272,28 @@ const EventsManagementPage = () => {
             .filter(event => 
               searchQuery === "" || 
               event.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-              event.description.toLowerCase().includes(searchQuery.toLowerCase())
+              (event.description || '').toLowerCase().includes(searchQuery.toLowerCase())
             )
             .map((event) => (
             <div
               key={event.id}
               onClick={() => router.push(`/admin/events/${event.id}`)}
-              className="group bg-white rounded-3xl border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden cursor-pointer"
+              className={`group rounded-3xl border shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden cursor-pointer ${isDarkTheme ? 'bg-[#0A0A0A] border-gray-700' : 'bg-white border-slate-100'}`}
             >
               <div className="p-6">
                 <div className="flex justify-between items-start mb-4">
                   {/* Status chip */}
                   <div
-                    className={`flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${statusConfig[event.is_active ? 'active' : 'inactive']?.bg} ${statusConfig[event.is_active ? 'active' : 'inactive']?.text}`}
+                    className={`flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${statusConfig(isDarkTheme)[event.is_active ? 'active' : 'inactive']?.bg} ${statusConfig(isDarkTheme)[event.is_active ? 'active' : 'inactive']?.text}`}
                   >
-                    {statusConfig[event.is_active ? 'active' : 'inactive']?.icon}
-                    {statusConfig[event.is_active ? 'active' : 'inactive']?.label}
+                    {statusConfig(isDarkTheme)[event.is_active ? 'active' : 'inactive']?.icon}
+                    {statusConfig(isDarkTheme)[event.is_active ? 'active' : 'inactive']?.label}
                   </div>
 
                   {/* Hover actions */}
                   <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
-                      className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-red-600"
+                      className={`p-1.5 rounded-lg text-slate-400 hover:text-red-600 ${isDarkTheme ? 'hover:bg-gray-800' : 'hover:bg-slate-100'}`}
                       onClick={(e) => {
                         e.stopPropagation();
                         handleDeleteEvent(event.id);
@@ -302,32 +304,32 @@ const EventsManagementPage = () => {
                   </div>
                 </div>
 
-                <h3 className="text-xl font-black text-slate-800 mb-1">
+                <h3 className={`text-xl font-black mb-1 ${isDarkTheme ? 'text-white' : 'text-slate-800'}`}>
                   {event.name}
                 </h3>
                 
-                <div className="space-y-3 border-t border-slate-50 pt-4">
-                  <div className="flex items-center gap-2 text-sm text-slate-600">
+                <div className={`space-y-3 border-t pt-4 ${isDarkTheme ? 'border-gray-700' : 'border-slate-50'}`}>
+                  <div className={`flex items-center gap-2 text-sm ${isDarkTheme ? 'text-gray-400' : 'text-slate-600'}`}>
                     <Calendar size={14} />
                     <span>{format(new Date(event.event_date), "MMM dd, yyyy")}</span>
                   </div>
-                  <div className="flex items-center gap-2 text-sm text-slate-600">
+                  <div className={`flex items-center gap-2 text-sm ${isDarkTheme ? 'text-gray-400' : 'text-slate-600'}`}>
                     <Clock size={14} />
                     <span>{event.start_time} - {event.end_time}</span>
                   </div>
-                  <div className="flex items-center gap-2 text-sm text-slate-600">
+                  <div className={`flex items-center gap-2 text-sm ${isDarkTheme ? 'text-gray-400' : 'text-slate-600'}`}>
                     <Users size={14} />
                     <span>{event.tickets_sold} / {event.capacity} attendees</span>
                   </div>
                 </div>
 
-                <p className="text-slate-400 text-sm mb-6 font-medium line-clamp-2">
+                <p className={`text-sm mb-6 font-medium line-clamp-2 ${isDarkTheme ? 'text-gray-500' : 'text-slate-400'}`}>
                   {event.description}
                 </p>
 
-                <div className="flex items-end justify-between border-t border-slate-50 pt-4">
+                <div className={`flex items-end justify-between border-t pt-4 ${isDarkTheme ? 'border-gray-700' : 'border-slate-50'}`}>
                   <div>
-                    <span className="text-xs font-bold text-slate-400 uppercase">
+                    <span className={`text-xs font-bold uppercase ${isDarkTheme ? 'text-gray-500' : 'text-slate-400'}`}>
                       Starting From
                     </span>
                     <div className="text-2xl font-black style={{ color: 'var(--accent)' }}">
@@ -339,7 +341,7 @@ const EventsManagementPage = () => {
                   </div>
                   <Link
                     href={`/admin/events/${event.id}`}
-                    className="bg-slate-900 text-white text-xs font-bold px-4 py-2 rounded-xl hover:bg-slate-800 transition-colors"
+                    className={`text-xs font-bold px-4 py-2 rounded-xl transition-colors ${isDarkTheme ? 'bg-gray-800 text-white hover:bg-gray-700' : 'bg-slate-900 text-white hover:bg-slate-800'}`}
                     onClick={(e) => e.stopPropagation()}
                   >
                     View Analytics
@@ -355,22 +357,22 @@ const EventsManagementPage = () => {
       {isDrawerOpen && (
         <>
           <div
-            className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40"
+            className={`fixed inset-0 backdrop-blur-sm z-40 ${isDarkTheme ? 'bg-black/50' : 'bg-slate-900/40'}`}
             onClick={() => setIsDrawerOpen(false)}
           />
-          <div className="fixed right-0 top-0 h-full w-full max-w-lg bg-white z-50 shadow-2xl animate-in slide-in-from-right duration-300">
+          <div className={`fixed right-0 top-0 h-full w-full max-w-lg z-50 shadow-2xl animate-in slide-in-from-right duration-300 ${isDarkTheme ? 'bg-[#0A0A0A]' : 'bg-white'}`}>
             <div className="p-8 h-full flex flex-col">
               {/* Header */}
               <div className="flex justify-between items-center mb-6">
                 <button
                   onClick={handleCreate}
-                  className="w-full style={{ backgroundColor: 'var(--accent)' }} text-white font-black py-4 rounded-2xl hover:bg-indigo-700 shadow-xl shadow-indigo-100 transition-all transform active:scale-[0.98]"
+                  className={`w-full text-white font-black py-4 rounded-2xl hover:bg-indigo-700 shadow-xl transition-all transform active:scale-[0.98] ${isDarkTheme ? 'bg-indigo-600' : 'bg-slate-900'}`}
                 >
                   Create Event
                 </button>
                 <button
                   onClick={() => setIsDrawerOpen(false)}
-                  className="p-2 hover:bg-slate-100 rounded-full text-slate-400"
+                  className={`p-2 rounded-full text-slate-400 ${isDarkTheme ? 'hover:bg-gray-800' : 'hover:bg-slate-100'}`}
                 >
                   <X size={24} />
                 </button>
@@ -381,12 +383,12 @@ const EventsManagementPage = () => {
                 {/* Basic Info */}
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                    <label className={`text-[10px] font-black uppercase tracking-widest ${isDarkTheme ? 'text-gray-500' : 'text-slate-400'}`}>
                       Event Name
                     </label>
                     <input
                       type="text"
-                      className="w-full p-4 bg-slate-50 border-2 border-transparent rounded-2xl outline-none focus:border-indigo-500 focus:bg-white transition-all font-bold"
+                      className={`w-full p-4 border-2 border-transparent rounded-2xl outline-none focus:border-indigo-500 transition-all font-bold ${isDarkTheme ? 'bg-bg3 text-white focus:bg-gray-700' : 'bg-slate-50 focus:bg-white'}`}
                       placeholder="e.g. Summer Festival"
                       value={formData.name}
                       onChange={(e) =>
@@ -396,11 +398,11 @@ const EventsManagementPage = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                    <label className={`text-[10px] font-black uppercase tracking-widest ${isDarkTheme ? 'text-gray-500' : 'text-slate-400'}`}>
                       Description
                     </label>
                     <textarea
-                      className="w-full p-4 bg-slate-50 border-2 border-transparent rounded-2xl outline-none focus:border-indigo-500 focus:bg-white transition-all font-medium min-h-[80px]"
+                      className={`w-full p-4 border-2 border-transparent rounded-2xl outline-none focus:border-indigo-500 transition-all font-medium min-h-[80px] ${isDarkTheme ? 'bg-bg3 text-white focus:bg-gray-700' : 'bg-slate-50 focus:bg-white'}`}
                       placeholder="Event description..."
                       value={formData.description}
                       onChange={(e) =>
@@ -411,12 +413,12 @@ const EventsManagementPage = () => {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                      <label className={`text-[10px] font-black uppercase tracking-widest ${isDarkTheme ? 'text-gray-500' : 'text-slate-400'}`}>
                         Event Date
                       </label>
                       <input
                         type="date"
-                        className="w-full p-4 bg-slate-50 border-2 border-transparent rounded-2xl outline-none focus:border-indigo-500 focus:bg-white transition-all font-bold"
+                        className={`w-full p-4 border-2 border-transparent rounded-2xl outline-none focus:border-indigo-500 transition-all font-bold ${isDarkTheme ? 'bg-bg3 text-white focus:bg-gray-700' : 'bg-slate-50 focus:bg-white'}`}
                         value={formData.eventDate}
                         onChange={(e) =>
                           setFormData({ ...formData, eventDate: e.target.value })
@@ -424,12 +426,12 @@ const EventsManagementPage = () => {
                       />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                      <label className={`text-[10px] font-black uppercase tracking-widest ${isDarkTheme ? 'text-gray-500' : 'text-slate-400'}`}>
                         Capacity
                       </label>
                       <input
                         type="number"
-                        className="w-full p-4 bg-slate-50 border-2 border-transparent rounded-2xl outline-none focus:border-indigo-500 focus:bg-white transition-all font-bold"
+                        className={`w-full p-4 border-2 border-transparent rounded-2xl outline-none focus:border-indigo-500 transition-all font-bold ${isDarkTheme ? 'bg-bg3 text-white focus:bg-gray-700' : 'bg-slate-50 focus:bg-white'}`}
                         placeholder="500"
                         value={formData.capacity}
                         onChange={(e) =>
@@ -441,12 +443,12 @@ const EventsManagementPage = () => {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                      <label className={`text-[10px] font-black uppercase tracking-widest ${isDarkTheme ? 'text-gray-500' : 'text-slate-400'}`}>
                         Start Time
                       </label>
                       <input
                         type="time"
-                        className="w-full p-4 bg-slate-50 border-2 border-transparent rounded-2xl outline-none focus:border-indigo-500 focus:bg-white transition-all font-bold"
+                        className={`w-full p-4 border-2 border-transparent rounded-2xl outline-none focus:border-indigo-500 transition-all font-bold ${isDarkTheme ? 'bg-bg3 text-white focus:bg-gray-700' : 'bg-slate-50 focus:bg-white'}`}
                         value={formData.startTime}
                         onChange={(e) =>
                           setFormData({ ...formData, startTime: e.target.value })
@@ -454,12 +456,12 @@ const EventsManagementPage = () => {
                       />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                      <label className={`text-[10px] font-black uppercase tracking-widest ${isDarkTheme ? 'text-gray-500' : 'text-slate-400'}`}>
                         End Time
                       </label>
                       <input
                         type="time"
-                        className="w-full p-4 bg-slate-50 border-2 border-transparent rounded-2xl outline-none focus:border-indigo-500 focus:bg-white transition-all font-bold"
+                        className={`w-full p-4 border-2 border-transparent rounded-2xl outline-none focus:border-indigo-500 transition-all font-bold ${isDarkTheme ? 'bg-bg3 text-white focus:bg-gray-700' : 'bg-slate-50 focus:bg-white'}`}
                         value={formData.endTime}
                         onChange={(e) =>
                           setFormData({ ...formData, endTime: e.target.value })
@@ -477,24 +479,24 @@ const EventsManagementPage = () => {
                       {formData.ticket_types.map((tt, index) => (
                         <div
                           key={index}
-                          className="flex items-center justify-between p-4 bg-white border border-indigo-100 rounded-2xl shadow-sm animate-in zoom-in-95 duration-200"
+                          className={`flex items-center justify-between p-4 rounded-2xl shadow-sm animate-in zoom-in-95 duration-200 ${isDarkTheme ? 'bg-[#0A0A0A] border-gray-700' : 'bg-white border-indigo-100'}`}
                         >
                           <div>
                             <div className="flex items-center gap-2">
-                              <span className="px-2 py-0.5 bg-indigo-50 style={{ color: 'var(--accent)' }} text-[10px] font-black uppercase rounded-md">
+                              <span className={`px-2 py-0.5 text-[10px] font-black uppercase rounded-md ${isDarkTheme ? 'bg-gray-700 text-white' : 'bg-indigo-50'}`} style={{ color: 'var(--accent)' }}>
                                 {tt.category}
                               </span>
-                              <h4 className="text-sm font-bold text-slate-800">
+                              <h4 className={`text-sm font-bold ${isDarkTheme ? 'text-gray-300' : 'text-slate-800'}`}>
                                 {tt.name}
                               </h4>
                             </div>
-                            <p className="text-xs text-slate-500 font-medium">
+                            <p className={`text-xs font-medium ${isDarkTheme ? 'text-gray-500' : 'text-slate-500'}`}>
                               {tt.price} ETB
                             </p>
                           </div>
                           <button
                             onClick={() => removeCategory(index)}
-                            className="p-2 hover:bg-red-50 text-slate-300 hover:text-red-500 rounded-xl transition-all"
+                            className={`p-2 text-slate-300 hover:text-red-500 rounded-xl transition-all ${isDarkTheme ? 'hover:bg-red-900/50' : 'hover:bg-red-50'}`}
                           >
                             <X size={18} />
                           </button>
@@ -504,12 +506,12 @@ const EventsManagementPage = () => {
                   )}
 
                   {/* --- 2. THE ENTRY FORM --- */}
-                  <div className="p-6 bg-slate-50 rounded-[32px] border-2 border-dashed border-slate-200 space-y-4">
+                  <div className={`p-6 rounded-[32px] border-2 border-dashed space-y-4 ${isDarkTheme ? 'bg-bg3 border-gray-600' : 'bg-slate-50 border-slate-200'}`}>
                     <div className="flex items-center gap-2 mb-2">
-                      <div className="p-2 style={{ backgroundColor: 'var(--accent)' }} rounded-lg">
+                      <div className={`p-2 rounded-lg ${isDarkTheme ? 'bg-indigo-600' : 'bg-gray-800'}`}>
                         <Plus size={16} className="text-white" />
                       </div>
-                      <h3 className="text-sm font-black text-slate-800 uppercase tracking-tight">
+                      <h3 className={`text-sm font-black uppercase tracking-tight ${isDarkTheme ? 'text-white' : 'text-slate-800'}`}>
                         Add New Ticket Category
                       </h3>
                     </div>
@@ -521,7 +523,7 @@ const EventsManagementPage = () => {
                         </label>
                         <input
                           placeholder="e.g., Adult Ticket"
-                          className="w-full p-3 bg-white rounded-xl border border-slate-200 focus:border-indigo-500 outline-none font-bold text-sm"
+                          className={`w-full p-3 rounded-xl border focus:border-indigo-500 outline-none font-bold text-sm ${isDarkTheme ? 'bg-bg3 text-white border-gray-600' : 'bg-white border-slate-200'}`}
                           value={newTicket.name}
                           onChange={(e) =>
                             setNewTicket({ ...newTicket, name: e.target.value })
@@ -534,17 +536,17 @@ const EventsManagementPage = () => {
                           Category
                         </label>
                         <select
-                          className="w-full p-3 bg-white rounded-xl border border-slate-200 focus:border-indigo-500 outline-none font-bold text-sm appearance-none"
+                          className={`w-full p-3 rounded-xl border focus:border-indigo-500 outline-none font-bold text-sm appearance-none ${isDarkTheme ? 'bg-bg3 text-white border-gray-600' : 'bg-white border-slate-200'}`}
                           value={newTicket.category}
                           onChange={(e) =>
                             setNewTicket({
                               ...newTicket,
                               category: e.target.value as
-                                | "adult"
-                                | "student"
-                                | "child"
-                                | "group"
-                                | "senior",
+                                | "ADULT"
+                                | "CHILD"
+                                | "SENIOR"
+                                | "STUDENT"
+                                | "GROUP",
                             })
                           }
                         >
@@ -575,7 +577,7 @@ const EventsManagementPage = () => {
                         <input
                           type="number"
                           placeholder="0.0"
-                          className="w-full p-3 bg-white rounded-xl border border-slate-200 focus:border-indigo-500 outline-none font-black text-sm"
+                          className={`w-full p-3 rounded-xl border focus:border-indigo-500 outline-none font-black text-sm ${isDarkTheme ? 'bg-bg3 text-white border-gray-600' : 'bg-white border-slate-200'}`}
                           value={newTicket.price || ""}
                           onChange={(e) =>
                             setNewTicket({
@@ -592,7 +594,7 @@ const EventsManagementPage = () => {
                         </label>
                         <input
                           type="number"
-                          className="w-full p-3 bg-white rounded-xl border border-slate-200 focus:border-indigo-500 outline-none font-bold text-sm"
+                          className={`w-full p-3 rounded-xl border focus:border-indigo-500 outline-none font-bold text-sm ${isDarkTheme ? 'bg-bg3 text-white border-gray-600' : 'bg-white border-slate-200'}`}
                           value={newTicket.maxQuantityPerBooking}
                           onChange={(e) =>
                             setNewTicket({
@@ -612,7 +614,7 @@ const EventsManagementPage = () => {
                       <textarea
                         placeholder="Short description for the customer..."
                         rows={2}
-                        className="w-full p-3 bg-white rounded-xl border border-slate-200 focus:border-indigo-500 outline-none text-sm"
+                        className={`w-full p-3 rounded-xl border focus:border-indigo-500 outline-none text-sm ${isDarkTheme ? 'bg-bg3 text-white border-gray-600' : 'bg-white border-slate-200'}`}
                         value={newTicket.description}
                         onChange={(e) =>
                           setNewTicket({
@@ -626,7 +628,7 @@ const EventsManagementPage = () => {
                     <button
                       type="button"
                       onClick={addCategory}
-                      className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:style={{ backgroundColor: 'var(--accent)' }} transition-colors shadow-lg shadow-slate-200"
+                      className={`w-full py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-colors  ${isDarkTheme ? 'bg-indigo-600 text-white hover:bg-indigo-700' : 'bg-indigo-600 text-white hover:bg-indigo-700'}`}
                     >
                       Add Category to List
                     </button>

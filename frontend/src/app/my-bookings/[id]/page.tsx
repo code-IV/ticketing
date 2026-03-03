@@ -44,22 +44,22 @@ const QRModal = ({ isOpen, onClose, guestName, refId, qrValue, isDarkTheme }: { 
           className={`${isDarkTheme ? 'bg-gray-800' : 'bg-white'} rounded-[40px] w-full max-w-sm overflow-hidden shadow-2xl`}
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="bg-bg1 p-8 text-center relative">
+          <div className={`${isDarkTheme ? 'bg-bg1 text-white' : 'bg-gray-100 text-gray-900'} p-8 text-center relative`}>
             <button
               onClick={onClose}
-              className="absolute top-4 right-4 p-2 bg-white/10 rounded-full text-white/50 hover:text-white"
+              className={`absolute top-4 right-4 p-2 rounded-full ${isDarkTheme ? 'bg-white/10 text-white/50 hover:text-white' : 'bg-black/10 text-black/50 hover:text-black'}`}
             >
               <X size={20} />
             </button>
-            <h2 className="text-white font-black text-2xl uppercase tracking-tighter">
+            <h2 className={`${isDarkTheme ? 'text-white' : 'text-gray-900'} font-black text-2xl uppercase tracking-tighter`}>
               {guestName}
             </h2>
-            <p className="text-indigo-300/60 font-mono text-xs uppercase tracking-widest mt-1">
+            <p className={`${isDarkTheme ? 'text-indigo-300/60' : 'text-indigo-600/60'} font-mono text-xs uppercase tracking-widest mt-1`}>
               REF: {refId}
             </p>
           </div>
 
-          <div className="p-10 flex flex-col items-center bg-bg3">
+          <div className={`p-10 flex flex-col items-center ${isDarkTheme ? 'bg-bg3' : 'bg-gray-50'}`}>
             <div className={`${isDarkTheme ? 'bg-bg3 border-gray-600' : 'bg-white border-slate-100'} p-6 rounded-[32px] border-4 mb-8 relative group`}>
               <QRCodeSVG value={qrValue} size={180} bgColor="transparent" fgColor={isDarkTheme ? "white" : "black"} />
             </div>
@@ -247,9 +247,9 @@ export default function BookingDetailPage({
               <h1 className={`text-5xl md:text-6xl font-black tracking-tighter leading-none italic uppercase ${isDarkTheme ? 'text-white' : 'text-slate-900'}`}>
                 {booking.event_name}
               </h1>
-              <p className="text-slate-500 mt-2 text-sm font-medium">
+              <p className={`mt-2 text-sm font-medium ${isDarkTheme ? 'text-gray-500' : 'text-slate-500'}`}>
                 Pass for{" "}
-                <span className="text-slate-900 font-bold uppercase">
+                <span className="text-accent font-bold uppercase">
                   {user?.first_name} {user?.last_name}
                 </span>{" "}
                 · REF:{" "}
