@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTheme } from '@/contexts/ThemeContext';
 import { bookingService } from "@/services/bookingService";
 import { Booking, GameBookingItemDetail } from "@/types";
 import { Button } from "@/components/ui/Button";
@@ -14,6 +15,7 @@ import { motion, AnimatePresence } from "framer-motion";
 export default function MyBookingsPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
+  const { isDarkTheme } = useTheme();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"ALL" | "EVENT" | "GAME">("ALL");
@@ -70,23 +72,24 @@ export default function MyBookingsPage() {
     return matchesTab && matchesUsage;
   });
 
-  if (loading)
+  if (loading || authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className={`min-h-screen ${isDarkTheme ? 'bg-[#0A0A0A]' : 'bg-[#F8FAFC]'} flex items-center justify-center`}>
         <div className="h-12 w-12 border-4 border-accent border-t-transparent rounded-full animate-spin" />
       </div>
     );
+  }
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] py-8 md:py-12 px-4">
+    <div className={`min-h-screen ${isDarkTheme ? 'bg-[#0A0A0A]' : 'bg-[#F8FAFC]'} py-8 md:py-12 px-4`}>
       <div className="max-w-6xl mx-auto">
         {/* HEADER */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8 md:mb-12">
           <div className="text-center md:text-left">
-            <h1 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight">
+            <h1 className={`text-3xl md:text-4xl font-black tracking-tight ${isDarkTheme ? 'text-white' : 'text-slate-900'}`}>
               My <span className="text-accent">Tickets</span>
             </h1>
-            <p className="text-slate-500 mt-1 text-sm">
+            <p className={`mt-1 text-sm ${isDarkTheme ? 'text-gray-400' : 'text-slate-500'}`}>
               Your Bora Park adventure tracker.
             </p>
           </div>
@@ -96,9 +99,13 @@ export default function MyBookingsPage() {
             <div className="relative w-full sm:w-auto" ref={dropdownRef}>
               <button
                 onClick={() => setIsUsageOpen(!isUsageOpen)}
-                className="w-full flex items-center justify-between sm:justify-start gap-2 px-4 py-3 bg-white border border-slate-200 rounded-2xl text-xs font-black text-slate-700 shadow-sm"
+                className={`w-full flex items-center justify-between sm:justify-start gap-2 px-4 py-3 border rounded-2xl text-xs font-black shadow-sm ${
+                  isDarkTheme 
+                    ? 'bg-[#1a1a1a] border-gray-700 text-gray-300' 
+                    : 'bg-white border-slate-200 text-slate-700'
+                }`}
               >
-                <CiFilter className="text-lg text-accent" />
+                <CiFilter className="text-lg text-accent stroke-[1.5px]" />
                 <span className="uppercase">
                   {usageFilter === "ALL" ? "All Usage" : usageFilter}
                 </span>
@@ -110,7 +117,11 @@ export default function MyBookingsPage() {
                     initial={{ opacity: 0, y: 10, scale: 0.95 }}
                     animate={{ opacity: 1, y: 5, scale: 1 }}
                     exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                    className="absolute right-0 mt-2 w-44 bg-white border border-slate-100 rounded-2xl shadow-xl z-50 overflow-hidden p-1.5"
+                    className={`absolute right-0 mt-2 w-44 border rounded-2xl shadow-xl z-50 overflow-hidden p-1.5 ${
+                      isDarkTheme 
+                        ? 'bg-[#1a1a1a] border-gray-700' 
+                        : 'bg-white border-slate-100'
+                    }`}
                   >
                     {(
                       ["ALL", "Available", "Fully Used", "Pending"] as const
@@ -124,7 +135,9 @@ export default function MyBookingsPage() {
                         className={`w-full text-left px-4 py-2.5 text-[10px] font-black uppercase rounded-lg transition-colors ${
                           usageFilter === usage
                             ? "text-accent bg-accent/10"
-                            : "text-slate-500 hover:bg-slate-50"
+                            : isDarkTheme 
+                              ? "text-gray-400 hover:bg-gray-700" 
+                              : "text-slate-500 hover:bg-slate-50"
                         }`}
                       >
                         {usage}
@@ -136,12 +149,24 @@ export default function MyBookingsPage() {
             </div>
 
             {/* Tabs */}
-            <div className="flex p-1 bg-slate-200/50 rounded-2xl w-full sm:w-auto border border-slate-200/50">
+            <div className={`flex p-1 rounded-2xl w-full sm:w-auto border ${
+              isDarkTheme 
+                ? 'bg-slate-700/50 border-gray-600' 
+                : 'bg-slate-200/50 border-slate-200/50'
+            }`}>
               {(["ALL", "EVENT", "GAME"] as const).map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
-                  className={`flex-1 sm:flex-none px-6 py-2 rounded-xl text-[10px] font-black tracking-widest transition-all ${activeTab === tab ? "bg-white text-accent shadow-sm" : "text-slate-500"}`}
+                  className={`flex-1 sm:flex-none px-6 py-2 rounded-xl text-[10px] font-black tracking-widest transition-all ${
+                    activeTab === tab 
+                      ? isDarkTheme 
+                        ? "bg-[#1a1a1a] text-accent shadow-sm" 
+                        : "bg-white text-accent shadow-sm"
+                      : isDarkTheme 
+                        ? "text-gray-400" 
+                        : "text-slate-500"
+                  }`}
                 >
                   {tab}
                 </button>
@@ -170,7 +195,9 @@ export default function MyBookingsPage() {
                   key={item.id}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  className={`bg-white rounded-[32px] md:rounded-[24px] border border-slate-100 overflow-hidden flex flex-col md:flex-row shadow-sm transition-all ${isFinished ? "opacity-60 grayscale-[0.4]" : ""}`}
+                  className={`rounded-[32px] md:rounded-[24px] overflow-hidden flex flex-col md:flex-row shadow-sm transition-all ${isFinished ? "opacity-60 grayscale-[0.4]" : ""} ${
+                    isDarkTheme ? 'bg-[#1a1a1a] border-gray-700' : 'bg-white border-slate-100'
+                  } border`}
                   style={{
                     clipPath:
                       "polygon(0 24px, 24px 0, calc(100% - 24px) 0, 100% 24px, 100% calc(100% - 24px), calc(100% - 24px) 100%, 24px 100%, 0 calc(100% - 24px))",
@@ -178,9 +205,17 @@ export default function MyBookingsPage() {
                 >
                   {/* MOBILE TOP BAR / TABLET SIDE BAR */}
                   <div
-                    className={`w-full md:w-32 flex md:flex-col items-center justify-between md:justify-center p-5 md:p-6 ${item.type === "EVENT" ? "bg-blue-50/50 text-blue-600" : "bg-purple-50/50 text-purple-600"}`}
+                    className={`w-full md:w-32 flex md:flex-col items-center justify-between md:justify-center p-5 md:p-6 ${
+                      item.type === "EVENT" 
+                        ? isDarkTheme 
+                          ? "bg-blue-900/20 text-blue-400" 
+                          : "bg-blue-200/50 text-blue-900"
+                        : isDarkTheme 
+                          ? "bg-purple-900/20 text-purple-400" 
+                          : "bg-purple-200/50 text-purple-900"
+                    }`}
                   >
-                    <div className="p-2 bg-white rounded-xl md:bg-transparent md:p-0">
+                    <div className={`p-2 rounded-xl md:bg-transparent md:p-0 ${isDarkTheme ? 'bg-[#1a1a1a]' : 'bg-white'}`}>
                       {item.type === "EVENT" ? (
                         <Calendar size={28} />
                       ) : (
@@ -196,18 +231,26 @@ export default function MyBookingsPage() {
                   <div className="flex-1 p-6 md:p-8">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
                       <div className="text-center md:text-left">
-                        <h3 className="text-xl md:text-2xl font-black text-slate-800 leading-tight">
+                        <h3 className={`text-xl md:text-2xl font-black leading-tight ${isDarkTheme ? 'text-white' : 'text-slate-800'}`}>
                           {item.type === "GAME"
                             ? getDynamicPassName(item.items)
                             : item.event_name}
                         </h3>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">
-                          Ref: #{item.booking_reference.slice(0, 8)}
+                        <p className={`text-[10px] font-bold uppercase tracking-widest mt-1 ${isDarkTheme ? 'text-gray-400' : 'text-slate-400'}`}>
+                          Ref: #{item.booking_reference.slice(0, 8)}c
                         </p>
                       </div>
 
                       <div
-                        className={`self-center md:self-auto px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${isFinished ? "bg-slate-100 text-slate-500" : "bg-emerald-50 text-emerald-600 border border-emerald-100"}`}
+                        className={`self-center md:self-auto px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${
+                          isFinished 
+                            ? isDarkTheme 
+                              ? "bg-gray-700 text-gray-400" 
+                              : "bg-slate-100 text-slate-500"
+                            : isDarkTheme 
+                              ? "bg-emerald-900/20 text-emerald-400 border border-emerald-700" 
+                              : "bg-emerald-50 text-emerald-600 border border-emerald-100"
+                        }`}
                       >
                         {isFinished
                           ? "Used Up"
@@ -219,16 +262,16 @@ export default function MyBookingsPage() {
 
                     {/* STATS: Mobile (Rows) vs Tablet (Grid) */}
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-8">
-                      <div className="bg-slate-50 md:bg-transparent p-3 md:p-0 rounded-2xl flex flex-col">
-                        <span className="text-[9px] md:text-[10px] text-slate-400 font-bold uppercase mb-1">
+                      <div className={`md:bg-transparent p-3 md:p-0 rounded-2xl flex flex-col ${isDarkTheme ? 'bg-gray-800' : 'bg-slate-50'}`}>
+                        <span className={`text-[9px] md:text-[10px] font-bold uppercase mb-1 ${isDarkTheme ? 'text-gray-400' : 'text-slate-400'}`}>
                           Pass Status
                         </span>
-                        <span className="text-sm font-black text-slate-700">
+                        <span className={`text-sm font-black ${isDarkTheme ? 'text-gray-300' : 'text-slate-700'}`}>
                           {totalUsed}/{totalQty} Used
                         </span>
                       </div>
-                      <div className="bg-slate-50 md:bg-transparent p-3 md:p-0 rounded-2xl flex flex-col">
-                        <span className="text-[9px] md:text-[10px] text-slate-400 font-bold uppercase mb-1">
+                      <div className={`md:bg-transparent p-3 md:p-0 rounded-2xl flex flex-col ${isDarkTheme ? 'bg-gray-800' : 'bg-slate-50'}`}>
+                        <span className={`text-[9px] md:text-[10px] font-bold uppercase mb-1 ${isDarkTheme ? 'text-gray-400' : 'text-slate-400'}`}>
                           Ready
                         </span>
                         <span className="text-sm font-black text-accent">
@@ -236,27 +279,27 @@ export default function MyBookingsPage() {
                         </span>
                       </div>
                       <div className="hidden md:flex flex-col">
-                        <span className="text-[10px] text-slate-400 font-bold uppercase mb-1">
+                        <span className={`text-[10px] font-bold uppercase mb-1 ${isDarkTheme ? 'text-gray-400' : 'text-slate-400'}`}>
                           Date
                         </span>
-                        <span className="text-sm font-bold text-slate-700">
+                        <span className={`text-sm font-bold ${isDarkTheme ? 'text-gray-300' : 'text-slate-700'}`}>
                           {item.type === "EVENT" && item.event_date
                             ? format(new Date(item.event_date), "MMM dd")
                             : "Anytime"}
                         </span>
                       </div>
-                      <div className="bg-slate-50 md:bg-transparent p-3 md:p-0 rounded-2xl flex flex-col">
-                        <span className="text-[9px] md:text-[10px] text-slate-400 font-bold uppercase mb-1">
+                      <div className={`md:bg-transparent p-3 md:p-0 rounded-2xl flex flex-col ${isDarkTheme ? 'bg-gray-800' : 'bg-slate-50'}`}>
+                        <span className={`text-[9px] md:text-[10px] font-bold uppercase mb-1 ${isDarkTheme ? 'text-gray-400' : 'text-slate-400'}`}>
                           Price
                         </span>
-                        <span className="text-sm font-black text-slate-700">
+                        <span className={`text-sm font-black ${isDarkTheme ? 'text-gray-300' : 'text-slate-700'}`}>
                           {Math.round(parseFloat(item.total_amount))} ETB
                         </span>
                       </div>
                     </div>
 
                     {/* Progress Bar */}
-                    <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                    <div className={`w-full h-2 rounded-full overflow-hidden ${isDarkTheme ? 'bg-gray-700' : 'bg-slate-100'}`}>
                       <motion.div
                         initial={{ width: 0 }}
                         animate={{ width: `${(totalUsed / totalQty) * 100}%` }}
@@ -266,16 +309,20 @@ export default function MyBookingsPage() {
                   </div>
 
                   {/* ACTION: Full width on mobile, side-aligned on desktop */}
-                  <div className="p-4 md:p-8 bg-slate-50/50 md:bg-transparent border-t md:border-t-0 md:border-l border-slate-100 flex items-center justify-center">
+                  <div className={`p-4 md:p-8 md:bg-transparent border-t md:border-t-0 md:border-l flex items-center justify-center ${
+                    isDarkTheme ? 'bg-gray-800/50 border-gray-700' : 'bg-slate-50/50 border-slate-100'
+                  }`}>
                     <Button
                       onClick={() =>
                         router.push(
                           item.type === "GAME"
                             ? `/my-bookings/${item.id}`
-                            : `/bookings/${item.id}`,
+                            : `/my-bookings/${item.id}`,
                         )
                       }
-                      className="w-full md:w-auto rounded-2xl md:rounded-xl bg-slate-900 text-white font-bold py-6 md:py-2 md:px-8"
+                      className={`w-full md:w-auto rounded-2xl md:rounded-xl font-bold py-6 md:py-2 md:px-8 hover:bg-accent2! hover:text-white! ${
+                        isDarkTheme ? 'bg-stone-500 text-white' : 'bg-slate-900 text-white'
+                      }`}
                     >
                       VIEW TICKET
                     </Button>
