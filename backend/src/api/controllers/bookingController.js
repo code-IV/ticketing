@@ -1,8 +1,9 @@
-const Booking = require("../models/Booking");
+const { Booking } = require("../models/Booking");
 const Event = require("../models/Event");
 const TicketType = require("../models/TicketType");
 const Ticket = require("../models/Ticket");
-const { apiResponse } = require("../utils/helpers");
+const { apiResponse } = require("../../utils/helpers");
+const bookingStatsService = require("../services/bookingStatsService");
 
 const bookingController = {
   /**
@@ -284,6 +285,38 @@ const bookingController = {
       return apiResponse(res, 200, true, "Tickets retrieved.", { tickets });
     } catch (err) {
       next(err);
+    }
+  },
+  /**
+   * GET /api/booking/stats
+   */
+
+  async getAnalytics(req, res) {
+    try {
+      const { period = "7d", startDate, endDate } = req.query;
+
+      // Period validation
+      const validPeriods = ["today", "7d", "30d", "custom"];
+      if (!validPeriods.includes(period)) {
+        return res.status(400).json({ error: "Invalid period requested" });
+      }
+
+      const data = await bookingStatsService.getDashboardStats(
+        period,
+        startDate,
+        endDate,
+      );
+
+      res.status(200).json({
+        success: true,
+        period,
+        data,
+      });
+    } catch (error) {
+      console.error("Analytics Error:", error);
+      res
+        .status(500)
+        .json({ success: false, message: "Internal Server Error" });
     }
   },
 };

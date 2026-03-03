@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const eventController = require('../controllers/eventController');
+const eventController = require('../api/controllers/eventController');
 const { uuidParamRule, paginationRules, handleValidation } = require('../middleware/validate');
 
 // Public routes - no auth required

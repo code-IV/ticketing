@@ -1,4 +1,4 @@
-const { query, getClient } = require("../config/db");
+const { query, getClient } = require("../../config/db");
 
 const Games = {
   async create({ name, description, rules, status, ticket_types }) {

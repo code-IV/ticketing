@@ -3,7 +3,7 @@ const TicketType = require("../models/TicketType");
 const Booking = require("../models/Booking");
 const Payment = require("../models/Payment");
 const User = require("../models/User");
-const { apiResponse } = require("../utils/helpers");
+const { apiResponse } = require("../../utils/helpers");
 
 const adminController = {
   // ============================================
@@ -88,7 +88,7 @@ const adminController = {
    * Updated for the Product Catalog Model
    */
   async createEventWithTicketTypes(req, res, next) {
-    const { query } = require("../config/db");
+    const { query } = require("../../config/db");
 
     try {
       const {
@@ -209,7 +209,7 @@ const adminController = {
    * PUT /api/admin/events/:id - Update an event with ticket types
    */
   async updateEventWithTicketTypes(req, res, next) {
-    const { query } = require("../config/db");
+    const { query } = require("../../config/db");
 
     try {
       const {

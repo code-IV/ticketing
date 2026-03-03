@@ -1,6 +1,6 @@
 const express = require('express');
 const { isAdmin } = require('../middleware/auth');
-const analyticsController = require('../controllers/analyticsController');
+const analyticsController = require('../api/controllers/analyticsController');
 
 const router = express.Router();
 

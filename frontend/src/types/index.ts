@@ -273,3 +273,41 @@ export interface DashboardStats {
   recentEvents: Event[];
   recentBookings: Booking[];
 }
+
+// ==================== Types For Booking analytics ====================
+export interface BookingAnalytics {
+  bookingData: BookingData[];
+  gameBookingData: GameBookingData[];
+  topGameData: TopGameData[];
+  eventBookingData: EventBookingData[];
+}
+
+export interface BookingData {
+  date: string;
+  tickets: number;
+  revenue: number;
+}
+
+export interface GameBookingData {
+  game: string;
+  tickets: number;
+  revenue: number;
+  sessions: number;
+}
+
+export interface TopGameData {
+  game: string;
+  tickets: number;
+  revenue: number;
+  topTicketType: string;
+  topTicketPrice: number;
+  topTicketSold: number;
+}
+
+export interface EventBookingData {
+  event: string;
+  booked: number;
+  capacity: number;
+  occupancy: number;
+  revenue: number;
+}

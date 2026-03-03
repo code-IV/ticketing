@@ -1,4 +1,4 @@
-const { query, getClient } = require("../config/db");
+const { query, getClient } = require("../../config/db");
 
 const Event = {
   /**

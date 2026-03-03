@@ -1,9 +1,9 @@
-const { query, getClient } = require("../config/db");
+const { query, getClient } = require("../../config/db");
 const {
   generateBookingReference,
   generateTicketCode,
   generateQRToken,
-} = require("../utils/helpers");
+} = require("../../utils/helpers");
 
 const Booking = {
   /**
@@ -547,4 +547,128 @@ LIMIT $2 OFFSET $3;
   },
 };
 
-module.exports = Booking;
+const BookingStats = {
+  getRange: (period, startDate, endDate) => {
+    const now = new Date();
+
+    if (period === "today") {
+      const start = new Date(now.setHours(0, 0, 0, 0));
+      const end = new Date(now.setHours(23, 59, 59, 999));
+      return { start, end };
+    }
+
+    if (period === "7d") {
+      const start = new Date();
+      start.setDate(now.getDate() - 7);
+      return { start, end: new Date() };
+    }
+
+    if (period === "30d") {
+      const start = new Date();
+      start.setDate(now.getDate() - 30);
+      return { start, end: new Date() };
+    }
+
+    // For custom ranges, ensure they are valid dates
+    return {
+      start: new Date(startDate),
+      end: new Date(endDate),
+    };
+  },
+
+  getGeneralStats: async (range) => {
+    const sql = `
+    WITH daily_stats AS (
+      -- Step 1: Get total amount and count per day within the range
+      SELECT 
+        DATE(created_at) as day,
+        COUNT(id) as booking_count,
+        SUM(total_amount) as revenue
+      FROM bookings
+      WHERE created_at BETWEEN $1 AND $2
+      AND status = 'CONFIRMED'
+      GROUP BY 1
+    )
+    SELECT 
+      COALESCE(SUM(booking_count), 0)::INT as "total_bookings",
+      COALESCE(ROUND(AVG(booking_count), 0), 0)::INT as "avg_bookings_per_day",
+      COALESCE(MAX(booking_count), 0)::INT as "peak_bookings_day",
+      COALESCE(SUM(revenue), 0)::NUMERIC as "total_revenue"
+    FROM daily_stats;
+  `;
+
+    // Use parameters to stay safe
+    const res = await query(sql, [
+      range.start.toISOString(),
+      range.end.toISOString(),
+    ]);
+    return res.rows[0];
+  },
+
+  getTicketTrend: async (range) => {
+    const sql = `
+      SELECT 
+        date_series.date,
+        COALESCE(COUNT(ti.id), 0) as tickets,
+        COALESCE(SUM(b.total_amount), 0) as revenue
+      FROM (
+        SELECT generate_series($1::date, $2::date, '1 day')::date as date
+      ) date_series
+      LEFT JOIN bookings b ON DATE(b.created_at) = date_series.date AND b.status = 'CONFIRMED'
+      LEFT JOIN tickets ti ON b.id = ti.booking_id
+      GROUP BY date_series.date
+      ORDER BY date_series.date ASC`;
+    const res = await query(sql, [
+      range.start.toISOString(),
+      range.end.toISOString(),
+    ]);
+    return res.rows;
+  },
+
+  getEventBookings: async (range) => {
+    const sql = `
+      SELECT 
+        e.id,
+        e.name as event,
+        SUM(bi.quantity) as "tickets bought",
+        e.capacity,
+        SUM(bi.subtotal) as revenue
+      FROM events e
+      JOIN products p ON p.event_id = e.id
+      JOIN ticket_types tt ON tt.product_id = p.id
+      JOIN booking_items bi ON bi.ticket_type_id = tt.id
+      JOIN bookings b ON bi.booking_id = b.id
+      WHERE b.status = 'CONFIRMED' AND b.created_at >= $1
+      GROUP BY e.id
+      ORDER BY revenue DESC`;
+    const res = await query(sql, [range.start.toISOString()]);
+    return res.rows;
+  },
+
+  getTopGames: async (range) => {
+    const sql = `
+      SELECT 
+        g.id,
+        g.name as game,
+        SUM(bi.subtotal) as revenue,
+        tt.category as "topTicketType",
+        tt.price as "topTicketPrice",
+        SUM(bi.quantity) as "topTicketSold"
+      FROM games g
+      JOIN products p ON p.game_id = g.id
+      JOIN ticket_types tt ON tt.product_id = p.id
+      JOIN booking_items bi ON bi.ticket_type_id = tt.id
+      JOIN bookings b ON bi.booking_id = b.id
+      WHERE b.status = 'CONFIRMED' AND b.created_at >= $1
+      GROUP BY g.id, g.name, tt.category, tt.price
+      ORDER BY revenue DESC
+      LIMIT 5`;
+    const res = await query(sql, [range.start.toISOString()]);
+    return res.rows;
+  },
+};
+
+module.exports = {
+  Booking,
+  BookingStats,
+};

@@ -1,5 +1,5 @@
 const Game = require("../models/Games");
-const { apiResponse } = require("../utils/helpers");
+const { apiResponse } = require("../../utils/helpers");
 
 const gameController = {
   /**

@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const ticketController = require("../controllers/ticketController");
+const ticketController = require("../api/controllers/ticketController");
 const { isAuthenticated, isAdmin, isStaff } = require("../middleware/auth");
 const { uuidParamRule, handleValidation } = require("../middleware/validate");
 
@@ -22,7 +22,7 @@ router.get(
   ticketController.getTicketById,
 );
 // Admin only - validate ticket at gate
-router.post(
+router.get(
   "/scan/:token",
   isAuthenticated,
   uuidParamRule("token"),

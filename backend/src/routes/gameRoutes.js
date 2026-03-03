@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const gameController = require("../controllers/gamesController");
+const gameController = require("../api/controllers/gamesController");
 const { isAuthenticated } = require("../middleware/auth");
 const { uuidParamRule, handleValidation } = require("../middleware/validate");
 

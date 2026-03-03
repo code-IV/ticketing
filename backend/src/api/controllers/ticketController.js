@@ -1,13 +1,13 @@
-const Ticket = require("../models/Ticket");
-const { apiResponse } = require("../utils/helpers");
+const { ticketService } = require("../services/ticketService");
+const { apiResponse } = require("../../utils/helpers");
 
-const ticketController = {
+const TicketController = {
   /**
    * GET /api/tickets/:id - Get ticket by ID
    */
   async getTicketById(req, res, next) {
     try {
-      const ticket = await Ticket.findById(req.params.id);
+      const ticket = await ticketService.findById(req.params.id);
       if (!ticket) {
         return apiResponse(res, 404, false, "Ticket not found.");
       }
@@ -22,7 +22,7 @@ const ticketController = {
    */
   async getTicketByCode(req, res, next) {
     try {
-      const ticket = await Ticket.findByCode(req.params.code);
+      const ticket = await ticketService.findByCode(req.params.code);
       if (!ticket) {
         return apiResponse(res, 404, false, "Ticket not found.");
       }
@@ -59,7 +59,7 @@ const ticketController = {
       const page = parseInt(req.query.page, 10) || 1;
       const limit = Math.min(parseInt(req.query.limit, 10) || 20, 100);
 
-      const result = await Ticket.findByUserId(userId, { page, limit });
+      const result = await ticketService.findByUserId(userId, { page, limit });
       return apiResponse(res, 200, true, "Game tickets retrieved.", result);
     } catch (err) {
       next(err);
@@ -83,7 +83,7 @@ const ticketController = {
       const userId = req.session.user.id;
       const gameId = req.params.gameId;
 
-      const tickets = await Ticket.findByGameId(userId, gameId);
+      const tickets = await ticketService.findByGameId(userId, gameId);
 
       if (tickets.length === 0) {
         return apiResponse(res, 404, false, "No tickets found for this game");
@@ -114,7 +114,7 @@ const ticketController = {
         });
       }
 
-      const result = await Ticket.scan(token);
+      const result = await ticketService.scan(token);
 
       if (!result.success) {
         return apiResponse(res, 400, false, "Ticket scan failed.", {
@@ -125,7 +125,7 @@ const ticketController = {
 
       const { ticket, ticket_passes } = result.data;
 
-      const formatted = {
+      return apiResponse(res, 200, true, "Ticket scan successful.", {
         valid: true,
         ticket: {
           id: ticket.id,
@@ -145,9 +145,7 @@ const ticketController = {
             status: e.status,
           })),
         },
-      };
-
-      return apiResponse(res, 200, true, "Ticket scan successful.", formatted);
+      });
     } catch (err) {
       next(err);
     }
@@ -173,7 +171,7 @@ const ticketController = {
         );
       }
 
-      const result = await Ticket.punchPass(ticketId, productId);
+      const result = await ticketService.punchPass(ticketId, productId);
 
       if (!result.success) {
         return apiResponse(res, 400, false, "Consumption failed.", {
@@ -213,7 +211,7 @@ const ticketController = {
    */
   async validateTicket(req, res, next) {
     try {
-      const result = await Ticket.validate(req.params.code);
+      const result = await ticketService.validate(req.params.code);
 
       if (!result.valid) {
         return apiResponse(
@@ -238,5 +236,4 @@ const ticketController = {
     }
   },
 };
-
-module.exports = ticketController;
+module.exports = TicketController;

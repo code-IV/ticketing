@@ -53,7 +53,6 @@ const apiResponse = (res, statusCode, success, message, data = null) => {
   console.log(
     `${statusIcon} ${method} ${url} - Status: ${statusCode} - Msg: ${message} --- [${timestamp}]`,
   );
-
   // Only log data in development mode or for errors
   if (!success && data) {
     console.error("   Details:", JSON.stringify(data, null, 2));

@@ -1,6 +1,6 @@
 const express = require("express");
 const { isAdmin } = require("../middleware/auth");
-const metricsController = require("../controllers/metricsController");
+const metricsController = require("../api/controllers/metricsController");
 
 const router = express.Router();
 

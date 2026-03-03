@@ -1,5 +1,5 @@
 const metrics = require("../models/Metrics");
-const { apiResponse } = require("../utils/helpers");
+const { apiResponse } = require("../../utils/helpers");
 
 const metricsController = {
   //=============================
