@@ -53,7 +53,7 @@ const KpiCard = ({
         )}
       </div>
       <div className="p-3 bg-blue-50 rounded-lg">
-        <Icon className="w-6 h-6 text-blue-600" />
+        <Icon className="w-6 h-6 style={{ color: 'var(--accent)' }}" />
       </div>
     </div>
   </div>

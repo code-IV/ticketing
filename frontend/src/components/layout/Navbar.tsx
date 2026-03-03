@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { motion, useScroll, useMotionValueEvent } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTheme } from "@/contexts/ThemeContext";
 import {
   LayoutDashboard,
   BarChart3,
@@ -10,6 +11,8 @@ import {
   User,
   LogOut,
   Ticket,
+  Moon,
+  Sun,
 } from "lucide-react";
 import { useState } from "react";
 import Image from "next/image";
@@ -17,6 +20,7 @@ import { usePathname } from "next/navigation";
 
 export function Navbar() {
   const { user, logout } = useAuth();
+  const { isDarkTheme, toggleTheme } = useTheme();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const pathname = usePathname();
@@ -36,19 +40,18 @@ export function Navbar() {
     }
   };
 
-  // On home: transparent → frosted dark on scroll
-  // Off home: always frosted white
+  // Theme-aware navbar styling
   const navBg = isHomePage
     ? scrolled
-      ? "bg-black/80 backdrop-blur-xl border-b border-white/10"
+      ? (isDarkTheme ? "bg-black/80 backdrop-blur-xl border-b border-white/10" : "bg-white/80 backdrop-blur-xl border-b border-gray-200/60")
       : "bg-transparent border-b border-transparent"
-    : "bg-white/95 backdrop-blur-xl border-b border-gray-200/60 shadow-sm";
+    : (isDarkTheme ? "bg-[#0A0A0A]/95 backdrop-blur-xl border-b border-gray-700/60 shadow-sm" : "bg-white/95 backdrop-blur-xl border-b border-gray-200/60 shadow-sm");
 
   const linkColor = isHomePage
-    ? "text-white/80 hover:text-[#FFD84D]"
-    : "text-gray-600 hover:text-gray-900";
+    ? (isDarkTheme ? "text-white/80 hover:text-[#FFD84D]" : "text-gray-600 hover:text-gray-900")
+    : (isDarkTheme ? "text-white/80 hover:text-[#FFD84D]" : "text-gray-600 hover:text-gray-900");
 
-  const logoFilter = isHomePage ? "brightness-0 invert" : "";
+  const logoFilter = isHomePage ? (isDarkTheme ? "brightness-0 invert" : "") : (isDarkTheme ? "brightness-0 invert" : "");
 
   return (
     <>
@@ -81,7 +84,7 @@ export function Navbar() {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`text-sm font-semibold transition-colors ${linkColor} ${pathname === item.href ? (isHomePage ? "text-[#FFD84D]" : "text-gray-900") : ""}`}
+                  className={`text-sm font-semibold transition-colors ${linkColor} ${pathname === item.href ? (isDarkTheme ? "text-[#FFD84D]" : "text-gray-900") : ""}`}
                 >
                   {item.label}
                 </Link>
@@ -116,6 +119,23 @@ export function Navbar() {
 
             {/* Desktop Auth */}
             <div className="hidden md:flex items-center gap-3">
+              {/* Theme Toggle */}
+              <button
+                onClick={toggleTheme}
+                className={`p-2 rounded-xl transition-all ${
+                  isDarkTheme
+                    ? "hover:bg-white/10 text-white"
+                    : "hover:bg-gray-100 text-gray-600"
+                }`}
+                title="Toggle theme"
+              >
+                {isDarkTheme ? (
+                  <Sun className="h-5 w-5" />
+                ) : (
+                  <Moon className="h-5 w-5" />
+                )}
+              </button>
+
               {user ? (
                 <>
                   <Link
@@ -123,10 +143,10 @@ export function Navbar() {
                     className={`flex items-center gap-2 text-sm font-semibold transition-colors ${linkColor}`}
                   >
                     <div
-                      className={`w-8 h-8 rounded-full flex items-center justify-center ${isHomePage ? "bg-white/15" : "bg-gray-100"}`}
+                      className={`w-8 h-8 rounded-full flex items-center justify-center ${isDarkTheme ? "bg-white/15" : "bg-gray-100"}`}
                     >
                       <User
-                        className={`h-4 w-4 ${isHomePage ? "text-white" : "text-gray-700"}`}
+                        className={`h-4 w-4 ${isDarkTheme ? "text-white" : "text-gray-700"}`}
                       />
                     </div>
                     {user.first_name}
@@ -140,7 +160,7 @@ export function Navbar() {
                   <button
                     onClick={handleLogout}
                     className={`flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-full border transition-all ${
-                      isHomePage
+                      isDarkTheme
                         ? "border-white/20 text-white/70 hover:bg-white/10 hover:text-white hover:border-white/40"
                         : "border-gray-200 text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                     }`}
@@ -154,7 +174,7 @@ export function Navbar() {
                   <Link href="/login">
                     <button
                       className={`text-sm font-semibold px-5 py-2 rounded-full transition-all ${
-                        isHomePage
+                        isDarkTheme
                           ? "text-white/80 hover:text-white hover:bg-white/10"
                           : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
                       }`}
@@ -174,7 +194,7 @@ export function Navbar() {
             {/* Mobile burger */}
             <button
               onClick={() => setMobileOpen(!mobileOpen)}
-              className={`md:hidden p-2 rounded-xl transition-colors ${isHomePage ? "hover:bg-white/10 text-white" : "hover:bg-gray-100 text-gray-800"}`}
+              className={`md:hidden p-2 rounded-xl transition-colors ${isDarkTheme ? "hover:bg-white/10 text-white" : "hover:bg-gray-100 text-gray-800"}`}
             >
               {mobileOpen ? (
                 <X className="h-6 w-6" />
@@ -196,6 +216,25 @@ export function Navbar() {
           className="fixed inset-x-0 top-16 z-40 md:hidden bg-black/95 backdrop-blur-xl border-b border-white/10"
         >
           <div className="px-6 py-8 space-y-6">
+            {/* Theme Toggle */}
+            <button
+              onClick={() => {
+                toggleTheme();
+                setMobileOpen(false);
+              }}
+              className="flex items-center gap-3 text-white/80 hover:text-[#FFD84D] font-semibold py-1 transition-colors text-lg"
+            >
+              {isDarkTheme ? (
+                <>
+                  <Sun className="h-5 w-5" /> Light Theme
+                </>
+              ) : (
+                <>
+                  <Moon className="h-5 w-5" /> Dark Theme
+                </>
+              )}
+            </button>
+
             {[
               { href: "/events", label: "Events" },
               { href: "/my-bookings", label: "My Bookings" },

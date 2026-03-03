@@ -138,7 +138,7 @@ export default function QRScannerPage() {
               <div className="p-8">
                 <div className="flex items-center justify-center mb-6">
                   <div className="p-3 bg-indigo-50 rounded-full">
-                    <Camera className="text-indigo-600" size={32} />
+                    <Camera className="text-accent" size={32} />
                   </div>
                 </div>
                 <h2 className="text-2xl font-black text-slate-900 text-center mb-2">
@@ -151,7 +151,7 @@ export default function QRScannerPage() {
                 <div className="flex justify-center">
                   <button
                     onClick={launchCamera}
-                    className="flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-4 rounded-2xl font-bold shadow-lg shadow-indigo-200 transition-all active:scale-95"
+                    className="flex items-center justify-center gap-2 bg-accent hover:bg-accent/90 text-white px-8 py-4 rounded-2xl font-bold shadow-lg shadow-accent/20 transition-all active:scale-95"
                   >
                     <Camera size={20} />
                     <span>Launch Camera</span>
@@ -171,7 +171,7 @@ export default function QRScannerPage() {
               <div className="p-8">
                 <div className="flex items-center justify-center mb-6">
                   <div className="p-3 bg-indigo-50 rounded-full">
-                    <Camera className="text-indigo-600" size={32} />
+                    <Camera className="text-accent" size={32} />
                   </div>
                 </div>
                 <h2 className="text-2xl font-black text-slate-900 text-center mb-2">
@@ -212,7 +212,7 @@ export default function QRScannerPage() {
               className="bg-white rounded-3xl border border-slate-200 shadow-sm p-12"
             >
               <div className="flex flex-col items-center justify-center">
-                <Loader2 className="animate-spin text-indigo-600 mb-4" size={48} />
+                <Loader2 className="animate-spin text-accent mb-4" size={48} />
                 <p className="text-slate-700 text-lg font-medium">Validating ticket...</p>
               </div>
             </motion.div>
@@ -233,7 +233,7 @@ export default function QRScannerPage() {
                 <p className="text-slate-500 mb-6">{error}</p>
                 <button
                   onClick={resetScanner}
-                  className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-medium transition-colors"
+                  className="px-6 py-3 bg-accent hover:bg-accent/90 text-white rounded-xl font-medium transition-colors"
                 >
                   Try Again
                 </button>
@@ -366,7 +366,7 @@ export default function QRScannerPage() {
               <div className="flex justify-center">
                 <button
                   onClick={resetScanner}
-                  className="px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-medium transition-colors"
+                  className="px-8 py-3 bg-accent hover:bg-accent/90 text-white rounded-xl font-medium transition-colors"
                 >
                   Scan Another Ticket
                 </button>

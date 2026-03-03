@@ -170,7 +170,7 @@ export default function GameTicketDetailsPage({
           <CardBody className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex items-start space-x-3">
-                <Gamepad2 className="h-5 w-5 text-purple-600 mt-1" />
+                <Gamepad2 className="h-5 w-5 style={{ color: 'var(--accent)' }} mt-1" />
                 <div>
                   <p className="font-medium text-gray-900">Game</p>
                   <p className="text-gray-600">
@@ -179,7 +179,7 @@ export default function GameTicketDetailsPage({
                 </div>
               </div>
               <div className="flex items-start space-x-3">
-                <Calendar className="h-5 w-5 text-purple-600 mt-1" />
+                <Calendar className="h-5 w-5 style={{ color: 'var(--accent)' }} mt-1" />
                 <div>
                   <p className="font-medium text-gray-900">Purchased Date</p>
                   <p className="text-gray-600">
@@ -193,7 +193,7 @@ export default function GameTicketDetailsPage({
                 </div>
               </div>
               <div className="flex items-start space-x-3">
-                <CreditCard className="h-5 w-5 text-purple-600 mt-1" />
+                <CreditCard className="h-5 w-5 style={{ color: 'var(--accent)' }} mt-1" />
                 <div>
                   <p className="font-medium text-gray-900">Total Amount</p>
                   <p className="text-gray-600 font-semibold">
@@ -202,7 +202,7 @@ export default function GameTicketDetailsPage({
                 </div>
               </div>
               <div className="flex items-start space-x-3">
-                <Ticket className="h-5 w-5 text-purple-600 mt-1" />
+                <Ticket className="h-5 w-5 style={{ color: 'var(--accent)' }} mt-1" />
                 <div>
                   <p className="font-medium text-gray-900">Quantity</p>
                   <p className="text-gray-600">

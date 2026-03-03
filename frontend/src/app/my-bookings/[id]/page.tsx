@@ -226,7 +226,7 @@ export default function GameBookingDetailPage() {
   if (loading && !booking) {
     return (
       <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center">
-        <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+        <div className="w-12 h-12 border-4 border-accent border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -243,7 +243,7 @@ export default function GameBookingDetailPage() {
           </p>
           <button
             onClick={() => router.push("/my-bookings")}
-            className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-black text-sm uppercase tracking-widest hover:bg-indigo-500 transition-all"
+            className="px-6 py-3 bg-accent text-white rounded-xl font-black text-sm uppercase tracking-widest hover:bg-accent/90 transition-all"
           >
             Back to My Bookings
           </button>

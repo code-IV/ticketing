@@ -73,7 +73,7 @@ export default function MyBookingsPage() {
   if (loading)
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="h-12 w-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+        <div className="h-12 w-12 border-4 border-accent border-t-transparent rounded-full animate-spin" />
       </div>
     );
 
@@ -84,7 +84,7 @@ export default function MyBookingsPage() {
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8 md:mb-12">
           <div className="text-center md:text-left">
             <h1 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight">
-              My <span className="text-indigo-600">Tickets</span>
+              My <span className="text-accent">Tickets</span>
             </h1>
             <p className="text-slate-500 mt-1 text-sm">
               Your Bora Park adventure tracker.
@@ -98,7 +98,7 @@ export default function MyBookingsPage() {
                 onClick={() => setIsUsageOpen(!isUsageOpen)}
                 className="w-full flex items-center justify-between sm:justify-start gap-2 px-4 py-3 bg-white border border-slate-200 rounded-2xl text-xs font-black text-slate-700 shadow-sm"
               >
-                <CiFilter className="text-lg text-indigo-600" />
+                <CiFilter className="text-lg text-accent" />
                 <span className="uppercase">
                   {usageFilter === "ALL" ? "All Usage" : usageFilter}
                 </span>
@@ -123,7 +123,7 @@ export default function MyBookingsPage() {
                         }}
                         className={`w-full text-left px-4 py-2.5 text-[10px] font-black uppercase rounded-lg transition-colors ${
                           usageFilter === usage
-                            ? "text-indigo-600 bg-indigo-50"
+                            ? "text-accent bg-accent/10"
                             : "text-slate-500 hover:bg-slate-50"
                         }`}
                       >
@@ -141,7 +141,7 @@ export default function MyBookingsPage() {
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
-                  className={`flex-1 sm:flex-none px-6 py-2 rounded-xl text-[10px] font-black tracking-widest transition-all ${activeTab === tab ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500"}`}
+                  className={`flex-1 sm:flex-none px-6 py-2 rounded-xl text-[10px] font-black tracking-widest transition-all ${activeTab === tab ? "bg-white text-accent shadow-sm" : "text-slate-500"}`}
                 >
                   {tab}
                 </button>
@@ -231,7 +231,7 @@ export default function MyBookingsPage() {
                         <span className="text-[9px] md:text-[10px] text-slate-400 font-bold uppercase mb-1">
                           Ready
                         </span>
-                        <span className="text-sm font-black text-indigo-600">
+                        <span className="text-sm font-black text-accent">
                           {totalQty - totalUsed} Tickets
                         </span>
                       </div>
@@ -260,7 +260,7 @@ export default function MyBookingsPage() {
                       <motion.div
                         initial={{ width: 0 }}
                         animate={{ width: `${(totalUsed / totalQty) * 100}%` }}
-                        className={`h-full ${isFinished ? "bg-slate-400" : "bg-indigo-600"}`}
+                        className={`h-full ${isFinished ? "bg-slate-400" : "bg-accent"}`}
                       />
                     </div>
                   </div>

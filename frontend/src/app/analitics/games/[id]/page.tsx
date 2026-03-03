@@ -287,7 +287,7 @@ const KpiCard = ({ title, value, icon: Icon }: {
         <p className="text-2xl font-bold text-gray-900">{value}</p>
       </div>
       <div className="p-3 bg-blue-50 rounded-lg">
-        <Icon className="w-6 h-6 text-blue-600" />
+        <Icon className="w-6 h-6 style={{ color: 'var(--accent)' }}" />
       </div>
     </div>
   </div>
@@ -316,7 +316,7 @@ export default function GameDetailPage() {
             <p className="text-gray-600">The game you're looking for doesn't exist.</p>
             <button
               onClick={() => router.push('/analitics/games')}
-              className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              className="mt-4 px-4 py-2 style={{ backgroundColor: 'var(--accent)' }} text-white rounded-lg hover:bg-blue-700"
             >
               Back to Games
             </button>
@@ -542,7 +542,7 @@ export default function GameDetailPage() {
                     <td className="px-4 py-2">
                       <div className="flex items-center gap-2">
                         <div className="w-16 bg-gray-200 rounded-full h-2">
-                          <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${event.occupancy}%` }} />
+                          <div className="style={{ backgroundColor: 'var(--accent)' }} h-2 rounded-full" style={{ width: `${event.occupancy}%` }} />
                         </div>
                         <span>{event.occupancy}%</span>
                       </div>

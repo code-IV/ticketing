@@ -130,7 +130,7 @@ export default function GameDetailsPage() {
               type="button"
               onClick={triggerConfirm}
               disabled={isUpdating}
-              className="flex items-center gap-2 bg-indigo-600 text-white px-6 py-2 rounded-xl font-bold hover:bg-indigo-700 disabled:opacity-50"
+              className="flex items-center gap-2 style={{ backgroundColor: 'var(--accent)' }} text-white px-6 py-2 rounded-xl font-bold hover:bg-indigo-700 disabled:opacity-50"
             >
               <Save size={18} /> {isUpdating ? "Saving..." : "Save Changes"}
             </button>
@@ -175,7 +175,7 @@ export default function GameDetailsPage() {
                     className="flex items-center gap-3 p-3 bg-slate-50 rounded-2xl"
                   >
                     <div className="flex-1">
-                      <span className="text-[10px] font-black text-indigo-500 uppercase">
+                      <span className="text-[10px] font-black text-accent uppercase">
                         {tt.category}
                       </span>
                       <p className="text-sm font-bold text-slate-700">
@@ -228,7 +228,7 @@ export default function GameDetailsPage() {
                       | "UPCOMING",
                   })
                 }
-                className="w-full mt-2 p-3 bg-slate-50 rounded-xl font-bold text-sm outline-none border-2 border-transparent focus:border-indigo-500"
+                className="w-full mt-2 p-3 bg-slate-50 rounded-xl font-bold text-sm outline-none border-2 border-transparent focus:border-accent"
               >
                 <option value="OPEN">OPEN</option>
                 <option value="CLOSED">CLOSED</option>
@@ -267,7 +267,7 @@ export default function GameDetailsPage() {
                     key={key}
                     className="p-4 bg-slate-50 rounded-2xl border border-slate-100"
                   >
-                    <span className="text-[10px] font-black text-indigo-500 uppercase block mb-1">
+                    <span className="text-[10px] font-black text-accent uppercase block mb-1">
                       {key}
                     </span>
                     <div className="text-sm font-bold text-slate-700">
@@ -288,7 +288,7 @@ export default function GameDetailsPage() {
               <button
                 onClick={handleUpdate}
                 disabled={isUpdating}
-                className="flex-1 py-4 bg-indigo-600 text-white rounded-2xl font-black shadow-lg shadow-indigo-200 disabled:opacity-50"
+                className="flex-1 py-4 style={{ backgroundColor: 'var(--accent)' }} text-white rounded-2xl font-black shadow-lg shadow-indigo-200 disabled:opacity-50"
               >
                 {isUpdating ? "Saving..." : "Confirm & Save"}
               </button>

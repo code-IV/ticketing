@@ -45,6 +45,9 @@ export interface Event {
   created_at: string;
   updated_at: string;
   ticket_types?: TicketType[];
+  location?: string;
+  image_url?: string;
+  video_url?: string;
 }
 
 export interface TicketType {
