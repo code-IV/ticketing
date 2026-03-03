@@ -63,7 +63,7 @@ export default function UserManagement() {
               <tr key={user.id} className="hover:bg-blue-50/30 transition-colors">
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-3">
-                    <div className="h-8 w-8 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold">
+                    <div className="h-8 w-8 rounded-full bg-gradient-to-tr from-blue-500 to-accent flex items-center justify-center text-white text-xs font-bold">
                       {user.email[0].toUpperCase()}
                     </div>
                     <span className="text-sm font-medium text-gray-900">{user.email}</span>

@@ -77,7 +77,7 @@ const KpiCard = ({ title, value, icon: Icon, change, changeType }: {
         )}
       </div>
       <div className="p-3 bg-blue-50 rounded-lg">
-        <Icon className="w-6 h-6 text-blue-600" />
+        <Icon className="w-6 h-6 text-accent" />
       </div>
     </div>
   </div>

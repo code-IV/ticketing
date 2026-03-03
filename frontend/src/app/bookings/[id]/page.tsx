@@ -131,7 +131,7 @@ const CollectorTicketCard = ({ item, index }) => {
         <div className="bg-white/10 backdrop-blur-xl p-6 rounded-[32px] border border-white/20 shadow-2xl">
           <div className="flex justify-between items-center text-white text-[11px] font-black uppercase mb-4 tracking-widest">
             <span className="opacity-80">Utilization</span>
-            <span className="flex items-center gap-2 bg-indigo-600 px-3 py-1 rounded-full text-[9px]">
+            <span className="flex items-center gap-2 bg-accent px-3 py-1 rounded-full text-[9px]">
               <TicketIcon size={12} /> {item.used}/{item.purchased}
             </span>
           </div>
@@ -190,7 +190,7 @@ export default function BookingDetailPage({
   if (loading || authLoading) {
     return (
       <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center">
-        <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+        <div className="w-12 h-12 border-4 border-accent border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -229,10 +229,10 @@ export default function BookingDetailPage({
               onClick={() => setIsQRModalOpen(true)}
               className="relative group shrink-0"
             >
-              <div className="absolute -inset-2 bg-gradient-to-tr from-indigo-600 to-purple-600 rounded-[32px] blur opacity-20 group-hover:opacity-40 animate-pulse transition duration-1000"></div>
+              <div className="absolute -inset-2 bg-gradient-to-tr from-accent to-purple-600 rounded-[32px] blur opacity-20 group-hover:opacity-40 animate-pulse transition duration-1000"></div>
               <div className="relative bg-white p-5 rounded-[32px] border border-slate-100 shadow-sm flex flex-col items-center justify-center gap-1.5 min-w-[100px]">
                 <QrCode size={36} className="text-slate-900" />
-                <span className="text-[9px] font-black text-indigo-600 uppercase tracking-tighter">
+                <span className="text-[9px] font-black text-accent uppercase tracking-tighter">
                   Access Pass
                 </span>
               </div>
@@ -241,7 +241,7 @@ export default function BookingDetailPage({
             <div className="text-center md:text-left">
               <Link
                 href="/my-bookings"
-                className="flex items-center gap-2 text-slate-400 text-[10px] font-black uppercase tracking-widest mb-3 hover:text-indigo-600 transition-colors"
+                className="flex items-center gap-2 text-slate-400 text-[10px] font-black uppercase tracking-widest mb-3 hover:text-accent transition-colors"
               >
                 <ArrowLeft size={14} /> Back to List
               </Link>
@@ -254,7 +254,7 @@ export default function BookingDetailPage({
                   {user?.first_name} {user?.last_name}
                 </span>{" "}
                 · REF:{" "}
-                <span className="font-mono text-indigo-600 font-bold">
+                <span className="font-mono text-accent font-bold">
                   {booking.booking_reference}
                 </span>
               </p>
@@ -306,7 +306,7 @@ export default function BookingDetailPage({
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div className="flex items-center gap-5">
-                <div className="w-14 h-14 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+                <div className="w-14 h-14 rounded-2xl bg-indigo-50 style={{ color: 'var(--accent)' }} flex items-center justify-center shrink-0">
                   <Calendar size={24} />
                 </div>
                 <div>
@@ -319,7 +319,7 @@ export default function BookingDetailPage({
                 </div>
               </div>
               <div className="flex items-center gap-5">
-                <div className="w-14 h-14 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+                <div className="w-14 h-14 rounded-2xl bg-indigo-50 style={{ color: 'var(--accent)' }} flex items-center justify-center shrink-0">
                   <Clock size={24} />
                 </div>
                 <div>
@@ -332,7 +332,7 @@ export default function BookingDetailPage({
                 </div>
               </div>
               <div className="flex items-center gap-5">
-                <div className="w-14 h-14 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+                <div className="w-14 h-14 rounded-2xl bg-indigo-50 style={{ color: 'var(--accent)' }} flex items-center justify-center shrink-0">
                   <MapPin size={24} />
                 </div>
                 <div>

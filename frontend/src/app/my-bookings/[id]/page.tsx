@@ -184,7 +184,7 @@ export default function GameBookingDetailPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center">
-        <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+        <div className="w-12 h-12 border-4 border-accent border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -197,7 +197,7 @@ export default function GameBookingDetailPage() {
           <p className="text-slate-500 mb-4">{error || "The booking you're looking for doesn't exist."}</p>
           <button 
             onClick={() => router.push("/my-bookings")}
-            className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-black text-sm uppercase tracking-widest hover:bg-indigo-500 transition-all"
+            className="px-6 py-3 bg-accent text-white rounded-xl font-black text-sm uppercase tracking-widest hover:bg-accent/90 transition-all"
           >
             Back to My Bookings
           </button>
@@ -251,17 +251,17 @@ export default function GameBookingDetailPage() {
       onClick={() => setIsQRModalOpen(true)}
       className="relative group shrink-0"
     >
-      <div className="absolute -inset-2 bg-linear-to-tr from-indigo-600 to-purple-600 rounded-3xl blur opacity-20 group-hover:opacity-40 animate-pulse transition duration-1000"></div>
+      <div className="absolute -inset-2 bg-gradient-to-tr from-accent to-purple-600 rounded-3xl blur opacity-20 group-hover:opacity-40 animate-pulse transition duration-1000"></div>
       <div className="relative bg-white p-4 rounded-3xl border border-slate-100 shadow-sm flex flex-col items-center justify-center gap-1">
         <QrCode size={32} className="text-slate-900" />
-        <span className="text-[8px] font-black text-indigo-600 uppercase tracking-tighter">Tap Pass</span>
+        <span className="text-[8px] font-black text-accent uppercase tracking-tighter">Tap Pass</span>
       </div>
     </motion.button>
 
     <div className="text-center md:text-left">
       
       <h1 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tighter">
-        Your <span className="text-indigo-600">Adventure</span>
+        Your <span className="text-accent">Adventure</span>
       </h1>
       <p className="text-slate-500 mt-1 text-sm font-medium">
         Pass for <span className="text-slate-900 font-bold">{user?.first_name ? `${user.first_name} ${user.last_name}` : "Guest"}</span> · ID: <span className="font-mono">{booking.booking_reference}</span>
@@ -278,7 +278,7 @@ export default function GameBookingDetailPage() {
     <div className="w-px h-8 bg-slate-100 mx-2" />
     <div className="text-right">
       <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.1em]">Ready</p>
-      <p className="text-xl font-black text-indigo-600">7</p>
+      <p className="text-xl font-black text-accent">7</p>
     </div>
   </div>
 </header>

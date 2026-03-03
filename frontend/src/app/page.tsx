@@ -7,6 +7,7 @@ import { Ticket, ChevronRight, Clock, Play, ArrowDownRight } from "lucide-react"
 import { gameService } from "@/services/adminService";
 import { eventService } from "@/services/eventService";
 import { Event, Game } from "@/types";
+import { useTheme } from "@/contexts/ThemeContext";
 
 const stagger = {
   visible: { transition: { staggerChildren: 0.12 } },
@@ -20,6 +21,7 @@ const fadeUp = {
 const ACCENT = "#FFD84D";
 
 export default function Home() {
+  const { isDarkTheme } = useTheme();
   const [featuredGames, setFeaturedGames] = useState<Game[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
   const { scrollY } = useScroll();
@@ -36,7 +38,7 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] text-white overflow-x-hidden">
+    <div className={`min-h-screen ${isDarkTheme ? 'bg-[#0A0A0A] text-white' : 'bg-white text-gray-900'} overflow-x-hidden`}>
 
       {/* ── HERO ─────────────────────────────────────────────────────────── */}
       <section className="relative h-screen flex items-end pb-20 overflow-hidden">
@@ -47,8 +49,10 @@ export default function Home() {
             className="w-full h-full object-cover"
             alt="Bora Park"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A0A] via-[#0A0A0A]/50 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#0A0A0A]/60 to-transparent" />
+          <div className={`absolute inset-0 bg-gradient-to-t ${isDarkTheme ? 'from-[#0A0A0A] via-[#0A0A0A]/20' : 'from-white via-white/15'} to-transparent`} />
+          <div className={`absolute inset-0 bg-gradient-to-r ${isDarkTheme ? 'from-[#0A0A0A]/30' : 'from-white/30'} to-transparent`} />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/30 via-black/20 via-black/10 via-black/5 via-transparent to-transparent" />
+          <div className={`absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t ${isDarkTheme ? 'from-[#0A0A0A]' : 'from-white'} to-transparent`} />
         </motion.div>
 
         {/* Floating badge */}
@@ -89,7 +93,11 @@ export default function Home() {
                 </button>
               </Link>
               <Link href="/games">
-                <button className="flex items-center gap-3 border-2 border-white/20 text-white font-bold text-base px-8 py-4 rounded-full hover:border-white/60 hover:bg-white/5 transition-all duration-300 backdrop-blur-sm">
+                <button className={`flex items-center gap-3 border-2 font-bold text-base px-8 py-4 rounded-full transition-all duration-300 ${
+                  isDarkTheme 
+                    ? 'border-white/20 text-white hover:border-white/60 hover:bg-white/5' 
+                    : 'border-gray-300 text-gray-700 hover:border-gray-400 hover:bg-gray-50'
+                }`}>
                   <Play className="h-4 w-4 fill-current" />
                   Explore Rides
                 </button>
@@ -103,8 +111,8 @@ export default function Home() {
           style={{ opacity: heroOpacity }}
           className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2"
         >
-          <div className="w-px h-16 bg-gradient-to-b from-white/0 via-white/40 to-white/0 animate-pulse" />
-          <span className="text-white/40 text-[10px] font-bold uppercase tracking-widest">Scroll</span>
+          <div className="w-px h-16 bg-gradient-to-b from-gray-300/0 via-gray-400/40 to-gray-300/0 animate-pulse" />
+          <span className={`text-[10px] font-bold uppercase tracking-widest ${isDarkTheme ? 'text-gray-400' : 'text-gray-400'}`}>Scroll</span>
         </motion.div>
       </section>
 
@@ -124,7 +132,9 @@ export default function Home() {
                   Upcoming<br />Events
                 </h2>
               </div>
-              <Link href="/events" className="hidden md:flex items-center gap-2 text-white/50 hover:text-[#FFD84D] font-bold text-sm transition-colors">
+              <Link href="/events" className={`hidden md:flex items-center gap-2 font-bold text-sm transition-colors ${
+                isDarkTheme ? 'text-white/50 hover:text-[#FFD84D]' : 'text-gray-500 hover:text-[#FFD84D]'
+              }`}>
                 Full Calendar <ChevronRight size={16} />
               </Link>
             </motion.div>
@@ -136,15 +146,19 @@ export default function Home() {
                   variants={fadeUp}
                   whileHover={{ y: -6 }}
                   transition={{ duration: 0.3 }}
-                  className="group bg-white/5 border border-white/8 rounded-3xl overflow-hidden hover:border-[#FFD84D]/30 hover:bg-white/8 transition-all duration-500"
+                  className={`group border rounded-3xl overflow-hidden transition-all duration-500 ${
+                    isDarkTheme
+                      ? 'bg-white/5 border-white/8 hover:border-[#FFD84D]/30 hover:bg-white/8'
+                      : 'bg-white border-gray-200 hover:border-[#FFD84D]/30 hover:bg-gray-100'
+                  }`}
                 >
                   <div className="relative h-52 overflow-hidden">
                     <img
                       src="/api/placeholder/600/400"
                       alt={event.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 opacity-60"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 opacity-80"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A0A] to-transparent" />
+                    <div className={`absolute inset-0 bg-gradient-to-t ${isDarkTheme ? 'from-[#0A0A0A]' : 'from-white'} to-transparent`} />
                     <div className="absolute top-4 left-4 bg-[#FFD84D] text-black rounded-2xl px-4 py-2 text-center min-w-[56px] shadow-lg">
                       <p className="text-[10px] font-black uppercase tracking-tight">
                         {new Date(event.start_time).toLocaleString("default", { month: "short" })}
@@ -163,19 +177,21 @@ export default function Home() {
                   </div>
 
                   <div className="p-6">
-                    <div className="flex items-center gap-2 text-white/40 text-xs font-bold uppercase mb-3">
+                    <div className={`flex items-center gap-2 text-xs font-bold uppercase mb-3 ${
+                      isDarkTheme ? 'text-white/40' : 'text-gray-500'
+                    }`}>
                       <Clock size={12} className="text-[#FFD84D]" />
                       {new Date(event.start_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                     </div>
-                    <h3 className="text-xl font-black mb-2 line-clamp-1">{event.name}</h3>
-                    <p className="text-white/50 text-sm mb-6 line-clamp-2 leading-relaxed">{event.description}</p>
+                    <h3 className={`text-xl font-black mb-2 line-clamp-1 ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}>{event.name}</h3>
+                    <p className={`text-sm mb-6 line-clamp-2 leading-relaxed ${isDarkTheme ? 'text-white/50' : 'text-gray-600'}`}>{event.description}</p>
 
                     <div className="flex items-center justify-between pt-4 border-t border-white/8">
                       <div>
-                        <span className="text-white/30 text-[10px] font-bold uppercase block mb-0.5">From</span>
+                        <span className={`text-[10px] font-bold uppercase block mb-0.5 ${isDarkTheme ? 'text-white/30' : 'text-gray-400'}`}>From</span>
                         <p className="text-2xl font-black">
-                          {event.ticket_types?.find((t) => t.category === "adult")?.price ?? 0}
-                          <span className="text-sm font-bold text-white/50 ml-1">ETB</span>
+                          {event.ticket_types?.find((t) => t.category === "ADULT")?.price ?? 0}
+                          <span className={`text-sm font-bold ml-1 ${isDarkTheme ? 'text-white/50' : 'text-gray-500'}`}>ETB</span>
                         </p>
                       </div>
                       <Link href={`/buy?event=${event.id}`}>
@@ -183,8 +199,8 @@ export default function Home() {
                           disabled={!event.is_active}
                           className={`rounded-2xl font-black text-sm px-6 py-3 transition-all ${
                             !event.is_active
-                              ? "bg-white/10 text-white/30 cursor-not-allowed"
-                              : "bg-[#FFD84D] text-black hover:bg-white"
+                              ? (isDarkTheme ? 'bg-white/10 text-white/30' : 'bg-gray-100 text-gray-400')
+                              : 'bg-[#FFD84D] text-black hover:bg-white'
                           }`}
                         >
                           {event.is_active ? "Book Now" : "Full"}
@@ -200,7 +216,7 @@ export default function Home() {
       </section>
 
       {/* ── ATTRACTIONS ──────────────────────────────────────────────────── */}
-      <section className="py-28 px-6 sm:px-10 lg:px-16 bg-gradient-to-b from-transparent to-white/3">
+      <section className={`py-28 px-6 sm:px-10 lg:px-16 bg-gradient-to-b from-transparent ${isDarkTheme ? 'to-white/3' : 'to-gray-50'}`}>
         <div className="max-w-7xl mx-auto">
           <motion.div
             initial="hidden"
@@ -215,7 +231,9 @@ export default function Home() {
                   Must-Try<br />Attractions
                 </h2>
               </div>
-              <Link href="/games" className="hidden md:flex items-center gap-2 text-white/50 hover:text-[#FFD84D] font-bold text-sm transition-colors">
+              <Link href="/games" className={`hidden md:flex items-center gap-2 font-bold text-sm transition-colors ${
+                isDarkTheme ? 'text-white/50 hover:text-[#FFD84D]' : 'text-gray-500 hover:text-[#FFD84D]'
+              }`}>
                 View All <ChevronRight size={16} />
               </Link>
             </motion.div>
@@ -234,7 +252,7 @@ export default function Home() {
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                     alt={game.name}
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
+                  <div className={`absolute inset-0 bg-gradient-to-t ${isDarkTheme ? 'from-black' : 'from-gray-800'} via-transparent to-transparent`} />
 
                   {/* Corner accent */}
                   <div className="absolute top-4 right-4 w-10 h-10 rounded-full bg-[#FFD84D] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 scale-75 group-hover:scale-100">
@@ -247,10 +265,10 @@ export default function Home() {
                     </span>
                     <h3 className="text-2xl font-black mb-4 leading-tight">{game.name}</h3>
                     <div className="flex items-center justify-between">
-                      <p className="text-white/70 text-sm">
+                      <p className={`text-sm ${isDarkTheme ? 'text-gray-300' : 'text-gray-600'}`}>
                         From{" "}
                         <span className="text-xl font-black text-white">
-                          {game.ticket_types?.find((t) => t.category === "adult")?.price ?? "—"}
+                          {game.ticket_types?.find((t) => t.category === "ADULT")?.price ?? "—"}
                         </span>{" "}
                         ETB
                       </p>
@@ -271,7 +289,9 @@ export default function Home() {
       {/* ── STATS ────────────────────────────────────────────────────────── */}
       <section className="py-24 px-6 sm:px-10 lg:px-16">
         <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-white/8 rounded-3xl overflow-hidden border border-white/8">
+          <div className={`grid grid-cols-2 md:grid-cols-4 gap-px rounded-3xl overflow-hidden border ${
+            isDarkTheme ? 'bg-white/8 border-white/8' : 'bg-gray-200 border-gray-200'
+          }`}>
             {[
               { num: "25+", label: "Thriller Rides" },
               { num: "10k+", label: "Happy Visitors" },
@@ -284,12 +304,12 @@ export default function Home() {
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.1, duration: 0.6 }}
                 viewport={{ once: true }}
-                className="bg-[#0A0A0A] py-12 px-8 text-center"
+                className={`py-12 px-8 text-center ${isDarkTheme ? 'bg-[#0A0A0A]' : 'bg-white'}`}
               >
                 <p className="text-4xl md:text-5xl font-black text-[#FFD84D] mb-2" style={{ fontFamily: "'Arial Black', sans-serif" }}>
                   {stat.num}
                 </p>
-                <p className="text-white/40 text-xs font-bold uppercase tracking-widest">{stat.label}</p>
+                <p className={`text-xs font-bold uppercase tracking-widest ${isDarkTheme ? 'text-white/40' : 'text-gray-500'}`}>{stat.label}</p>
               </motion.div>
             ))}
           </div>

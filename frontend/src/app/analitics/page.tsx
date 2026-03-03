@@ -148,7 +148,7 @@ const KpiCard = ({ title, value, icon: Icon, change, changeType }: {
         )}
       </div>
       <div className="p-3 bg-blue-50 rounded-lg">
-        <Icon className="w-6 h-6 text-blue-600" />
+        <Icon className="w-6 h-6 style={{ color: 'var(--accent)' }}" />
       </div>
     </div>
   </div>
@@ -333,7 +333,7 @@ export default function AnalyticsDashboardPage() {
                       <td className="px-4 py-2">
                         <div className="flex items-center gap-2">
                           <div className="w-16 bg-gray-200 rounded-full h-2">
-                            <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${event.occupancy}%` }} />
+                            <div className="bg-accent h-2 rounded-full" style={{ width: `${event.occupancy}%` }} />
                           </div>
                           <span>{event.occupancy}%</span>
                         </div>

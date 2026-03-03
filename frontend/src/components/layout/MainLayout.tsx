@@ -4,6 +4,7 @@ import { ReactNode } from 'react';
 import { Navbar } from './Navbar';
 import { Footer } from './Footer';
 import { usePathname } from 'next/navigation';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -11,13 +12,14 @@ interface MainLayoutProps {
 
 export function MainLayout({ children }: MainLayoutProps) {
   const pathname = usePathname();
+  const { isDarkTheme } = useTheme();
   const isHomePage = pathname === "/";
 
   return (
-    <div className="min-h-screen flex flex-col relative">
+    <div className={`min-h-screen flex flex-col relative ${isDarkTheme ? 'bg-[#0A0A0A]' : 'bg-white'}`}>
       {/* Navbar is fixed, so no padding needed on home; add top padding elsewhere */}
       <Navbar />
-      <main className={`flex-1 ${isHomePage ? "bg-[#0A0A0A]" : "bg-gray-50 pt-16"}`}>
+      <main className={`flex-1 ${isHomePage ? "" : "pt-16"}`}>
         {children}
       </main>
       <Footer />

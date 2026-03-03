@@ -138,12 +138,12 @@ const BuyTicketsPage = () => {
         {/* HEADER */}
         <header className="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-8">
           <div className="flex flex-col md:flex-row items-center gap-6">
-            <div className="bg-indigo-600 p-4 rounded-3xl shadow-xl shadow-indigo-200">
+            <div className="bg-accent p-4 rounded-3xl shadow-xl shadow-accent/20">
               <Zap className="w-8 h-8 text-white" />
             </div>
             <div className="text-center md:text-left">
               <h1 className="text-4xl md:text-6xl font-black text-slate-900 tracking-tighter uppercase italic">
-                Pick Your <span className="text-indigo-600">Adventures</span>
+                Pick Your <span className="text-accent">Adventures</span>
               </h1>
               <p className="text-slate-500 mt-1 text-sm font-medium tracking-wide">
                 Select attraction passes to build your custom experience.

@@ -154,7 +154,7 @@ const GameCard = ({ item, index, draftQty, onQtyChange, isExpanded, onToggle }) 
             {item.ticket_types.map(tt => (
               <div key={tt.id} className="flex items-center gap-2">
                 <span className="text-[10px] font-bold text-slate-400 uppercase">{tt.category}</span>
-                <span className="font-black text-sm text-indigo-600">{tt.purchased - tt.used}</span>
+                <span className="font-black text-sm text-accent">{tt.purchased - tt.used}</span>
               </div>
             ))}
           </div>
@@ -289,7 +289,7 @@ export default function StaffTransactionPage() {
           <div className="flex items-center gap-4">
  
             <div>
-              <h1 className="text-3xl font-black text-slate-900">Transaction <span className="text-indigo-600">Details</span></h1>
+              <h1 className="text-3xl font-black text-slate-900">Transaction <span className="text-accent">Details</span></h1>
               <p className="text-slate-500 text-sm mt-1">Ref: <span className="font-mono">{MOCK_TRANSACTION.transaction_code}</span></p>
             </div>
           </div>
@@ -338,7 +338,7 @@ export default function StaffTransactionPage() {
         {punchList.length > 0 && (
           <motion.div initial={{ y: 100 }} animate={{ y: 0 }} exit={{ y: 100 }} className="fixed bottom-0 left-0 right-0 p-4 bg-white/80 backdrop-blur-md border-t z-50">
             <div className="max-w-6xl mx-auto flex justify-between items-center gap-4">
-              <p className="font-black text-xs uppercase text-indigo-600 truncate">{punchList.length} items selected</p>
+              <p className="font-black text-xs uppercase text-accent truncate">{punchList.length} items selected</p>
               <button onClick={() => setShowConfirm(true)} className="px-8 py-4 bg-red-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg shadow-red-200 active:scale-95 transition-transform">
                 PUNCH TICKETS
               </button>

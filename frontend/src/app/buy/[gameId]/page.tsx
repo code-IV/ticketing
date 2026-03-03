@@ -147,7 +147,7 @@ export default function GameDetailPage({
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="flex items-start space-x-3">
-                    <Gamepad2 className="h-5 w-5 text-purple-600 mt-1" />
+                    <Gamepad2 className="h-5 w-5 text-accent mt-1" />
                     <div>
                       <p className="font-medium text-gray-900">Game Type</p>
                       <p className="text-gray-600">
@@ -156,7 +156,7 @@ export default function GameDetailPage({
                     </div>
                   </div>
                   <div className="flex items-start space-x-3">
-                    <Users className="h-5 w-5 text-purple-600 mt-1" />
+                    <Users className="h-5 w-5 text-accent mt-1" />
                     <div>
                       <p className="font-medium text-gray-900">Capacity</p>
                       <p className="text-gray-600">
@@ -165,7 +165,7 @@ export default function GameDetailPage({
                     </div>
                   </div>
                   <div className="flex items-start space-x-3">
-                    <MapPin className="h-5 w-5 text-purple-600 mt-1" />
+                    <MapPin className="h-5 w-5 text-accent mt-1" />
                     <div>
                       <p className="font-medium text-gray-900">Location</p>
                       <p className="text-gray-600">
@@ -208,7 +208,7 @@ export default function GameDetailPage({
                         <p className="text-sm text-gray-600">
                           {ticketType.description}
                         </p>
-                        <p className="text-lg font-bold text-purple-600 mt-1">
+                        <p className="text-lg font-bold text-accent mt-1">
                           {ticketType.price} ETB
                         </p>
                       </div>
@@ -288,7 +288,7 @@ export default function GameDetailPage({
                     <div className="border-t pt-4">
                       <div className="flex justify-between text-lg font-bold">
                         <span>Total</span>
-                        <span className="text-purple-600">
+                        <span className="text-accent">
                           {getTotalAmount().toFixed(2)} ETB
                         </span>
                       </div>

@@ -185,7 +185,7 @@ const GamesManagementPage = () => {
 
         <button
           onClick={() => setIsDrawerOpen(true)}
-          className="flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-2xl font-bold shadow-lg shadow-indigo-200 transition-all active:scale-95"
+          className="flex items-center justify-center gap-2 style={{ backgroundColor: 'var(--accent)' }} hover:bg-indigo-700 text-white px-6 py-3 rounded-2xl font-bold shadow-lg shadow-indigo-200 transition-all active:scale-95"
         >
           <Plus size={20} />
           <span>Add New Game</span>
@@ -217,7 +217,7 @@ const GamesManagementPage = () => {
             label: "ANALYTICS",
             value: "",
             icon: <BarChart3 />,
-            color: "text-blue-600",
+            color: "style={{ color: 'var(--accent)' }}",
           },
         ].map((stat, i) => (
           <div
@@ -249,7 +249,7 @@ const GamesManagementPage = () => {
           <input
             type="text"
             placeholder="Search by ride name or category..."
-            className="w-full pl-12 pr-4 py-3 bg-slate-50 border-none rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-medium"
+            className="w-full pl-12 pr-4 py-3 bg-slate-50 border-none rounded-xl focus:ring-2 focus:ring-accent outline-none font-medium"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -322,7 +322,7 @@ const GamesManagementPage = () => {
                           key={tt.id}
                           className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100"
                         >
-                          <span className="text-[10px] font-bold text-indigo-600 uppercase">
+                          <span className="text-[10px] font-bold style={{ color: 'var(--accent)' }} uppercase">
                             {tt.category}
                           </span>
                           <span className="text-sm font-black text-slate-700">
@@ -346,7 +346,7 @@ const GamesManagementPage = () => {
                     <span className="text-xs font-bold text-slate-400 uppercase">
                       Single Access
                     </span>
-                    <div className="text-2xl font-black text-indigo-600">
+                    <div className="text-2xl font-black style={{ color: 'var(--accent)' }}">
                       {game.ticket_types?.find((t) => t.category === "adult")
                         ?.price ?? "—"}
                       <span className="text-xs ml-1">ETB</span>
@@ -379,7 +379,7 @@ const GamesManagementPage = () => {
               <div className="flex justify-between items-center mb-6">
                 <button
                   onClick={handleCreate}
-                  className="w-full bg-indigo-600 text-white font-black py-4 rounded-2xl hover:bg-indigo-700 shadow-xl shadow-indigo-100 transition-all transform active:scale-[0.98]"
+                  className="w-full style={{ backgroundColor: 'var(--accent)' }} text-white font-black py-4 rounded-2xl hover:bg-indigo-700 shadow-xl shadow-indigo-100 transition-all transform active:scale-[0.98]"
                 >
                   Create Attraction
                 </button>
@@ -401,7 +401,7 @@ const GamesManagementPage = () => {
                     </label>
                     <input
                       type="text"
-                      className="w-full p-4 bg-slate-50 border-2 border-transparent rounded-2xl outline-none focus:border-indigo-500 focus:bg-white transition-all font-bold"
+                      className="w-full p-4 bg-slate-50 border-2 border-transparent rounded-2xl outline-none focus:border-accent focus:bg-white transition-all font-bold"
                       placeholder="e.g. Roller Coaster"
                       value={formData.name}
                       onChange={(e) =>
@@ -416,7 +416,7 @@ const GamesManagementPage = () => {
                         Status
                       </label>
                       <select
-                        className="w-full p-4 bg-slate-50 border-2 border-transparent rounded-2xl outline-none focus:border-indigo-500 focus:bg-white transition-all font-bold appearance-none"
+                        className="w-full p-4 bg-slate-50 border-2 border-transparent rounded-2xl outline-none focus:border-accent focus:bg-white transition-all font-bold appearance-none"
                         value={formData.status}
                         onChange={(e) =>
                           setFormData({
@@ -450,7 +450,7 @@ const GamesManagementPage = () => {
                         >
                           <div>
                             <div className="flex items-center gap-2">
-                              <span className="px-2 py-0.5 bg-indigo-50 text-indigo-600 text-[10px] font-black uppercase rounded-md">
+                              <span className="px-2 py-0.5 bg-indigo-50 style={{ color: 'var(--accent)' }} text-[10px] font-black uppercase rounded-md">
                                 {tt.category}
                               </span>
                               <h4 className="text-sm font-bold text-slate-800">
@@ -475,7 +475,7 @@ const GamesManagementPage = () => {
                   {/* --- 2. THE ENTRY FORM --- */}
                   <div className="p-6 bg-slate-50 rounded-[32px] border-2 border-dashed border-slate-200 space-y-4">
                     <div className="flex items-center gap-2 mb-2">
-                      <div className="p-2 bg-indigo-600 rounded-lg">
+                      <div className="p-2 style={{ backgroundColor: 'var(--accent)' }} rounded-lg">
                         <Plus size={16} className="text-white" />
                       </div>
                       <h3 className="text-sm font-black text-slate-800 uppercase tracking-tight">
@@ -490,7 +490,7 @@ const GamesManagementPage = () => {
                         </label>
                         <input
                           placeholder="e.g., Adult Ticket"
-                          className="w-full p-3 bg-white rounded-xl border border-slate-200 focus:border-indigo-500 outline-none font-bold text-sm"
+                          className="w-full p-3 bg-white rounded-xl border border-slate-200 focus:border-accent outline-none font-bold text-sm"
                           value={newTicket.name}
                           onChange={(e) =>
                             setNewTicket({ ...newTicket, name: e.target.value })
@@ -503,7 +503,7 @@ const GamesManagementPage = () => {
                           Category
                         </label>
                         <select
-                          className="w-full p-3 bg-white rounded-xl border border-slate-200 focus:border-indigo-500 outline-none font-bold text-sm appearance-none"
+                          className="w-full p-3 bg-white rounded-xl border border-slate-200 focus:border-accent outline-none font-bold text-sm appearance-none"
                           value={newTicket.category}
                           onChange={(e) =>
                             setNewTicket({
@@ -544,7 +544,7 @@ const GamesManagementPage = () => {
                         <input
                           type="number"
                           placeholder="0.0"
-                          className="w-full p-3 bg-white rounded-xl border border-slate-200 focus:border-indigo-500 outline-none font-black text-sm"
+                          className="w-full p-3 bg-white rounded-xl border border-slate-200 focus:border-accent outline-none font-black text-sm"
                           value={newTicket.price || ""}
                           onChange={(e) =>
                             setNewTicket({
@@ -595,7 +595,7 @@ const GamesManagementPage = () => {
                     <button
                       type="button"
                       onClick={addCategory}
-                      className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-indigo-600 transition-colors shadow-lg shadow-slate-200"
+                      className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:style={{ backgroundColor: 'var(--accent)' }} transition-colors shadow-lg shadow-slate-200"
                     >
                       Add Category to List
                     </button>

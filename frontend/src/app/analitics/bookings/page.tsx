@@ -126,7 +126,7 @@ const KpiCard = ({ title, value, icon: Icon, change, changeType }: {
         )}
       </div>
       <div className="p-3 bg-blue-50 rounded-lg">
-        <Icon className="w-6 h-6 text-blue-600" />
+        <Icon className="w-6 h-6 style={{ color: 'var(--accent)' }}" />
       </div>
     </div>
   </div>
@@ -261,10 +261,10 @@ export default function BookingAnalyticsPage() {
                       </span>
                     </td>
                     <td className="px-4 py-3 font-medium">{game.game}</td>
-                    <td className="px-4 py-3 font-bold text-blue-600">{game.tickets.toLocaleString()}</td>
+                    <td className="px-4 py-3 font-bold text-accent">{game.tickets.toLocaleString()}</td>
                     <td className="px-4 py-3 font-medium text-green-600">${game.revenue.toLocaleString()}</td>
                     <td className="px-4 py-3">
-                      <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium">
+                      <span className="px-2 py-1 bg-accent/20 text-accent rounded-full text-xs font-medium">
                         {game.topTicketType}
                       </span>
                     </td>

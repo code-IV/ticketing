@@ -75,7 +75,7 @@ const KpiCard = ({ title, value, icon: Icon }: {
         <p className="text-2xl font-bold text-gray-900">{value}</p>
       </div>
       <div className="p-3 bg-blue-50 rounded-lg">
-        <Icon className="w-6 h-6 text-blue-600" />
+        <Icon className="w-6 h-6 style={{ color: 'var(--accent)' }}" />
       </div>
     </div>
   </div>
@@ -131,7 +131,7 @@ export default function EventsAnalyticsPage() {
                     className="border-t border-gray-100 hover:bg-gray-50 cursor-pointer"
                     onClick={() => router.push(`/analitics/events/${event.id}`)}
                   >
-                    <td className="px-4 py-3 font-medium text-blue-600 hover:text-blue-800">{event.name}</td>
+                    <td className="px-4 py-3 font-medium style={{ color: 'var(--accent)' }} hover:text-blue-800">{event.name}</td>
                     <td className="px-4 py-3">{event.date}</td>
                     <td className="px-4 py-3">
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${

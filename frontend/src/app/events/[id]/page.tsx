@@ -3,13 +3,15 @@
 import { use, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTheme } from "@/contexts/ThemeContext";
 import { eventService } from "@/services/eventService";
 import { bookingService } from "@/services/bookingService";
 import { Event, BookingItem } from "@/types";
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from "framer-motion";
 import { 
   Clock, MapPin, Calendar, ArrowLeft, 
-  Ticket, Play, Share2, Plus, Minus, ShoppingCart, ArrowRight 
+  Ticket, Play, Share2, Plus, Minus, ShoppingCart, ArrowRight,
+  Star, Heart, X, ChevronLeft, ChevronRight, Users
 } from 'lucide-react';
 import Link from 'next/link';
 import { format } from "date-fns";
@@ -19,6 +21,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
   const id = resolvedParams.id;
   const router = useRouter();
   const { user } = useAuth();
+  const { isDarkTheme } = useTheme();
 
   // ── STATE ──
   const [event, setEvent] = useState<Event | null>(null);
@@ -27,6 +30,8 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
   const [cart, setCart] = useState<{ [key: string]: number }>({});
   const [booking, setBooking] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<"credit_card" | "debit_card" | "telebirr" | "cash">("telebirr");
+  const [selectedMediaIndex, setSelectedMediaIndex] = useState(0);
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
 
   // ── MOCK MEDIA ──
   const MOCK_VID = "https://player.vimeo.com/external/434045526.sd.mp4?s=c27ee37da9897116710497645167f536968d876d&profile_id=164&oauth2_token_id=57447761";
@@ -93,199 +98,506 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
     }
   };
 
-  // ── SHARED COMPONENT: ORDER SUMMARY ──
-  const OrderSummaryUI = () => (
-    <div className="space-y-6">
-      {getTotalTickets() === 0 ? (
-        <p className="text-slate-300 font-medium italic py-4">Select your passes to review your order...</p>
-      ) : (
-        <>
-          {Object.entries(cart).map(([tid, qty]) => {
-            const t = event?.ticket_types?.find(x => x.id === tid);
-            return (
-              <div key={tid} className="flex justify-between items-center pb-4 border-b border-slate-50">
-                <div>
-                  <p className="font-black text-slate-900 uppercase text-sm">{t?.name}</p>
-                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{qty} Tickets</p>
-                </div>
-                <p className="font-black text-slate-900">{(t?.price || 0) * qty} ETB</p>
-              </div>
-            );
-          })}
-          <div className="flex justify-between items-center pt-6">
-            <p className="text-2xl font-black text-slate-900 uppercase tracking-tighter">Grand Total</p>
-            <div className="text-right">
-              <p className="text-4xl lg:text-5xl font-black text-indigo-600 tracking-tighter">{getTotalAmount()}</p>
-              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Birr</p>
-            </div>
-          </div>
-        </>
-      )}
-    </div>
-  );
+  // Build media items for gallery and lightbox
+  const getMediaItems = () => {
+    const items = [];
+    // Add video first
+    items.push({
+      type: 'video',
+      url: event?.video_url || MOCK_VID,
+      thumbnail: VIDEO_POSTER,
+      alt: `${event?.name} trailer`
+    });
+    // Add gallery images
+    MOCK_GALLERY.forEach((img, i) => {
+      items.push({
+        type: 'image',
+        url: img,
+        thumbnail: img,
+        alt: `${event?.name} gallery ${i+1}`
+      });
+    });
+    return items;
+  };
+
+  const mediaItems = getMediaItems();
+  const currentMedia = mediaItems[selectedMediaIndex];
+
+  const navigateMedia = (direction: 'prev' | 'next') => {
+    if (direction === 'prev') {
+      setSelectedMediaIndex((prev) => prev === 0 ? mediaItems.length - 1 : prev - 1);
+    } else {
+      setSelectedMediaIndex((prev) => prev === mediaItems.length - 1 ? 0 : prev + 1);
+    }
+  };
 
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC]">
-      <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+    <div className={`min-h-screen ${isDarkTheme ? 'bg-[#0A0A0A]' : 'bg-gray-50'} flex items-center justify-center`}>
+      <div className="flex flex-col items-center gap-4">
+        <div className="w-12 h-12 border-4 border-[#ffd84f] border-t-transparent rounded-full animate-spin" />
+        <span className={`font-black tracking-[0.5em] uppercase italic ${isDarkTheme ? 'text-white' : 'text-gray-800'}`}>Loading Event...</span>
+      </div>
     </div>
   );
 
-  if (!event) return <div className="p-20 text-center font-black uppercase tracking-widest">Event not found.</div>;
+  if (!event) return (
+    <div className={`min-h-screen ${isDarkTheme ? 'bg-[#0A0A0A]' : 'bg-gray-50'} flex items-center justify-center`}>
+      <div className="text-center">
+        <h2 className={`text-3xl font-black mb-4 ${isDarkTheme ? 'text-white' : 'text-gray-800'}`}>Event Not Found</h2>
+        <p className={`mb-8 ${isDarkTheme ? 'text-gray-400' : 'text-gray-500'}`}>The event you're looking for doesn't exist.</p>
+        <button 
+          onClick={() => router.push("/events")}
+          className={`px-8 py-4 backdrop-blur-sm border rounded-2xl font-black text-xs uppercase tracking-widest hover:transition-all flex items-center gap-2 mx-auto shadow-sm ${
+            isDarkTheme 
+              ? 'bg-white/10 border-white/20 text-white hover:bg-white/20'
+              : 'bg-white/80 border-gray-200 text-gray-800 hover:bg-white'
+          }`}
+        >
+          <ArrowLeft size={16} /> Back to Events
+        </button>
+      </div>
+    </div>
+  );
 
   const isSoldOut = (event.capacity - event.tickets_sold) <= 0;
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] pb-20 pt-10 px-4">
-      <div className="max-w-7xl mx-auto">
-        
-        {/* ── HEADER ── */}
-        <header className="mb-8 flex items-center justify-between">
-          <Link href="/events" className="group flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-white border border-slate-100 flex items-center justify-center text-slate-900 group-hover:bg-indigo-600 group-hover:text-white transition-all">
-              <ArrowLeft size={18} />
-            </div>
-            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Back to Lineup</span>
-          </Link>
-          <button className="w-10 h-10 rounded-full bg-white border border-slate-100 flex items-center justify-center text-slate-900 shadow-sm hover:scale-110 transition-transform">
+    <div className={`min-h-screen ${isDarkTheme ? 'bg-[#0A0A0A]' : 'bg-gray-50'}`}>
+      {/* Hero Section with Video/Image Background */}
+      <section className="relative h-screen overflow-hidden">
+        <div className="absolute inset-0">
+          {currentMedia?.type === 'video' ? (
+            <video
+              className="w-full h-full object-cover"
+              autoPlay
+              muted
+              loop
+              playsInline
+              poster={currentMedia.thumbnail}
+            >
+              <source src={currentMedia.url} type="video/mp4" />
+            </video>
+          ) : (
+            <img 
+              src={currentMedia?.url || MOCK_GALLERY[0]} 
+              className="w-full h-full object-cover" 
+              alt={currentMedia?.alt || event.name}
+            />
+          )}
+          <div className={`absolute inset-0 bg-gradient-to-b ${
+            isDarkTheme 
+              ? 'from-[#0A0A0A]/20 via-[#0A0A0A]/10 to-[#0A0A0A]' 
+              : 'from-gray-40/20 via-gray-50/10 to-gray-50'
+          }`} />
+        </div>
+
+        {/* Back Button */}
+        <motion.button
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          onClick={() => router.push("/events")}
+          className={`absolute top-8 left-8 z-20 flex items-center gap-2 px-6 py-3 backdrop-blur-md border rounded-2xl font-black text-[10px] uppercase tracking-widest hover:transition-all shadow-sm ${
+            isDarkTheme
+              ? 'bg-white/10 border-white/20 text-white hover:bg-white/20'
+              : 'bg-white/70 border-white/50 text-gray-800 hover:bg-white/90'
+          }`}
+        >
+          <ArrowLeft size={16} /> Back to Events
+        </motion.button>
+
+        {/* Share & Favorite Buttons */}
+        <motion.div
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="absolute top-8 right-8 z-20 flex gap-3"
+        >
+          <button className="w-12 h-12 bg-white/70 backdrop-blur-md border border-white/50 text-gray-700 rounded-2xl flex items-center justify-center hover:bg-white/90 transition-all shadow-sm">
             <Share2 size={18} />
           </button>
-        </header>
+          <button className="w-12 h-12 bg-white/70 backdrop-blur-md border border-white/50 text-gray-700 rounded-2xl flex items-center justify-center hover:bg-white/90 transition-all shadow-sm">
+            <Heart size={18} />
+          </button>
+        </motion.div>
 
-        <div className="flex flex-col gap-8">
-          
-          {/* ── MEDIA SECTION (2/3 Video, 1/3 Gallery) ── */}
-          <section className="relative w-full rounded-[48px] overflow-hidden border border-slate-100 bg-white shadow-sm">
-            <div className="flex flex-col h-[650px] md:h-[800px]">
-              <div className="relative h-2/3 w-full bg-slate-900 overflow-hidden">
-                <video 
-                  src={event.video_url || MOCK_VID} 
-                  poster={VIDEO_POSTER}
-                  autoPlay muted loop playsInline 
-                  className="w-full h-full object-cover opacity-70 scale-105" 
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent opacity-60" />
-                <div className="absolute top-8 left-8">
-                  <span className="flex items-center gap-2 px-4 py-2 bg-indigo-600 rounded-full text-white text-[10px] font-black uppercase tracking-widest shadow-xl">
-                    <Play size={12} fill="currentColor" /> Event Trailer
-                  </span>
-                </div>
+        {/* Event Title Overlay */}
+        <div className="absolute bottom-0 left-0 right-0 z-10 p-8 md:p-16">
+          <motion.div
+            initial={{ y: 50, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.2 }}
+            className="max-w-4xl"
+          >
+            <div className="flex items-center gap-3 mb-6">
+              <div className="bg-[#ffd84f] text-gray-900 px-4 py-2 rounded-full shadow-md font-black text-[10px] uppercase tracking-widest">
+                {event.tickets_sold >= event.capacity ? 'SOLD OUT' : 'ON SALE'}
               </div>
-              <div className="relative h-1/3 w-full p-4 md:p-6 bg-white flex gap-4 overflow-x-auto no-scrollbar scroll-smooth">
-                {MOCK_GALLERY.map((img, idx) => (
-                  <motion.div key={idx} whileHover={{ scale: 1.02, y: -5 }} className="flex-shrink-0 w-64 md:w-80 h-full rounded-[28px] overflow-hidden border border-slate-100 shadow-sm">
-                    <img src={img} alt={`gallery-${idx}`} className="w-full h-full object-cover" />
-                  </motion.div>
+              <div className="flex items-center gap-1 text-yellow-500">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} size={16} fill={i < 4 ? "currentColor" : "none"} />
                 ))}
+                <span className="text-gray-600 text-sm ml-2">4.8 (120 reviews)</span>
               </div>
             </div>
-          </section>
-
-          {/* ── CONTENT & BOOKING GRID ── */}
-          <section className="grid grid-cols-1 lg:grid-cols-12 gap-12 mt-4">
             
-            {/* ── LEFT COLUMN: INFO ── */}
-            <div className="lg:col-span-7">
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-                <h1 className="text-5xl md:text-8xl font-black text-slate-900 tracking-tighter leading-[0.85] mb-8 uppercase">
-                  {event.name.split(' ')[0]} <br /> 
-                  <span className="text-indigo-600">{event.name.split(' ').slice(1).join(' ')}</span>
-                </h1>
-                
-                <p className="text-slate-500 text-xl font-medium leading-relaxed mb-10 max-w-2xl">
+            <h1 className="text-6xl md:text-8xl font-black text-gray-800 tracking-tighter uppercase italic leading-none mb-6">
+              {event.name}
+            </h1>
+            
+            <p className="text-xl text-gray-600 font-medium leading-relaxed mb-8 max-w-3xl">
+              {event.description || "Experience the future of entertainment with high-definition visuals and world-class performances."}
+            </p>
+
+            <div className="flex flex-wrap gap-6 text-gray-500 text-sm">
+              <div className="flex items-center gap-2">
+                <Calendar size={18} className="text-[#ffd84f]" />
+                <span>{format(new Date(event.event_date), 'MMM dd, yyyy')}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Clock size={18} className="text-[#ffd84f]" />
+                <span>{event.start_time}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <MapPin size={18} className="text-[#ffd84f]" />
+                <span>{event.location || "Main Arena"}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Users size={18} className="text-[#ffd84f]" />
+                <span>Capacity: {event.capacity}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Ticket size={18} className="text-[#ffd84f]" />
+                <span>From {event.ticket_types?.[0]?.price || 0} ETB</span>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+
+        {/* Media Navigation */}
+        <div className="absolute bottom-8 right-8 z-20 flex items-center gap-3">
+          <button
+            onClick={() => navigateMedia('prev')}
+            className="w-12 h-12 bg-white/70 backdrop-blur-md border border-white/50 text-gray-700 rounded-2xl flex items-center justify-center hover:bg-white/90 transition-all shadow-sm"
+          >
+            <ChevronLeft size={20} />
+          </button>
+          <button
+            onClick={() => navigateMedia('next')}
+            className="w-12 h-12 bg-white/70 backdrop-blur-md border border-white/50 text-gray-700 rounded-2xl flex items-center justify-center hover:bg-white/90 transition-all shadow-sm"
+          >
+            <ChevronRight size={20} />
+          </button>
+        </div>
+      </section>
+
+      {/* Media Gallery */}
+      <section className="py-20 px-6 md:px-12">
+        <div className="max-w-7xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="mb-16 text-center"
+          >
+            <h2 className="text-4xl md:text-6xl font-black text-gray-800 tracking-tighter uppercase italic mb-4">
+              Explore <span className="text-[#ffd84f]">Gallery</span>
+            </h2>
+            <p className="text-gray-500 text-lg">Get a closer look at the experience</p>
+          </motion.div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {mediaItems.map((item, index) => (
+              <motion.button
+                key={index}
+                initial={{ opacity: 0, scale: 0.8 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.1 }}
+                onClick={() => {
+                  setSelectedMediaIndex(index);
+                  setIsLightboxOpen(true);
+                }}
+                className={`relative aspect-video rounded-2xl overflow-hidden border-2 transition-all shadow-md ${
+                  selectedMediaIndex === index ? 'border-[#ffd84f] shadow-lg shadow-[#ffd84f]/30' : 'border-transparent hover:border-[#ffd84f]/50'
+                }`}
+              >
+                <img 
+                  src={item.thumbnail} 
+                  alt={item.alt}
+                  className="w-full h-full object-cover transition-transform duration-300 hover:scale-110"
+                />
+                {item.type === 'video' && (
+                  <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+                    <Play className="w-12 h-12 text-white" fill="white" />
+                  </div>
+                )}
+              </motion.button>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Event Details */}
+      <section className={`py-20 px-6 md:px-12 ${isDarkTheme ? '' : 'bg-gray-100/80'}`}>
+        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-12">
+          <div className="lg:col-span-2 space-y-12">
+            {/* Description */}
+            <motion.div
+              initial={{ opacity: 0, x: -30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+            >
+              <h3 className={`text-3xl font-black tracking-tighter uppercase italic mb-6 ${isDarkTheme ? 'text-white' : 'text-gray-800'}`}>
+                About This <span className="text-[#ffd84f]">Event</span>
+              </h3>
+              <div className={`prose max-w-none ${isDarkTheme ? 'prose-invert' : 'prose-gray'}`}>
+                <p className={`text-lg leading-relaxed ${isDarkTheme ? 'text-gray-300' : 'text-gray-600'}`}>
                   {event.description || "Experience a world-class production at Bora Park. Featuring state-of-the-art visuals and performances that redefine entertainment."}
                 </p>
-                
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-12">
-                  <div className="p-6 rounded-[32px] bg-white border border-slate-100 shadow-sm">
-                    <Calendar className="text-indigo-600 mb-2" size={20} />
-                    <p className="text-[9px] font-black text-slate-400 uppercase">Date</p>
-                    <p className="text-lg font-black text-slate-900">{format(new Date(event.event_date), "MMM dd, yyyy")}</p>
-                  </div>
-                  <div className="p-6 rounded-[32px] bg-white border border-slate-100 shadow-sm">
-                    <Clock className="text-indigo-600 mb-2" size={20} />
-                    <p className="text-[9px] font-black text-slate-400 uppercase">Time</p>
-                    <p className="text-lg font-black text-slate-900">{event.start_time}</p>
-                  </div>
-                  <div className="p-6 rounded-[32px] bg-white border border-slate-100 shadow-sm">
-                    <MapPin className="text-indigo-600 mb-2" size={20} />
-                    <p className="text-[9px] font-black text-slate-400 uppercase">Venue</p>
-                    <p className="text-lg font-black text-slate-900">Bora Stage</p>
-                  </div>
-                </div>
+                <p className={`text-lg leading-relaxed mt-4 ${isDarkTheme ? 'text-gray-300' : 'text-gray-600'}`}>
+                  Join us for an unforgettable evening of music, art, and culture. This event brings together top artists and cutting-edge production for an immersive experience like no other.
+                </p>
+              </div>
+            </motion.div>
 
-                {/* ── FINAL ORDER REVIEW (Desktop Only) ── */}
-                <div className="hidden lg:block p-8 md:p-12 rounded-[48px] bg-white border border-slate-100 shadow-sm">
-                  <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-400 mb-8 flex items-center gap-2">
-                    <ShoppingCart size={16} /> Final Order Review
+            {/* Event Info Cards */}
+            <motion.div
+              initial={{ opacity: 0, x: -30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.1 }}
+            >
+              <h3 className={`text-3xl font-black tracking-tighter uppercase italic mb-6 ${isDarkTheme ? 'text-white' : 'text-gray-800'}`}>
+                Event <span className="text-[#ffd84f]">Details</span>
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className={`backdrop-blur-sm border rounded-2xl p-6 shadow-sm ${
+                  isDarkTheme 
+                    ? 'bg-gray-800/70 border-gray-700' 
+                    : 'bg-white/70 border-gray-200'
+                }`}>
+                  <h4 className="text-[#ffd84f] font-black text-sm uppercase tracking-widest mb-2">Date</h4>
+                  <p className={`text-2xl font-black ${isDarkTheme ? 'text-white' : 'text-gray-800'}`}>{format(new Date(event.event_date), 'MMM dd, yyyy')}</p>
+                </div>
+                <div className={`backdrop-blur-sm border rounded-2xl p-6 shadow-sm ${
+                  isDarkTheme 
+                    ? 'bg-gray-800/70 border-gray-700' 
+                    : 'bg-white/70 border-gray-200'
+                }`}>
+                  <h4 className="text-[#ffd84f] font-black text-sm uppercase tracking-widest mb-2">Time</h4>
+                  <p className={`text-2xl font-black ${isDarkTheme ? 'text-white' : 'text-gray-800'}`}>{event.start_time}</p>
+                </div>
+                <div className={`backdrop-blur-sm border rounded-2xl p-6 shadow-sm ${
+                  isDarkTheme 
+                    ? 'bg-gray-800/70 border-gray-700' 
+                    : 'bg-white/70 border-gray-200'
+                }`}>
+                  <h4 className="text-[#ffd84f] font-black text-sm uppercase tracking-widest mb-2">Venue</h4>
+                  <p className={`text-2xl font-black ${isDarkTheme ? 'text-white' : 'text-gray-800'}`}>{event.location || "Main Arena"}</p>
+                </div>
+                <div className={`backdrop-blur-sm border rounded-2xl p-6 shadow-sm ${
+                  isDarkTheme 
+                    ? 'bg-gray-800/70 border-gray-700' 
+                    : 'bg-white/70 border-gray-200'
+                }`}>
+                  <h4 className="text-[#ffd84f] font-black text-sm uppercase tracking-widest mb-2">Capacity</h4>
+                  <p className={`text-2xl font-black ${isDarkTheme ? 'text-white' : 'text-gray-800'}`}>{event.capacity} people</p>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+
+          {/* Booking Sidebar */}
+          <div className="lg:col-span-1">
+            <motion.div
+              initial={{ opacity: 0, x: 30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              className="sticky top-8"
+            >
+              <div className={`backdrop-blur-md border rounded-[48px] p-8 shadow-xl ${
+                isDarkTheme 
+                  ? 'bg-gray-800/70 border-gray-700' 
+                  : 'bg-white/70 border-white/50'
+              }`}>
+                <div className="text-center mb-8">
+                  <Ticket className={`w-12 h-12 mx-auto mb-4 text-accent`} />
+                  <h3 className={`text-2xl font-black tracking-tighter uppercase italic mb-2 ${isDarkTheme ? 'text-white' : 'text-gray-800'}`}>
+                    Secure Your <span className="text-[#ffd84f]">Spot</span>
                   </h3>
-                  <OrderSummaryUI />
+                  <p className={`text-sm ${isDarkTheme ? 'text-gray-400' : 'text-gray-500'}`}>Select passes and check out</p>
                 </div>
-              </motion.div>
-            </div>
 
-            {/* ── RIGHT COLUMN: PASS SELECTION & CHECKOUT ── */}
-            <aside className="lg:col-span-5">
-              <div className="sticky top-10 flex flex-col gap-6">
-                
-                {/* 1. SELECT YOUR PASSES */}
-                <div className="p-8 rounded-[40px] bg-white border border-slate-100 shadow-sm">
-                  <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-900 mb-6">Select Your Passes</h3>
+                {/* Ticket Selection - Unified */}
+                <div className="mb-8">
+                  <h4 className={`text-xs font-black uppercase tracking-widest mb-4 ${isDarkTheme ? 'text-gray-400' : 'text-gray-400'}`}>Select Tickets</h4>
                   <div className="space-y-4">
-                    {event.ticket_types?.map((type) => (
-                      <div key={type.id} className="p-5 rounded-[28px] bg-[#F8FAFC] border border-slate-100 flex items-center justify-between hover:border-indigo-200 transition-all">
-                        <div>
-                          <p className="text-[10px] font-black text-indigo-600 uppercase mb-1">{type.name}</p>
-                          <p className="text-xl font-black text-slate-900">{type.price} <span className="text-[10px] opacity-40">ETB</span></p>
+                    {event.ticket_types?.map((type, index) => (
+                      <div key={type.id}>
+                        <div className="flex justify-between items-center mb-3">
+                          <div>
+                            <p className={`font-black ${isDarkTheme ? 'text-white' : 'text-gray-800'}`}>{type.name}</p>
+                            <p className={`text-xs ${isDarkTheme ? 'text-gray-400' : 'text-gray-500'}`}>{type.description}</p>
+                          </div>
+                          <p className={`font-black text-xl ${isDarkTheme ? 'text-white' : 'text-gray-800'}`}>{type.price} ETB</p>
                         </div>
-                        <div className="flex items-center gap-3 bg-white p-1.5 rounded-2xl shadow-sm">
-                          <button onClick={() => updateCart(type.id, (cart[type.id] || 0) - 1)} className="w-8 h-8 flex items-center justify-center rounded-xl text-slate-400 hover:bg-red-50 hover:text-red-500 transition-colors"><Minus size={14}/></button>
-                          <span className="font-black text-sm w-4 text-center">{cart[type.id] || 0}</span>
-                          <button onClick={() => updateCart(type.id, (cart[type.id] || 0) + 1)} className="w-8 h-8 flex items-center justify-center rounded-xl text-slate-900 hover:bg-indigo-600 hover:text-white transition-colors"><Plus size={14}/></button>
+                        <div className={`flex items-center justify-between p-2 rounded-xl ${isDarkTheme ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                          <span className={`text-xs font-black uppercase ${isDarkTheme ? 'text-gray-400' : 'text-gray-500'}`}>Quantity</span>
+                          <div className="flex items-center gap-3">
+                            <button 
+                              onClick={() => updateCart(type.id, (cart[type.id] || 0) - 1)}
+                              className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors shadow-sm ${
+                                isDarkTheme
+                                  ? 'bg-gray-600 text-gray-400 hover:bg-red-900/50 hover:text-red-400'
+                                  : 'bg-white text-gray-500 hover:bg-red-50 hover:text-red-500'
+                              }`}
+                            >
+                              <Minus size={14} />
+                            </button>
+                            <span className={`font-black w-4 text-center ${isDarkTheme ? 'text-white' : 'text-gray-800'}`}>{cart[type.id] || 0}</span>
+                            <button 
+                              onClick={() => updateCart(type.id, (cart[type.id] || 0) + 1)}
+                              className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors shadow-sm ${
+                                isDarkTheme
+                                  ? 'bg-gray-600 text-white hover:bg-[#ffd84f] hover:text-gray-900'
+                                  : 'bg-white text-gray-800 hover:bg-[#ffd84f] hover:text-gray-900'
+                              }`}
+                            >
+                              <Plus size={14} />
+                            </button>
+                          </div>
                         </div>
+                        {index < (event.ticket_types?.length || 0) - 1 && (
+                          <div className={`mt-4 border-t ${isDarkTheme ? 'border-gray-700/50' : 'border-gray-200/50'}`}></div>
+                        )}
                       </div>
                     ))}
                   </div>
                 </div>
 
-                {/* ── FINAL ORDER REVIEW (Mobile Only: Appears under selector) ── */}
-                <div className="lg:hidden p-8 rounded-[40px] bg-white border border-slate-100 shadow-sm">
-                  <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-400 mb-6 flex items-center gap-2">
-                    <ShoppingCart size={16} /> Your Selection
-                  </h3>
-                  <OrderSummaryUI />
-                </div>
-
-                {/* 2. CHECKOUT CARD */}
-                <div className="p-8 rounded-[40px] bg-slate-900 text-white shadow-2xl">
-                  <div className="mb-6">
-                    <label className="block text-[8px] font-black uppercase text-indigo-400 mb-2 tracking-widest">Payment Method</label>
-                    <select 
-                      value={paymentMethod} 
-                      onChange={(e) => setPaymentMethod(e.target.value as any)}
-                      className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-xs font-black uppercase tracking-widest outline-none focus:border-indigo-500 transition-all appearance-none cursor-pointer"
-                    >
-                      <option value="telebirr" className="bg-slate-900">Telebirr SuperApp</option>
-                      <option value="credit_card" className="bg-slate-900">Credit Card</option>
-                      <option value="cash" className="bg-slate-900">Pay at Gate</option>
-                    </select>
+                {/* Order Summary - Integrated into main card */}
+                {getTotalTickets() > 0 && (
+                  <div className="mb-8">
+                    <h4 className={`text-xs font-black uppercase tracking-widest mb-4 ${isDarkTheme ? 'text-gray-400' : 'text-gray-400'}`}>Order Summary</h4>
+                    {Object.entries(cart).map(([tid, qty]) => {
+                      const t = event.ticket_types?.find(x => x.id === tid);
+                      return (
+                        <div key={tid} className={`flex justify-between items-center mb-3 pb-3 border-b ${isDarkTheme ? 'border-gray-700/50' : 'border-gray-200/50'}`}>
+                          <div>
+                            <p className={`text-sm font-black ${isDarkTheme ? 'text-white' : 'text-gray-800'}`}>{t?.name}</p>
+                            <p className={`text-[10px] ${isDarkTheme ? 'text-gray-400' : 'text-gray-500'}`}>x{qty}</p>
+                          </div>
+                          <p className={`font-black ${isDarkTheme ? 'text-white' : 'text-gray-800'}`}>{t ? t.price * qty : 0} ETB</p>
+                        </div>
+                      );
+                    })}
+                    <div className="flex justify-between items-center pt-2">
+                      <span className={`text-sm font-black ${isDarkTheme ? 'text-white' : 'text-gray-800'}`}>Total</span>
+                      <span className="text-2xl font-black text-[#ffd84f]">{getTotalAmount()} ETB</span>
+                    </div>
                   </div>
+                )}
 
-                  {error && <div className="p-4 bg-red-500/10 border border-red-500/20 text-red-400 text-[10px] font-black uppercase rounded-2xl mb-6">{error}</div>}
+                {/* Payment & Booking */}
+                <div className="space-y-4">
+                  <select
+                    value={paymentMethod}
+                    onChange={(e) => setPaymentMethod(e.target.value as any)}
+                    className={`w-full px-4 py-3 border rounded-xl text-sm font-black uppercase tracking-widest outline-none focus:border-[#ffd84f] ${
+                      isDarkTheme 
+                        ? 'bg-gray-800 border-gray-700 text-white'
+                        : 'bg-white border-gray-200 text-gray-800'
+                    }`}
+                  >
+                    <option value="telebirr">Telebirr</option>
+                    <option value="credit_card">Credit Card</option>
+                    <option value="cash">Pay at Gate</option>
+                  </select>
 
-                  <button 
+                  {error && (
+                    <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-xs font-black uppercase">
+                      {error}
+                    </div>
+                  )}
+
+                  <button
                     onClick={handleBooking}
                     disabled={getTotalTickets() === 0 || booking || isSoldOut}
-                    className="group w-full py-6 rounded-[24px] bg-indigo-600 text-white font-black uppercase text-xs tracking-[0.2em] hover:bg-indigo-500 transition-all flex items-center justify-center gap-3 disabled:opacity-30 disabled:cursor-not-allowed"
+                    className="w-full py-5 bg-[#ffd84f] text-gray-900 rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-[#f0c63f] transition-all flex items-center justify-center gap-2 shadow-lg disabled:opacity-30"
                   >
-                    {booking ? "Processing..." : user ? "Confirm Order" : "Login to Book"} 
-                    <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                    {booking ? "Processing..." : user ? "Confirm Order" : "Login to Book"} <ArrowRight size={18} />
                   </button>
+
+                  <p className="text-gray-400 text-xs text-center">
+                    Instant confirmation • Secure checkout
+                  </p>
                 </div>
               </div>
-            </aside>
-          </section>
+            </motion.div>
+          </div>
         </div>
-      </div>
+      </section>
+
+      {/* Lightbox */}
+      <AnimatePresence>
+        {isLightboxOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-gray-900/90 backdrop-blur-sm flex items-center justify-center p-4"
+            onClick={() => setIsLightboxOpen(false)}
+          >
+            <motion.button
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.8 }}
+              onClick={() => setIsLightboxOpen(false)}
+              className="absolute top-8 right-8 w-12 h-12 bg-white/70 backdrop-blur-md border border-white/50 text-gray-800 rounded-2xl flex items-center justify-center hover:bg-white/90 transition-all z-10 shadow-sm"
+            >
+              <X size={24} />
+            </motion.button>
+
+            <div className="relative max-w-6xl max-h-[90vh] w-full">
+              {mediaItems[selectedMediaIndex]?.type === 'video' ? (
+                <video
+                  className="w-full h-full rounded-3xl"
+                  controls
+                  autoPlay
+                  playsInline
+                >
+                  <source src={mediaItems[selectedMediaIndex]?.url} type="video/mp4" />
+                </video>
+              ) : (
+                <img
+                  src={mediaItems[selectedMediaIndex]?.url}
+                  alt={mediaItems[selectedMediaIndex]?.alt}
+                  className="w-full h-full object-contain rounded-3xl"
+                />
+              )}
+            </div>
+
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                navigateMedia('prev');
+              }}
+              className="absolute left-8 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/70 backdrop-blur-md border border-white/50 text-gray-800 rounded-2xl flex items-center justify-center hover:bg-white/90 transition-all shadow-sm"
+            >
+              <ChevronLeft size={24} />
+            </button>
+
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                navigateMedia('next');
+              }}
+              className="absolute right-8 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/70 backdrop-blur-md border border-white/50 text-gray-800 rounded-2xl flex items-center justify-center hover:bg-white/90 transition-all shadow-sm"
+            >
+              <ChevronRight size={24} />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
