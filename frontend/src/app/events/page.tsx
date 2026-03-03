@@ -45,15 +45,18 @@ export default function EventsPage() {
 
   return (
     <div className={`min-h-screen ${isDarkTheme ? 'bg-[#0A0A0A]' : 'bg-[#F8FAFC]'} pb-20`}>
-      <header className={`${isDarkTheme ? 'bg-slate-800' : 'bg-gray-100'} pt-16 pb-24 px-4 md:px-6 mb-[-40px]`}>
+      <header className={`${isDarkTheme ? 'bg-[#1a1a1a]' : 'bg-bg2'} pt-16 pb-24 px-4 md:px-6 mb-[-40px]`}>
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div>
-            <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent/10 text-accent text-[9px] font-black uppercase tracking-[0.2em] mb-4 border border-accent/20">
-              <Sparkles size={10} /> Immersive Experiences
-            </span>
-            <h1 className={`text-4xl md:text-7xl font-black tracking-tighter leading-[0.9] ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}>
-              The <span className="text-accent">Media</span> Hub
-            </h1>
+
+            <motion.h1 
+              initial={{ opacity: 0, y: 50 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2, type: "spring", stiffness: 100 }}
+              className={`text-4xl md:text-7xl font-black tracking-tighter leading-[0.9] ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}
+            >
+              The <span className="text-accent2 ">Media</span> Hub
+            </motion.h1>
           </div>
         </div>
       </header>
@@ -62,16 +65,17 @@ export default function EventsPage() {
         <div className="flex flex-col gap-8 md:gap-12">
           {events.map((event, i) => {
             const soldOut = event.tickets_sold >= event.capacity;
-            const price = event.ticket_types?.find(t => t.category === 'adult')?.price ?? 0;
+            const price = event.ticket_types?.find(t => t.category === 'ADULT')?.price ?? 0;
             const videoUrl = event.video_url || MOCK_VID; // Use DB video or Mock
 
             return (
               <motion.div
                 key={event.id}
-                initial={{ opacity: 0, y: 30 }}
+                initial={{ opacity: 0, y: 80 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                className="group relative bg-white rounded-[32px] md:rounded-[48px] border border-slate-100 shadow-sm hover:shadow-2xl transition-all duration-700 flex flex-col lg:flex-row overflow-hidden min-h-[400px]"
+                transition={{ delay: i * 0.1, type: "spring", stiffness: 100 }}
+                className={`group relative ${isDarkTheme ? 'bg-[#1a1a1a]' : 'bg-[#F8FAFC]'} rounded-[32px] md:rounded-[48px] border border-accent shadow-sm hover:shadow-2xl hover:scale-105 transition-all duration-700 flex flex-col lg:flex-row overflow-hidden min-h-[400px]`}
               >
                 {/* ── MEDIA CONTAINER (VIDEO + IMAGE) ── */}
                 <div className="relative h-64 sm:h-80 lg:h-auto lg:w-[450px] xl:w-[550px] shrink-0 overflow-hidden bg-[#f4c000]">
@@ -79,7 +83,7 @@ export default function EventsPage() {
                   <img 
                     src={event.image_url || MOCK_IMG} 
                     alt={event.name} 
-                    className="absolute inset-0 w-full h-full object-cover transition-opacity duration-500 group-hover:opacity-0"
+                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                   />
                   
                   {/* Background Video (Plays on Hover) */}
@@ -89,7 +93,7 @@ export default function EventsPage() {
                     muted
                     loop
                     playsInline
-                    className="absolute inset-0 w-full h-full object-cover opacity-0 group-hover:opacity-100 transition-opacity duration-500 scale-105"
+                    className="absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-500 scale-105"
                   />
 
                   {/* Media Type Badges */}
@@ -104,9 +108,9 @@ export default function EventsPage() {
 
                   {/* Floating Price */}
                   <div className="absolute top-4 left-4 md:top-8 md:left-8">
-                    <div className="bg-white/95 backdrop-blur-md px-4 py-2 md:px-5 md:py-3 rounded-[18px] md:rounded-[24px] shadow-xl border border-white/10">
-                      <p className="text-[8px] md:text-[10px] font-black text-accent uppercase tracking-widest leading-none mb-1">Passes</p>
-                      <p className="text-lg md:text-2xl font-black text-slate-900 tracking-tighter">{price} ETB</p>
+                    <div className={`${isDarkTheme ? 'bg-black/95' : 'bg-white/95'} backdrop-blur-md px-4 py-2 md:px-5 md:py-3 rounded-[18px] md:rounded-[24px] shadow-xl border border-white/10`}>
+                      <p className="text-[8px] md:text-[10px] font-black text-accent2 uppercase tracking-widest leading-none mb-1">Passes</p>
+                      <p className={`text-lg md:text-2xl font-black tracking-tighter ${isDarkTheme ? 'text-white' : 'text-slate-900'}`}>{price} ETB</p>
                     </div>
                   </div>
                 </div>
@@ -126,7 +130,7 @@ export default function EventsPage() {
                     </div>
                   </div>
 
-                  <h3 className={`text-2xl md:text-4xl lg:text-5xl font-black tracking-tighter mb-4 leading-tight group-hover:text-indigo-600 transition-colors ${isDarkTheme ? 'text-white' : 'text-slate-900'}`}>
+                  <h3 className={`text-2xl md:text-4xl lg:text-5xl font-black tracking-tighter mb-4 leading-tight group-hover:text-accent transition-colors ${isDarkTheme ? 'text-white' : 'text-slate-900'}`}>
                     {event.name}
                   </h3>
 
@@ -136,7 +140,7 @@ export default function EventsPage() {
 
                   <div className={`mt-auto pt-8 border-t flex flex-col sm:flex-row items-center justify-between gap-6 ${isDarkTheme ? 'border-gray-700' : 'border-slate-50'}`}>
                     <div className={`flex items-center gap-2 ${isDarkTheme ? 'text-white' : 'text-slate-900'}`}>
-                      <MapPin className="text-accent" size={18} />
+                      <MapPin className="text-accent2" size={18} />
                       <span className="text-[10px] md:text-xs font-black uppercase tracking-widest">
                         {event.location || "Main Arena"}
                       </span>
@@ -149,7 +153,7 @@ export default function EventsPage() {
                           w-full flex items-center justify-center gap-4 px-10 py-5 rounded-[20px] md:rounded-[24px] font-black uppercase text-[10px] md:text-xs tracking-[0.2em] transition-all
                           ${soldOut 
                             ? 'bg-slate-100 text-slate-400' 
-                            : 'bg-slate-900 text-white hover:bg-indigo-600 shadow-xl shadow-indigo-100'}
+                            : 'bg-[#1a1a1a] text-white hover:bg-yellow-500 shadow-xl shadow-accent/20'}
                         `}
                       >
                         {soldOut ? 'Full' : 'Check Out'} <ArrowRight size={18} />

@@ -193,13 +193,14 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
 
         {/* Back Button */}
         <motion.button
-          initial={{ opacity: 0, x: -20 }}
+          initial={{ opacity: 0, x: -50 }}
           animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.1, type: "spring", stiffness: 150 }}
           onClick={() => router.push("/events")}
-          className={`absolute top-8 left-8 z-20 flex items-center gap-2 px-6 py-3 backdrop-blur-md border rounded-2xl font-black text-[10px] uppercase tracking-widest hover:transition-all shadow-sm ${
-            isDarkTheme
-              ? 'bg-white/10 border-white/20 text-white hover:bg-white/20'
-              : 'bg-white/70 border-white/50 text-gray-800 hover:bg-white/90'
+          className={`absolute top-8 left-8 z-20 flex items-center gap-2 px-6 py-3 backdrop-blur-md border border-accent rounded-2xl font-black text-[10px] uppercase tracking-widest hover:transition-all shadow-sm ${
+            isDarkTheme 
+              ? 'bg-white/10 text-white hover:bg-white/20'
+              : 'bg-white/70 text-gray-800 hover:bg-white/90'
           }`}
         >
           <ArrowLeft size={16} /> Back to Events
@@ -207,14 +208,23 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
 
         {/* Share & Favorite Buttons */}
         <motion.div
-          initial={{ opacity: 0, x: 20 }}
+          initial={{ opacity: 0, x: 50 }}
           animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.2, type: "spring", stiffness: 150 }}
           className="absolute top-8 right-8 z-20 flex gap-3"
         >
-          <button className="w-12 h-12 bg-white/70 backdrop-blur-md border border-white/50 text-gray-700 rounded-2xl flex items-center justify-center hover:bg-white/90 transition-all shadow-sm">
+          <button className={`w-12 h-12 backdrop-blur-md border rounded-2xl flex items-center justify-center transition-all shadow-sm ${
+            isDarkTheme
+              ? 'bg-black/70 border border-accent text-white hover:bg-black/90'
+              : 'bg-white/70 border-white/50 text-gray-700 hover:bg-white/90'
+          }`}>
             <Share2 size={18} />
           </button>
-          <button className="w-12 h-12 bg-white/70 backdrop-blur-md border border-white/50 text-gray-700 rounded-2xl flex items-center justify-center hover:bg-white/90 transition-all shadow-sm">
+          <button className={`w-12 h-12 backdrop-blur-md border rounded-2xl flex items-center justify-center transition-all shadow-sm ${
+            isDarkTheme
+              ? 'bg-black/70 border border-accent text-white hover:bg-black/90'
+              : 'bg-white/70 border-white/50 text-gray-700 hover:bg-white/90'
+          }`}>
             <Heart size={18} />
           </button>
         </motion.div>
@@ -222,9 +232,9 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
         {/* Event Title Overlay */}
         <div className="absolute bottom-0 left-0 right-0 z-10 p-8 md:p-16">
           <motion.div
-            initial={{ y: 50, opacity: 0 }}
+            initial={{ y: 100, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.2 }}
+            transition={{ delay: 0.1, duration: 1.2, type: "spring", stiffness: 80 }}
             className="max-w-4xl"
           >
             <div className="flex items-center gap-3 mb-6">
@@ -235,19 +245,29 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
                 {[...Array(5)].map((_, i) => (
                   <Star key={i} size={16} fill={i < 4 ? "currentColor" : "none"} />
                 ))}
-                <span className="text-gray-600 text-sm ml-2">4.8 (120 reviews)</span>
+                <span className={`text-sm ml-2 ${isDarkTheme ? 'text-gray-300' : 'text-gray-600'}`}>4.8 (120 reviews)</span>
               </div>
             </div>
             
-            <h1 className="text-6xl md:text-8xl font-black text-gray-800 tracking-tighter uppercase italic leading-none mb-6">
+            <motion.h1
+              initial={{ y: 80, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.3, duration: 1, type: "spring", stiffness: 100 }}
+              className={`text-6xl md:text-8xl font-black ${isDarkTheme ? 'text-white' : 'text-gray-800'} tracking-tighter uppercase italic leading-none mb-6`}
+            >
               {event.name}
-            </h1>
+            </motion.h1>
             
-            <p className="text-xl text-gray-600 font-medium leading-relaxed mb-8 max-w-3xl">
+            <motion.p
+              initial={{ y: 40, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.5, duration: 0.8, type: "spring", stiffness: 120 }}
+              className={`text-xl ${isDarkTheme ? 'text-gray-300' : 'text-gray-600'} font-medium leading-relaxed mb-8 max-w-3xl`}
+            >
               {event.description || "Experience the future of entertainment with high-definition visuals and world-class performances."}
-            </p>
+            </motion.p>
 
-            <div className="flex flex-wrap gap-6 text-gray-500 text-sm">
+            <div className={`flex flex-wrap gap-6 ${isDarkTheme ? 'text-gray-400' : 'text-gray-500'} text-sm`}>
               <div className="flex items-center gap-2">
                 <Calendar size={18} className="text-[#ffd84f]" />
                 <span>{format(new Date(event.event_date), 'MMM dd, yyyy')}</span>
@@ -298,10 +318,10 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
             viewport={{ once: true }}
             className="mb-16 text-center"
           >
-            <h2 className="text-4xl md:text-6xl font-black text-gray-800 tracking-tighter uppercase italic mb-4">
+            <h2 className={`text-4xl md:text-6xl font-black ${isDarkTheme ? 'text-white' : 'text-gray-800'} tracking-tighter uppercase italic mb-4`}>
               Explore <span className="text-[#ffd84f]">Gallery</span>
             </h2>
-            <p className="text-gray-500 text-lg">Get a closer look at the experience</p>
+            <p className={`text-lg ${isDarkTheme ? 'text-gray-400' : 'text-gray-500'}`}>Get a closer look at the experience</p>
           </motion.div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -342,13 +362,20 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
           <div className="lg:col-span-2 space-y-12">
             {/* Description */}
             <motion.div
-              initial={{ opacity: 0, x: -30 }}
+              initial={{ opacity: 0, x: -80 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
+              transition={{ delay: 0.1, type: "spring", stiffness: 100 }}
             >
-              <h3 className={`text-3xl font-black tracking-tighter uppercase italic mb-6 ${isDarkTheme ? 'text-white' : 'text-gray-800'}`}>
+              <motion.h3
+                initial={{ opacity: 0, x: -60 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.4 }}
+                className={`text-3xl font-black tracking-tighter uppercase italic mb-6 ${isDarkTheme ? 'text-white' : 'text-gray-800'}`}
+              >
                 About This <span className="text-[#ffd84f]">Event</span>
-              </h3>
+              </motion.h3>
               <div className={`prose max-w-none ${isDarkTheme ? 'prose-invert' : 'prose-gray'}`}>
                 <p className={`text-lg leading-relaxed ${isDarkTheme ? 'text-gray-300' : 'text-gray-600'}`}>
                   {event.description || "Experience a world-class production at Bora Park. Featuring state-of-the-art visuals and performances that redefine entertainment."}
@@ -361,10 +388,10 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
 
             {/* Event Info Cards */}
             <motion.div
-              initial={{ opacity: 0, x: -30 }}
+              initial={{ opacity: 0, x: -80 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
-              transition={{ delay: 0.1 }}
+              transition={{ delay: 0.1, type: "spring", stiffness: 100 }}
             >
               <h3 className={`text-3xl font-black tracking-tighter uppercase italic mb-6 ${isDarkTheme ? 'text-white' : 'text-gray-800'}`}>
                 Event <span className="text-[#ffd84f]">Details</span>
@@ -372,7 +399,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className={`backdrop-blur-sm border rounded-2xl p-6 shadow-sm ${
                   isDarkTheme 
-                    ? 'bg-gray-800/70 border-gray-700' 
+                    ? 'bg-[#1a1a1a]/70 border-gray-700' 
                     : 'bg-white/70 border-gray-200'
                 }`}>
                   <h4 className="text-[#ffd84f] font-black text-sm uppercase tracking-widest mb-2">Date</h4>
@@ -380,7 +407,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
                 </div>
                 <div className={`backdrop-blur-sm border rounded-2xl p-6 shadow-sm ${
                   isDarkTheme 
-                    ? 'bg-gray-800/70 border-gray-700' 
+                    ? 'bg-[#1a1a1a]/70 border-gray-700' 
                     : 'bg-white/70 border-gray-200'
                 }`}>
                   <h4 className="text-[#ffd84f] font-black text-sm uppercase tracking-widest mb-2">Time</h4>
@@ -388,7 +415,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
                 </div>
                 <div className={`backdrop-blur-sm border rounded-2xl p-6 shadow-sm ${
                   isDarkTheme 
-                    ? 'bg-gray-800/70 border-gray-700' 
+                    ? 'bg-[#1a1a1a]/70 border-gray-700' 
                     : 'bg-white/70 border-gray-200'
                 }`}>
                   <h4 className="text-[#ffd84f] font-black text-sm uppercase tracking-widest mb-2">Venue</h4>
@@ -396,7 +423,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
                 </div>
                 <div className={`backdrop-blur-sm border rounded-2xl p-6 shadow-sm ${
                   isDarkTheme 
-                    ? 'bg-gray-800/70 border-gray-700' 
+                    ? 'bg-[#1a1a1a]/70 border-gray-700' 
                     : 'bg-white/70 border-gray-200'
                 }`}>
                   <h4 className="text-[#ffd84f] font-black text-sm uppercase tracking-widest mb-2">Capacity</h4>
@@ -409,21 +436,28 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
           {/* Booking Sidebar */}
           <div className="lg:col-span-1">
             <motion.div
-              initial={{ opacity: 0, x: 30 }}
+              initial={{ opacity: 0, x: 80 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
+              transition={{ delay: 0.1, type: "spring", stiffness: 100 }}
               className="sticky top-8"
             >
               <div className={`backdrop-blur-md border rounded-[48px] p-8 shadow-xl ${
                 isDarkTheme 
-                  ? 'bg-gray-800/70 border-gray-700' 
+                  ? 'bg-[#1a1a1a]/70 border-gray-700' 
                   : 'bg-white/70 border-white/50'
               }`}>
                 <div className="text-center mb-8">
                   <Ticket className={`w-12 h-12 mx-auto mb-4 text-accent`} />
-                  <h3 className={`text-2xl font-black tracking-tighter uppercase italic mb-2 ${isDarkTheme ? 'text-white' : 'text-gray-800'}`}>
+                  <motion.h3
+                    initial={{ opacity: 0, x: 60 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: 0.4 }}
+                    className={`text-2xl font-black tracking-tighter uppercase italic mb-2 ${isDarkTheme ? 'text-white' : 'text-gray-800'}`}
+                  >
                     Secure Your <span className="text-[#ffd84f]">Spot</span>
-                  </h3>
+                  </motion.h3>
                   <p className={`text-sm ${isDarkTheme ? 'text-gray-400' : 'text-gray-500'}`}>Select passes and check out</p>
                 </div>
 
@@ -440,15 +474,15 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
                           </div>
                           <p className={`font-black text-xl ${isDarkTheme ? 'text-white' : 'text-gray-800'}`}>{type.price} ETB</p>
                         </div>
-                        <div className={`flex items-center justify-between p-2 rounded-xl ${isDarkTheme ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                        <div className={`flex items-center justify-between p-2 rounded-xl ${isDarkTheme ? 'bg-[#1a1a1a]' : 'bg-gray-50'}`}>
                           <span className={`text-xs font-black uppercase ${isDarkTheme ? 'text-gray-400' : 'text-gray-500'}`}>Quantity</span>
                           <div className="flex items-center gap-3">
                             <button 
                               onClick={() => updateCart(type.id, (cart[type.id] || 0) - 1)}
                               className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors shadow-sm ${
                                 isDarkTheme
-                                  ? 'bg-gray-600 text-gray-400 hover:bg-red-900/50 hover:text-red-400'
-                                  : 'bg-white text-gray-500 hover:bg-red-50 hover:text-red-500'
+                                  ? 'bg-gray-600 text-gray-400 hover:bg-red-900/50 hover:text-red-400 active:bg-gray-500'
+                                  : 'bg-white text-gray-500 hover:bg-red-50 hover:text-red-500 active:bg-gray-100'
                               }`}
                             >
                               <Minus size={14} />
@@ -458,8 +492,8 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
                               onClick={() => updateCart(type.id, (cart[type.id] || 0) + 1)}
                               className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors shadow-sm ${
                                 isDarkTheme
-                                  ? 'bg-gray-600 text-white hover:bg-[#ffd84f] hover:text-gray-900'
-                                  : 'bg-white text-gray-800 hover:bg-[#ffd84f] hover:text-gray-900'
+                                  ? 'bg-gray-600 text-white hover:bg-[#ffd84f] hover:text-gray-900 active:bg-gray-500'
+                                  : 'bg-white text-gray-800 hover:bg-[#ffd84f] hover:text-gray-900 active:bg-gray-100'
                               }`}
                             >
                               <Plus size={14} />
@@ -504,7 +538,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
                     onChange={(e) => setPaymentMethod(e.target.value as any)}
                     className={`w-full px-4 py-3 border rounded-xl text-sm font-black uppercase tracking-widest outline-none focus:border-[#ffd84f] ${
                       isDarkTheme 
-                        ? 'bg-gray-800 border-gray-700 text-white'
+                        ? 'bg-[#1a1a1a] border-gray-700 text-white'
                         : 'bg-white border-gray-200 text-gray-800'
                     }`}
                   >
@@ -552,7 +586,11 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.8 }}
               onClick={() => setIsLightboxOpen(false)}
-              className="absolute top-8 right-8 w-12 h-12 bg-white/70 backdrop-blur-md border border-white/50 text-gray-800 rounded-2xl flex items-center justify-center hover:bg-white/90 transition-all z-10 shadow-sm"
+              className={`absolute top-8 right-8 w-12 h-12 backdrop-blur-md border border-accent rounded-2xl flex items-center justify-center transition-all z-10 shadow-sm ${
+                isDarkTheme
+                  ? 'bg-black/70 text-white hover:bg-black/90'
+                  : 'bg-white/70 text-gray-800 hover:bg-white/90'
+              }`}
             >
               <X size={24} />
             </motion.button>
@@ -581,7 +619,11 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
                 e.stopPropagation();
                 navigateMedia('prev');
               }}
-              className="absolute left-8 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/70 backdrop-blur-md border border-white/50 text-gray-800 rounded-2xl flex items-center justify-center hover:bg-white/90 transition-all shadow-sm"
+              className={`absolute left-8 top-1/2 -translate-y-1/2 w-12 h-12 backdrop-blur-md border border-accent rounded-2xl flex items-center justify-center transition-all shadow-sm ${
+                isDarkTheme
+                  ? 'bg-black/70 text-white hover:bg-black/90'
+                  : 'bg-white/70 text-gray-800 hover:bg-white/90'
+              }`}
             >
               <ChevronLeft size={24} />
             </button>
@@ -591,7 +633,11 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
                 e.stopPropagation();
                 navigateMedia('next');
               }}
-              className="absolute right-8 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/70 backdrop-blur-md border border-white/50 text-gray-800 rounded-2xl flex items-center justify-center hover:bg-white/90 transition-all shadow-sm"
+              className={`absolute right-8 top-1/2 -translate-y-1/2 w-12 h-12 backdrop-blur-md border border-accent rounded-2xl flex items-center justify-center transition-all shadow-sm ${
+                isDarkTheme
+                  ? 'bg-black/70 text-white hover:bg-black/90'
+                  : 'bg-white/70 text-gray-800 hover:bg-white/90'
+              }`}
             >
               <ChevronRight size={24} />
             </button>
