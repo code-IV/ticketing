@@ -293,19 +293,47 @@ const bookingController = {
 
   async getAnalytics(req, res) {
     try {
-      const { period = "7d", startDate, endDate } = req.query;
+      const { period = "d", startDate, endDate } = req.query;
 
-      // Period validation
-      const validPeriods = ["today", "7d", "30d", "custom"];
-      if (!validPeriods.includes(period)) {
-        return res.status(400).json({ error: "Invalid period requested" });
+      // Validate period format: e.g., "d", "2d", "w", "2w", "m", "2m"
+      const periodRegex = /^(\d*)([dwm])$/;
+      const match = period.match(periodRegex);
+
+      if (!match) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Invalid period format" });
       }
 
-      const data = await bookingStatsService.getDashboardStats(
-        period,
-        startDate,
-        endDate,
-      );
+      const interval = parseInt(match[1]) || 1; // default to 1 if no number
+      const unit = match[2]; // "d", "w", "m"
+
+      // Validate startDate & endDate
+      if (!startDate || !endDate) {
+        return res
+          .status(400)
+          .json({
+            success: false,
+            message: "startDate and endDate are required",
+          });
+      }
+
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+
+      if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Invalid date format" });
+      }
+
+      // ✅ Pass as object
+      const data = await bookingStatsService.getDashboardStats({
+        period: unit,
+        start,
+        end,
+        interval,
+      });
 
       res.status(200).json({
         success: true,
@@ -314,9 +342,7 @@ const bookingController = {
       });
     } catch (error) {
       console.error("Analytics Error:", error);
-      res
-        .status(500)
-        .json({ success: false, message: "Internal Server Error" });
+      res.status(500).json({ success: false, message: error.message });
     }
   },
 };

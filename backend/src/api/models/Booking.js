@@ -548,56 +548,68 @@ LIMIT $2 OFFSET $3;
 };
 
 const BookingStats = {
-  getRange: (period, startDate, endDate) => {
+  getRange: (period = "d", startDate, endDate, interval = 1) => {
     const now = new Date();
+    let start,
+      end = endDate ? new Date(endDate) : now;
 
-    if (period === "today") {
-      const start = new Date(now.setHours(0, 0, 0, 0));
-      const end = new Date(now.setHours(23, 59, 59, 999));
-      return { start, end };
+    // If startDate is provided, just use it
+    if (startDate) {
+      start = new Date(startDate);
+      if (isNaN(start.getTime())) start = new Date(now);
+    } else {
+      // Determine start based on period string
+      const periodRegex = /^(\d*)([dwm])$/;
+      const match = period.match(periodRegex);
+      const unit = match ? match[2] : "d";
+      const num = parseInt(match ? match[1] : "1") || 1;
+
+      switch (unit) {
+        case "d":
+          start = new Date();
+          start.setDate(now.getDate() - 30 * num);
+          break;
+        case "w":
+          start = new Date();
+          start.setDate(now.getDate() - 12 * 7 * num);
+          break;
+        case "m":
+          start = new Date();
+          start.setMonth(now.getMonth() - 12 * num);
+          break;
+        default:
+          start = new Date();
+          start.setDate(now.getDate() - 30);
+      }
     }
 
-    if (period === "7d") {
-      const start = new Date();
-      start.setDate(now.getDate() - 7);
-      return { start, end: new Date() };
-    }
+    // Ensure both are valid Dates
+    if (!start || isNaN(start.getTime())) start = new Date(now);
+    if (!end || isNaN(end.getTime())) end = new Date(now);
 
-    if (period === "30d") {
-      const start = new Date();
-      start.setDate(now.getDate() - 30);
-      return { start, end: new Date() };
-    }
-
-    // For custom ranges, ensure they are valid dates
-    return {
-      start: new Date(startDate),
-      end: new Date(endDate),
-    };
+    return { start, end, unit: period[period.length - 1], interval };
   },
 
+  // 2️⃣ General Stats remain mostly the same
   getGeneralStats: async (range) => {
     const sql = `
-    WITH daily_stats AS (
-      -- Step 1: Get total amount and count per day within the range
+      WITH daily_stats AS (
+        SELECT 
+          DATE(created_at) as day,
+          COUNT(id) as booking_count,
+          SUM(total_amount) as revenue
+        FROM bookings
+        WHERE created_at BETWEEN $1 AND $2
+          AND status = 'CONFIRMED'
+        GROUP BY 1
+      )
       SELECT 
-        DATE(created_at) as day,
-        COUNT(id) as booking_count,
-        SUM(total_amount) as revenue
-      FROM bookings
-      WHERE created_at BETWEEN $1 AND $2
-      AND status = 'CONFIRMED'
-      GROUP BY 1
-    )
-    SELECT 
-      COALESCE(SUM(booking_count), 0)::INT as "total_bookings",
-      COALESCE(ROUND(AVG(booking_count), 0), 0)::INT as "avg_bookings_per_day",
-      COALESCE(MAX(booking_count), 0)::INT as "peak_bookings_day",
-      COALESCE(SUM(revenue), 0)::NUMERIC as "total_revenue"
-    FROM daily_stats;
-  `;
-
-    // Use parameters to stay safe
+        COALESCE(SUM(booking_count), 0)::INT as "total_bookings",
+        COALESCE(ROUND(AVG(booking_count), 0), 0)::INT as "avg_bookings_per_day",
+        COALESCE(MAX(booking_count), 0)::INT as "peak_bookings_day",
+        COALESCE(SUM(revenue), 0)::NUMERIC as "total_revenue"
+      FROM daily_stats;
+    `;
     const res = await query(sql, [
       range.start.toISOString(),
       range.end.toISOString(),
@@ -605,19 +617,41 @@ const BookingStats = {
     return res.rows[0];
   },
 
+  // 3️⃣ Ticket Trend with flexible interval
   getTicketTrend: async (range) => {
+    let step;
+    switch (range.unit) {
+      case "d":
+        step = `${range.interval} day`;
+        break;
+      case "w":
+        step = `${range.interval} week`;
+        break;
+      case "m":
+        step = `${range.interval} month`;
+        break;
+      default:
+        step = "1 day";
+    }
+
     const sql = `
       SELECT 
-        date_series.date,
-        COALESCE(COUNT(ti.id), 0) as tickets,
-        COALESCE(SUM(b.total_amount), 0) as revenue
+        gs.date,
+        COALESCE(SUM(tickets),0) AS tickets,
+        COALESCE(SUM(revenue),0) AS revenue
       FROM (
-        SELECT generate_series($1::date, $2::date, '1 day')::date as date
-      ) date_series
-      LEFT JOIN bookings b ON DATE(b.created_at) = date_series.date AND b.status = 'CONFIRMED'
-      LEFT JOIN tickets ti ON b.id = ti.booking_id
-      GROUP BY date_series.date
-      ORDER BY date_series.date ASC`;
+        SELECT generate_series($1::date, $2::date, '${step}')::date as date
+      ) gs
+      LEFT JOIN LATERAL (
+        SELECT COUNT(ti.id) as tickets, SUM(b.total_amount) as revenue
+        FROM bookings b
+        LEFT JOIN tickets ti ON b.id = ti.booking_id
+        WHERE b.status = 'CONFIRMED' AND DATE(b.created_at) BETWEEN gs.date AND gs.date + INTERVAL '${step}' - INTERVAL '1 second'
+      ) AS sub ON true
+      GROUP BY gs.date
+      ORDER BY gs.date ASC;
+    `;
+
     const res = await query(sql, [
       range.start.toISOString(),
       range.end.toISOString(),
@@ -625,6 +659,7 @@ const BookingStats = {
     return res.rows;
   },
 
+  // 4️⃣ Event Bookings remain mostly the same
   getEventBookings: async (range) => {
     const sql = `
       SELECT 
@@ -640,11 +675,13 @@ const BookingStats = {
       JOIN bookings b ON bi.booking_id = b.id
       WHERE b.status = 'CONFIRMED' AND b.created_at >= $1
       GROUP BY e.id
-      ORDER BY revenue DESC`;
+      ORDER BY revenue DESC
+    `;
     const res = await query(sql, [range.start.toISOString()]);
     return res.rows;
   },
 
+  // 5️⃣ Top Games remain mostly the same
   getTopGames: async (range) => {
     const sql = `
       SELECT 
@@ -662,7 +699,8 @@ const BookingStats = {
       WHERE b.status = 'CONFIRMED' AND b.created_at >= $1
       GROUP BY g.id, g.name, tt.category, tt.price
       ORDER BY revenue DESC
-      LIMIT 5`;
+      LIMIT 5
+    `;
     const res = await query(sql, [range.start.toISOString()]);
     return res.rows;
   },

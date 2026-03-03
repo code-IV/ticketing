@@ -74,8 +74,8 @@ export default function BookingAnalyticsPage() {
   useEffect(() => {
     populateAnalytics(
       dateRange.label,
-      format(dateRange.start, "yyyy-MM-dd"),
-      format(dateRange.end, "yyyy-MM-dd"),
+      dateRange.start.toISOString(),
+      dateRange.end.toISOString(),
     );
   }, [dateRange]);
 
