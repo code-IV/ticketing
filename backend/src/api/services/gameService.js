@@ -1,6 +1,41 @@
 const { GameStats } = require("../models/Games");
 
 const gameStatsService = {
+  async getGameAnalytics(startDate, endDate, period) {
+    const rawData = await GameStats.getRawGameStats(startDate, endDate);
+
+    // 1. Format for Bar Charts (Top 5)
+    const revenueByGame = rawData
+      .map((d) => ({ game: d.name, revenue: parseFloat(d.total_revenue) }))
+      .sort((a, b) => b.revenue - a.revenue)
+      .slice(0, 5);
+
+    const ticketsByGame = rawData
+      .map((d) => ({ game: d.name, tickets: parseInt(d.tickets_sold) }))
+      .sort((a, b) => b.tickets - a.tickets)
+      .slice(0, 5);
+
+    // 2. Format Table Data
+    const tableData = rawData.map((d) => ({
+      id: d.id,
+      name: d.name,
+      status: d.status,
+      totalRevenue: parseFloat(d.total_revenue),
+      ticketsSold: parseInt(d.tickets_sold),
+      topTicketType: d.top_ticket_type || "N/A",
+      topTicketPrice: parseFloat(d.top_ticket_price || 0),
+      topTicketSold: 0, // You can add logic to aggregate this specifically
+    }));
+
+    // 3. Overall Summary
+    const summary = {
+      totalRevenue: revenueByGame.reduce((acc, curr) => acc + curr.revenue, 0),
+      totalTickets: ticketsByGame.reduce((acc, curr) => acc + curr.tickets, 0),
+      topPerformingGame: revenueByGame[0]?.game || "None",
+    };
+
+    return { summary, revenueByGame, ticketsByGame, tableData };
+  },
   async getGameStats(gameId, filters) {
     // Parse period like '2d' or '3w' into Postgres intervals
     // Defaulting to 1 day if parsing fails

@@ -182,6 +182,39 @@ const Games = {
 };
 
 const GameStats = {
+  async getRawGameStats(startDate, endDate) {
+    const sql = `
+    SELECT 
+      g.id,
+      g.name,
+      g.status,
+      COALESCE(SUM(bi.subtotal), 0) as total_revenue,
+      COALESCE(SUM(bi.quantity), 0) as tickets_sold,
+      -- Fetch the most popular ticket type for this game
+      (SELECT tt.category 
+       FROM booking_items bi2 
+       JOIN ticket_types tt ON bi2.ticket_type_id = tt.id
+       JOIN products p2 ON tt.product_id = p2.id
+       WHERE p2.game_id = g.id 
+       GROUP BY tt.category 
+       ORDER BY SUM(bi2.quantity) DESC LIMIT 1) as top_ticket_type,
+      (SELECT tt.price 
+       FROM ticket_types tt 
+       JOIN products p2 ON tt.product_id = p2.id
+       WHERE p2.game_id = g.id 
+       ORDER BY tt.price DESC LIMIT 1) as top_ticket_price
+    FROM games g
+    LEFT JOIN products p ON g.id = p.game_id
+    LEFT JOIN ticket_types tt ON p.id = tt.product_id
+    LEFT JOIN booking_items bi ON tt.id = bi.ticket_type_id
+    LEFT JOIN bookings b ON bi.booking_id = b.id
+    WHERE (b.status = 'CONFIRMED' OR b.status IS NULL)
+      AND (b.created_at >= $1 AND b.created_at <= $2 OR b.created_at IS NULL)
+    GROUP BY g.id;
+  `;
+    const res = await query(sql, [startDate, endDate]);
+    return res.rows;
+  },
   async getGameSummary(gameId, { startDate, endDate }) {
     const sql = `
     SELECT 

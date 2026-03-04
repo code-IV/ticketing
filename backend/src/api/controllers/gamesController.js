@@ -79,6 +79,36 @@ const gameController = {
 };
 
 const gameStatsController = {
+  async fetchGameDashboard(req, res) {
+    try {
+      const { startDate, endDate, period } = req.query;
+
+      if (!startDate || !endDate) {
+        return res
+          .status(400)
+          .json({ error: "startDate and endDate are required" });
+      }
+
+      // Default period to daily if not provided
+      const granularity = period || "d";
+
+      const data = await gameStatsService.getGameAnalytics(
+        startDate,
+        endDate,
+        granularity,
+      );
+
+      res.json({
+        success: true,
+        data,
+      });
+    } catch (error) {
+      console.error(error);
+      res
+        .status(500)
+        .json({ success: false, message: "Internal Server Error" });
+    }
+  },
   async getGameStats(req, res) {
     try {
       const { gameId } = req.params;

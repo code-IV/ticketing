@@ -18,6 +18,11 @@ router.patch(
 );
 router.get("/games", handleValidation, gameController.getAllGames);
 router.get(
+  "/games/stats",
+  handleValidation,
+  gameStatsController.fetchGameDashboard,
+);
+router.get(
   "/games/stats/:id",
   uuidParamRule("id"),
   handleValidation,
