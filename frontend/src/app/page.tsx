@@ -10,12 +10,12 @@ import { Event, Game } from "@/types";
 import { useTheme } from "@/contexts/ThemeContext";
 
 const stagger = {
-  visible: { transition: { staggerChildren: 0.12 } },
+  visible: { transition: { staggerChildren: 0.2 } },
 };
 
 const fadeUp = {
-  hidden: { opacity: 0, y: 40 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: [0.16, 1, 0.3, 1] } },
+  hidden: { opacity: 0, y: 60, scale: 0.9 },
+  visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 1.2, ease: [0.16, 1, 0.3, 1], type: "spring", bounce: 0.4 } },
 };
 
 const ACCENT = "#FFD84D";
@@ -25,8 +25,9 @@ export default function Home() {
   const [featuredGames, setFeaturedGames] = useState<Game[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
   const { scrollY } = useScroll();
-  const heroY = useTransform(scrollY, [0, 600], [0, 120]);
+  const heroY = useTransform(scrollY, [0, 600], [0, 200]);
   const heroOpacity = useTransform(scrollY, [0, 400], [1, 0]);
+  const badgeRotate = useTransform(scrollY, [0, 400], [12, -5]);
 
   useEffect(() => {
     Promise.all([gameService.getAll(), eventService.getActiveEvents(1, 6)])
@@ -57,8 +58,8 @@ export default function Home() {
 
         {/* Floating badge */}
         <motion.div
-          style={{ opacity: heroOpacity }}
-          className="absolute top-48 right-8 md:right-46 bg-[#FFD84D] text-black px-5 py-3 rounded-full font-black text-s uppercase tracking-widest shadow-xl rotate-12"
+          style={{ opacity: heroOpacity, rotate: badgeRotate }}
+          className="absolute top-48 right-8 md:right-46 bg-[#FFD84D] text-black px-5 py-3 rounded-full font-black text-s uppercase tracking-widest shadow-xl"
         >
           Open Today · 9:00–22:00
         </motion.div>
@@ -86,21 +87,29 @@ export default function Home() {
 
             <motion.div variants={fadeUp} className="flex flex-wrap gap-4 items-center">
               <Link href="/buy">
-                <button className="group flex items-center gap-3 bg-[#FFD84D] text-black font-black text-base px-8 py-4 rounded-full hover:bg-white transition-all duration-300 shadow-2xl shadow-yellow-400/20">
+                <motion.button 
+                  whileHover={{ scale: 1.05, rotate: 1 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="group flex items-center gap-3 bg-[#FFD84D] text-black font-black text-base px-8 py-4 rounded-full hover:bg-white transition-all duration-300 shadow-2xl shadow-yellow-400/20"
+                >
                   <Ticket className="h-5 w-5" />
                   Buy Tickets
                   <ArrowDownRight className="h-4 w-4 group-hover:translate-x-0.5 group-hover:translate-y-0.5 transition-transform" />
-                </button>
+                </motion.button>
               </Link>
               <Link href="/games">
-                <button className={`flex items-center gap-3 border-2 font-bold text-base px-8 py-4 rounded-full transition-all duration-300 ${
-                  isDarkTheme 
-                    ? 'border-white/20 text-white hover:border-white/60 hover:bg-white/5' 
-                    : 'border-gray-300 text-gray-700 hover:border-gray-400 hover:bg-gray-50'
-                }`}>
+                <motion.button 
+                  whileHover={{ scale: 1.05, rotate: -1 }}
+                  whileTap={{ scale: 0.95 }}
+                  className={`flex items-center gap-3 border-2 font-bold text-base px-8 py-4 rounded-full transition-all duration-300 ${
+                    isDarkTheme 
+                      ? 'border-white/20 text-white hover:border-white/60 hover:bg-white/5' 
+                      : 'border-gray-300 text-gray-700 hover:border-gray-400 hover:bg-gray-50'
+                  }`}
+                >
                   <Play className="h-4 w-4 fill-current" />
                   Explore Rides
-                </button>
+                </motion.button>
               </Link>
             </motion.div>
           </motion.div>
@@ -144,8 +153,8 @@ export default function Home() {
                 <motion.div
                   key={event.id}
                   variants={fadeUp}
-                  whileHover={{ y: -6 }}
-                  transition={{ duration: 0.3 }}
+                  whileHover={{ y: -12, scale: 1.05, rotate: 1 }}
+                  transition={{ duration: 0.3, type: "spring", bounce: 0.5 }}
                   className={`group border rounded-3xl overflow-hidden transition-all duration-500 ${
                     isDarkTheme
                       ? 'bg-white/5 border-white/8 hover:border-[#FFD84D]/30 hover:bg-white/8'

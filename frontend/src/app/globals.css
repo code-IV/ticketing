@@ -5,8 +5,10 @@
   --foreground: #171717;
   --accent: #ffd84f;
   --accent2:#ffc320;
+  --bg1:#121212;
   --bg2:#d0d4dc;
-}
+  --bg3:#191919;
+ }
 
 @theme inline {
   --color-background: var(--background);
@@ -16,8 +18,10 @@
   --color-accent: var(--accent);
   --color-accent2: var(--accent2);
 
+  --color-bg1: var(--bg1);
   --color-bg2: var(--bg2);
-
+  --color-bg3: var(--bg3);
+  
 }
 
 /* @media (prefers-color-scheme: dark) {

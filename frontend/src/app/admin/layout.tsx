@@ -2,9 +2,11 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { LayoutDashboard, Gamepad2, Calendar, Users } from 'lucide-react';
+import { useTheme } from '@/contexts/ThemeContext';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const { isDarkTheme } = useTheme();
   
   const nav = [
     { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
@@ -14,17 +16,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   ];
 
   return (
-    <div className="flex h-screen bg-gray-100">
+    <div className={`flex h-screen ${isDarkTheme ? 'bg-[#0A0A0A]' : 'bg-gray-100'}`}>
       {/* Sidebar */}
-      <aside className="w-64 bg-white border-r">
-        <div className="p-6 font-bold text-xl border-b">Admin Panel</div>
+      <aside className={`w-64 ${isDarkTheme ? 'bg-[#0A0A0A]' : 'bg-white'} border-r ${isDarkTheme ? 'border-gray-700' : 'border-gray-200'}`}>
+        <div className={`p-6 font-bold text-xl border-b ${isDarkTheme ? 'text-white border-gray-700' : 'text-gray-900 border-gray-200'}`}>Admin Panel</div>
         <nav className="p-4 space-y-2">
           {nav.map((item) => (
             <Link 
               key={item.name} 
               href={item.href}
               className={`flex items-center gap-3 p-3 rounded-lg transition ${
-                pathname === item.href ? 'bg-blue-600 text-white' : 'hover:bg-gray-100 text-gray-600'
+                pathname === item.href ? `${isDarkTheme ? 'bg-indigo-600' : 'bg-blue-600'} text-white` : `${isDarkTheme ? 'hover:bg-gray-800 text-gray-400' : 'hover:bg-gray-100 text-gray-600'}`
               }`}
             >
               <item.icon size={20} /> {item.name}

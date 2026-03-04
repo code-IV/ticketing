@@ -6,7 +6,7 @@ export function Footer() {
   const { isDarkTheme } = useTheme();
 
   return (
-    <footer className={`mt-auto ${isDarkTheme ? 'bg-[#1a1a1a]' : 'bg-bg2'} text-white`}>
+    <footer className={`mt-auto ${isDarkTheme ? 'bg-bg1' : 'bg-bg2'} text-white`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div>

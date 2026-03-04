@@ -126,19 +126,20 @@ export default function GamesListingPage() {
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div 
           className="absolute -top-20 -right-20 w-80 h-80 rounded-full blur-3xl"
-          style={{ background: 'radial-gradient(circle, rgba(255,216,79,0.2) 0%, transparent 70%)' }}
+          style={{ background: `radial-gradient(circle, rgba(255,216,79,${isDarkTheme ? 0.4 : 0.8}) 0%, transparent 70%)` }}
         />
         <div 
           className="absolute -bottom-20 -left-20 w-80 h-80 rounded-full blur-3xl"
-          style={{ background: 'radial-gradient(circle, rgba(255,216,79,0.2) 0%, transparent 70%)' }}
+          style={{ background: `radial-gradient(circle, rgba(255,216,79,${isDarkTheme ? 0.4 : 0.8}) 0%, transparent 70%)` }}
         />
       </div>
 
       {/* Hero – crisp and minimal */}
       <section className="relative pt-24 pb-12 px-6 text-center">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
+          transition={{ type: "spring", stiffness: 100 }}
           className="max-w-3xl mx-auto"
         >
 
@@ -177,9 +178,9 @@ export default function GamesListingPage() {
           {filteredGames.map((game, index) => (
             <motion.div
               key={game.id}
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 80 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
+              transition={{ delay: index * 0.1, type: "spring", stiffness: 100 }}
               whileHover={{ y: -10 }}
               onClick={() => router.push(`/games/${game.id}`)}
               className="group relative h-[520px] rounded-[48px] overflow-hidden border-2 border-transparent transition-all duration-500 cursor-pointer shadow-xl hover:border-[#ffd84f]/30"

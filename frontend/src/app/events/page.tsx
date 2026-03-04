@@ -45,6 +45,17 @@ export default function EventsPage() {
 
   return (
     <div className={`min-h-screen ${isDarkTheme ? 'bg-[#0A0A0A]' : 'bg-[#F8FAFC]'} pb-20`}>
+      {/* Abstract shapes in background with #ffd84f */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div 
+          className="absolute -top-20 -right-20 w-80 h-80 rounded-full blur-3xl"
+          style={{ background: `radial-gradient(circle, rgba(255,216,79,${isDarkTheme ? 0.4 : 0.8}) 0%, transparent 70%)` }}
+        />
+        <div 
+          className="absolute -bottom-20 -left-20 w-80 h-80 rounded-full blur-3xl"
+          style={{ background: `radial-gradient(circle, rgba(255,216,79,${isDarkTheme ? 0.4 : 0.8}) 0%, transparent 70%)` }}
+        />
+      </div>
       <header className={`${isDarkTheme ? 'bg-[#1a1a1a]' : 'bg-bg2'} pt-16 pb-24 px-4 md:px-6 mb-[-40px]`}>
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div>

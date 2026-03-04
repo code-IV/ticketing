@@ -90,7 +90,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
         items,
         paymentMethod,
       });
-      router.push(`/bookings/${response.data?.booking.id}`);
+      router.push(`/my-bookings/${response.data?.booking.id}`);
     } catch (err: any) {
       setError(err.response?.data?.message || "Booking failed.");
     } finally {

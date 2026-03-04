@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect } from 'react';
+import { useTheme } from '@/contexts/ThemeContext';
+import { useRouter } from 'next/navigation';
 import {
   Calendar,
   Ticket,
@@ -219,24 +221,19 @@ const revenueByGame = mockGames.map((g) => ({
 const COLORS = ["#3b82f6", "#f97316", "#10b981", "#ef4444", "#8b5cf6"];
 
 // ==================== Components ====================
-const KpiCard = ({
-  title,
-  value,
-  icon: Icon,
-  change,
-  changeType,
-}: {
+const KpiCard = ({ title, value, icon: Icon, change, changeType, isDarkTheme }: {
   title: string;
   value: string;
   icon: any;
   change?: string;
-  changeType?: "positive" | "negative";
+  changeType?: 'positive' | 'negative';
+  isDarkTheme: boolean;
 }) => (
-  <div className="bg-white border border-gray-200 rounded-xl p-6">
+  <div className={`rounded-xl p-6 ${isDarkTheme ? 'bg-[#0A0A0A] border-gray-700' : 'bg-white border-gray-200'}`}>
     <div className="flex items-center justify-between">
       <div>
-        <p className="text-sm font-medium text-gray-600">{title}</p>
-        <p className="text-2xl font-bold text-gray-900">{value}</p>
+        <p className={`text-sm font-medium ${isDarkTheme ? 'text-gray-400' : 'text-gray-600'}`}>{title}</p>
+        <p className={`text-2xl font-bold ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}>{value}</p>
         {change && (
           <p
             className={`text-sm font-medium ${
@@ -247,8 +244,8 @@ const KpiCard = ({
           </p>
         )}
       </div>
-      <div className="p-3 bg-blue-50 rounded-lg">
-        <Icon className="w-6 h-6 style={{ color: 'var(--accent)' }}" />
+      <div className={`p-3 rounded-lg ${isDarkTheme ? 'bg-indigo-900/20' : 'bg-blue-50'}`}>
+        <Icon className={`w-6 h-6 ${isDarkTheme ? 'text-indigo-400' : ''}`} style={{ color: isDarkTheme ? 'var(--accent)' : 'var(--accent)' }} />
       </div>
     </div>
   </div>
@@ -301,6 +298,8 @@ const DateRangePicker = ({
 
 // ==================== Main Component ====================
 export default function AnalyticsDashboardPage() {
+  const { isDarkTheme } = useTheme();
+  const router = useRouter();
   const [dateRange, setDateRange] = useState({
     label: "d",
     start: subDays(new Date(), 30),
@@ -340,18 +339,39 @@ export default function AnalyticsDashboardPage() {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className={`min-h-screen p-6 ${isDarkTheme ? 'bg-[#0A0A0A]' : 'bg-gray-50'}`}>
       <div className="max-w-7xl mx-auto">
         {/* Header with title and date picker */}
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-6">
-          <h1 className="text-3xl font-bold text-gray-900">
-            Analytics Dashboard
-          </h1>
-          <DateRangePicker value={dateRange} onChange={setDateRange} />
+          <h1 className={`text-3xl font-bold ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}>Analytics Dashboard</h1>
+          <div className="flex items-center gap-2">
+            <select
+              className={`px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
+                isDarkTheme 
+                  ? 'bg-gray-800 border-gray-600 text-white focus:ring-blue-400' 
+                  : 'bg-white border-gray-300 text-gray-900 focus:ring-blue-500'
+              }`}
+              style={{ color: isDarkTheme ? 'white' : '#111827' }}
+              value={dateRange.label}
+              onChange={(e) => {
+                const ranges = [
+                  { label: 'Last 7 days', start: subDays(new Date(), 7), end: new Date() },
+                  { label: 'Last 30 days', start: subDays(new Date(), 30), end: new Date() },
+                  { label: 'Last 3 months', start: subDays(new Date(), 90), end: new Date() },
+                ];
+                const selected = ranges.find(r => r.label === e.target.value);
+                if (selected) setDateRange(selected);
+              }}
+            >
+              <option value="Last 7 days">Last 7 days</option>
+              <option value="Last 30 days">Last 30 days</option>
+              <option value="Last 3 months">Last 3 months</option>
+            </select>
+          </div>
         </div>
 
         {/* Navigation Links */}
-        <div className="bg-white border border-gray-200 rounded-xl p-4 mb-6">
+        <div className={`rounded-xl p-4 mb-6 ${isDarkTheme ? 'bg-[#0A0A0A] border-gray-700' : 'bg-white border-gray-200'}`}>
           <div className="flex flex-wrap gap-4">
             <Link
               href="/analitics/revenue"
@@ -383,26 +403,20 @@ export default function AnalyticsDashboardPage() {
         {/* Dashboard Content */}
         <div className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <KpiCard title="Total Revenue" value="$247,000" icon={DollarSign} />
-            <KpiCard title="Total Tickets Sold" value="8,250" icon={Ticket} />
-            <KpiCard title="Active Games" value="2" icon={Activity} />
+            <KpiCard title="Total Revenue" value="$247,000" icon={DollarSign} isDarkTheme={isDarkTheme} />
+            <KpiCard title="Total Tickets Sold" value="8,250" icon={Ticket} isDarkTheme={isDarkTheme} />
+            <KpiCard title="Active Games" value="2" icon={Activity} isDarkTheme={isDarkTheme} />
           </div>
 
           {/* Financial Analytics Section */}
-          <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
-              <h2 className="text-lg font-semibold text-gray-900">
-                Financial Analytics
-              </h2>
-              <p className="text-sm text-gray-600 mt-1">
-                Revenue trends and performance by game
-              </p>
+          <div className={`rounded-xl overflow-hidden ${isDarkTheme ? 'bg-[#0A0A0A] border-gray-700' : 'bg-white border-gray-200'}`}>
+            <div className={`px-6 py-4 border-b ${isDarkTheme ? 'border-gray-700 bg-[#1a1a1a]' : 'border-gray-200 bg-gray-50'}`}>
+              <h2 className={`text-lg font-semibold ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}>Financial Analytics</h2>
+              <p className={`text-sm mt-1 ${isDarkTheme ? 'text-gray-400' : 'text-gray-600'}`}>Revenue trends and performance by game</p>
             </div>
             <div className="p-6 space-y-6">
-              <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
-                <h3 className="font-semibold text-gray-900 mb-4">
-                  Revenue Trend
-                </h3>
+              <div className={`rounded-xl p-4 ${isDarkTheme ? 'bg-[#1a1a1a] border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
+                <h3 className={`font-semibold mb-4 ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}>Revenue Trend</h3>
                 <ResponsiveContainer width="100%" height={300}>
                   <AreaChart data={filteredRevenueSeries}>
                     <CartesianGrid strokeDasharray="3 3" />
@@ -418,10 +432,8 @@ export default function AnalyticsDashboardPage() {
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
-              <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
-                <h3 className="font-semibold text-gray-900 mb-4">
-                  Top Games by Revenue
-                </h3>
+              <div className={`rounded-xl p-4 ${isDarkTheme ? 'bg-[#1a1a1a] border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
+                <h3 className={`font-semibold mb-4 ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}>Top Games by Revenue</h3>
                 <ResponsiveContainer width="100%" height={300}>
                   <BarChart data={revenueByGame}>
                     <CartesianGrid strokeDasharray="3 3" />
@@ -436,20 +448,14 @@ export default function AnalyticsDashboardPage() {
           </div>
 
           {/* Ticket Sales Analytics Section */}
-          <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
-              <h2 className="text-lg font-semibold text-gray-900">
-                Ticket Sales Analytics
-              </h2>
-              <p className="text-sm text-gray-600 mt-1">
-                Total tickets sold over time
-              </p>
+          <div className={`rounded-xl overflow-hidden ${isDarkTheme ? 'bg-[#0A0A0A] border-gray-700' : 'bg-white border-gray-200'}`}>
+            <div className={`px-6 py-4 border-b ${isDarkTheme ? 'border-gray-700 bg-[#1a1a1a]' : 'border-gray-200 bg-gray-50'}`}>
+              <h2 className={`text-lg font-semibold ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}>Ticket Sales Analytics</h2>
+              <p className={`text-sm mt-1 ${isDarkTheme ? 'text-gray-400' : 'text-gray-600'}`}>Total tickets sold over time</p>
             </div>
             <div className="p-6">
-              <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
-                <h3 className="font-semibold text-gray-900 mb-4">
-                  Total Tickets Sold
-                </h3>
+              <div className={`rounded-xl p-4 ${isDarkTheme ? 'bg-[#1a1a1a] border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
+                <h3 className={`font-semibold mb-4 ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}>Total Tickets Sold</h3>
                 <ResponsiveContainer width="100%" height={300}>
                   <AreaChart data={filteredTicketsSeries}>
                     <CartesianGrid strokeDasharray="3 3" />
@@ -469,44 +475,37 @@ export default function AnalyticsDashboardPage() {
           </div>
 
           {/* Recent Events Section */}
-          <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
-              <h2 className="text-lg font-semibold text-gray-900">
-                Recent Events
-              </h2>
-              <p className="text-sm text-gray-600 mt-1">
-                Latest event activities and performance
-              </p>
+          <div className={`rounded-xl overflow-hidden ${isDarkTheme ? 'bg-[#0A0A0A] border-gray-700' : 'bg-white border-gray-200'}`}>
+            <div className={`px-6 py-4 border-b ${isDarkTheme ? 'border-gray-700 bg-[#1a1a1a]' : 'border-gray-200 bg-gray-50'}`}>
+              <h2 className={`text-lg font-semibold ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}>Recent Events</h2>
+              <p className={`text-sm mt-1 ${isDarkTheme ? 'text-gray-400' : 'text-gray-600'}`}>Latest event activities and performance</p>
             </div>
             <div className="p-6">
               <table className="w-full text-sm">
-                <thead className="bg-gray-50">
+                <thead className={`${isDarkTheme ? 'bg-[#1a1a1a]' : 'bg-gray-50'}`}>
                   <tr>
-                    <th className="px-4 py-2 text-left">Event</th>
-                    <th className="px-4 py-2 text-left">Game</th>
-                    <th className="px-4 py-2 text-left">Date</th>
-                    <th className="px-4 py-2 text-left">Occupancy</th>
-                    <th className="px-4 py-2 text-left">Revenue</th>
+                    <th className={`px-4 py-2 text-left ${isDarkTheme ? 'text-gray-400' : 'text-gray-700'}`}>Event</th>
+                    <th className={`px-4 py-2 text-left ${isDarkTheme ? 'text-gray-400' : 'text-gray-700'}`}>Game</th>
+                    <th className={`px-4 py-2 text-left ${isDarkTheme ? 'text-gray-400' : 'text-gray-700'}`}>Date</th>
+                    <th className={`px-4 py-2 text-left ${isDarkTheme ? 'text-gray-400' : 'text-gray-700'}`}>Occupancy</th>
+                    <th className={`px-4 py-2 text-left ${isDarkTheme ? 'text-gray-400' : 'text-gray-700'}`}>Revenue</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {mockEvents.slice(0, 3).map((event) => (
-                    <tr key={event.id} className="border-t border-gray-100">
-                      <td className="px-4 py-2 font-medium">{event.name}</td>
-                      <td className="px-4 py-2">{event.game}</td>
-                      <td className="px-4 py-2">{event.date}</td>
+                  {mockEvents.slice(0, 3).map(event => (
+                    <tr key={event.id} className={`cursor-pointer border-t hover:${isDarkTheme ? 'bg-gray-800' : 'bg-gray-50'} ${isDarkTheme ? 'border-gray-700' : 'border-gray-100'}`} onClick={() => router.push(`/analitics/events/${event.id}`)}>
+                      <td className={`px-4 py-2 font-medium ${isDarkTheme ? 'text-white' : ''}`}>{event.name}</td>
+                      <td className={`px-4 py-2 ${isDarkTheme ? 'text-gray-300' : ''}`}>{event.game}</td>
+                      <td className={`px-4 py-2 ${isDarkTheme ? 'text-gray-300' : ''}`}>{event.date}</td>
                       <td className="px-4 py-2">
                         <div className="flex items-center gap-2">
-                          <div className="w-16 bg-gray-200 rounded-full h-2">
-                            <div
-                              className="bg-accent h-2 rounded-full"
-                              style={{ width: `${event.occupancy}%` }}
-                            />
+                          <div className={`w-16 rounded-full h-2 ${isDarkTheme ? 'bg-gray-700' : 'bg-gray-200'}`}>
+                            <div className="bg-accent h-2 rounded-full" style={{ width: `${event.occupancy}%` }} />
                           </div>
-                          <span>{event.occupancy}%</span>
+                          <span className={`${isDarkTheme ? 'text-gray-300' : ''}`}>{event.occupancy}%</span>
                         </div>
                       </td>
-                      <td className="px-4 py-2">${event.revenue}</td>
+                      <td className={`px-4 py-2 ${isDarkTheme ? 'text-gray-300' : ''}`}>${event.revenue}</td>
                     </tr>
                   ))}
                 </tbody>
