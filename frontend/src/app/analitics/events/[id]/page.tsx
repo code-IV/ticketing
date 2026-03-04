@@ -9,7 +9,7 @@ import {
   DollarSign,
   PieChart,
   ChevronLeft,
-} from 'lucide-react';
+} from "lucide-react";
 import {
   LineChart,
   Line,
@@ -41,7 +41,7 @@ type Event = {
   revenue: number;
   ticketsSold: number;
   capacity: number;
-  };
+};
 
 type RevenueData = {
   date: string;
@@ -62,101 +62,149 @@ type TicketTypeData = {
 
 // ==================== Mock Data ====================
 const mockEvents: Event[] = [
-  { id: 101, name: 'Summer Pro League', game: 'Cyber Realm', date: '2026-08-15', status: 'Active', revenue: 12000, ticketsSold: 85, capacity: 100,},
-  { id: 102, name: 'Midnight Scrims', game: 'Cyber Realm', date: '2026-08-20', status: 'Sold Out', revenue: 18000, ticketsSold: 120, capacity: 120,  },
-  { id: 103, name: 'Newbie Bootcamp', game: 'Fantasy Quest', date: '2026-09-01', status: 'Draft', revenue: 0, ticketsSold: 12, capacity: 50,  },
-  { id: 104, name: 'Pro Tournament', game: 'Speed Racer', date: '2026-08-10', status: 'Active', revenue: 8500, ticketsSold: 42, capacity: 60,  },
+  {
+    id: 101,
+    name: "Summer Pro League",
+    game: "Cyber Realm",
+    date: "2026-08-15",
+    status: "Active",
+    revenue: 12000,
+    ticketsSold: 85,
+    capacity: 100,
+  },
+  {
+    id: 102,
+    name: "Midnight Scrims",
+    game: "Cyber Realm",
+    date: "2026-08-20",
+    status: "Sold Out",
+    revenue: 18000,
+    ticketsSold: 120,
+    capacity: 120,
+  },
+  {
+    id: 103,
+    name: "Newbie Bootcamp",
+    game: "Fantasy Quest",
+    date: "2026-09-01",
+    status: "Draft",
+    revenue: 0,
+    ticketsSold: 12,
+    capacity: 50,
+  },
+  {
+    id: 104,
+    name: "Pro Tournament",
+    game: "Speed Racer",
+    date: "2026-08-10",
+    status: "Active",
+    revenue: 8500,
+    ticketsSold: 42,
+    capacity: 60,
+  },
 ];
 
 const getEventRevenueSeries = (eventId: number): RevenueData[] => {
-  const event = mockEvents.find(e => e.id === eventId);
+  const event = mockEvents.find((e) => e.id === eventId);
   if (!event) return [];
-  
+
   const eventDate = new Date(event.date);
-  const creationDate = new Date(eventDate.getTime() - (30 * 24 * 60 * 60 * 1000)); // Assume event was created 30 days before event date
+  const creationDate = new Date(eventDate.getTime() - 30 * 24 * 60 * 60 * 1000); // Assume event was created 30 days before event date
   const today = new Date();
-  const days = Math.ceil((today.getTime() - creationDate.getTime()) / (1000 * 60 * 60 * 24));
-  
+  const days = Math.ceil(
+    (today.getTime() - creationDate.getTime()) / (1000 * 60 * 60 * 24),
+  );
+
   const base = eventId * 500;
   return Array.from({ length: days }, (_, i) => {
-    const currentDate = new Date(creationDate.getTime() + i * 24 * 60 * 60 * 1000);
+    const currentDate = new Date(
+      creationDate.getTime() + i * 24 * 60 * 60 * 1000,
+    );
     let revenue = base + Math.floor(Math.random() * 2000) + 500;
-    
+
     // After event date, reduce revenue (event is over, less activity)
     if (currentDate > eventDate) {
       revenue = Math.max(100, revenue - Math.floor(Math.random() * 1000)); // Minimal activity after event
     }
-    
+
     return {
-      date: format(currentDate, 'yyyy-MM-dd'),
+      date: format(currentDate, "yyyy-MM-dd"),
       revenue: revenue,
     };
   });
 };
 
 const getEventBookingsSeries = (eventId: number): BookingData[] => {
-  const event = mockEvents.find(e => e.id === eventId);
+  const event = mockEvents.find((e) => e.id === eventId);
   if (!event) return [];
-  
+
   const eventDate = new Date(event.date);
-  const creationDate = new Date(eventDate.getTime() - (30 * 24 * 60 * 60 * 1000)); // Assume event was created 30 days before event date
+  const creationDate = new Date(eventDate.getTime() - 30 * 24 * 60 * 60 * 1000); // Assume event was created 30 days before event date
   const today = new Date();
-  const days = Math.ceil((today.getTime() - creationDate.getTime()) / (1000 * 60 * 60 * 24));
-  
+  const days = Math.ceil(
+    (today.getTime() - creationDate.getTime()) / (1000 * 60 * 60 * 24),
+  );
+
   const base = eventId * 10;
   return Array.from({ length: days }, (_, i) => {
-    const currentDate = new Date(creationDate.getTime() + i * 24 * 60 * 60 * 1000);
+    const currentDate = new Date(
+      creationDate.getTime() + i * 24 * 60 * 60 * 1000,
+    );
     let bookings = base + Math.floor(Math.random() * 30) + 5;
-    
+
     // After event date, reduce bookings (event is over, less activity)
     if (currentDate > eventDate) {
       bookings = Math.max(1, bookings - Math.floor(Math.random() * 20)); // Minimal bookings after event
     }
-    
+
     return {
-      date: format(currentDate, 'yyyy-MM-dd'),
+      date: format(currentDate, "yyyy-MM-dd"),
       bookings: bookings,
     };
   });
 };
 
 const getEventTicketTypeData = (eventId: number): TicketTypeData[] => {
-  if (eventId === 101) { // Summer Pro League
+  if (eventId === 101) {
+    // Summer Pro League
     return [
-      { type: 'Adult', sold: 40, revenue: 6800, avgPrice: 85 },
-      { type: 'Child', sold: 25, revenue: 1500, avgPrice: 60 },
-      { type: 'Senior', sold: 15, revenue: 900, avgPrice: 60 },
-      { type: 'Group', sold: 5, revenue: 250, avgPrice: 50 },
+      { type: "Adult", sold: 40, revenue: 6800, avgPrice: 85 },
+      { type: "Child", sold: 25, revenue: 1500, avgPrice: 60 },
+      { type: "Senior", sold: 15, revenue: 900, avgPrice: 60 },
+      { type: "Group", sold: 5, revenue: 250, avgPrice: 50 },
     ];
-  } else if (eventId === 102) { // Midnight Scrims
+  } else if (eventId === 102) {
+    // Midnight Scrims
     return [
-      { type: 'Adult', sold: 60, revenue: 9600, avgPrice: 80 },
-      { type: 'Child', sold: 35, revenue: 2100, avgPrice: 60 },
-      { type: 'Senior', sold: 20, revenue: 1200, avgPrice: 60 },
-      { type: 'Group', sold: 5, revenue: 250, avgPrice: 50 },
+      { type: "Adult", sold: 60, revenue: 9600, avgPrice: 80 },
+      { type: "Child", sold: 35, revenue: 2100, avgPrice: 60 },
+      { type: "Senior", sold: 20, revenue: 1200, avgPrice: 60 },
+      { type: "Group", sold: 5, revenue: 250, avgPrice: 50 },
     ];
-  } else if (eventId === 103) { // Newbie Bootcamp
+  } else if (eventId === 103) {
+    // Newbie Bootcamp
     return [
-      { type: 'Adult', sold: 6, revenue: 480, avgPrice: 80 },
-      { type: 'Child', sold: 4, revenue: 240, avgPrice: 60 },
-      { type: 'Senior', sold: 1, revenue: 60, avgPrice: 60 },
-      { type: 'Group', sold: 1, revenue: 50, avgPrice: 50 },
+      { type: "Adult", sold: 6, revenue: 480, avgPrice: 80 },
+      { type: "Child", sold: 4, revenue: 240, avgPrice: 60 },
+      { type: "Senior", sold: 1, revenue: 60, avgPrice: 60 },
+      { type: "Group", sold: 1, revenue: 50, avgPrice: 50 },
     ];
-  } else if (eventId === 104) { // Pro Tournament
+  } else if (eventId === 104) {
+    // Pro Tournament
     return [
-      { type: 'Adult', sold: 20, revenue: 1600, avgPrice: 80 },
-      { type: 'Child', sold: 12, revenue: 720, avgPrice: 60 },
-      { type: 'Senior', sold: 7, revenue: 420, avgPrice: 60 },
-      { type: 'Group', sold: 3, revenue: 150, avgPrice: 50 },
+      { type: "Adult", sold: 20, revenue: 1600, avgPrice: 80 },
+      { type: "Child", sold: 12, revenue: 720, avgPrice: 60 },
+      { type: "Senior", sold: 7, revenue: 420, avgPrice: 60 },
+      { type: "Group", sold: 3, revenue: 150, avgPrice: 50 },
     ];
   }
-  
+
   // Fallback data
   return [
-    { type: 'Adult', sold: 20, revenue: 1600, avgPrice: 80 },
-    { type: 'Child', sold: 15, revenue: 900, avgPrice: 60 },
-    { type: 'Senior', sold: 8, revenue: 480, avgPrice: 60 },
-    { type: 'Group', sold: 4, revenue: 200, avgPrice: 50 },
+    { type: "Adult", sold: 20, revenue: 1600, avgPrice: 80 },
+    { type: "Child", sold: 15, revenue: 900, avgPrice: 60 },
+    { type: "Senior", sold: 8, revenue: 480, avgPrice: 60 },
+    { type: "Group", sold: 4, revenue: 200, avgPrice: 50 },
   ];
 };
 
@@ -184,16 +232,41 @@ const KpiCard = ({ title, value, icon: Icon, isDarkTheme }: {
 export default function EventDetailPage() {
   const { isDarkTheme } = useTheme();
   const router = useRouter();
-  const params = useParams();
-  const eventId = parseInt(params.id as string);
-  
+  const { id } = useParams<{ id: string }>();
+  const eventId = id;
+  console.log(eventId);
+
   const [dateRange, setDateRange] = useState<DateRange>({
-    label: 'Last 7 days',
+    label: "2d",
     start: subDays(new Date(), 7),
     end: new Date(),
   });
-  
-  const selectedEvent = mockEvents.find(e => e.id === eventId) || null;
+
+  useEffect(() => {
+    loadEvent(
+      eventId,
+      dateRange.start.toISOString(),
+      dateRange.end.toISOString(),
+      dateRange.label,
+    );
+  }, []);
+
+  const loadEvent = async (
+    id: string,
+    startDate: string,
+    endDate: string,
+    period: string,
+  ) => {
+    const response = await eventService.getAnalytics(
+      id,
+      startDate,
+      endDate,
+      period,
+    );
+    console.log(response.data);
+  };
+
+  const selectedEvent = mockEvents.find((e) => e.id === eventId) || null;
 
   if (!selectedEvent) {
     return (
@@ -301,13 +374,22 @@ export default function EventDetailPage() {
                     cx="50%"
                     cy="50%"
                     labelLine={false}
-                    label={(entry: any) => `${entry.type}: $${entry.revenue.toLocaleString()}`}
+                    label={(entry: any) =>
+                      `${entry.type}: $${entry.revenue.toLocaleString()}`
+                    }
                     outerRadius={80}
                     fill="#8884d8"
                     dataKey="revenue"
                   >
                     {eventTicketTypeData.map((entry: any, index: number) => (
-                      <Cell key={`cell-${index}`} fill={['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6'][index % 4]} />
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={
+                          ["#3b82f6", "#10b981", "#f59e0b", "#8b5cf6"][
+                            index % 4
+                          ]
+                        }
+                      />
                     ))}
                   </Pie>
                   <Tooltip />
@@ -323,13 +405,22 @@ export default function EventDetailPage() {
                     cx="50%"
                     cy="50%"
                     labelLine={false}
-                    label={(entry: any) => `${entry.type}: ${entry.sold} tickets`}
+                    label={(entry: any) =>
+                      `${entry.type}: ${entry.sold} tickets`
+                    }
                     outerRadius={80}
                     fill="#8884d8"
                     dataKey="sold"
                   >
                     {eventTicketTypeData.map((entry: any, index: number) => (
-                      <Cell key={`cell-${index}`} fill={['#f97316', '#ef4444', '#10b981', '#3b82f6'][index % 4]} />
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={
+                          ["#f97316", "#ef4444", "#10b981", "#3b82f6"][
+                            index % 4
+                          ]
+                        }
+                      />
                     ))}
                   </Pie>
                   <Tooltip />

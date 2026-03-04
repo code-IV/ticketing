@@ -1,5 +1,5 @@
-const { query } = require('../config/db');
-const { apiResponse } = require('../utils/helpers');
+const { query } = require("../../config/db");
+const { apiResponse } = require("../../utils/helpers");
 
 const analyticsController = {
   /**
@@ -9,28 +9,32 @@ const analyticsController = {
   async getRevenueAnalytics(req, res, next) {
     try {
       // Completely disable caching for analytics endpoints
-      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
-      res.setHeader('Pragma', 'no-cache');
-      res.setHeader('Expires', '0');
-      res.setHeader('ETag', ''); // Clear ETag to prevent 304 responses
-      
-      const { startDate, endDate, groupBy = 'day' } = req.query;
-      
-      let dateFilter = '';
+      res.setHeader(
+        "Cache-Control",
+        "no-cache, no-store, must-revalidate, max-age=0",
+      );
+      res.setHeader("Pragma", "no-cache");
+      res.setHeader("Expires", "0");
+      res.setHeader("ETag", ""); // Clear ETag to prevent 304 responses
+
+      const { startDate, endDate, groupBy = "day" } = req.query;
+
+      let dateFilter = "";
       let queryParams = [];
-      
+
       if (startDate && endDate) {
-        dateFilter = 'WHERE DATE(p.paid_at) BETWEEN $1 AND $2';
+        dateFilter = "WHERE DATE(p.paid_at) BETWEEN $1 AND $2";
         queryParams = [startDate, endDate];
       } else if (startDate) {
-        dateFilter = 'WHERE DATE(p.paid_at) >= $1';
+        dateFilter = "WHERE DATE(p.paid_at) >= $1";
         queryParams = [startDate];
       } else if (endDate) {
-        dateFilter = 'WHERE DATE(p.paid_at) <= $1';
+        dateFilter = "WHERE DATE(p.paid_at) <= $1";
         queryParams = [endDate];
       } else {
         // Default to last 30 days if no dates provided
-        dateFilter = 'WHERE DATE(p.paid_at) >= CURRENT_DATE - INTERVAL \'30 day\'';
+        dateFilter =
+          "WHERE DATE(p.paid_at) >= CURRENT_DATE - INTERVAL '30 day'";
         queryParams = [];
       }
 
@@ -75,21 +79,29 @@ const analyticsController = {
       const [revenueData, summaryData, paymentMethodData] = await Promise.all([
         query(revenueQuery, queryParams),
         query(summaryQuery, queryParams),
-        query(paymentMethodQuery, queryParams)
+        query(paymentMethodQuery, queryParams),
       ]);
 
-      return apiResponse(res, 200, true, 'Revenue analytics retrieved.', {
+      return apiResponse(res, 200, true, "Revenue analytics retrieved.", {
         revenueOverTime: revenueData.rows,
-        summary: summaryData.rows[0] || { total_revenue: 0, total_transactions: 0, avg_transaction_value: 0 },
-        byPaymentMethod: paymentMethodData.rows
+        summary: summaryData.rows[0] || {
+          total_revenue: 0,
+          total_transactions: 0,
+          avg_transaction_value: 0,
+        },
+        byPaymentMethod: paymentMethodData.rows,
       });
     } catch (err) {
-      console.error('Revenue analytics error:', err);
+      console.error("Revenue analytics error:", err);
       // Return empty data instead of error
-      return apiResponse(res, 200, true, 'Revenue analytics retrieved.', {
+      return apiResponse(res, 200, true, "Revenue analytics retrieved.", {
         revenueOverTime: [],
-        summary: { total_revenue: 0, total_transactions: 0, avg_transaction_value: 0 },
-        byPaymentMethod: []
+        summary: {
+          total_revenue: 0,
+          total_transactions: 0,
+          avg_transaction_value: 0,
+        },
+        byPaymentMethod: [],
       });
     }
   },
@@ -101,28 +113,32 @@ const analyticsController = {
   async getBookingAnalytics(req, res, next) {
     try {
       // Completely disable caching for analytics endpoints
-      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
-      res.setHeader('Pragma', 'no-cache');
-      res.setHeader('Expires', '0');
-      res.setHeader('ETag', ''); // Clear ETag to prevent 304 responses
-      
-      const { startDate, endDate, groupBy = 'day' } = req.query;
-      
-      let dateFilter = '';
+      res.setHeader(
+        "Cache-Control",
+        "no-cache, no-store, must-revalidate, max-age=0",
+      );
+      res.setHeader("Pragma", "no-cache");
+      res.setHeader("Expires", "0");
+      res.setHeader("ETag", ""); // Clear ETag to prevent 304 responses
+
+      const { startDate, endDate, groupBy = "day" } = req.query;
+
+      let dateFilter = "";
       let queryParams = [];
-      
+
       if (startDate && endDate) {
-        dateFilter = 'WHERE DATE(b.created_at) BETWEEN $1 AND $2';
+        dateFilter = "WHERE DATE(b.created_at) BETWEEN $1 AND $2";
         queryParams = [startDate, endDate];
       } else if (startDate) {
-        dateFilter = 'WHERE DATE(b.created_at) >= $1';
+        dateFilter = "WHERE DATE(b.created_at) >= $1";
         queryParams = [startDate];
       } else if (endDate) {
-        dateFilter = 'WHERE DATE(b.created_at) <= $1';
+        dateFilter = "WHERE DATE(b.created_at) <= $1";
         queryParams = [endDate];
       } else {
         // Default to last 30 days if no dates provided
-        dateFilter = 'WHERE DATE(b.created_at) >= CURRENT_DATE - INTERVAL \'30 day\'';
+        dateFilter =
+          "WHERE DATE(b.created_at) >= CURRENT_DATE - INTERVAL '30 day'";
         queryParams = [];
       }
 
@@ -156,19 +172,31 @@ const analyticsController = {
 
       const [bookingsData, summaryData] = await Promise.all([
         query(bookingsQuery, queryParams),
-        query(summaryQuery, queryParams)
+        query(summaryQuery, queryParams),
       ]);
 
-      return apiResponse(res, 200, true, 'Booking analytics retrieved.', {
+      return apiResponse(res, 200, true, "Booking analytics retrieved.", {
         dailyData: bookingsData.rows,
-        summary: summaryData.rows[0] || { total_bookings: 0, confirmed_bookings: 0, cancelled_bookings: 0, pending_bookings: 0, total_value: 0 }
+        summary: summaryData.rows[0] || {
+          total_bookings: 0,
+          confirmed_bookings: 0,
+          cancelled_bookings: 0,
+          pending_bookings: 0,
+          total_value: 0,
+        },
       });
     } catch (err) {
-      console.error('Booking analytics error:', err);
+      console.error("Booking analytics error:", err);
       // Return empty data instead of error
-      return apiResponse(res, 200, true, 'Booking analytics retrieved.', {
+      return apiResponse(res, 200, true, "Booking analytics retrieved.", {
         dailyData: [],
-        summary: { total_bookings: 0, confirmed_bookings: 0, cancelled_bookings: 0, pending_bookings: 0, total_value: 0 }
+        summary: {
+          total_bookings: 0,
+          confirmed_bookings: 0,
+          cancelled_bookings: 0,
+          pending_bookings: 0,
+          total_value: 0,
+        },
       });
     }
   },
@@ -180,28 +208,32 @@ const analyticsController = {
   async getUserAnalytics(req, res, next) {
     try {
       // Completely disable caching for analytics endpoints
-      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
-      res.setHeader('Pragma', 'no-cache');
-      res.setHeader('Expires', '0');
-      res.setHeader('ETag', ''); // Clear ETag to prevent 304 responses
-      
-      const { startDate, endDate, groupBy = 'day' } = req.query;
-      
-      let dateFilter = '';
+      res.setHeader(
+        "Cache-Control",
+        "no-cache, no-store, must-revalidate, max-age=0",
+      );
+      res.setHeader("Pragma", "no-cache");
+      res.setHeader("Expires", "0");
+      res.setHeader("ETag", ""); // Clear ETag to prevent 304 responses
+
+      const { startDate, endDate, groupBy = "day" } = req.query;
+
+      let dateFilter = "";
       let queryParams = [];
-      
+
       if (startDate && endDate) {
-        dateFilter = 'WHERE DATE(u.created_at) BETWEEN $1 AND $2';
+        dateFilter = "WHERE DATE(u.created_at) BETWEEN $1 AND $2";
         queryParams = [startDate, endDate];
       } else if (startDate) {
-        dateFilter = 'WHERE DATE(u.created_at) >= $1';
+        dateFilter = "WHERE DATE(u.created_at) >= $1";
         queryParams = [startDate];
       } else if (endDate) {
-        dateFilter = 'WHERE DATE(u.created_at) <= $1';
+        dateFilter = "WHERE DATE(u.created_at) <= $1";
         queryParams = [endDate];
       } else {
         // Default to last 30 days if no dates provided
-        dateFilter = 'WHERE DATE(u.created_at) >= CURRENT_DATE - INTERVAL \'30 day\'';
+        dateFilter =
+          "WHERE DATE(u.created_at) >= CURRENT_DATE - INTERVAL '30 day'";
         queryParams = [];
       }
 
@@ -247,27 +279,36 @@ const analyticsController = {
         WHERE b.booking_status = 'confirmed'
       `;
 
-      const [registrationData, roleData, activeData, bookingParticipationData] = await Promise.all([
-        query(registrationQuery, queryParams),
-        query(roleQuery, []),
-        query(activeQuery, []),
-        query(bookingParticipationQuery, [])
-      ]);
+      const [registrationData, roleData, activeData, bookingParticipationData] =
+        await Promise.all([
+          query(registrationQuery, queryParams),
+          query(roleQuery, []),
+          query(activeQuery, []),
+          query(bookingParticipationQuery, []),
+        ]);
 
-      return apiResponse(res, 200, true, 'User analytics retrieved.', {
+      return apiResponse(res, 200, true, "User analytics retrieved.", {
         registrationData: registrationData.rows,
         roleBreakdown: roleData.rows,
         activeStatus: activeData.rows,
-        bookingParticipation: bookingParticipationData.rows[0] || { users_with_bookings: 0, total_users: 0, percentage: 0 }
+        bookingParticipation: bookingParticipationData.rows[0] || {
+          users_with_bookings: 0,
+          total_users: 0,
+          percentage: 0,
+        },
       });
     } catch (err) {
-      console.error('User analytics error:', err);
+      console.error("User analytics error:", err);
       // Return empty data instead of error
-      return apiResponse(res, 200, true, 'User analytics retrieved.', {
+      return apiResponse(res, 200, true, "User analytics retrieved.", {
         registrationData: [],
         roleBreakdown: [],
         activeStatus: [],
-        bookingParticipation: { users_with_bookings: 0, total_users: 0, percentage: 0 }
+        bookingParticipation: {
+          users_with_bookings: 0,
+          total_users: 0,
+          percentage: 0,
+        },
       });
     }
   },
@@ -279,24 +320,27 @@ const analyticsController = {
   async getEventAnalytics(req, res, next) {
     try {
       // Completely disable caching for analytics endpoints
-      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
-      res.setHeader('Pragma', 'no-cache');
-      res.setHeader('Expires', '0');
-      res.setHeader('ETag', ''); // Clear ETag to prevent 304 responses
-      
+      res.setHeader(
+        "Cache-Control",
+        "no-cache, no-store, must-revalidate, max-age=0",
+      );
+      res.setHeader("Pragma", "no-cache");
+      res.setHeader("Expires", "0");
+      res.setHeader("ETag", ""); // Clear ETag to prevent 304 responses
+
       const { startDate, endDate, limit = 50 } = req.query;
-      
-      let dateFilter = '';
+
+      let dateFilter = "";
       let queryParams = [];
-      
+
       if (startDate && endDate) {
-        dateFilter = 'WHERE e.event_date BETWEEN $1 AND $2';
+        dateFilter = "WHERE e.event_date BETWEEN $1 AND $2";
         queryParams = [startDate, endDate];
       } else if (startDate) {
-        dateFilter = 'WHERE e.event_date >= $1';
+        dateFilter = "WHERE e.event_date >= $1";
         queryParams = [startDate];
       } else if (endDate) {
-        dateFilter = 'WHERE e.event_date <= $1';
+        dateFilter = "WHERE e.event_date <= $1";
         queryParams = [endDate];
       }
 
@@ -344,19 +388,19 @@ const analyticsController = {
 
       const [eventData, ticketTypeData] = await Promise.all([
         query(eventQuery, [...queryParams, limit]),
-        query(ticketTypeQuery, [])
+        query(ticketTypeQuery, []),
       ]);
 
-      return apiResponse(res, 200, true, 'Event analytics retrieved.', {
+      return apiResponse(res, 200, true, "Event analytics retrieved.", {
         eventPerformance: eventData.rows,
-        ticketTypePerformance: ticketTypeData.rows
+        ticketTypePerformance: ticketTypeData.rows,
       });
     } catch (err) {
-      console.error('Event analytics error:', err);
+      console.error("Event analytics error:", err);
       // Return empty data instead of error
-      return apiResponse(res, 200, true, 'Event analytics retrieved.', {
+      return apiResponse(res, 200, true, "Event analytics retrieved.", {
         eventPerformance: [],
-        ticketTypePerformance: []
+        ticketTypePerformance: [],
       });
     }
   },
@@ -368,15 +412,19 @@ const analyticsController = {
   async getDashboardAnalytics(req, res, next) {
     try {
       // Completely disable caching for analytics endpoints
-      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
-      res.setHeader('Pragma', 'no-cache');
-      res.setHeader('Expires', '0');
-      res.setHeader('ETag', ''); // Clear ETag to prevent 304 responses
-      
+      res.setHeader(
+        "Cache-Control",
+        "no-cache, no-store, must-revalidate, max-age=0",
+      );
+      res.setHeader("Pragma", "no-cache");
+      res.setHeader("Expires", "0");
+      res.setHeader("ETag", ""); // Clear ETag to prevent 304 responses
+
       const { days = 30 } = req.query;
-      
+
       // Get data for the specified number of days
-      const dateFilter = 'WHERE DATE(created_at) >= CURRENT_DATE - INTERVAL \'30 day\'';
+      const dateFilter =
+        "WHERE DATE(created_at) >= CURRENT_DATE - INTERVAL '30 day'";
       const queryParams = [];
 
       // Recent revenue
@@ -414,30 +462,45 @@ const analyticsController = {
         WHERE is_active = true AND event_date >= CURRENT_DATE
       `;
 
-      const [revenueData, bookingsData, usersData, eventsData] = await Promise.all([
-        query(recentRevenueQuery, []),
-        query(recentBookingsQuery, queryParams),
-        query(newUsersQuery, queryParams),
-        query(activeEventsQuery)
-      ]);
+      const [revenueData, bookingsData, usersData, eventsData] =
+        await Promise.all([
+          query(recentRevenueQuery, []),
+          query(recentBookingsQuery, queryParams),
+          query(newUsersQuery, queryParams),
+          query(activeEventsQuery),
+        ]);
 
-      return apiResponse(res, 200, true, 'Dashboard analytics retrieved.', {
-        revenue: revenueData.rows[0] || { revenue: 0, completed_transactions: 0, refunded_amount: 0 },
-        bookings: bookingsData.rows[0] || { total_bookings: 0, confirmed_bookings: 0, cancelled_bookings: 0, total_value: 0 },
+      return apiResponse(res, 200, true, "Dashboard analytics retrieved.", {
+        revenue: revenueData.rows[0] || {
+          revenue: 0,
+          completed_transactions: 0,
+          refunded_amount: 0,
+        },
+        bookings: bookingsData.rows[0] || {
+          total_bookings: 0,
+          confirmed_bookings: 0,
+          cancelled_bookings: 0,
+          total_value: 0,
+        },
         users: usersData.rows[0] || { new_users: 0 },
-        events: eventsData.rows[0] || { active_events: 0 }
+        events: eventsData.rows[0] || { active_events: 0 },
       });
     } catch (err) {
-      console.error('Dashboard analytics error:', err);
+      console.error("Dashboard analytics error:", err);
       // Return empty data instead of error
-      return apiResponse(res, 200, true, 'Dashboard analytics retrieved.', {
+      return apiResponse(res, 200, true, "Dashboard analytics retrieved.", {
         revenue: { revenue: 0, completed_transactions: 0, refunded_amount: 0 },
-        bookings: { total_bookings: 0, confirmed_bookings: 0, cancelled_bookings: 0, total_value: 0 },
+        bookings: {
+          total_bookings: 0,
+          confirmed_bookings: 0,
+          cancelled_bookings: 0,
+          total_value: 0,
+        },
         users: { new_users: 0 },
-        events: { active_events: 0 }
+        events: { active_events: 0 },
       });
     }
-  }
+  },
 };
 
 module.exports = analyticsController;

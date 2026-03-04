@@ -42,7 +42,7 @@ const generateRevenueTimeSeries = (days = 30): RevenueData[] => {
   for (let i = days; i >= 0; i--) {
     const date = subDays(new Date(), i);
     data.push({
-      date: format(date, 'yyyy-MM-dd'),
+      date: format(date, "yyyy-MM-dd"),
       revenue: Math.floor(Math.random() * 5000) + 2000,
     });
   }
@@ -52,14 +52,14 @@ const generateRevenueTimeSeries = (days = 30): RevenueData[] => {
 const mockRevenueTimeSeries = generateRevenueTimeSeries(30);
 
 const revenueByTicketType = [
-  { type: 'Adult', revenue: 45000 },
-  { type: 'Child', revenue: 28000 },
-  { type: 'Senior', revenue: 15000 },
-  { type: 'Student', revenue: 22000 },
-  { type: 'Group', revenue: 15000 },
+  { type: "Adult", revenue: 45000 },
+  { type: "Child", revenue: 28000 },
+  { type: "Senior", revenue: 15000 },
+  { type: "Student", revenue: 22000 },
+  { type: "Group", revenue: 15000 },
 ];
 
-const COLORS = ['#3b82f6', '#f97316', '#10b981', '#ef4444', '#8b5cf6'];
+const COLORS = ["#3b82f6", "#f97316", "#10b981", "#ef4444", "#8b5cf6"];
 
 // ==================== Components ====================
 const KpiCard = ({ title, value, icon: Icon, change, changeType, isDarkTheme }: {
@@ -76,9 +76,11 @@ const KpiCard = ({ title, value, icon: Icon, change, changeType, isDarkTheme }: 
         <p className={`text-sm font-medium ${isDarkTheme ? 'text-gray-400' : 'text-gray-600'}`}>{title}</p>
         <p className={`text-2xl font-bold ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}>{value}</p>
         {change && (
-          <p className={`text-sm font-medium ${
-            changeType === 'positive' ? 'text-green-600' : 'text-red-600'
-          }`}>
+          <p
+            className={`text-sm font-medium ${
+              changeType === "positive" ? "text-green-600" : "text-red-600"
+            }`}
+          >
             {change}
           </p>
         )}
@@ -95,21 +97,41 @@ export default function RevenueAnalyticsPage() {
   const { isDarkTheme } = useTheme();
   const router = useRouter();
   const [dateRange, setDateRange] = useState({
-    label: 'Last 7 days',
-    start: subDays(new Date(), 7),
+    label: "1d",
+    start: subDays(new Date(), 14),
     end: new Date(),
   });
+
+  useEffect(() => {
+    loadDashboard(
+      dateRange.start.toISOString(),
+      dateRange.end.toISOString(),
+      dateRange.label,
+    );
+  }, []);
+
+  const loadDashboard = async (start: string, end: string, label: string) => {
+    const response = await dashboardService.getDashboardRevenue(
+      start,
+      end,
+      label,
+    );
+    console.log(response);
+  };
 
   // Filter data based on date range
   const filterDataByDateRange = (data: RevenueData[], range: DateRange) => {
     if (!range.start || !range.end) return data;
-    return data.filter(d => {
+    return data.filter((d) => {
       const date = new Date(d.date);
       return range.start && range.end && isWithinInterval(date, { start: range.start as Date, end: range.end as Date });
     });
   };
 
-  const filteredRevenueSeries = filterDataByDateRange(mockRevenueTimeSeries, dateRange);
+  const filteredRevenueSeries = filterDataByDateRange(
+    mockRevenueTimeSeries,
+    dateRange,
+  );
 
   return (
     <div className={`min-h-screen p-6 ${isDarkTheme ? 'bg-[#0A0A0A]' : 'bg-gray-50'}`}>
@@ -181,13 +203,16 @@ export default function RevenueAnalyticsPage() {
                     cx="50%"
                     cy="50%"
                     labelLine={false}
-                    label={entry => `${entry.type}: $${entry.revenue}`}
+                    label={(entry) => `${entry.type}: $${entry.revenue}`}
                     outerRadius={80}
                     fill="#8884d8"
                     dataKey="revenue"
                   >
                     {revenueByTicketType.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={COLORS[index % COLORS.length]}
+                      />
                     ))}
                   </Pie>
                   <Tooltip />
@@ -199,11 +224,13 @@ export default function RevenueAnalyticsPage() {
           <div className={`rounded-xl p-4 ${isDarkTheme ? 'bg-[#0A0A0A] border-gray-700' : 'bg-white border-gray-200'}`}>
             <h3 className={`font-semibold mb-4 ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}>Revenue by Game</h3>
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={[
-                { game: 'Cyber Realm', revenue: 85000 },
-                { game: 'Speed Racer', revenue: 42000 },
-                { game: 'Fantasy Quest', revenue: 120000 },
-              ]}>
+              <BarChart
+                data={[
+                  { game: "Cyber Realm", revenue: 85000 },
+                  { game: "Speed Racer", revenue: 42000 },
+                  { game: "Fantasy Quest", revenue: 120000 },
+                ]}
+              >
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="game" />
                 <YAxis />

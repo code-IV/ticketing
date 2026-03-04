@@ -1,6 +1,7 @@
-const express = require('express');
-const { isAdmin } = require('../middleware/auth');
-const analyticsController = require('../controllers/analyticsController');
+const express = require("express");
+const { isAdmin } = require("../middleware/auth");
+const analyticsController = require("../api/controllers/analyticsController");
+const dashboardController = require("../api/controllers/dashboardController");
 
 const router = express.Router();
 
@@ -12,34 +13,34 @@ router.use(isAdmin);
  * Get revenue analytics with optional date filtering
  * Query params: startDate, endDate, groupBy
  */
-router.get('/revenue', analyticsController.getRevenueAnalytics);
+router.get("/revenue", dashboardController.getDashboardStats);
 
 /**
  * GET /api/analytics/bookings
  * Get booking analytics and trends
  * Query params: startDate, endDate, groupBy
  */
-router.get('/bookings', analyticsController.getBookingAnalytics);
+router.get("/bookings", analyticsController.getBookingAnalytics);
 
 /**
  * GET /api/analytics/users
  * Get user analytics and registration trends
  * Query params: startDate, endDate, groupBy
  */
-router.get('/users', analyticsController.getUserAnalytics);
+router.get("/users", analyticsController.getUserAnalytics);
 
 /**
  * GET /api/analytics/events
  * Get event performance analytics
  * Query params: startDate, endDate, limit
  */
-router.get('/events', analyticsController.getEventAnalytics);
+router.get("/events", analyticsController.getEventAnalytics);
 
 /**
  * GET /api/analytics/dashboard
  * Get combined dashboard analytics for overview
  * Query params: days (default: 30)
  */
-router.get('/dashboard', analyticsController.getDashboardAnalytics);
+router.get("/dashboard", analyticsController.getDashboardAnalytics);
 
 module.exports = router;

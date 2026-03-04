@@ -1,9 +1,9 @@
-const { query, getClient } = require("../config/db");
+const { query, getClient } = require("../../config/db");
 const {
   generateBookingReference,
   generateTicketCode,
   generateQRToken,
-} = require("../utils/helpers");
+} = require("../../utils/helpers");
 
 const Booking = {
   /**
@@ -41,7 +41,7 @@ const Booking = {
 
       // 3. Create Master Ticket (The only QR the user needs)
       const ticketCode = generateTicketCode();
-      const qrToken = generateQRToken(ticketCode, bookingReference, expires_at);
+      const qrToken = generateQRToken();
 
       const ticketResult = await client.query(
         `INSERT INTO tickets (booking_id, ticket_code, qr_token, status, expires_at)
@@ -167,7 +167,7 @@ const Booking = {
       expiresAt.setDate(expiresAt.getDate());
       // 4️⃣ Create ONE ticket container
       const ticketCode = generateTicketCode();
-      const qrToken = generateQRToken(ticketCode, bookingReference, expiresAt);
+      const qrToken = generateQRToken();
 
       const ticketResult = await client.query(
         `INSERT INTO tickets
@@ -327,12 +327,7 @@ const Booking = {
       end_time: eventItem?.end_time || null,
 
       items: itemsResult.rows,
-      tickets: ticketsResult.rows.map((t) => ({
-        ...t,
-        // Ensure entitlements is never null for the UI
-        entitlements: t.entitlements || [],
-      })),
-      payments: paymentsResult.rows,
+      tickets: ticketsResult.rows[0],
     };
   },
 
@@ -552,4 +547,166 @@ LIMIT $2 OFFSET $3;
   },
 };
 
-module.exports = Booking;
+const BookingStats = {
+  getRange: (period = "d", startDate, endDate, interval = 1) => {
+    const now = new Date();
+    let start,
+      end = endDate ? new Date(endDate) : now;
+
+    // If startDate is provided, just use it
+    if (startDate) {
+      start = new Date(startDate);
+      if (isNaN(start.getTime())) start = new Date(now);
+    } else {
+      // Determine start based on period string
+      const periodRegex = /^(\d*)([dwm])$/;
+      const match = period.match(periodRegex);
+      const unit = match ? match[2] : "d";
+      const num = parseInt(match ? match[1] : "1") || 1;
+
+      switch (unit) {
+        case "d":
+          start = new Date();
+          start.setDate(now.getDate() - 30 * num);
+          break;
+        case "w":
+          start = new Date();
+          start.setDate(now.getDate() - 12 * 7 * num);
+          break;
+        case "m":
+          start = new Date();
+          start.setMonth(now.getMonth() - 12 * num);
+          break;
+        default:
+          start = new Date();
+          start.setDate(now.getDate() - 30);
+      }
+    }
+
+    // Ensure both are valid Dates
+    if (!start || isNaN(start.getTime())) start = new Date(now);
+    if (!end || isNaN(end.getTime())) end = new Date(now);
+
+    return { start, end, unit: period[period.length - 1], interval };
+  },
+
+  // 2️⃣ General Stats remain mostly the same
+  getGeneralStats: async (range) => {
+    const sql = `
+      WITH daily_stats AS (
+        SELECT 
+          DATE(created_at) as day,
+          COUNT(id) as booking_count,
+          SUM(total_amount) as revenue
+        FROM bookings
+        WHERE created_at BETWEEN $1 AND $2
+          AND status = 'CONFIRMED'
+        GROUP BY 1
+      )
+      SELECT 
+        COALESCE(SUM(booking_count), 0)::INT as "total_bookings",
+        COALESCE(ROUND(AVG(booking_count), 0), 0)::INT as "avg_bookings_per_day",
+        COALESCE(MAX(booking_count), 0)::INT as "peak_bookings_day",
+        COALESCE(SUM(revenue), 0)::NUMERIC as "total_revenue"
+      FROM daily_stats;
+    `;
+    const res = await query(sql, [
+      range.start.toISOString(),
+      range.end.toISOString(),
+    ]);
+    return res.rows[0];
+  },
+
+  // 3️⃣ Ticket Trend with flexible interval
+  getTicketTrend: async (range) => {
+    let step;
+    switch (range.unit) {
+      case "d":
+        step = `${range.interval} day`;
+        break;
+      case "w":
+        step = `${range.interval} week`;
+        break;
+      case "m":
+        step = `${range.interval} month`;
+        break;
+      default:
+        step = "1 day";
+    }
+
+    const sql = `
+      SELECT 
+        gs.date,
+        COALESCE(SUM(tickets),0) AS tickets,
+        COALESCE(SUM(revenue),0) AS revenue
+      FROM (
+        SELECT generate_series($1::date, $2::date, '${step}')::date as date
+      ) gs
+      LEFT JOIN LATERAL (
+        SELECT COUNT(ti.id) as tickets, SUM(b.total_amount) as revenue
+        FROM bookings b
+        LEFT JOIN tickets ti ON b.id = ti.booking_id
+        WHERE b.status = 'CONFIRMED' AND DATE(b.created_at) BETWEEN gs.date AND gs.date + INTERVAL '${step}' - INTERVAL '1 second'
+      ) AS sub ON true
+      GROUP BY gs.date
+      ORDER BY gs.date ASC;
+    `;
+
+    const res = await query(sql, [
+      range.start.toISOString(),
+      range.end.toISOString(),
+    ]);
+    return res.rows;
+  },
+
+  // 4️⃣ Event Bookings remain mostly the same
+  getEventBookings: async (range) => {
+    const sql = `
+      SELECT 
+        e.id,
+        e.name as event,
+        SUM(bi.quantity) as "tickets bought",
+        e.capacity,
+        SUM(bi.subtotal) as revenue
+      FROM events e
+      JOIN products p ON p.event_id = e.id
+      JOIN ticket_types tt ON tt.product_id = p.id
+      JOIN booking_items bi ON bi.ticket_type_id = tt.id
+      JOIN bookings b ON bi.booking_id = b.id
+      WHERE b.status = 'CONFIRMED' AND b.created_at >= $1
+      GROUP BY e.id
+      ORDER BY revenue DESC
+    `;
+    const res = await query(sql, [range.start.toISOString()]);
+    return res.rows;
+  },
+
+  // 5️⃣ Top Games remain mostly the same
+  getTopGames: async (range) => {
+    const sql = `
+      SELECT 
+        g.id,
+        g.name as game,
+        SUM(bi.subtotal) as revenue,
+        tt.category as "topTicketType",
+        tt.price as "topTicketPrice",
+        SUM(bi.quantity) as "topTicketSold"
+      FROM games g
+      JOIN products p ON p.game_id = g.id
+      JOIN ticket_types tt ON tt.product_id = p.id
+      JOIN booking_items bi ON bi.ticket_type_id = tt.id
+      JOIN bookings b ON bi.booking_id = b.id
+      WHERE b.status = 'CONFIRMED' AND b.created_at >= $1
+      GROUP BY g.id, g.name, tt.category, tt.price
+      ORDER BY revenue DESC
+      LIMIT 5
+    `;
+    const res = await query(sql, [range.start.toISOString()]);
+    return res.rows;
+  },
+};
+
+module.exports = {
+  Booking,
+  BookingStats,
+};

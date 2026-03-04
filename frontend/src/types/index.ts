@@ -140,30 +140,6 @@ export interface GameTicketDetail {
   };
 }
 
-// export interface Booking {
-//   id: string;
-//   booking_reference: string;
-//   user_id: string;
-//   event_id?: string;
-//   event_name?: string;
-//   event_date?: string;
-//   start_time?: string;
-//   end_time?: string;
-//   total_amount: string;
-//   booking_status: "PENDING" | "CONFIRMED" | "CANCELLED" | "REFUNDED";
-//   payment_status: "PENDING" | "COMPLETED" | "FAILED" | "REFUNDED";
-//   payment_method?: "CREDIT_CARD" | "DEBIT_CARD" | "TELEBIRR" | "CASH";
-//   guest_email?: string;
-//   guest_name?: string;
-//   notes?: string;
-//   booked_at: string;
-//   cancelled_at?: string;
-//   created_at: string;
-//   updated_at: string;
-//   items?: BookingItemDetail[];
-//   tickets?: Ticket[];
-// }
-
 export interface BookingItemDetail {
   id: string;
   booking_id: string;
@@ -188,12 +164,11 @@ export interface BaseBooking {
   payment_method?: "CREDIT_CARD" | "DEBIT_CARD" | "TELEBIRR" | "CASH";
   guest_email?: string;
   guest_name?: string;
-  notes?: string;
   booked_at: string;
   created_at: string;
   updated_at: string;
   // Shared relations
-  tickets?: Ticket[];
+  tickets?: Ticket;
 }
 
 // 1. Specific interface for Single-Event bookings
@@ -209,7 +184,6 @@ export interface EventBooking extends BaseBooking {
 // 2. Specific interface for Multi-Game bookings
 export interface GameBooking extends BaseBooking {
   type: "GAME";
-  // For games, the details live inside the items array
   items: GameBookingItemDetail[];
 }
 
@@ -231,11 +205,14 @@ export interface GameBookingItemDetail {
 
 export interface Ticket {
   id: string;
+  booking_id?: string;
   ticket_code: string;
   qr_token: string;
   status: "ACTIVE" | "EXPIRED" | "CANCELLED" | "FULLY_USED";
   expires_at: string;
-  entitlements: Ticket_Product[];
+  created_at?: string;
+  updated_at?: string;
+  entitlements?: Ticket_Product[];
 }
 
 export interface Ticket_Product {
@@ -298,4 +275,42 @@ export interface DashboardStats {
   };
   recentEvents: Event[];
   recentBookings: Booking[];
+}
+
+// ==================== Types For Booking analytics ====================
+export interface BookingAnalytics {
+  bookingData: BookingData[];
+  gameBookingData: GameBookingData[];
+  topGameData: TopGameData[];
+  eventBookingData: EventBookingData[];
+}
+
+export interface BookingData {
+  date: string;
+  tickets: number;
+  revenue: number;
+}
+
+export interface GameBookingData {
+  game: string;
+  tickets: number;
+  revenue: number;
+  sessions: number;
+}
+
+export interface TopGameData {
+  game: string;
+  tickets: number;
+  revenue: number;
+  topTicketType: string;
+  topTicketPrice: number;
+  topTicketSold: number;
+}
+
+export interface EventBookingData {
+  event: string;
+  booked: number;
+  capacity: number;
+  occupancy: number;
+  revenue: number;
 }

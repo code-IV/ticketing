@@ -1,4 +1,4 @@
-const { query, getClient } = require("../config/db");
+const { query, getClient } = require("../../config/db");
 
 const Event = {
   /**
@@ -254,5 +254,108 @@ LIMIT $1 OFFSET $2;`;
     return result.rows[0] || null;
   },
 };
+const EventStats = {
+  async fetchEventsByRange(startDate, endDate, interval) {
+    const sql = `
+    SELECT 
+      e.id,
+      e.name,
+      e.event_date as date,
+      e.capacity,
+      COALESCE(SUM(bi.quantity), 0) as "ticketsSold",
+      COALESCE(SUM(bi.subtotal), 0) as revenue,
+      e.is_active as status
+    FROM events e
+    LEFT JOIN products p ON p.event_id = e.id
+    LEFT JOIN ticket_types tt ON tt.product_id = p.id
+    LEFT JOIN booking_items bi ON bi.ticket_type_id = tt.id
+    LEFT JOIN bookings b ON bi.booking_id = b.id AND b.status = 'CONFIRMED'
+    WHERE true
+    GROUP BY e.id
+    ORDER BY e.event_date ASC;
+  `;
 
-module.exports = Event;
+    const result = await query(sql);
+
+    // Note: For the "granularity" part, if the frontend dev wants a list
+    // grouped BY the period (e.g. Total Revenue every 2 weeks),
+    // we would use generate_series here.
+
+    return result.rows;
+  },
+  async getEventSummary(eventId) {
+    const sql = `
+      SELECT 
+        e.capacity,
+        SUM(bi.quantity) as tickets_sold,
+        SUM(bi.subtotal) as total_revenue
+      FROM events e
+      LEFT JOIN products p ON p.event_id = e.id
+      LEFT JOIN ticket_types tt ON tt.product_id = p.id
+      LEFT JOIN booking_items bi ON bi.ticket_type_id = tt.id
+      LEFT JOIN bookings b ON bi.booking_id = b.id AND b.status = 'CONFIRMED'
+      WHERE e.id = $1
+      GROUP BY e.capacity`;
+    const res = await query(sql, [eventId]);
+    return res.rows[0] || {};
+  },
+
+  async getTicketTypeStats(eventId) {
+    const sql = `
+      SELECT 
+        tt.id,
+        tt.category as type,
+        tt.price as "avgPrice",
+        COALESCE(SUM(bi.quantity), 0) as sold,
+        COALESCE(SUM(bi.subtotal), 0) as revenue
+      FROM ticket_types tt
+      JOIN products p ON tt.product_id = p.id
+      LEFT JOIN booking_items bi ON bi.ticket_type_id = tt.id
+      LEFT JOIN bookings b ON bi.booking_id = b.id AND b.status = 'CONFIRMED'
+      WHERE p.event_id = $1
+      GROUP BY tt.id, tt.category, tt.price`;
+    const res = await query(sql, [eventId]);
+    return res.rows;
+  },
+
+  async getTrends(eventId, { startDate, endDate, period }) {
+    // Helper to convert '2d' to '2 days'
+    const unitMap = { d: "days", w: "weeks", m: "months" };
+    const num = period.match(/\d+/)?.[0] || 1;
+    const unit = unitMap[period.match(/[a-z]+/)?.[0]] || "days";
+    const interval = `${num} ${unit}`;
+
+    const sql = `
+      WITH date_series AS (
+        SELECT generate_series($2::timestamp, $3::timestamp, $4::interval) as slot
+      )
+      SELECT 
+        ds.slot as date,
+        COALESCE(SUM(bi.subtotal), 0) as revenue,
+        COALESCE(SUM(bi.quantity), 0) as bookings
+      FROM date_series ds
+      LEFT JOIN bookings b ON b.status = 'CONFIRMED' 
+        AND b.created_at >= ds.slot 
+        AND b.created_at < ds.slot + $4::interval
+      LEFT JOIN booking_items bi ON bi.booking_id = b.id
+      LEFT JOIN ticket_types tt ON bi.ticket_type_id = tt.id
+      LEFT JOIN products p ON tt.product_id = p.id
+      WHERE p.event_id = $1 OR p.event_id IS NULL
+      GROUP BY ds.slot
+      ORDER BY ds.slot ASC`;
+
+    const res = await query(sql, [eventId, startDate, endDate, interval]);
+
+    return {
+      revenueTrend: res.rows.map((r) => ({
+        date: r.date,
+        revenue: parseFloat(r.revenue),
+      })),
+      bookingTrend: res.rows.map((r) => ({
+        date: r.date,
+        bookings: parseInt(r.bookings),
+      })),
+    };
+  },
+};
+module.exports = { Event, EventStats };

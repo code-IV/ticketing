@@ -6,6 +6,7 @@ import {
   Ticket,
   PaginatedResponse,
   ApiResponse,
+  BookingAnalytics,
 } from "@/types";
 
 export const bookingService = {
@@ -63,6 +64,21 @@ export const bookingService = {
     id: string,
   ): Promise<ApiResponse<{ tickets: Ticket }>> {
     const response = await api.get(`/bookings/${id}/tickets`);
+    return response.data;
+  },
+  async getAnalytics(
+    startDate: string,
+    endDate: string,
+    period: string = "d",
+  ): Promise<ApiResponse<BookingAnalytics>> {
+    const response = await api.get("/bookings/stats", {
+      params: {
+        period,
+        startDate,
+        endDate,
+      },
+    });
+
     return response.data;
   },
 };

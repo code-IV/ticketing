@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
-const bookingController = require("../controllers/bookingController");
-const { isAuthenticated } = require("../middleware/auth");
+const bookingController = require("../api/controllers/bookingController");
+const { isAuthenticated, isStaff, isAdmin } = require("../middleware/auth");
 const {
   createBookingRules,
   uuidParamRule,
@@ -25,6 +25,7 @@ router.get(
   handleValidation,
   bookingController.getMyBookings,
 );
+router.get("/stats", isAdmin, bookingController.getAnalytics);
 router.get("/reference/:reference", bookingController.getBookingByReference);
 router.get(
   "/:id",

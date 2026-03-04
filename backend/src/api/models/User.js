@@ -1,4 +1,4 @@
-const { query } = require("../config/db");
+const { query } = require("../../config/db");
 const bcrypt = require("bcrypt");
 
 const SALT_ROUNDS = 12;

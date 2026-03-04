@@ -11,7 +11,7 @@ import {
   TrendingUp,
   BarChart3,
   Activity,
-} from 'lucide-react';
+} from "lucide-react";
 import {
   LineChart,
   Line,
@@ -27,9 +27,10 @@ import {
   ResponsiveContainer,
   AreaChart,
   Area,
-} from 'recharts';
-import { format, subDays, isWithinInterval } from 'date-fns';
-import Link from 'next/link';
+} from "recharts";
+import { format, subDays, isWithinInterval } from "date-fns";
+import Link from "next/link";
+import { dashboardService } from "@/services/dashboardService";
 
 // ==================== Types ====================
 type DateRange = {
@@ -72,19 +73,107 @@ type TicketsData = {
 
 // ==================== Mock Data ====================
 const mockGames: Game[] = [
-  { id: 1, name: 'Cyber Realm', status: 'active', totalRevenue: 85000, totalBookings: 2100, avgOccupancy: 82, eventsCount: 5 },
-  { id: 2, name: 'Speed Racer', status: 'maintenance', totalRevenue: 42000, totalBookings: 1100, avgOccupancy: 68, eventsCount: 3 },
-  { id: 3, name: 'Fantasy Quest', status: 'active', totalRevenue: 120000, totalBookings: 3200, avgOccupancy: 91, eventsCount: 8 },
-  { id: 4, name: 'Space Odyssey', status: 'active', totalRevenue: 65000, totalBookings: 1800, avgOccupancy: 75, eventsCount: 4 },
-  { id: 5, name: 'Dragon Warriors', status: 'active', totalRevenue: 95000, totalBookings: 2700, avgOccupancy: 88, eventsCount: 6 },
-  { id: 6, name: 'Racing Thunder', status: 'maintenance', totalRevenue: 38000, totalBookings: 950, avgOccupancy: 62, eventsCount: 2 },
+  {
+    id: 1,
+    name: "Cyber Realm",
+    status: "active",
+    totalRevenue: 85000,
+    totalBookings: 2100,
+    avgOccupancy: 82,
+    eventsCount: 5,
+  },
+  {
+    id: 2,
+    name: "Speed Racer",
+    status: "maintenance",
+    totalRevenue: 42000,
+    totalBookings: 1100,
+    avgOccupancy: 68,
+    eventsCount: 3,
+  },
+  {
+    id: 3,
+    name: "Fantasy Quest",
+    status: "active",
+    totalRevenue: 120000,
+    totalBookings: 3200,
+    avgOccupancy: 91,
+    eventsCount: 8,
+  },
+  {
+    id: 4,
+    name: "Space Odyssey",
+    status: "active",
+    totalRevenue: 65000,
+    totalBookings: 1800,
+    avgOccupancy: 75,
+    eventsCount: 4,
+  },
+  {
+    id: 5,
+    name: "Dragon Warriors",
+    status: "active",
+    totalRevenue: 95000,
+    totalBookings: 2700,
+    avgOccupancy: 88,
+    eventsCount: 6,
+  },
+  {
+    id: 6,
+    name: "Racing Thunder",
+    status: "maintenance",
+    totalRevenue: 38000,
+    totalBookings: 950,
+    avgOccupancy: 62,
+    eventsCount: 2,
+  },
 ];
 
 const mockEvents: Event[] = [
-  { id: 101, name: 'Summer Pro League', game: 'Cyber Realm', date: '2026-08-15', status: 'Active', revenue: 12000, ticketsSold: 85, capacity: 100, occupancy: 85 },
-  { id: 102, name: 'Midnight Scrims', game: 'Cyber Realm', date: '2026-08-20', status: 'Sold Out', revenue: 18000, ticketsSold: 120, capacity: 120, occupancy: 100 },
-  { id: 103, name: 'Newbie Bootcamp', game: 'Fantasy Quest', date: '2026-09-01', status: 'Draft', revenue: 0, ticketsSold: 12, capacity: 50, occupancy: 24 },
-  { id: 104, name: 'Pro Tournament', game: 'Speed Racer', date: '2026-08-10', status: 'Active', revenue: 8500, ticketsSold: 42, capacity: 60, occupancy: 70 },
+  {
+    id: 101,
+    name: "Summer Pro League",
+    game: "Cyber Realm",
+    date: "2026-08-15",
+    status: "Active",
+    revenue: 12000,
+    ticketsSold: 85,
+    capacity: 100,
+    occupancy: 85,
+  },
+  {
+    id: 102,
+    name: "Midnight Scrims",
+    game: "Cyber Realm",
+    date: "2026-08-20",
+    status: "Sold Out",
+    revenue: 18000,
+    ticketsSold: 120,
+    capacity: 120,
+    occupancy: 100,
+  },
+  {
+    id: 103,
+    name: "Newbie Bootcamp",
+    game: "Fantasy Quest",
+    date: "2026-09-01",
+    status: "Draft",
+    revenue: 0,
+    ticketsSold: 12,
+    capacity: 50,
+    occupancy: 24,
+  },
+  {
+    id: 104,
+    name: "Pro Tournament",
+    game: "Speed Racer",
+    date: "2026-08-10",
+    status: "Active",
+    revenue: 8500,
+    ticketsSold: 42,
+    capacity: 60,
+    occupancy: 70,
+  },
 ];
 
 // Generate revenue time series (last 30 days)
@@ -93,7 +182,7 @@ const generateRevenueTimeSeries = (days = 30): RevenueData[] => {
   for (let i = days; i >= 0; i--) {
     const date = subDays(new Date(), i);
     data.push({
-      date: format(date, 'yyyy-MM-dd'),
+      date: format(date, "yyyy-MM-dd"),
       revenue: Math.floor(Math.random() * 5000) + 2000,
     });
   }
@@ -106,7 +195,7 @@ const generateTicketsTimeSeries = (days = 30): TicketsData[] => {
   for (let i = days; i >= 0; i--) {
     const date = subDays(new Date(), i);
     data.push({
-      date: format(date, 'yyyy-MM-dd'),
+      date: format(date, "yyyy-MM-dd"),
       ticketsSold: Math.floor(Math.random() * 150) + 50,
     });
   }
@@ -117,16 +206,19 @@ const mockRevenueTimeSeries = generateRevenueTimeSeries(30);
 const mockTicketsTimeSeries = generateTicketsTimeSeries(30);
 
 const revenueByTicketType = [
-  { type: 'Adult', revenue: 45000 },
-  { type: 'Child', revenue: 28000 },
-  { type: 'Senior', revenue: 15000 },
-  { type: 'Student', revenue: 22000 },
-  { type: 'Group', revenue: 15000 },
+  { type: "Adult", revenue: 45000 },
+  { type: "Child", revenue: 28000 },
+  { type: "Senior", revenue: 15000 },
+  { type: "Student", revenue: 22000 },
+  { type: "Group", revenue: 15000 },
 ];
 
-const revenueByGame = mockGames.map(g => ({ game: g.name, revenue: g.totalRevenue }));
+const revenueByGame = mockGames.map((g) => ({
+  game: g.name,
+  revenue: g.totalRevenue,
+}));
 
-const COLORS = ['#3b82f6', '#f97316', '#10b981', '#ef4444', '#8b5cf6'];
+const COLORS = ["#3b82f6", "#f97316", "#10b981", "#ef4444", "#8b5cf6"];
 
 // ==================== Components ====================
 const KpiCard = ({ title, value, icon: Icon, change, changeType, isDarkTheme }: {
@@ -143,9 +235,11 @@ const KpiCard = ({ title, value, icon: Icon, change, changeType, isDarkTheme }: 
         <p className={`text-sm font-medium ${isDarkTheme ? 'text-gray-400' : 'text-gray-600'}`}>{title}</p>
         <p className={`text-2xl font-bold ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}>{value}</p>
         {change && (
-          <p className={`text-sm font-medium ${
-            changeType === 'positive' ? 'text-green-600' : 'text-red-600'
-          }`}>
+          <p
+            className={`text-sm font-medium ${
+              changeType === "positive" ? "text-green-600" : "text-red-600"
+            }`}
+          >
             {change}
           </p>
         )}
@@ -157,23 +251,26 @@ const KpiCard = ({ title, value, icon: Icon, change, changeType, isDarkTheme }: 
   </div>
 );
 
-const DateRangePicker = ({ value, onChange }: {
+const DateRangePicker = ({
+  value,
+  onChange,
+}: {
   value: DateRange;
   onChange: (range: DateRange) => void;
 }) => {
   const ranges = [
     {
-      label: 'Last 7 days',
+      label: "Last 7 days",
       start: subDays(new Date(), 7),
       end: new Date(),
     },
     {
-      label: 'Last 30 days',
+      label: "Last 30 days",
       start: subDays(new Date(), 30),
       end: new Date(),
     },
     {
-      label: 'Last 3 months',
+      label: "Last 3 months",
       start: subDays(new Date(), 90),
       end: new Date(),
     },
@@ -185,11 +282,11 @@ const DateRangePicker = ({ value, onChange }: {
         className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
         value={value.label}
         onChange={(e) => {
-          const selected = ranges.find(r => r.label === e.target.value);
+          const selected = ranges.find((r) => r.label === e.target.value);
           if (selected) onChange(selected);
         }}
       >
-        {ranges.map(range => (
+        {ranges.map((range) => (
           <option key={range.label} value={range.label}>
             {range.label}
           </option>
@@ -204,22 +301,42 @@ export default function AnalyticsDashboardPage() {
   const { isDarkTheme } = useTheme();
   const router = useRouter();
   const [dateRange, setDateRange] = useState({
-    label: 'Last 30 days',
+    label: "d",
     start: subDays(new Date(), 30),
     end: new Date(),
   });
+  useEffect(() => {
+    loadDashboard(
+      dateRange.start.toISOString(),
+      dateRange.end.toISOString(),
+      dateRange.label,
+    );
+  }, []);
 
+  const loadDashboard = async (start: string, end: string, label: string) => {
+    const response = await dashboardService.getDashboard(start, end, label);
+    console.log(response.data);
+  };
   // Filter data based on date range
-  const filterDataByDateRange = (data: RevenueData[] | TicketsData[], range: DateRange) => {
+  const filterDataByDateRange = (
+    data: RevenueData[] | TicketsData[],
+    range: DateRange,
+  ) => {
     if (!range.start || !range.end) return data;
-    return data.filter(d => {
+    return data.filter((d) => {
       const date = new Date(d.date);
       return isWithinInterval(date, { start: range.start, end: range.end });
     });
   };
 
-  const filteredRevenueSeries = filterDataByDateRange(mockRevenueTimeSeries, dateRange);
-  const filteredTicketsSeries = filterDataByDateRange(mockTicketsTimeSeries, dateRange);
+  const filteredRevenueSeries = filterDataByDateRange(
+    mockRevenueTimeSeries,
+    dateRange,
+  );
+  const filteredTicketsSeries = filterDataByDateRange(
+    mockTicketsTimeSeries,
+    dateRange,
+  );
 
   return (
     <div className={`min-h-screen p-6 ${isDarkTheme ? 'bg-[#0A0A0A]' : 'bg-gray-50'}`}>
@@ -256,16 +373,28 @@ export default function AnalyticsDashboardPage() {
         {/* Navigation Links */}
         <div className={`rounded-xl p-4 mb-6 ${isDarkTheme ? 'bg-[#0A0A0A] border-gray-700' : 'bg-white border-gray-200'}`}>
           <div className="flex flex-wrap gap-4">
-            <Link href="/analitics/revenue" className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+            <Link
+              href="/analitics/revenue"
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            >
               Revenue Analytics
             </Link>
-            <Link href="/analitics/games" className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+            <Link
+              href="/analitics/games"
+              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+            >
               Games Analytics
             </Link>
-            <Link href="/analitics/events" className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
+            <Link
+              href="/analitics/events"
+              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+            >
               Events Analytics
             </Link>
-            <Link href="/analitics/bookings" className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700">
+            <Link
+              href="/analitics/bookings"
+              className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700"
+            >
               Booking Analytics
             </Link>
           </div>
@@ -294,7 +423,12 @@ export default function AnalyticsDashboardPage() {
                     <XAxis dataKey="date" />
                     <YAxis />
                     <Tooltip />
-                    <Area type="monotone" dataKey="revenue" stroke="#3b82f6" fill="#93c5fd" />
+                    <Area
+                      type="monotone"
+                      dataKey="revenue"
+                      stroke="#3b82f6"
+                      fill="#93c5fd"
+                    />
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
@@ -328,7 +462,12 @@ export default function AnalyticsDashboardPage() {
                     <XAxis dataKey="date" />
                     <YAxis />
                     <Tooltip />
-                    <Area type="monotone" dataKey="ticketsSold" stroke="#10b981" fill="#86efac" />
+                    <Area
+                      type="monotone"
+                      dataKey="ticketsSold"
+                      stroke="#10b981"
+                      fill="#86efac"
+                    />
                   </AreaChart>
                 </ResponsiveContainer>
               </div>

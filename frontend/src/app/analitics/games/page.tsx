@@ -85,10 +85,50 @@ const mockGames: Game[] = [
 ];
 
 const mockEvents: Event[] = [
-  { id: 101, name: 'Summer Pro League', game: 'Cyber Realm', date: '2026-08-15', status: 'Active', revenue: 12000, ticketsSold: 85, capacity: 100, occupancy: 85 },
-  { id: 102, name: 'Midnight Scrims', game: 'Cyber Realm', date: '2026-08-20', status: 'Sold Out', revenue: 18000, ticketsSold: 120, capacity: 120, occupancy: 100 },
-  { id: 103, name: 'Newbie Bootcamp', game: 'Fantasy Quest', date: '2026-09-01', status: 'Draft', revenue: 0, ticketsSold: 12, capacity: 50, occupancy: 24 },
-  { id: 104, name: 'Pro Tournament', game: 'Speed Racer', date: '2026-08-10', status: 'Active', revenue: 8500, ticketsSold: 42, capacity: 60, occupancy: 70 },
+  {
+    id: 101,
+    name: "Summer Pro League",
+    game: "Cyber Realm",
+    date: "2026-08-15",
+    status: "Active",
+    revenue: 12000,
+    ticketsSold: 85,
+    capacity: 100,
+    occupancy: 85,
+  },
+  {
+    id: 102,
+    name: "Midnight Scrims",
+    game: "Cyber Realm",
+    date: "2026-08-20",
+    status: "Sold Out",
+    revenue: 18000,
+    ticketsSold: 120,
+    capacity: 120,
+    occupancy: 100,
+  },
+  {
+    id: 103,
+    name: "Newbie Bootcamp",
+    game: "Fantasy Quest",
+    date: "2026-09-01",
+    status: "Draft",
+    revenue: 0,
+    ticketsSold: 12,
+    capacity: 50,
+    occupancy: 24,
+  },
+  {
+    id: 104,
+    name: "Pro Tournament",
+    game: "Speed Racer",
+    date: "2026-08-10",
+    status: "Active",
+    revenue: 8500,
+    ticketsSold: 42,
+    capacity: 60,
+    occupancy: 70,
+  },
 ];
 
 const getGameRevenueSeries = (gameId: number, dateRange: DateRange): RevenueData[] => {
@@ -98,7 +138,7 @@ const getGameRevenueSeries = (gameId: number, dateRange: DateRange): RevenueData
   return Array.from({ length: days }, (_, i) => {
     const date = new Date(dateRange.start!.getTime() + i * 24 * 60 * 60 * 1000);
     return {
-      date: format(date, 'yyyy-MM-dd'),
+      date: format(date, "yyyy-MM-dd"),
       revenue: base + Math.floor(Math.random() * 3000) + 1000,
     };
   });
@@ -117,8 +157,14 @@ const getGameBookingsSeries = (gameId: number, dateRange: DateRange): BookingDat
   });
 };
 
-const revenueByGame = mockGames.map(g => ({ game: g.name, revenue: g.totalRevenue }));
-const ticketsSoldByGame = mockGames.map(g => ({ game: g.name, tickets: g.ticketsSold }));
+const revenueByGame = mockGames.map((g) => ({
+  game: g.name,
+  revenue: g.totalRevenue,
+}));
+const ticketsSoldByGame = mockGames.map((g) => ({
+  game: g.name,
+  tickets: g.ticketsSold,
+}));
 
 const getTicketTypeData = (gameId: number): TicketTypeData[] => {
   // Base ticket types for all games
@@ -134,12 +180,14 @@ const getTicketTypeData = (gameId: number): TicketTypeData[] => {
       ...baseTicketTypes,
       { type: 'Pro Pass', avgPrice: 120, sold: 15, revenue: 1800 },
     ];
-  } else if (gameId === 3) { // Fantasy Quest
+  } else if (gameId === 3) {
+    // Fantasy Quest
     return [
       ...baseTicketTypes,
       { type: 'Family Pack', avgPrice: 95, sold: 25, revenue: 2375 },
     ];
   }
+
 
   return baseTicketTypes;
 };
@@ -170,10 +218,27 @@ export default function GamesAnalyticsPage() {
   const router = useRouter();
   const [selectedGame, setSelectedGame] = useState<Game | null>(null);
   const [dateRange, setDateRange] = useState<DateRange>({
-    label: 'Last 7 days',
+    label: "3d",
     start: subDays(new Date(), 7),
     end: new Date(),
   });
+
+  useEffect(() => {
+    loadEvent(
+      dateRange.start.toISOString(),
+      dateRange.end.toISOString(),
+      dateRange.label,
+    );
+  }, []);
+
+  const loadEvent = async (
+    startDate: string,
+    endDate: string,
+    period: string,
+  ) => {
+    const response = await gameService.getDashboard(startDate, endDate, period);
+    console.log(response.data);
+  };
 
   if (selectedGame) {
     // Show detailed view for selected game
@@ -372,7 +437,7 @@ export default function GamesAnalyticsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {mockGames.map(game => (
+                  {mockGames.map((game) => (
                     <tr
                       key={game.id}
                       className={`border-t cursor-pointer ${isDarkTheme ? 'border-gray-700 hover:bg-[#1a1a1a]' : 'border-gray-100 hover:bg-gray-50'}`}

@@ -24,6 +24,7 @@ import {
   ArrowRight,
   Link,
 } from "lucide-react";
+import { QRCodeCanvas } from "qrcode.react";
 
 // ── COMPONENTS ─────────────────────────────────────────────────────────────
 
@@ -362,3 +363,4 @@ export default function BookingDetailPage({
     </div>
   );
 }
+

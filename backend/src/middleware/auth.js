@@ -31,6 +31,25 @@ const isAdmin = (req, res, next) => {
 };
 
 /**
+ * Check if user is staff
+ */
+const isStaff = (req, res, next) => {
+  if (
+    req.session &&
+    req.session.user &&
+    (req.session.user.role === "ADMIN" || req.session.user.role === "STAFF")
+  ) {
+    return next();
+  }
+  return apiResponse(
+    res,
+    403,
+    false,
+    "Access denied. Staff privileges required.",
+  );
+};
+
+/**
  * Check if user owns the resource or is admin
  */
 const isOwnerOrAdmin = (paramName = "userId") => {
@@ -56,4 +75,4 @@ const isOwnerOrAdmin = (paramName = "userId") => {
   };
 };
 
-module.exports = { isAuthenticated, isAdmin, isOwnerOrAdmin };
+module.exports = { isAuthenticated, isAdmin, isStaff, isOwnerOrAdmin };

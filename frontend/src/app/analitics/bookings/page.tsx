@@ -4,14 +4,12 @@ import { useState } from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useRouter } from 'next/navigation';
 import {
-  Calendar,
   Ticket,
   DollarSign,
   TrendingUp,
-  BarChart3,
-  Users,
   Activity,
-} from 'lucide-react';
+  Loader2,
+} from "lucide-react";
 import {
   LineChart,
   Line,
@@ -126,9 +124,9 @@ const KpiCard = ({ title, value, icon: Icon, change, changeType, isDarkTheme }: 
         <p className={`text-sm font-medium ${isDarkTheme ? 'text-gray-400' : 'text-gray-600'}`}>{title}</p>
         <p className={`text-2xl font-bold ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}>{value}</p>
         {change && (
-          <p className={`text-sm font-medium ${
-            changeType === 'positive' ? 'text-green-600' : 'text-red-600'
-          }`}>
+          <p
+            className={`text-sm font-medium ${changeType === "positive" ? "text-green-600" : "text-red-600"}`}
+          >
             {change}
           </p>
         )}
@@ -145,7 +143,7 @@ export default function BookingAnalyticsPage() {
   const { isDarkTheme } = useTheme();
   const router = useRouter();
   const [dateRange, setDateRange] = useState({
-    label: 'Last 7 days',
+    label: "7d",
     start: subDays(new Date(), 7),
     end: new Date(),
   });

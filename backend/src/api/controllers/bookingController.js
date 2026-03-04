@@ -1,8 +1,9 @@
-const Booking = require("../models/Booking");
+const { Booking } = require("../models/Booking");
 const Event = require("../models/Event");
 const TicketType = require("../models/TicketType");
 const Ticket = require("../models/Ticket");
-const { apiResponse } = require("../utils/helpers");
+const { apiResponse } = require("../../utils/helpers");
+const bookingStatsService = require("../services/bookingStatsService");
 
 const bookingController = {
   /**
@@ -284,6 +285,64 @@ const bookingController = {
       return apiResponse(res, 200, true, "Tickets retrieved.", { tickets });
     } catch (err) {
       next(err);
+    }
+  },
+  /**
+   * GET /api/booking/stats
+   */
+
+  async getAnalytics(req, res) {
+    try {
+      const { period = "d", startDate, endDate } = req.query;
+
+      // Validate period format: e.g., "d", "2d", "w", "2w", "m", "2m"
+      const periodRegex = /^(\d*)([dwm])$/;
+      const match = period.match(periodRegex);
+
+      if (!match) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Invalid period format" });
+      }
+
+      const interval = parseInt(match[1]) || 1; // default to 1 if no number
+      const unit = match[2]; // "d", "w", "m"
+
+      // Validate startDate & endDate
+      if (!startDate || !endDate) {
+        return res
+          .status(400)
+          .json({
+            success: false,
+            message: "startDate and endDate are required",
+          });
+      }
+
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+
+      if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Invalid date format" });
+      }
+
+      // ✅ Pass as object
+      const data = await bookingStatsService.getDashboardStats({
+        period: unit,
+        start,
+        end,
+        interval,
+      });
+
+      res.status(200).json({
+        success: true,
+        period,
+        data,
+      });
+    } catch (error) {
+      console.error("Analytics Error:", error);
+      res.status(500).json({ success: false, message: error.message });
     }
   },
 };

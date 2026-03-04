@@ -47,10 +47,50 @@ type BookingData = {
 
 // ==================== Mock Data ====================
 const mockEvents: Event[] = [
-  { id: 101, name: 'Summer Pro League', game: 'Cyber Realm', date: '2026-08-15', status: 'Active', revenue: 12000, ticketsSold: 85, capacity: 100, occupancy: 85 },
-  { id: 102, name: 'Midnight Scrims', game: 'Cyber Realm', date: '2026-08-20', status: 'Sold Out', revenue: 18000, ticketsSold: 120, capacity: 120, occupancy: 100 },
-  { id: 103, name: 'Newbie Bootcamp', game: 'Fantasy Quest', date: '2026-09-01', status: 'Draft', revenue: 0, ticketsSold: 12, capacity: 50, occupancy: 24 },
-  { id: 104, name: 'Pro Tournament', game: 'Speed Racer', date: '2026-08-10', status: 'Active', revenue: 8500, ticketsSold: 42, capacity: 60, occupancy: 70 },
+  {
+    id: 101,
+    name: "Summer Pro League",
+    game: "Cyber Realm",
+    date: "2026-08-15",
+    status: "Active",
+    revenue: 12000,
+    ticketsSold: 85,
+    capacity: 100,
+    occupancy: 85,
+  },
+  {
+    id: 102,
+    name: "Midnight Scrims",
+    game: "Cyber Realm",
+    date: "2026-08-20",
+    status: "Sold Out",
+    revenue: 18000,
+    ticketsSold: 120,
+    capacity: 120,
+    occupancy: 100,
+  },
+  {
+    id: 103,
+    name: "Newbie Bootcamp",
+    game: "Fantasy Quest",
+    date: "2026-09-01",
+    status: "Draft",
+    revenue: 0,
+    ticketsSold: 12,
+    capacity: 50,
+    occupancy: 24,
+  },
+  {
+    id: 104,
+    name: "Pro Tournament",
+    game: "Speed Racer",
+    date: "2026-08-10",
+    status: "Active",
+    revenue: 8500,
+    ticketsSold: 42,
+    capacity: 60,
+    occupancy: 70,
+  },
 ];
 
 // Generate revenue time series (last 30 days)
@@ -59,7 +99,7 @@ const generateRevenueTimeSeries = (days = 30): BookingData[] => {
   for (let i = days; i >= 0; i--) {
     const date = subDays(new Date(), i);
     data.push({
-      date: format(date, 'yyyy-MM-dd'),
+      date: format(date, "yyyy-MM-dd"),
       bookings: Math.floor(Math.random() * 50) + 20,
     });
   }
@@ -93,21 +133,45 @@ export default function EventsAnalyticsPage() {
   const { isDarkTheme } = useTheme();
   const router = useRouter();
   const [dateRange, setDateRange] = useState({
-    label: 'Last 7 days',
+    label: "1d",
     start: subDays(new Date(), 7),
     end: new Date(),
   });
 
+  useEffect(() => {
+    loadEvent(
+      dateRange.start.toISOString(),
+      dateRange.end.toISOString(),
+      dateRange.label,
+    );
+  }, []);
+
+  const loadEvent = async (
+    startDate: string,
+    endDate: string,
+    period: string,
+  ) => {
+    const response = await eventService.getDashboard(
+      startDate,
+      endDate,
+      period,
+    );
+    console.log(response.data);
+  };
+
   // Filter data based on date range
   const filterDataByDateRange = (data: BookingData[], range: DateRange) => {
     if (!range.start || !range.end) return data;
-    return data.filter(d => {
+    return data.filter((d) => {
       const date = new Date(d.date);
       return range.start && range.end && isWithinInterval(date, { start: range.start as Date, end: range.end as Date });
     });
   };
 
-  const filteredBookingsSeries = filterDataByDateRange(mockBookingsTimeSeries, dateRange);
+  const filteredBookingsSeries = filterDataByDateRange(
+    mockBookingsTimeSeries,
+    dateRange,
+  );
 
   return (
     <div className={`min-h-screen p-6 ${isDarkTheme ? 'bg-[#0A0A0A]' : 'bg-gray-50'}`}>
