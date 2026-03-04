@@ -1,4 +1,4 @@
-const { Game } = require("../models/Games");
+const { Games } = require("../models/Games");
 const { gameStatsService } = require("../services/gameService");
 const { apiResponse } = require("../../utils/helpers");
 
@@ -9,7 +9,7 @@ const gameController = {
   async createGame(req, res, next) {
     try {
       const { name, description, rules, status, ticket_types } = req.body;
-      const game = await Game.create({
+      const game = await Games.create({
         name,
         description,
         rules,
@@ -28,7 +28,7 @@ const gameController = {
     try {
       const { id } = req.params;
       const { name, description, rules, status, ticket_types } = req.body;
-      const game = await Game.update(id, {
+      const game = await Games.update(id, {
         name,
         description,
         rules,
@@ -45,7 +45,7 @@ const gameController = {
    */
   async getAllGames(req, res, next) {
     try {
-      const games = await Game.getAll();
+      const games = await Games.getAll();
       return apiResponse(res, 200, true, "GET game successful", games);
     } catch (err) {
       next(err);
@@ -56,7 +56,7 @@ const gameController = {
    */
   async getGameWithId(req, res, next) {
     try {
-      const game = await Game.getById(req.params.id);
+      const game = await Games.getById(req.params.id);
       if (!game) {
         return apiResponse(res, 404, false, "Game not found");
       }
@@ -70,7 +70,7 @@ const gameController = {
    */
   async deleteGameWithId(req, res, next) {
     try {
-      await Game.deleteById(req.params.id);
+      await Games.deleteById(req.params.id);
       return apiResponse(res, 200, true, "DELETE successful");
     } catch (err) {
       next(err);
