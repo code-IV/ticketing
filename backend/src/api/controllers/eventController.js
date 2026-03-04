@@ -1,4 +1,5 @@
-const Event = require("../models/Event");
+const { Event } = require("../models/Event");
+const { eventStatsService } = require("../services/eventService");
 const TicketType = require("../models/TicketType");
 const { apiResponse } = require("../../utils/helpers");
 
@@ -75,4 +76,23 @@ const eventController = {
   },
 };
 
-module.exports = eventController;
+const eventStatsController = {
+  async getEventDashboard(req, res) {
+    try {
+      const { eventId } = req.params;
+      const { startDate, endDate, period = "1d" } = req.query;
+
+      const stats = await eventStatsService.getEventAnalytics(eventId, {
+        startDate,
+        endDate,
+        period,
+      });
+
+      res.json({ success: true, data: stats });
+    } catch (error) {
+      console.log(error);
+      res.status(500).json({ success: false, message: error.message });
+    }
+  },
+};
+module.exports = { eventController, eventStatsController };

@@ -308,14 +308,14 @@ export default function AnalyticsDashboardPage() {
   });
   useEffect(() => {
     loadDashboard(
-      dateRange.label,
       dateRange.start.toISOString(),
       dateRange.end.toISOString(),
+      dateRange.label,
     );
   }, []);
 
-  const loadDashboard = async (label: string, start: string, end: string) => {
-    const response = await dashboardService.getDashboard(label, start, end);
+  const loadDashboard = async (start: string, end: string, label: string) => {
+    const response = await dashboardService.getDashboard(start, end, label);
     console.log(response.data);
   };
   // Filter data based on date range

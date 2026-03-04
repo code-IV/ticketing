@@ -67,9 +67,9 @@ export const bookingService = {
     return response.data;
   },
   async getAnalytics(
-    period: string = "7d",
-    startDate?: string,
-    endDate?: string,
+    startDate: string,
+    endDate: string,
+    period: string = "d",
   ): Promise<ApiResponse<BookingAnalytics>> {
     const response = await api.get("/bookings/stats", {
       params: {

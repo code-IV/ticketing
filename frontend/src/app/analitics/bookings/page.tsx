@@ -73,20 +73,20 @@ export default function BookingAnalyticsPage() {
 
   useEffect(() => {
     populateAnalytics(
-      dateRange.label,
       dateRange.start.toISOString(),
       dateRange.end.toISOString(),
+      dateRange.label,
     );
   }, [dateRange]);
 
   const populateAnalytics = async (
+    start: string,
+    end: string,
     label: string,
-    start?: string,
-    end?: string,
   ) => {
     try {
       setLoading(true);
-      const response = await bookingService.getAnalytics(label, start, end);
+      const response = await bookingService.getAnalytics(start, end, label);
       setAnalytics(response.data || null);
     } catch (err) {
       console.error("Failed to fetch analytics:", err);
