@@ -244,9 +244,12 @@ export default function BookingDetailPage({
               >
                 <ArrowLeft size={14} /> Back to List
               </Link>
-              <h1 className={`text-5xl md:text-6xl font-black tracking-tighter leading-none italic uppercase ${isDarkTheme ? 'text-white' : 'text-slate-900'}`}>
-                {booking.event_name}
-              </h1>
+              <div className="space-y-2">
+                <h1 className={`text-5xl md:text-6xl font-black tracking-tighter leading-none italic uppercase ${isDarkTheme ? 'text-white' : 'text-slate-900'}`}>
+                  {booking.event_name}
+                </h1>
+
+              </div>
               <p className={`mt-2 text-sm font-medium ${isDarkTheme ? 'text-gray-500' : 'text-slate-500'}`}>
                 Pass for{" "}
                 <span className="text-accent font-bold uppercase">

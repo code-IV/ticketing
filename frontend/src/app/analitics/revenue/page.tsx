@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import { useTheme } from '@/contexts/ThemeContext';
+import { useRouter } from 'next/navigation';
 import {
   DollarSign,
   TrendingUp,
@@ -21,10 +23,14 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { format, subDays, isWithinInterval } from 'date-fns';
-import AnalyticsHeader from '@/components/analytics/AnalyticsHeader';
-import { DateRange } from '@/components/analytics/DateRangePicker';
 
 // ==================== Types ====================
+type DateRange = {
+  start: Date | null;
+  end: Date | null;
+  label: string;
+};
+
 type RevenueData = {
   date: string;
   revenue: number;
@@ -56,18 +62,19 @@ const revenueByTicketType = [
 const COLORS = ['#3b82f6', '#f97316', '#10b981', '#ef4444', '#8b5cf6'];
 
 // ==================== Components ====================
-const KpiCard = ({ title, value, icon: Icon, change, changeType }: {
+const KpiCard = ({ title, value, icon: Icon, change, changeType, isDarkTheme }: {
   title: string;
   value: string;
   icon: any;
   change?: string;
   changeType?: 'positive' | 'negative';
+  isDarkTheme: boolean;
 }) => (
-  <div className="bg-white border border-gray-200 rounded-xl p-6">
+  <div className={`rounded-xl p-6 ${isDarkTheme ? 'bg-[#0A0A0A] border-gray-700' : 'bg-white border-gray-200'}`}>
     <div className="flex items-center justify-between">
       <div>
-        <p className="text-sm font-medium text-gray-600">{title}</p>
-        <p className="text-2xl font-bold text-gray-900">{value}</p>
+        <p className={`text-sm font-medium ${isDarkTheme ? 'text-gray-400' : 'text-gray-600'}`}>{title}</p>
+        <p className={`text-2xl font-bold ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}>{value}</p>
         {change && (
           <p className={`text-sm font-medium ${
             changeType === 'positive' ? 'text-green-600' : 'text-red-600'
@@ -76,8 +83,8 @@ const KpiCard = ({ title, value, icon: Icon, change, changeType }: {
           </p>
         )}
       </div>
-      <div className="p-3 bg-blue-50 rounded-lg">
-        <Icon className="w-6 h-6 text-accent" />
+      <div className={`p-3 rounded-lg ${isDarkTheme ? 'bg-indigo-900/20' : 'bg-blue-50'}`}>
+        <Icon className={`w-6 h-6 ${isDarkTheme ? 'text-accent' : 'text-accent'}`} />
       </div>
     </div>
   </div>
@@ -85,6 +92,8 @@ const KpiCard = ({ title, value, icon: Icon, change, changeType }: {
 
 // ==================== Main Component ====================
 export default function RevenueAnalyticsPage() {
+  const { isDarkTheme } = useTheme();
+  const router = useRouter();
   const [dateRange, setDateRange] = useState({
     label: 'Last 7 days',
     start: subDays(new Date(), 7),
@@ -96,32 +105,63 @@ export default function RevenueAnalyticsPage() {
     if (!range.start || !range.end) return data;
     return data.filter(d => {
       const date = new Date(d.date);
-      return isWithinInterval(date, { start: range.start, end: range.end });
+      return range.start && range.end && isWithinInterval(date, { start: range.start as Date, end: range.end as Date });
     });
   };
 
   const filteredRevenueSeries = filterDataByDateRange(mockRevenueTimeSeries, dateRange);
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className={`min-h-screen p-6 ${isDarkTheme ? 'bg-[#0A0A0A]' : 'bg-gray-50'}`}>
       <div className="max-w-7xl mx-auto">
-        <AnalyticsHeader 
-          title="Revenue Analytics" 
-          dateRange={dateRange} 
-          onDateRangeChange={setDateRange} 
-        />
+        {/* Header with title and date picker */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between mb-6">
+          <h1 className={`text-3xl font-bold ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}>Revenue Analytics</h1>
+          <div className="flex items-center gap-2">
+            <select
+              className={`px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
+                isDarkTheme 
+                  ? 'bg-gray-800 border-gray-600 text-white focus:ring-blue-400' 
+                  : 'bg-white border-gray-300 text-gray-900 focus:ring-blue-500'
+              }`}
+              style={{ color: isDarkTheme ? 'white' : '#111827' }}
+              value={dateRange.label}
+              onChange={(e) => {
+                const ranges = [
+                  { label: 'Last 7 days', start: subDays(new Date(), 7), end: new Date() },
+                  { label: 'Last 30 days', start: subDays(new Date(), 30), end: new Date() },
+                  { label: 'Last 3 months', start: subDays(new Date(), 90), end: new Date() },
+                ];
+                const selected = ranges.find(r => r.label === e.target.value);
+                if (selected) setDateRange(selected);
+              }}
+            >
+              <option value="Last 7 days">Last 7 days</option>
+              <option value="Last 30 days">Last 30 days</option>
+              <option value="Last 3 months">Last 3 months</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Back Navigation */}
+        <button
+          onClick={() => router.push('/analitics')}
+          className={`flex items-center gap-2 text-sm mb-6 ${isDarkTheme ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-gray-900'}`}
+        >
+          ← Back to Analytics Dashboard
+        </button>
 
         {/* Revenue Content */}
         <div className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <KpiCard title="Total Revenue" value="$125,000" icon={DollarSign} />
-            <KpiCard title="Avg Revenue/Booking" value="$39.06" icon={TrendingUp} />
-            <KpiCard title="Projected (this month)" value="$132,000" icon={BarChart3} change="+5.6%" changeType="positive" />
+            <KpiCard title="Total Revenue" value="$125,000" icon={DollarSign} isDarkTheme={isDarkTheme} />
+            <KpiCard title="Avg Revenue/Booking" value="$39.06" icon={TrendingUp} isDarkTheme={isDarkTheme} />
+            <KpiCard title="Projected (this month)" value="$132,000" icon={BarChart3} change="+5.6%" changeType="positive" isDarkTheme={isDarkTheme} />
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="bg-white border border-gray-200 rounded-xl p-4">
-              <h3 className="font-semibold text-gray-900 mb-4">Revenue Over Time</h3>
+            <div className={`rounded-xl p-4 ${isDarkTheme ? 'bg-[#0A0A0A] border-gray-700' : 'bg-white border-gray-200'}`}>
+              <h3 className={`font-semibold mb-4 ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}>Revenue Over Time</h3>
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={filteredRevenueSeries}>
                   <CartesianGrid strokeDasharray="3 3" />
@@ -132,8 +172,8 @@ export default function RevenueAnalyticsPage() {
                 </LineChart>
               </ResponsiveContainer>
             </div>
-            <div className="bg-white border border-gray-200 rounded-xl p-4">
-              <h3 className="font-semibold text-gray-900 mb-4">Revenue by Ticket Type</h3>
+            <div className={`rounded-xl p-4 ${isDarkTheme ? 'bg-[#0A0A0A] border-gray-700' : 'bg-white border-gray-200'}`}>
+              <h3 className={`font-semibold mb-4 ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}>Revenue by Ticket Type</h3>
               <ResponsiveContainer width="100%" height={300}>
                 <RePieChart>
                   <Pie
@@ -156,8 +196,8 @@ export default function RevenueAnalyticsPage() {
             </div>
           </div>
 
-          <div className="bg-white border border-gray-200 rounded-xl p-4">
-            <h3 className="font-semibold text-gray-900 mb-4">Revenue by Game</h3>
+          <div className={`rounded-xl p-4 ${isDarkTheme ? 'bg-[#0A0A0A] border-gray-700' : 'bg-white border-gray-200'}`}>
+            <h3 className={`font-semibold mb-4 ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}>Revenue by Game</h3>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={[
                 { game: 'Cyber Realm', revenue: 85000 },

@@ -4,7 +4,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 export default function AdminDashboard() {
   const { isDarkTheme } = useTheme();
   return (
-    <div className="space-y-8">
+    <div className={`min-h-screen p-8 ${isDarkTheme ? 'bg-[#0A0A0A]' : 'bg-[#F8FAFC]'} space-y-8`}>
       <h1 className={`text-2xl font-bold tracking-tight ${isDarkTheme ? 'text-white' : 'text-gray-800'}`}>Management Overview</h1>
 
       {/* Quick Actions Grid */}
