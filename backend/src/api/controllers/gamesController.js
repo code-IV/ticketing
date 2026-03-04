@@ -1,4 +1,5 @@
-const Game = require("../models/Games");
+const { Game } = require("../models/Games");
+const { gameStatsService } = require("../services/gameService");
 const { apiResponse } = require("../../utils/helpers");
 
 const gameController = {
@@ -76,4 +77,30 @@ const gameController = {
     }
   },
 };
-module.exports = gameController;
+
+const gameStatsController = {
+  async getGameStats(req, res) {
+    try {
+      const { gameId } = req.params;
+      const { startDate, endDate, period = "1d" } = req.query;
+
+      const stats = await gameStatsService.getGameStats(gameId, {
+        startDate,
+        endDate,
+        period,
+      });
+
+      return res.status(200).json({
+        success: true,
+        data: stats,
+      });
+    } catch (error) {
+      console.error(error);
+      res
+        .status(500)
+        .json({ success: false, message: "Internal Server Error" });
+    }
+  },
+};
+
+module.exports = { gameController, gameStatsController };

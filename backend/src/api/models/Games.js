@@ -180,4 +180,70 @@ const Games = {
     return result.rows[0];
   },
 };
-module.exports = Games;
+
+const GameStats = {
+  async getGameSummary(gameId, { startDate, endDate }) {
+    const sql = `
+    SELECT 
+      SUM(bi.subtotal) as total_revenue,
+      COUNT(DISTINCT bi.booking_id) as total_bookings
+    FROM booking_items bi
+    JOIN ticket_types tt ON bi.ticket_type_id = tt.id
+    JOIN products p ON tt.product_id = p.id
+    JOIN payments pay ON bi.booking_id = pay.booking_id
+    WHERE p.game_id = $1 
+      AND pay.status = 'COMPLETED'
+      AND pay.paid_at BETWEEN $2 AND $3
+  `;
+    const res = await query(sql, [gameId, startDate, endDate]);
+    return res.rows[0];
+  },
+
+  async getTrends(gameId, { startDate, endDate, fullInterval }) {
+    // This query generates a series of dates and joins sales onto them
+    const sql = `
+    WITH date_series AS (
+      SELECT generate_series($2::timestamp, $3::timestamp, $4::interval) as period_start
+    )
+    SELECT 
+      ds.period_start,
+      COALESCE(SUM(bi.subtotal), 0) as revenue,
+      COALESCE(COUNT(DISTINCT bi.booking_id), 0) as bookings
+    FROM date_series ds
+    LEFT JOIN payments pay ON pay.paid_at >= ds.period_start 
+      AND pay.paid_at < ds.period_start + $4::interval
+      AND pay.status = 'COMPLETED'
+    LEFT JOIN booking_items bi ON pay.booking_id = bi.booking_id
+    LEFT JOIN ticket_types tt ON bi.ticket_type_id = tt.id
+    LEFT JOIN products p ON tt.product_id = p.id
+    WHERE (p.game_id = $1 OR p.game_id IS NULL)
+    GROUP BY ds.period_start
+    ORDER BY ds.period_start ASC
+  `;
+    const res = await query(sql, [gameId, startDate, endDate, fullInterval]);
+    return res.rows;
+  },
+
+  async getTicketPerformance(gameId, { startDate, endDate }) {
+    const sql = `
+    SELECT 
+      tt.id,
+      tt.category,
+      tt.price,
+      SUM(bi.quantity) as "ticket sold",
+      SUM(bi.subtotal) as revenue
+    FROM ticket_types tt
+    JOIN products p ON tt.product_id = p.id
+    LEFT JOIN booking_items bi ON bi.ticket_type_id = tt.id
+    LEFT JOIN payments pay ON bi.booking_id = pay.booking_id
+    WHERE p.game_id = $1
+      AND (pay.status = 'COMPLETED' OR pay.status IS NULL)
+      AND (pay.paid_at BETWEEN $2 AND $3 OR pay.paid_at IS NULL)
+    GROUP BY tt.id, tt.category, tt.price
+    ORDER BY revenue DESC
+  `;
+    const res = await query(sql, [gameId, startDate, endDate]);
+    return res.rows;
+  },
+};
+module.exports = { Games, GameStats };
