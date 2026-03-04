@@ -4,6 +4,32 @@ const { apiResponse } = require("../../utils/helpers");
 
 const dashboardController = {
   //=============================
+  //Revenue Metrics
+  //=============================
+
+  async getDashboardStats(req, res) {
+    try {
+      const { startDate, endDate, period = "1d" } = req.query;
+
+      if (!startDate || !endDate) {
+        return res
+          .status(400)
+          .json({ error: "startDate and endDate are required" });
+      }
+
+      const data = await dashboardStatsService.getDashboardRevenueData(
+        startDate,
+        endDate,
+        period,
+      );
+      console.log(data);
+      res.json(data);
+    } catch (error) {
+      console.error("Dashboard API Error:", error);
+      res.status(500).json({ error: "Internal Server Error" });
+    }
+  },
+  //=============================
   //Analytics Metrics
   //=============================
   async getDashboard(req, res) {

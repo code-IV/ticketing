@@ -16,4 +16,18 @@ export const dashboardService = {
     });
     return response.data;
   },
+  async getDashboardRevenue(
+    startDate: string,
+    endDate: string,
+    period: string = "d",
+  ): Promise<ApiResponse<any>> {
+    const response = await api.get("/analytics/revenue", {
+      params: {
+        period,
+        startDate,
+        endDate,
+      },
+    });
+    return response.data;
+  },
 };
