@@ -272,7 +272,7 @@ export default function MyBookingsPage() {
                         router.push(
                           item.type === "GAME"
                             ? `/my-bookings/${item.id}`
-                            : `/bookings/${item.id}`,
+                            : `/my-bookings/${item.id}`,
                         )
                       }
                       className="w-full md:w-auto rounded-2xl md:rounded-xl bg-slate-900 text-white font-bold py-6 md:py-2 md:px-8"
