@@ -1,13 +1,8 @@
 "use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import {
-  Calendar,
-  Ticket,
-  DollarSign,
-  PieChart,
-} from 'lucide-react';
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { Calendar, Ticket, DollarSign, PieChart } from "lucide-react";
 import {
   LineChart,
   Line,
@@ -16,10 +11,11 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-} from 'recharts';
-import { format, subDays, isWithinInterval } from 'date-fns';
-import AnalyticsHeader from '@/components/analytics/AnalyticsHeader';
-import { DateRange } from '@/components/analytics/DateRangePicker';
+} from "recharts";
+import { format, subDays, isWithinInterval } from "date-fns";
+import AnalyticsHeader from "@/components/analytics/AnalyticsHeader";
+import { DateRange } from "@/components/analytics/DateRangePicker";
+import { eventService } from "@/services/eventService";
 
 // ==================== Types ====================
 type Event = {
@@ -41,10 +37,50 @@ type BookingData = {
 
 // ==================== Mock Data ====================
 const mockEvents: Event[] = [
-  { id: 101, name: 'Summer Pro League', game: 'Cyber Realm', date: '2026-08-15', status: 'Active', revenue: 12000, ticketsSold: 85, capacity: 100, occupancy: 85 },
-  { id: 102, name: 'Midnight Scrims', game: 'Cyber Realm', date: '2026-08-20', status: 'Sold Out', revenue: 18000, ticketsSold: 120, capacity: 120, occupancy: 100 },
-  { id: 103, name: 'Newbie Bootcamp', game: 'Fantasy Quest', date: '2026-09-01', status: 'Draft', revenue: 0, ticketsSold: 12, capacity: 50, occupancy: 24 },
-  { id: 104, name: 'Pro Tournament', game: 'Speed Racer', date: '2026-08-10', status: 'Active', revenue: 8500, ticketsSold: 42, capacity: 60, occupancy: 70 },
+  {
+    id: 101,
+    name: "Summer Pro League",
+    game: "Cyber Realm",
+    date: "2026-08-15",
+    status: "Active",
+    revenue: 12000,
+    ticketsSold: 85,
+    capacity: 100,
+    occupancy: 85,
+  },
+  {
+    id: 102,
+    name: "Midnight Scrims",
+    game: "Cyber Realm",
+    date: "2026-08-20",
+    status: "Sold Out",
+    revenue: 18000,
+    ticketsSold: 120,
+    capacity: 120,
+    occupancy: 100,
+  },
+  {
+    id: 103,
+    name: "Newbie Bootcamp",
+    game: "Fantasy Quest",
+    date: "2026-09-01",
+    status: "Draft",
+    revenue: 0,
+    ticketsSold: 12,
+    capacity: 50,
+    occupancy: 24,
+  },
+  {
+    id: 104,
+    name: "Pro Tournament",
+    game: "Speed Racer",
+    date: "2026-08-10",
+    status: "Active",
+    revenue: 8500,
+    ticketsSold: 42,
+    capacity: 60,
+    occupancy: 70,
+  },
 ];
 
 // Generate revenue time series (last 30 days)
@@ -53,7 +89,7 @@ const generateRevenueTimeSeries = (days = 30): BookingData[] => {
   for (let i = days; i >= 0; i--) {
     const date = subDays(new Date(), i);
     data.push({
-      date: format(date, 'yyyy-MM-dd'),
+      date: format(date, "yyyy-MM-dd"),
       bookings: Math.floor(Math.random() * 50) + 20,
     });
   }
@@ -63,7 +99,11 @@ const generateRevenueTimeSeries = (days = 30): BookingData[] => {
 const mockBookingsTimeSeries = generateRevenueTimeSeries(30);
 
 // ==================== Components ====================
-const KpiCard = ({ title, value, icon: Icon }: {
+const KpiCard = ({
+  title,
+  value,
+  icon: Icon,
+}: {
   title: string;
   value: string | number;
   icon: any;
@@ -85,29 +125,53 @@ const KpiCard = ({ title, value, icon: Icon }: {
 export default function EventsAnalyticsPage() {
   const router = useRouter();
   const [dateRange, setDateRange] = useState({
-    label: 'Last 7 days',
+    label: "1d",
     start: subDays(new Date(), 7),
     end: new Date(),
   });
 
+  useEffect(() => {
+    loadEvent(
+      dateRange.start.toISOString(),
+      dateRange.end.toISOString(),
+      dateRange.label,
+    );
+  }, []);
+
+  const loadEvent = async (
+    startDate: string,
+    endDate: string,
+    period: string,
+  ) => {
+    const response = await eventService.getDashboard(
+      startDate,
+      endDate,
+      period,
+    );
+    console.log(response.data);
+  };
+
   // Filter data based on date range
   const filterDataByDateRange = (data: BookingData[], range: DateRange) => {
     if (!range.start || !range.end) return data;
-    return data.filter(d => {
+    return data.filter((d) => {
       const date = new Date(d.date);
       return isWithinInterval(date, { start: range.start, end: range.end });
     });
   };
 
-  const filteredBookingsSeries = filterDataByDateRange(mockBookingsTimeSeries, dateRange);
+  const filteredBookingsSeries = filterDataByDateRange(
+    mockBookingsTimeSeries,
+    dateRange,
+  );
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
-        <AnalyticsHeader 
-          title="Events Analytics" 
-          dateRange={dateRange} 
-          onDateRangeChange={setDateRange} 
+        <AnalyticsHeader
+          title="Events Analytics"
+          dateRange={dateRange}
+          onDateRangeChange={setDateRange}
         />
 
         {/* Events Content */}
@@ -125,25 +189,35 @@ export default function EventsAnalyticsPage() {
                 </tr>
               </thead>
               <tbody>
-                {mockEvents.map(event => (
+                {mockEvents.map((event) => (
                   <tr
                     key={event.id}
                     className="border-t border-gray-100 hover:bg-gray-50 cursor-pointer"
                     onClick={() => router.push(`/analitics/events/${event.id}`)}
                   >
-                    <td className="px-4 py-3 font-medium style={{ color: 'var(--accent)' }} hover:text-blue-800">{event.name}</td>
+                    <td className="px-4 py-3 font-medium style={{ color: 'var(--accent)' }} hover:text-blue-800">
+                      {event.name}
+                    </td>
                     <td className="px-4 py-3">{event.date}</td>
                     <td className="px-4 py-3">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        event.status === 'Active' ? 'bg-green-100 text-green-700' :
-                        event.status === 'Sold Out' ? 'bg-red-100 text-red-700' :
-                        'bg-gray-100 text-gray-700'
-                      }`}>
+                      <span
+                        className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          event.status === "Active"
+                            ? "bg-green-100 text-green-700"
+                            : event.status === "Sold Out"
+                              ? "bg-red-100 text-red-700"
+                              : "bg-gray-100 text-gray-700"
+                        }`}
+                      >
                         {event.status}
                       </span>
                     </td>
-                    <td className="px-4 py-3">${event.revenue.toLocaleString()}</td>
-                    <td className="px-4 py-3">{event.ticketsSold}/{event.capacity}</td>
+                    <td className="px-4 py-3">
+                      ${event.revenue.toLocaleString()}
+                    </td>
+                    <td className="px-4 py-3">
+                      {event.ticketsSold}/{event.capacity}
+                    </td>
                   </tr>
                 ))}
               </tbody>

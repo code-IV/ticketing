@@ -17,6 +17,7 @@ router.get(
   handleValidation,
   eventController.getActiveEvents,
 );
+router.get("/stats", eventStatsController.getEventStats);
 router.get(
   "/stats/:eventId",
   uuidParamRule("eventId"),

@@ -1,4 +1,4 @@
-const Event = require("../models/Event");
+const { Event } = require("../models/Event");
 const TicketType = require("../models/TicketType");
 const Booking = require("../models/Booking");
 const Payment = require("../models/Payment");

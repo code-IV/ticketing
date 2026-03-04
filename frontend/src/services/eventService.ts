@@ -32,6 +32,21 @@ export const eventService = {
     return response.data;
   },
 
+  async getDashboard(
+    startDate: string,
+    endDate: string,
+    period: string = "d",
+  ): Promise<ApiResponse<any>> {
+    const response = await api.get(`/events/stats`, {
+      params: {
+        period,
+        startDate,
+        endDate,
+      },
+    });
+    return response.data;
+  },
+
   async getAnalytics(
     id: string,
     startDate: string,

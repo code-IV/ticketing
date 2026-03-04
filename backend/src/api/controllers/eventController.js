@@ -88,10 +88,34 @@ const eventStatsController = {
         period,
       });
 
-      res.json({ success: true, data: stats });
+      return apiResponse(res, 200, true, "Ticket types retrieved.", {
+        success: true,
+        data: stats,
+      });
     } catch (error) {
       console.log(error);
       res.status(500).json({ success: false, message: error.message });
+    }
+  },
+  async getEventStats(req, res) {
+    try {
+      const { startDate, endDate, period = "1d" } = req.query;
+
+      if (!startDate || !endDate) {
+        return res
+          .status(400)
+          .json({ error: "startDate and endDate are required." });
+      }
+
+      const stats = await eventStatsService.getEventsWithStats(
+        startDate,
+        endDate,
+        period,
+      );
+      return apiResponse(res, 200, true, "Ticket types retrieved.", stats);
+    } catch (error) {
+      console.log(error);
+      res.status(500).json({ error: error.message });
     }
   },
 };

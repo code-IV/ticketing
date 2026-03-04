@@ -255,6 +255,34 @@ LIMIT $1 OFFSET $2;`;
   },
 };
 const EventStats = {
+  async fetchEventsByRange(startDate, endDate, interval) {
+    const sql = `
+    SELECT 
+      e.id,
+      e.name,
+      e.event_date as date,
+      e.capacity,
+      COALESCE(SUM(bi.quantity), 0) as "ticketsSold",
+      COALESCE(SUM(bi.subtotal), 0) as revenue,
+      e.is_active as status
+    FROM events e
+    LEFT JOIN products p ON p.event_id = e.id
+    LEFT JOIN ticket_types tt ON tt.product_id = p.id
+    LEFT JOIN booking_items bi ON bi.ticket_type_id = tt.id
+    LEFT JOIN bookings b ON bi.booking_id = b.id AND b.status = 'CONFIRMED'
+    WHERE true
+    GROUP BY e.id
+    ORDER BY e.event_date ASC;
+  `;
+
+    const result = await query(sql);
+
+    // Note: For the "granularity" part, if the frontend dev wants a list
+    // grouped BY the period (e.g. Total Revenue every 2 weeks),
+    // we would use generate_series here.
+
+    return result.rows;
+  },
   async getEventSummary(eventId) {
     const sql = `
       SELECT 
