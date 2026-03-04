@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from 'react';
-import { useTheme } from '@/contexts/ThemeContext';
-import { useRouter, useParams } from 'next/navigation';
+import { useState, useEffect } from "react";
+import { useTheme } from "@/contexts/ThemeContext";
+import { useRouter, useParams } from "next/navigation";
 import {
   Calendar,
   Ticket,
@@ -23,8 +23,9 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-} from 'recharts';
-import { format, subDays } from 'date-fns';
+} from "recharts";
+import { format, subDays } from "date-fns";
+import { gameService } from "@/services/gameService";
 
 // ==================== Types ====================
 type DateRange = {
@@ -529,20 +530,40 @@ const COLORS = [
 ];
 
 // ==================== Components ====================
-const KpiCard = ({ title, value, icon: Icon, isDarkTheme }: {
+const KpiCard = ({
+  title,
+  value,
+  icon: Icon,
+  isDarkTheme,
+}: {
   title: string;
   value: string | number;
   icon: any;
   isDarkTheme: boolean;
 }) => (
-  <div className={`rounded-xl p-6 ${isDarkTheme ? 'bg-[#0A0A0A] border-gray-700' : 'bg-white border-gray-200'}`}>
+  <div
+    className={`rounded-xl p-6 ${isDarkTheme ? "bg-[#0A0A0A] border-gray-700" : "bg-white border-gray-200"}`}
+  >
     <div className="flex items-center justify-between">
       <div>
-        <p className={`text-sm font-medium ${isDarkTheme ? 'text-gray-400' : 'text-gray-600'}`}>{title}</p>
-        <p className={`text-2xl font-bold ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}>{value}</p>
+        <p
+          className={`text-sm font-medium ${isDarkTheme ? "text-gray-400" : "text-gray-600"}`}
+        >
+          {title}
+        </p>
+        <p
+          className={`text-2xl font-bold ${isDarkTheme ? "text-white" : "text-gray-900"}`}
+        >
+          {value}
+        </p>
       </div>
-      <div className={`p-3 rounded-lg ${isDarkTheme ? 'bg-indigo-900/20' : 'bg-blue-50'}`}>
-        <Icon className={`w-6 h-6 ${isDarkTheme ? 'text-indigo-400' : ''}`} style={{ color: 'var(--accent)' }} />
+      <div
+        className={`p-3 rounded-lg ${isDarkTheme ? "bg-indigo-900/20" : "bg-blue-50"}`}
+      >
+        <Icon
+          className={`w-6 h-6 ${isDarkTheme ? "text-indigo-400" : ""}`}
+          style={{ color: "var(--accent)" }}
+        />
       </div>
     </div>
   </div>
@@ -589,13 +610,21 @@ export default function GameDetailPage() {
 
   if (!selectedGame) {
     return (
-      <div className={`min-h-screen p-6 ${isDarkTheme ? 'bg-[#0A0A0A]' : 'bg-gray-50'}`}>
+      <div
+        className={`min-h-screen p-6 ${isDarkTheme ? "bg-[#0A0A0A]" : "bg-gray-50"}`}
+      >
         <div className="max-w-7xl mx-auto">
           <div className="text-center">
-            <h1 className={`text-2xl font-bold mb-4 ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}>Game Not Found</h1>
-            <p className={`${isDarkTheme ? 'text-gray-400' : 'text-gray-600'}`}>The game you're looking for doesn't exist.</p>
+            <h1
+              className={`text-2xl font-bold mb-4 ${isDarkTheme ? "text-white" : "text-gray-900"}`}
+            >
+              Game Not Found
+            </h1>
+            <p className={`${isDarkTheme ? "text-gray-400" : "text-gray-600"}`}>
+              The game you're looking for doesn't exist.
+            </p>
             <button
-              onClick={() => router.push('/analitics/games')}
+              onClick={() => router.push("/analitics/games")}
               className="mt-4 px-4 py-2 bg-accent text-white rounded-lg hover:bg-blue-700"
             >
               Back to Games
@@ -617,28 +646,48 @@ export default function GameDetailPage() {
   const revenuePerTicketSeries = getRevenuePerTicketSeries(selectedGame.id);
 
   return (
-    <div className={`min-h-screen p-6 ${isDarkTheme ? 'bg-[#0A0A0A]' : 'bg-gray-50'}`}>
+    <div
+      className={`min-h-screen p-6 ${isDarkTheme ? "bg-[#0A0A0A]" : "bg-gray-50"}`}
+    >
       <div className="max-w-7xl mx-auto">
         <div className="space-y-6">
           {/* Header with title and date picker */}
           <div className="flex flex-col md:flex-row md:items-center justify-between mb-6">
-            <h1 className={`text-3xl font-bold ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}>{selectedGame.name} Analytics</h1>
+            <h1
+              className={`text-3xl font-bold ${isDarkTheme ? "text-white" : "text-gray-900"}`}
+            >
+              {selectedGame.name} Analytics
+            </h1>
             <div className="flex items-center gap-2">
               <select
                 className={`px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
-                  isDarkTheme 
-                    ? 'bg-gray-800 border-gray-600 text-white focus:ring-blue-400' 
-                    : 'bg-white border-gray-300 text-gray-900 focus:ring-blue-500'
+                  isDarkTheme
+                    ? "bg-gray-800 border-gray-600 text-white focus:ring-blue-400"
+                    : "bg-white border-gray-300 text-gray-900 focus:ring-blue-500"
                 }`}
-                style={{ color: isDarkTheme ? 'white' : '#111827' }}
+                style={{ color: isDarkTheme ? "white" : "#111827" }}
                 value={dateRange.label}
                 onChange={(e) => {
                   const ranges = [
-                    { label: 'Last 7 days', start: subDays(new Date(), 7), end: new Date() },
-                    { label: 'Last 30 days', start: subDays(new Date(), 30), end: new Date() },
-                    { label: 'Last 3 months', start: subDays(new Date(), 90), end: new Date() },
+                    {
+                      label: "Last 7 days",
+                      start: subDays(new Date(), 7),
+                      end: new Date(),
+                    },
+                    {
+                      label: "Last 30 days",
+                      start: subDays(new Date(), 30),
+                      end: new Date(),
+                    },
+                    {
+                      label: "Last 3 months",
+                      start: subDays(new Date(), 90),
+                      end: new Date(),
+                    },
                   ];
-                  const selected = ranges.find(r => r.label === e.target.value);
+                  const selected = ranges.find(
+                    (r) => r.label === e.target.value,
+                  );
                   if (selected) setDateRange(selected);
                 }}
               >
@@ -649,24 +698,54 @@ export default function GameDetailPage() {
             </div>
           </div>
           <button
-            onClick={() => router.push('/analitics/games')}
-            className={`flex items-center gap-2 text-sm ${isDarkTheme ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-gray-900'}`}
+            onClick={() => router.push("/analitics/games")}
+            className={`flex items-center gap-2 text-sm ${isDarkTheme ? "text-gray-400 hover:text-white" : "text-gray-600 hover:text-gray-900"}`}
           >
             <ChevronLeft size={16} /> Back to Games
           </button>
-          <h2 className={`text-2xl font-bold ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}>{selectedGame.name}</h2>
+          <h2
+            className={`text-2xl font-bold ${isDarkTheme ? "text-white" : "text-gray-900"}`}
+          >
+            {selectedGame.name}
+          </h2>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <KpiCard title="Total Revenue" value={`$${selectedGame.totalRevenue}`} icon={DollarSign} isDarkTheme={isDarkTheme} />
-            <KpiCard title="Total Bookings" value={selectedGame.totalBookings} icon={Ticket} isDarkTheme={isDarkTheme} />
-            <KpiCard title="Avg Occupancy" value={`${selectedGame.avgOccupancy}%`} icon={PieChart} isDarkTheme={isDarkTheme} />
-            <KpiCard title="Events" value={selectedGame.eventsCount} icon={Calendar} isDarkTheme={isDarkTheme} />
+            <KpiCard
+              title="Total Revenue"
+              value={`$${selectedGame.totalRevenue}`}
+              icon={DollarSign}
+              isDarkTheme={isDarkTheme}
+            />
+            <KpiCard
+              title="Total Bookings"
+              value={selectedGame.totalBookings}
+              icon={Ticket}
+              isDarkTheme={isDarkTheme}
+            />
+            <KpiCard
+              title="Avg Occupancy"
+              value={`${selectedGame.avgOccupancy}%`}
+              icon={PieChart}
+              isDarkTheme={isDarkTheme}
+            />
+            <KpiCard
+              title="Events"
+              value={selectedGame.eventsCount}
+              icon={Calendar}
+              isDarkTheme={isDarkTheme}
+            />
           </div>
 
           {/* Charts for this game */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Revenue Trend */}
-            <div className={`rounded-xl p-4 ${isDarkTheme ? 'bg-[#0A0A0A] border-gray-700' : 'bg-white border-gray-200'}`}>
-              <h3 className={`font-semibold mb-4 ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}>Revenue Trend ({dateRange.label})</h3>
+            <div
+              className={`rounded-xl p-4 ${isDarkTheme ? "bg-[#0A0A0A] border-gray-700" : "bg-white border-gray-200"}`}
+            >
+              <h3
+                className={`font-semibold mb-4 ${isDarkTheme ? "text-white" : "text-gray-900"}`}
+              >
+                Revenue Trend ({dateRange.label})
+              </h3>
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={gameRevenueSeries}>
                   <CartesianGrid strokeDasharray="3 3" />
@@ -679,8 +758,14 @@ export default function GameDetailPage() {
             </div>
 
             {/* Bookings Trend */}
-            <div className={`rounded-xl p-4 ${isDarkTheme ? 'bg-[#0A0A0A] border-gray-700' : 'bg-white border-gray-200'}`}>
-              <h3 className={`font-semibold mb-4 ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}>Bookings Trend ({dateRange.label})</h3>
+            <div
+              className={`rounded-xl p-4 ${isDarkTheme ? "bg-[#0A0A0A] border-gray-700" : "bg-white border-gray-200"}`}
+            >
+              <h3
+                className={`font-semibold mb-4 ${isDarkTheme ? "text-white" : "text-gray-900"}`}
+              >
+                Bookings Trend ({dateRange.label})
+              </h3>
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={gameBookingsSeries}>
                   <CartesianGrid strokeDasharray="3 3" />
@@ -693,8 +778,14 @@ export default function GameDetailPage() {
             </div>
 
             {/* Top Performing Ticket Types (Bar) */}
-            <div className={`rounded-xl p-4 ${isDarkTheme ? 'bg-[#0A0A0A] border-gray-700' : 'bg-white border-gray-200'}`}>
-              <h3 className={`font-semibold mb-4 ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}>Top Performing Ticket Types</h3>
+            <div
+              className={`rounded-xl p-4 ${isDarkTheme ? "bg-[#0A0A0A] border-gray-700" : "bg-white border-gray-200"}`}
+            >
+              <h3
+                className={`font-semibold mb-4 ${isDarkTheme ? "text-white" : "text-gray-900"}`}
+              >
+                Top Performing Ticket Types
+              </h3>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={ticketTypeData}>
                   <CartesianGrid strokeDasharray="3 3" />
@@ -723,8 +814,14 @@ export default function GameDetailPage() {
             </div>
 
             {/* Revenue Per Ticket Type (Line) */}
-            <div className={`rounded-xl p-4 ${isDarkTheme ? 'bg-[#0A0A0A] border-gray-700' : 'bg-white border-gray-200'}`}>
-              <h3 className={`font-semibold mb-4 ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}>Revenue Per Ticket Type (Last 30 days)</h3>
+            <div
+              className={`rounded-xl p-4 ${isDarkTheme ? "bg-[#0A0A0A] border-gray-700" : "bg-white border-gray-200"}`}
+            >
+              <h3
+                className={`font-semibold mb-4 ${isDarkTheme ? "text-white" : "text-gray-900"}`}
+              >
+                Revenue Per Ticket Type (Last 30 days)
+              </h3>
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={revenuePerTicketSeries}>
                   <CartesianGrid strokeDasharray="3 3" />
@@ -760,8 +857,14 @@ export default function GameDetailPage() {
             </div>
 
             {/* Ticket Type Distribution (Pie) - FIXED */}
-            <div className={`rounded-xl p-4 ${isDarkTheme ? 'bg-[#0A0A0A] border-gray-700' : 'bg-white border-gray-200'}`}>
-              <h3 className={`font-semibold mb-4 ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}>Ticket Type Distribution</h3>
+            <div
+              className={`rounded-xl p-4 ${isDarkTheme ? "bg-[#0A0A0A] border-gray-700" : "bg-white border-gray-200"}`}
+            >
+              <h3
+                className={`font-semibold mb-4 ${isDarkTheme ? "text-white" : "text-gray-900"}`}
+              >
+                Ticket Type Distribution
+              </h3>
               <ResponsiveContainer width="100%" height={300}>
                 <RePieChart>
                   <Pie
@@ -789,8 +892,14 @@ export default function GameDetailPage() {
             </div>
 
             {/* Best Performing Ticket Types (Horizontal Bar) */}
-            <div className={`rounded-xl p-4 ${isDarkTheme ? 'bg-[#0A0A0A] border-gray-700' : 'bg-white border-gray-200'}`}>
-              <h3 className={`font-semibold mb-4 ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}>Best Performing Ticket Types</h3>
+            <div
+              className={`rounded-xl p-4 ${isDarkTheme ? "bg-[#0A0A0A] border-gray-700" : "bg-white border-gray-200"}`}
+            >
+              <h3
+                className={`font-semibold mb-4 ${isDarkTheme ? "text-white" : "text-gray-900"}`}
+              >
+                Best Performing Ticket Types
+              </h3>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={ticketPerformanceData} layout="vertical">
                   <CartesianGrid strokeDasharray="3 3" />
@@ -831,8 +940,14 @@ export default function GameDetailPage() {
             </div>
 
             {/* Revenue Contribution by Ticket Type */}
-            <div className={`rounded-xl p-4 ${isDarkTheme ? 'bg-[#0A0A0A] border-gray-700' : 'bg-white border-gray-200'}`}>
-              <h3 className={`font-semibold mb-4 ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}>Revenue Contribution by Ticket Type</h3>
+            <div
+              className={`rounded-xl p-4 ${isDarkTheme ? "bg-[#0A0A0A] border-gray-700" : "bg-white border-gray-200"}`}
+            >
+              <h3
+                className={`font-semibold mb-4 ${isDarkTheme ? "text-white" : "text-gray-900"}`}
+              >
+                Revenue Contribution by Ticket Type
+              </h3>
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={revenueContributionSeries}>
                   <CartesianGrid strokeDasharray="3 3" />
@@ -887,45 +1002,115 @@ export default function GameDetailPage() {
           </div>
 
           {/* Events Table */}
-          <div className={`rounded-xl overflow-hidden ${isDarkTheme ? 'bg-[#0A0A0A] border-gray-700' : 'bg-white border-gray-200'}`}>
-            <div className={`px-4 py-3 border-b ${isDarkTheme ? 'border-gray-700' : 'border-gray-200'}`}>
-              <h3 className={`font-semibold ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}>Events for {selectedGame.name}</h3>
+          <div
+            className={`rounded-xl overflow-hidden ${isDarkTheme ? "bg-[#0A0A0A] border-gray-700" : "bg-white border-gray-200"}`}
+          >
+            <div
+              className={`px-4 py-3 border-b ${isDarkTheme ? "border-gray-700" : "border-gray-200"}`}
+            >
+              <h3
+                className={`font-semibold ${isDarkTheme ? "text-white" : "text-gray-900"}`}
+              >
+                Events for {selectedGame.name}
+              </h3>
             </div>
             <table className="w-full text-sm">
-              <thead className={`${isDarkTheme ? 'bg-[#1a1a1a]' : 'bg-gray-50'}`}>
+              <thead
+                className={`${isDarkTheme ? "bg-[#1a1a1a]" : "bg-gray-50"}`}
+              >
                 <tr>
-                  <th className={`px-4 py-2 text-left ${isDarkTheme ? 'text-gray-400' : 'text-gray-700'}`}>Event</th>
-                  <th className={`px-4 py-2 text-left ${isDarkTheme ? 'text-gray-400' : 'text-gray-700'}`}>Date</th>
-                  <th className={`px-4 py-2 text-left ${isDarkTheme ? 'text-gray-400' : 'text-gray-700'}`}>Status</th>
-                  <th className={`px-4 py-2 text-left ${isDarkTheme ? 'text-gray-400' : 'text-gray-700'}`}>Revenue</th>
-                  <th className={`px-4 py-2 text-left ${isDarkTheme ? 'text-gray-400' : 'text-gray-700'}`}>Tickets Sold</th>
-                  <th className={`px-4 py-2 text-left ${isDarkTheme ? 'text-gray-400' : 'text-gray-700'}`}>Occupancy</th>
+                  <th
+                    className={`px-4 py-2 text-left ${isDarkTheme ? "text-gray-400" : "text-gray-700"}`}
+                  >
+                    Event
+                  </th>
+                  <th
+                    className={`px-4 py-2 text-left ${isDarkTheme ? "text-gray-400" : "text-gray-700"}`}
+                  >
+                    Date
+                  </th>
+                  <th
+                    className={`px-4 py-2 text-left ${isDarkTheme ? "text-gray-400" : "text-gray-700"}`}
+                  >
+                    Status
+                  </th>
+                  <th
+                    className={`px-4 py-2 text-left ${isDarkTheme ? "text-gray-400" : "text-gray-700"}`}
+                  >
+                    Revenue
+                  </th>
+                  <th
+                    className={`px-4 py-2 text-left ${isDarkTheme ? "text-gray-400" : "text-gray-700"}`}
+                  >
+                    Tickets Sold
+                  </th>
+                  <th
+                    className={`px-4 py-2 text-left ${isDarkTheme ? "text-gray-400" : "text-gray-700"}`}
+                  >
+                    Occupancy
+                  </th>
                 </tr>
               </thead>
               <tbody>
-                {gameEvents.map(event => (
-                  <tr key={event.id} className={`border-t ${isDarkTheme ? 'border-gray-700' : 'border-gray-100'}`}>
-                    <td className={`px-4 py-2 font-medium ${isDarkTheme ? 'text-white' : ''}`}>{event.name}</td>
-                    <td className={`px-4 py-2 ${isDarkTheme ? 'text-gray-300' : ''}`}>{event.date}</td>
+                {gameEvents.map((event) => (
+                  <tr
+                    key={event.id}
+                    className={`border-t ${isDarkTheme ? "border-gray-700" : "border-gray-100"}`}
+                  >
+                    <td
+                      className={`px-4 py-2 font-medium ${isDarkTheme ? "text-white" : ""}`}
+                    >
+                      {event.name}
+                    </td>
+                    <td
+                      className={`px-4 py-2 ${isDarkTheme ? "text-gray-300" : ""}`}
+                    >
+                      {event.date}
+                    </td>
                     <td className="px-4 py-2">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        event.status === 'Active' 
-                          ? (isDarkTheme ? 'bg-green-900/20 text-green-400' : 'bg-green-100 text-green-700') 
-                          : event.status === 'Sold Out' 
-                          ? (isDarkTheme ? 'bg-red-900/20 text-red-400' : 'bg-red-100 text-red-700') 
-                          : (isDarkTheme ? 'bg-gray-900/20 text-gray-400' : 'bg-gray-100 text-gray-700')
-                      }`}>
+                      <span
+                        className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          event.status === "Active"
+                            ? isDarkTheme
+                              ? "bg-green-900/20 text-green-400"
+                              : "bg-green-100 text-green-700"
+                            : event.status === "Sold Out"
+                              ? isDarkTheme
+                                ? "bg-red-900/20 text-red-400"
+                                : "bg-red-100 text-red-700"
+                              : isDarkTheme
+                                ? "bg-gray-900/20 text-gray-400"
+                                : "bg-gray-100 text-gray-700"
+                        }`}
+                      >
                         {event.status}
                       </span>
                     </td>
-                    <td className={`px-4 py-2 ${isDarkTheme ? 'text-gray-300' : ''}`}>${event.revenue}</td>
-                    <td className={`px-4 py-2 ${isDarkTheme ? 'text-gray-300' : ''}`}>{event.ticketsSold}/{event.capacity}</td>
+                    <td
+                      className={`px-4 py-2 ${isDarkTheme ? "text-gray-300" : ""}`}
+                    >
+                      ${event.revenue}
+                    </td>
+                    <td
+                      className={`px-4 py-2 ${isDarkTheme ? "text-gray-300" : ""}`}
+                    >
+                      {event.ticketsSold}/{event.capacity}
+                    </td>
                     <td className="px-4 py-2">
                       <div className="flex items-center gap-2">
-                        <div className={`w-16 rounded-full h-2 ${isDarkTheme ? 'bg-gray-700' : 'bg-gray-200'}`}>
-                          <div className="style={{ backgroundColor: 'var(--accent)' }} h-2 rounded-full" style={{ width: `${event.occupancy}%` }} />
+                        <div
+                          className={`w-16 rounded-full h-2 ${isDarkTheme ? "bg-gray-700" : "bg-gray-200"}`}
+                        >
+                          <div
+                            className="style={{ backgroundColor: 'var(--accent)' }} h-2 rounded-full"
+                            style={{ width: `${event.occupancy}%` }}
+                          />
                         </div>
-                        <span className={`${isDarkTheme ? 'text-gray-300' : ''}`}>{event.occupancy}%</span>
+                        <span
+                          className={`${isDarkTheme ? "text-gray-300" : ""}`}
+                        >
+                          {event.occupancy}%
+                        </span>
                       </div>
                     </td>
                   </tr>
