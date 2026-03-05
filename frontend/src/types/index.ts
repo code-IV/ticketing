@@ -152,55 +152,52 @@ export interface BookingItemDetail {
   created_at: string;
 }
 
-export type BookingType = "EVENT" | "GAME";
-
-export interface BaseBooking {
+export interface Booking {
   id: string;
-  booking_reference: string;
-  user_id: string;
-  total_amount: string;
-  booking_status: "PENDING" | "CONFIRMED" | "CANCELLED" | "REFUNDED";
-  payment_status: "PENDING" | "COMPLETED" | "FAILED" | "REFUNDED";
-  payment_method?: "CREDIT_CARD" | "DEBIT_CARD" | "TELEBIRR" | "CASH";
-  guest_email?: string;
-  guest_name?: string;
-  booked_at: string;
-  created_at: string;
-  updated_at: string;
-  // Shared relations
-  tickets?: Ticket;
+  bookingReference: string;
+  userId: string;
+  firstName: string;
+  lastName: string;
+  email?: string;
+  totalAmount: string;
+  status: "PENDING" | "CONFIRMED" | "CANCELLED" | "REFUNDED";
+  paymentStatus: "PENDING" | "COMPLETED" | "FAILED" | "REFUNDED";
+  paymentMethod?: "CREDIT_CARD" | "DEBIT_CARD" | "TELEBIRR" | "CASH";
+  bookedAt: string;
+  updatedAt: string;
+  passes: Passes;
+  ticket?: Ticket;
 }
 
 // 1. Specific interface for Single-Event bookings
-export interface EventBooking extends BaseBooking {
+export interface EventBooking {
   type: "EVENT";
-  event_id: string;
-  event_name: string;
-  event_date: string;
-  start_time: string;
-  end_time: string;
+  name: string;
+  eventId: string;
+  eventDate: string;
+  startTime: string;
+  endTime: string;
+  ticketTypes: TicketTypes[];
 }
 
 // 2. Specific interface for Multi-Game bookings
-export interface GameBooking extends BaseBooking {
+export interface GameBooking {
   type: "GAME";
-  items: GameBookingItemDetail[];
+  name: string;
+  gameId: string;
+  ticketTypes: TicketTypes[];
 }
 
-// 3. The Union Type used in your components
-export type Booking = EventBooking | GameBooking;
-
-// Supporting interface for game items
-export interface GameBookingItemDetail {
-  id: string;
-  booking_id: string;
-  ticket_type_id: string;
-  game_id: string;
-  game_name: string; // From our SQL Join
+export interface TicketTypes {
   category?: string;
   quantity: number;
-  unit_price: string;
+  unitPrice: string;
   subtotal: string;
+}
+
+export interface Passes {
+  events?: EventBooking[];
+  games?: GameBooking[];
 }
 
 export interface Ticket {
@@ -212,15 +209,22 @@ export interface Ticket {
   expires_at: string;
   created_at?: string;
   updated_at?: string;
-  entitlements?: Ticket_Product[];
+  passes?: Ticket_Product[];
 }
 
 export interface Ticket_Product {
   id: string;
-  activity_name: string;
-  total_quantity: number;
-  used_quantity: number;
-  status: "AVAILABLE" | "USED";
+  productName: string;
+  productType: "EVENT" | "GAME";
+  usageDetails: [
+    {
+      category: "ADULT" | "CHILD" | "SENIOR" | "STUDENT" | "GROUP";
+      totalQuantity: number;
+      usedQuantity: number;
+      status: "AVAILABLE" | "USED";
+      lastUsedAt: string;
+    },
+  ];
 }
 
 export interface Payment {

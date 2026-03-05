@@ -184,8 +184,53 @@ const bookingController = {
       ) {
         return apiResponse(res, 403, false, "Access denied.");
       }
+      console.log(booking.tickets);
+      const games = (booking.items || [])
+        .filter((item) => item.product_type === "GAME")
+        .map((item) => ({
+          name: item.product_name,
+          gameId: item.game_id,
+          ticketTypes: item.ticket_types,
+        }));
 
-      return apiResponse(res, 200, true, "Booking retrieved.", { booking });
+      const events = (booking.items || [])
+        .filter((item) => item.product_type === "EVENT")
+        .map((item) => ({
+          name: item.product_name,
+          eventId: item.event_id,
+          eventDate: item.event_date,
+          startTime: item.start_time,
+          endTime: item.end_time,
+          ticketTypes: item.ticket_types,
+        }));
+      return apiResponse(res, 200, true, "Booking retrieved.", {
+        id: booking.id,
+        bookingReference: booking.booking_reference,
+        userId: booking.user_id || "",
+        totalAmount: booking.total_amount,
+        status: booking.status,
+        paymentStatus: booking.payment_status,
+        paymentMethod: booking.payment_method,
+        firstName: booking.first_name,
+        lastName: booking.last_name,
+        userEmail: booking.user_email,
+        bookedAt: booking.created_at,
+        updatedAt: booking.updated_at,
+        passes: {
+          events: events,
+          games: games,
+        },
+        ticket: {
+          id: booking.tickets.id,
+          bookingId: booking.tickets.booking_id,
+          qrToken: booking.tickets.qr_token,
+          status: booking.tickets.status,
+          expiresAt: booking.tickets.expires_at,
+          createdAt: booking.tickets.created_at,
+          updatedAt: booking.tickets.updated_at,
+          passes: booking.tickets.entitlements,
+        },
+      });
     } catch (err) {
       next(err);
     }
@@ -310,12 +355,10 @@ const bookingController = {
 
       // Validate startDate & endDate
       if (!startDate || !endDate) {
-        return res
-          .status(400)
-          .json({
-            success: false,
-            message: "startDate and endDate are required",
-          });
+        return res.status(400).json({
+          success: false,
+          message: "startDate and endDate are required",
+        });
       }
 
       const start = new Date(startDate);

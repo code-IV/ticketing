@@ -41,7 +41,7 @@ export const bookingService = {
     return response.data;
   },
 
-  async getBookingById(id: string): Promise<ApiResponse<{ booking: Booking }>> {
+  async getBookingById(id: string): Promise<ApiResponse<Booking>> {
     const response = await api.get(`/bookings/${id}`);
     return response.data;
   },

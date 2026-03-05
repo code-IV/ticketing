@@ -265,11 +265,13 @@ const Booking = {
     // 1. Fetch Booking Header
     // We map 'status' to 'booking_status' to match your interface
     const bookingSql = `
-    SELECT b.*, b.status AS booking_status, b.created_at as booked_at,
-           u.first_name, u.last_name, u.email AS user_email
-    FROM bookings b
-    LEFT JOIN users u ON b.user_id = u.id
-    WHERE b.id = $1`;
+      SELECT 
+        b.id, b.booking_reference, b.user_id, b.total_amount, b.status, b.created_at, b.updated_at,
+        u.first_name, u.last_name, u.email
+        FROM bookings b
+        LEFT JOIN users u ON b.user_id = u.id
+      WHERE b.id = $1
+    `;
 
     const bookingResult = await query(bookingSql, [id]);
     const booking = bookingResult.rows[0];
@@ -277,31 +279,67 @@ const Booking = {
 
     // 2. Fetch Items
     const itemsSql = `
-    SELECT bi.*, 
-           tt.category, 
-           p.name AS product_name, p.product_type, p.event_id, p.game_id,
-           e.event_date, e.start_time, e.end_time
-    FROM booking_items bi
-    JOIN ticket_types tt ON bi.ticket_type_id = tt.id
-    JOIN products p ON tt.product_id = p.id
-    LEFT JOIN events e ON p.event_id = e.id
-    WHERE bi.booking_id = $1`;
+    SELECT 
+    p.name AS product_name, 
+    p.product_type, 
+    p.event_id, 
+    p.game_id,
+    e.event_date, 
+    e.start_time, 
+    e.end_time,
+    json_agg(
+        json_build_object(
+            'id', bi.id,
+            'ticketTypeId', bi.ticket_type_id,
+            'quantity', bi.quantity,
+            'unitPrice', bi.unit_price,
+            'subtotal', bi.subtotal,
+            'category', tt.category
+        )
+    ) AS ticket_types
+FROM booking_items bi
+JOIN ticket_types tt ON bi.ticket_type_id = tt.id
+JOIN products p ON tt.product_id = p.id
+LEFT JOIN events e ON p.event_id = e.id
+WHERE bi.booking_id = $1
+GROUP BY 
+    p.id, p.name, p.product_type, p.event_id, p.game_id, 
+    e.event_date, e.start_time, e.end_time;`;
     const itemsResult = await query(itemsSql, [id]);
 
     // 3. Fetch Master Ticket & Entitlements
     const ticketsSql = `
-    SELECT t.*,
-           (
-             SELECT json_agg(ent) 
-             FROM (
-               SELECT tp.*, p_inner.name as activity_name 
-               FROM ticket_products tp
-               JOIN products p_inner ON tp.product_id = p_inner.id
-               WHERE tp.ticket_id = t.id
-             ) ent
-           ) as entitlements
-    FROM tickets t 
-    WHERE t.booking_id = $1`;
+      SELECT t.*,
+(
+    SELECT json_agg(product_summary)
+    FROM (
+        SELECT 
+            p.name as productName,
+            p.product_type as productType,
+            -- Here we aggregate the different ticket_type categories (Adult, Child) for this one product
+            json_agg(
+                json_build_object(
+                    'id', tp.id,
+                    'category', tt.category, -- Joined from ticket_types
+                    'totalQuantity', tp.total_quantity,
+                    'usedQuantity', tp.used_quantity,
+                    'status', tp.status,
+                    'lastUsedAt', tp.last_used_at
+                )
+            ) as usageDetails
+        FROM ticket_products tp
+        JOIN products p ON tp.product_id = p.id
+        -- We join back to the original booking_items/ticket_types to get the Category name
+        JOIN tickets t_inner ON tp.ticket_id = t_inner.id
+        JOIN booking_items bi ON t_inner.booking_id = bi.booking_id
+        JOIN ticket_types tt ON bi.ticket_type_id = tt.id AND tt.product_id = p.id
+        WHERE tp.ticket_id = t.id
+        GROUP BY p.id, p.name, p.product_type
+    ) product_summary
+) as entitlements
+FROM tickets t 
+WHERE t.booking_id = $1;
+`;
     const ticketsResult = await query(ticketsSql, [id]);
 
     // 4. Fetch Latest Payment to fill top-level status
@@ -309,22 +347,10 @@ const Booking = {
     const paymentsResult = await query(paymentsSql, [id]);
     const latestPayment = paymentsResult.rows[0];
 
-    // 5. Transform for Frontend
-    // If the booking contains an event, we pull it to the top level for backward compatibility
-    const eventItem = itemsResult.rows.find((i) => i.product_type === "EVENT");
-
     return {
       ...booking,
-      // Mapping for the interface
-      payment_status: latestPayment?.status?.toLowerCase() || "pending",
-      payment_method: latestPayment?.method?.toLowerCase() || null,
-
-      // Top-level event info (if it exists in the order)
-      event_id: eventItem?.event_id || null,
-      event_name: eventItem?.product_name || null,
-      event_date: eventItem?.event_date || null,
-      start_time: eventItem?.start_time || null,
-      end_time: eventItem?.end_time || null,
+      payment_status: latestPayment?.status || "PENDING",
+      payment_method: latestPayment?.method || null,
 
       items: itemsResult.rows,
       tickets: ticketsResult.rows[0],

@@ -16,6 +16,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Game } from "@/types";
 import { gameService } from "@/services/adminService";
 import { useTheme } from "@/contexts/ThemeContext";
+import { bookingService } from "@/services/bookingService";
 
 const gameVisuals = [
   { emoji: "🎢", image: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600&h=800&fit=crop" },
