@@ -314,8 +314,8 @@ GROUP BY
     SELECT json_agg(product_summary)
     FROM (
         SELECT 
-            p.name as productName,
-            p.product_type as productType,
+            p.name as "productName",
+            p.product_type as "productType",
             -- Here we aggregate the different ticket_type categories (Adult, Child) for this one product
             json_agg(
                 json_build_object(
@@ -326,7 +326,7 @@ GROUP BY
                     'status', tp.status,
                     'lastUsedAt', tp.last_used_at
                 )
-            ) as usageDetails
+            ) as "usageDetails"
         FROM ticket_products tp
         JOIN products p ON tp.product_id = p.id
         -- We join back to the original booking_items/ticket_types to get the Category name

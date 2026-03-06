@@ -133,8 +133,14 @@ const CollectorTicketCard = ({
   index: number;
   isDarkTheme: boolean;
 }) => {
-  const isFullyUsed = true;
-
+  const { totalQuantity, usedQuantity } = (item?.usageDetails || []).reduce(
+    (acc, i) => ({
+      totalQuantity: acc.totalQuantity + i.totalQuantity,
+      usedQuantity: acc.usedQuantity + i.usedQuantity,
+    }),
+    { totalQuantity: 0, usedQuantity: 0 }, // Initial object with two counters
+  );
+  const isFullyUsed = usedQuantity >= totalQuantity;
   return (
     <motion.div
       initial={{ opacity: 0, y: 30 }}
@@ -169,35 +175,31 @@ const CollectorTicketCard = ({
           <span className="text-[9px] font-black opacity-60 uppercase block mb-1 tracking-tighter">
             Remaining
           </span>
-          {item.usageDetails?.map((d) => (
-            <span className="font-black text-4xl tracking-tighter leading-none italic">
-              {d.category}: {d.totalQuantity - d.usedQuantity}
-            </span>
-          ))}
+          <span className="font-black text-4xl tracking-tighter leading-none italic">
+            {totalQuantity - usedQuantity || "--"}
+          </span>
         </div>
       </div>
 
       <div className="absolute bottom-8 left-8 right-8 z-10">
         <div className="bg-white/10 backdrop-blur-xl p-6 rounded-[32px] border border-white/20 shadow-2xl">
-          {item.usageDetails?.map((d) => (
-            <>
-              <div className="flex justify-between items-center text-white text-[11px] font-black uppercase mb-4 tracking-widest">
-                <span className="opacity-80">Utilization</span>
-                <span className="flex items-center gap-2 bg-accent px-3 py-1 rounded-full text-[9px]">
-                  <TicketIcon size={12} /> {d.usedQuantity}/{d.totalQuantity}
-                </span>
-              </div>
-              <div className="w-full h-2 bg-white/20 rounded-full overflow-hidden">
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{
-                    width: `${(d.usedQuantity / d.totalQuantity) * 100}%`,
-                  }}
-                  className="h-full bg-white shadow-[0_0_15px_rgba(255,255,255,0.5)]"
-                />
-              </div>
-            </>
-          ))}
+          <>
+            <div className="flex justify-between items-center text-white text-[11px] font-black uppercase mb-4 tracking-widest">
+              <span className="opacity-80">Utilization</span>
+              <span className="flex items-center gap-2 bg-accent px-3 py-1 rounded-full text-[9px]">
+                <TicketIcon size={12} /> {usedQuantity}/{totalQuantity}
+              </span>
+            </div>
+            <div className="w-full h-2 bg-white/20 rounded-full overflow-hidden">
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{
+                  width: `${(usedQuantity / totalQuantity) * 100}%`,
+                }}
+                className="h-full bg-white shadow-[0_0_15px_rgba(255,255,255,0.5)]"
+              />
+            </div>
+          </>
         </div>
       </div>
     </motion.div>
@@ -232,7 +234,6 @@ export default function BookingDetailPage({
       setLoading(true);
       const response = await bookingService.getBookingById(id);
       setBooking(response.data || null);
-      console.log("booking", response.data);
     } catch (err: any) {
       setError(err.response?.data?.message || "Failed to load booking details");
     } finally {

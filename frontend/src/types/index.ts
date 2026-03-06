@@ -216,15 +216,13 @@ export interface Ticket_Product {
   id: string;
   productName: string;
   productType: "EVENT" | "GAME";
-  usageDetails: [
-    {
-      category: "ADULT" | "CHILD" | "SENIOR" | "STUDENT" | "GROUP";
-      totalQuantity: number;
-      usedQuantity: number;
-      status: "AVAILABLE" | "USED";
-      lastUsedAt: string;
-    },
-  ];
+  usageDetails: {
+    category: "ADULT" | "CHILD" | "SENIOR" | "STUDENT" | "GROUP";
+    totalQuantity: number;
+    usedQuantity: number;
+    status: "AVAILABLE" | "USED";
+    lastUsedAt: string;
+  }[];
 }
 
 export interface Payment {
