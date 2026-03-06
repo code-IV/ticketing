@@ -352,8 +352,12 @@ WHERE t.booking_id = $1;
     const offset = (page - 1) * limit;
     const sql = `
     SELECT 
-  b.*,
-  -- Determine the primary type based on the first product in the booking
+  b.id,
+  b.booking_reference,
+  b.total_amount,
+  b.status,
+  b.created_at,
+  -- Determine the primary type (GAME or EVENT) for the UI badge
   (
     SELECT p.product_type 
     FROM booking_items bi
@@ -361,27 +365,39 @@ WHERE t.booking_id = $1;
     JOIN products p ON tt.product_id = p.id
     WHERE bi.booking_id = b.id
     LIMIT 1
-  ) as type,
-  -- Fetch all items for this booking as a JSON array
+  ) as "type",
+   (
+    SELECT e.event_date
+    FROM booking_items bi
+    JOIN ticket_types tt ON bi.ticket_type_id = tt.id
+    JOIN products p ON tt.product_id = p.id
+    JOIN events e ON p.event_id = e.id
+    WHERE bi.booking_id = b.id
+    LIMIT 1
+  ) as "eventDate",
+  -- Build the Ticket and aggregated Passes object
   (
-    SELECT json_agg(item_details)
-    FROM (
-      SELECT 
-        bi.*, 
-        p.name as product_name,
-        p.product_type,
-        tt.category,
-        e.event_date,
-        e.start_time,
-        g.name as game_name
-      FROM booking_items bi
-      JOIN ticket_types tt ON bi.ticket_type_id = tt.id
-      JOIN products p ON tt.product_id = p.id
-      LEFT JOIN events e ON p.event_id = e.id
-      LEFT JOIN games g ON p.game_id = g.id
-      WHERE bi.booking_id = b.id
-    ) item_details
-  ) as items
+    SELECT json_build_object(
+      'status', t.status,
+      'expiresAt', t.expires_at,
+      'passDetails', (
+        SELECT json_agg("passDetails")
+        FROM (
+          SELECT 
+            p.name as "productName",
+            SUM(tp.total_quantity) as "totalQuantity",
+            SUM(tp.used_quantity) as "usedQuantity"
+          FROM ticket_products tp
+          JOIN products p ON tp.product_id = p.id
+          WHERE tp.ticket_id = t.id
+          GROUP BY p.name
+        ) as "passDetails"
+      )
+    )
+    FROM tickets t
+    WHERE t.booking_id = b.id
+    LIMIT 1
+  ) as ticket
 FROM bookings b
 WHERE b.user_id = $1
 ORDER BY b.created_at DESC
@@ -391,11 +407,7 @@ LIMIT $2 OFFSET $3;
     const result = await query(sql, [userId, limit, offset]);
 
     // Clean up the result for the frontend
-    const bookings = result.rows.map((row) => ({
-      ...row,
-      // Ensure items is an empty array if null
-      items: row.items || [],
-    }));
+    const bookings = result.rows;
 
     const countSql = `SELECT COUNT(*) FROM bookings WHERE user_id = $1`;
     const countResult = await query(countSql, [userId]);

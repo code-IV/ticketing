@@ -161,7 +161,21 @@ const bookingController = {
       const limit = Math.min(parseInt(req.query.limit, 10) || 20, 100);
 
       const result = await Booking.findByUserId(userId, { page, limit });
-      return apiResponse(res, 200, true, "Bookings retrieved.", result);
+      console.log(result.bookings[0].ticket);
+      const bookings = (result.bookings || []).map((b) => ({
+        id: b.id,
+        bookingReference: b.booking_reference,
+        totalAmount: b.total_amount,
+        status: b.status,
+        eventDate: b.eventDate,
+        bookendAt: b.created_at,
+        type: b.type,
+        ticket: b.ticket,
+      }));
+      return apiResponse(res, 200, true, "Bookings retrieved.", {
+        bookings,
+        pagination: result.pagination,
+      });
     } catch (err) {
       next(err);
     }
@@ -184,7 +198,6 @@ const bookingController = {
       ) {
         return apiResponse(res, 403, false, "Access denied.");
       }
-      console.log(booking.tickets);
       const games = (booking.items || [])
         .filter((item) => item.product_type === "GAME")
         .map((item) => ({

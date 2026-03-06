@@ -140,16 +140,23 @@ export interface GameTicketDetail {
   };
 }
 
-export interface BookingItemDetail {
+export interface Bookings {
   id: string;
-  booking_id: string;
-  ticket_type_id: string;
-  ticket_type_name?: string;
-  category?: string;
-  quantity: number;
-  unit_price: string;
-  subtotal: string;
-  created_at: string;
+  bookingReference: string;
+  totalAmount: string;
+  status: "PENDING" | "CONFIRMED" | "CANCELLED" | "REFUNDED";
+  type: "GAME" | "EVENT";
+  eventDate?: string;
+  bookedAt: string;
+  ticket?: {
+    status: "ACTIVE" | "EXPIRED" | "CANCELLED" | "FULLY_USED";
+    expiresAt: string;
+    passDetails: {
+      productName: string;
+      totalQuantity: number;
+      usedQuantity: number;
+    }[];
+  };
 }
 
 export interface Booking {
