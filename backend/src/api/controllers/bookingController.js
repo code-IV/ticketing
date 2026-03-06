@@ -1,5 +1,5 @@
 const { Booking } = require("../models/Booking");
-const Event = require("../models/Event");
+const { Event } = require("../models/Event");
 const TicketType = require("../models/TicketType");
 const Ticket = require("../models/Ticket");
 const { apiResponse } = require("../../utils/helpers");

@@ -71,9 +71,14 @@ const Booking = {
         // Link the Product to the Master Ticket with the purchased quantity
         // This is your "Digital Punch Card"
         await client.query(
-          `INSERT INTO ticket_products (ticket_id, product_id, total_quantity, status)
-         VALUES ($1, (SELECT product_id FROM ticket_types WHERE id = $2), $3, 'AVAILABLE')`,
-          [masterTicket.id, item.ticketTypeId, item.quantity],
+          `INSERT INTO ticket_products (ticket_id, product_id, ticket_type_id, total_quantity, status)
+         VALUES ($1, (SELECT product_id FROM ticket_types WHERE id = $2), $3, $4, 'AVAILABLE')`,
+          [
+            masterTicket.id,
+            item.ticketTypeId,
+            item.ticketTypeId,
+            item.quantity,
+          ],
         );
 
         // If this is an Event, update the capacity
@@ -115,17 +120,15 @@ const Booking = {
     paymentMethod,
     guestEmail,
     guestName,
-    notes,
-    expires_at, // e.g. 3 days
+    expires_in_days = 30, // Default to 30 days
   }) {
     const client = await getClient();
 
     try {
       await client.query("BEGIN");
 
-      // 2️⃣ Create booking
+      // 1️⃣ Create booking header
       const bookingReference = generateBookingReference();
-
       const bookingResult = await client.query(
         `INSERT INTO bookings
        (user_id, booking_reference, total_amount, status, guest_email, guest_name)
@@ -133,83 +136,72 @@ const Booking = {
        RETURNING *`,
         [userId, bookingReference, totalAmount, guestEmail, guestName],
       );
-
       const booking = bookingResult.rows[0];
 
-      // 3️⃣ Insert booking_items
-      const createdItems = [];
+      // 2️⃣ Process Items and Entitlements
+      const ticketCode = generateTicketCode();
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + expires_in_days);
+
+      // Generate HMAC QR Token
+      const qrToken = generateQRToken();
+
+      // Create the master Ticket first so we have the ID for ticket_products
+      const ticketResult = await client.query(
+        `INSERT INTO tickets (booking_id, ticket_code, qr_token, status, expires_at)
+       VALUES ($1, $2, $3, 'ACTIVE', $4)
+       RETURNING id`,
+        [booking.id, ticketCode, qrToken, expiresAt],
+      );
+      const ticketId = ticketResult.rows[0].id;
 
       for (const item of items) {
+        // Get price and the associated Product ID for this ticket type
         const typeResult = await client.query(
-          `SELECT price, product_id
-         FROM ticket_types
-         WHERE id = $1`,
+          `SELECT price, product_id FROM ticket_types WHERE id = $1`,
           [item.ticketTypeId],
         );
 
-        const { price, game_id } = typeResult.rows[0];
+        if (typeResult.rows.length === 0)
+          throw new Error(`Invalid Ticket Type ID: ${item.ticketTypeId}`);
+
+        const { price, product_id } = typeResult.rows[0];
         const subtotal = price * item.quantity;
 
-        const itemResult = await client.query(
-          `INSERT INTO booking_items
-         (booking_id, ticket_type_id, quantity, unit_price, subtotal)
-         VALUES ($1, $2, $3, $4, $5)
-         RETURNING *`,
+        // Create the record of the sale
+        await client.query(
+          `INSERT INTO booking_items (booking_id, ticket_type_id, quantity, unit_price, subtotal)
+         VALUES ($1, $2, $3, $4, $5)`,
           [booking.id, item.ticketTypeId, item.quantity, price, subtotal],
         );
 
-        createdItems.push({
-          ...itemResult.rows[0],
-          game_id,
-        });
-      }
-      const expiresAt = new Date();
-      expiresAt.setDate(expiresAt.getDate());
-      // 4️⃣ Create ONE ticket container
-      const ticketCode = generateTicketCode();
-      const qrToken = generateQRToken();
-
-      const ticketResult = await client.query(
-        `INSERT INTO tickets
-       (booking_id, ticket_code, qr_token,
-        status, expires_at)
-       VALUES ($1, $2, $3,
-               'ACTIVE', $4)
-       RETURNING *`,
-        [booking.id, ticketCode, qrToken, expiresAt],
-      );
-
-      const ticket = ticketResult.rows[0];
-
-      // 5️⃣ Expand booking_items into ticket_prodcts
-      for (const item of createdItems) {
+        // Create the "Punch Card" entitlement
+        // Note: We use the product_id we just fetched
         await client.query(
-          `INSERT INTO ticket_products
-           (ticket_id, product_id, total_quantity, status)
-           VALUES ($1, $2, $3, 'AVAILABLE')`,
-          [ticket.id, item.game_id, item.quantity],
+          `INSERT INTO ticket_products (ticket_id, product_id, ticket_type_id, total_quantity, status)
+         VALUES ($1, $2, $3, $4, 'AVAILABLE')`,
+          [ticketId, product_id, item.ticketTypeId, item.quantity],
         );
       }
 
-      // 6️⃣ Create payment record
+      // 3️⃣ Record Payment
       await client.query(
-        `INSERT INTO payments
-       (booking_id, amount, method,
-        status, paid_at)
-       VALUES ($1, $2, $3,
-               'COMPLETED', NOW())`,
+        `INSERT INTO payments (booking_id, amount, method, status, paid_at)
+       VALUES ($1, $2, $3, 'COMPLETED', NOW())`,
         [booking.id, totalAmount, paymentMethod.toUpperCase()],
       );
 
       await client.query("COMMIT");
 
       return {
-        ...booking,
-        items: createdItems,
-        ticket,
+        bookingId: booking.id,
+        reference: bookingReference,
+        ticketCode,
+        qrToken,
       };
     } catch (err) {
       await client.query("ROLLBACK");
+      console.error("Booking Transaction Failed:", err);
       throw err;
     } finally {
       client.release();
@@ -316,11 +308,10 @@ GROUP BY
         SELECT 
             p.name as "productName",
             p.product_type as "productType",
-            -- Here we aggregate the different ticket_type categories (Adult, Child) for this one product
             json_agg(
                 json_build_object(
                     'id', tp.id,
-                    'category', tt.category, -- Joined from ticket_types
+                    'category', tt.category, -- Now a direct join!
                     'totalQuantity', tp.total_quantity,
                     'usedQuantity', tp.used_quantity,
                     'status', tp.status,
@@ -329,10 +320,7 @@ GROUP BY
             ) as "usageDetails"
         FROM ticket_products tp
         JOIN products p ON tp.product_id = p.id
-        -- We join back to the original booking_items/ticket_types to get the Category name
-        JOIN tickets t_inner ON tp.ticket_id = t_inner.id
-        JOIN booking_items bi ON t_inner.booking_id = bi.booking_id
-        JOIN ticket_types tt ON bi.ticket_type_id = tt.id AND tt.product_id = p.id
+        JOIN ticket_types tt ON tp.ticket_type_id = tt.id -- This is the magic simple join
         WHERE tp.ticket_id = t.id
         GROUP BY p.id, p.name, p.product_type
     ) product_summary

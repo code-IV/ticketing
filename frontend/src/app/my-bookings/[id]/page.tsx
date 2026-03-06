@@ -362,7 +362,7 @@ export default function BookingDetailPage({
           <AnimatePresence>
             {ticket?.passes?.map((item, i) => (
               <CollectorTicketCard
-                key={item.id}
+                key={i}
                 item={item}
                 index={i}
                 isDarkTheme={isDarkTheme}

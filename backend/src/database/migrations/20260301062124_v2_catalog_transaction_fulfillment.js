@@ -125,6 +125,11 @@ exports.up = async function (knex) {
       .references("id")
       .inTable("products")
       .onDelete("RESTRICT");
+    table
+      .uuid("ticket_type_id")
+      .references("id")
+      .inTable("ticket_types")
+      .onDelete("RESTRICT");
     table.integer("total_quantity").notNullable();
     table.integer("used_quantity").defaultTo(0);
     table
