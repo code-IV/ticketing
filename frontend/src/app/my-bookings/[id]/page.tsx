@@ -372,15 +372,17 @@ export default function BookingDetailPage({
         </div>
 
         {/* EXPERIENCE DETAILS & INFO */}
-        <div className="mt-16 grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div
-            className={`lg:col-span-2 rounded-[48px] p-10 shadow-sm ${isDarkTheme ? "bg-bg3 border-accent border" : "bg-white border border-slate-100"}`}
-          >
-            <h3
-              className={`text-xs font-black uppercase tracking-[0.2em] mb-8 ${isDarkTheme ? "text-gray-400" : "text-slate-400"}`}
+        {/* Event Itinerary - Only show for bookings with event data */}
+        {event && (
+          <div className="mt-16 grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div
+              className={`lg:col-span-2 rounded-[48px] p-10 shadow-sm ${isDarkTheme ? "bg-bg3 border-accent border" : "bg-white border border-slate-100"}`}
             >
-              Event Itinerary
-            </h3>
+              <h3
+                className={`text-xs font-black uppercase tracking-[0.2em] mb-8 ${isDarkTheme ? "text-gray-400" : "text-slate-400"}`}
+              >
+                Event Itinerary
+              </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div className="flex items-center gap-5">
                 <div
@@ -447,6 +449,7 @@ export default function BookingDetailPage({
             </div>
           </div>
         </div>
+        )}
       </div>
 
       <QRModal

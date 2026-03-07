@@ -31,12 +31,14 @@ import {
 import { format, subDays, isWithinInterval } from "date-fns";
 import Link from "next/link";
 import { dashboardService } from "@/services/dashboardService";
+import { DashboardResponse, RevenueTrend, TicketsTrend, TopGame } from "@/types";
 
 // ==================== Types ====================
 type DateRange = {
   start: Date | null;
   end: Date | null;
   label: string;
+  period: string;
 };
 
 type Game = {
@@ -71,153 +73,7 @@ type TicketsData = {
   ticketsSold: number;
 };
 
-// ==================== Mock Data ====================
-const mockGames: Game[] = [
-  {
-    id: 1,
-    name: "Cyber Realm",
-    status: "active",
-    totalRevenue: 85000,
-    totalBookings: 2100,
-    avgOccupancy: 82,
-    eventsCount: 5,
-  },
-  {
-    id: 2,
-    name: "Speed Racer",
-    status: "maintenance",
-    totalRevenue: 42000,
-    totalBookings: 1100,
-    avgOccupancy: 68,
-    eventsCount: 3,
-  },
-  {
-    id: 3,
-    name: "Fantasy Quest",
-    status: "active",
-    totalRevenue: 120000,
-    totalBookings: 3200,
-    avgOccupancy: 91,
-    eventsCount: 8,
-  },
-  {
-    id: 4,
-    name: "Space Odyssey",
-    status: "active",
-    totalRevenue: 65000,
-    totalBookings: 1800,
-    avgOccupancy: 75,
-    eventsCount: 4,
-  },
-  {
-    id: 5,
-    name: "Dragon Warriors",
-    status: "active",
-    totalRevenue: 95000,
-    totalBookings: 2700,
-    avgOccupancy: 88,
-    eventsCount: 6,
-  },
-  {
-    id: 6,
-    name: "Racing Thunder",
-    status: "maintenance",
-    totalRevenue: 38000,
-    totalBookings: 950,
-    avgOccupancy: 62,
-    eventsCount: 2,
-  },
-];
-
-const mockEvents: Event[] = [
-  {
-    id: 101,
-    name: "Summer Pro League",
-    game: "Cyber Realm",
-    date: "2026-08-15",
-    status: "Active",
-    revenue: 12000,
-    ticketsSold: 85,
-    capacity: 100,
-    occupancy: 85,
-  },
-  {
-    id: 102,
-    name: "Midnight Scrims",
-    game: "Cyber Realm",
-    date: "2026-08-20",
-    status: "Sold Out",
-    revenue: 18000,
-    ticketsSold: 120,
-    capacity: 120,
-    occupancy: 100,
-  },
-  {
-    id: 103,
-    name: "Newbie Bootcamp",
-    game: "Fantasy Quest",
-    date: "2026-09-01",
-    status: "Draft",
-    revenue: 0,
-    ticketsSold: 12,
-    capacity: 50,
-    occupancy: 24,
-  },
-  {
-    id: 104,
-    name: "Pro Tournament",
-    game: "Speed Racer",
-    date: "2026-08-10",
-    status: "Active",
-    revenue: 8500,
-    ticketsSold: 42,
-    capacity: 60,
-    occupancy: 70,
-  },
-];
-
-// Generate revenue time series (last 30 days)
-const generateRevenueTimeSeries = (days = 30): RevenueData[] => {
-  const data = [];
-  for (let i = days; i >= 0; i--) {
-    const date = subDays(new Date(), i);
-    data.push({
-      date: format(date, "yyyy-MM-dd"),
-      revenue: Math.floor(Math.random() * 5000) + 2000,
-    });
-  }
-  return data;
-};
-
-// Generate tickets time series (last 30 days)
-const generateTicketsTimeSeries = (days = 30): TicketsData[] => {
-  const data = [];
-  for (let i = days; i >= 0; i--) {
-    const date = subDays(new Date(), i);
-    data.push({
-      date: format(date, "yyyy-MM-dd"),
-      ticketsSold: Math.floor(Math.random() * 150) + 50,
-    });
-  }
-  return data;
-};
-
-const mockRevenueTimeSeries = generateRevenueTimeSeries(30);
-const mockTicketsTimeSeries = generateTicketsTimeSeries(30);
-
-const revenueByTicketType = [
-  { type: "Adult", revenue: 45000 },
-  { type: "Child", revenue: 28000 },
-  { type: "Senior", revenue: 15000 },
-  { type: "Student", revenue: 22000 },
-  { type: "Group", revenue: 15000 },
-];
-
-const revenueByGame = mockGames.map((g) => ({
-  game: g.name,
-  revenue: g.totalRevenue,
-}));
-
+// ==================== State Management ====================
 const COLORS = ["#3b82f6", "#f97316", "#10b981", "#ef4444", "#8b5cf6"];
 
 // ==================== Components ====================
@@ -258,21 +114,41 @@ const DateRangePicker = ({
   value: DateRange;
   onChange: (range: DateRange) => void;
 }) => {
+  const [isCustomMode, setIsCustomMode] = useState(false);
+  const [customStartDate, setCustomStartDate] = useState(format(subDays(new Date(), 30), "yyyy-MM-dd"));
+  const [customEndDate, setCustomEndDate] = useState(format(new Date(), "yyyy-MM-dd"));
+
+  // Initialize custom dates when component mounts or when switching to custom mode
+  useEffect(() => {
+    if (isCustomMode) {
+      setCustomStartDate(format(subDays(new Date(), 30), "yyyy-MM-dd"));
+      setCustomEndDate(format(new Date(), "yyyy-MM-dd"));
+    }
+  }, [isCustomMode]);
   const ranges = [
     {
       label: "Last 7 days",
+      period: "d",
       start: subDays(new Date(), 7),
       end: new Date(),
     },
     {
       label: "Last 30 days",
+      period: "d",
       start: subDays(new Date(), 30),
       end: new Date(),
     },
     {
-      label: "Last 3 months",
+      label: "Last 90 days",
+      period: "d",
       start: subDays(new Date(), 90),
       end: new Date(),
+    },
+    {
+      label: "Custom",
+      period: "d",
+      start: null,
+      end: null,
     },
   ];
 
@@ -283,7 +159,15 @@ const DateRangePicker = ({
         value={value.label}
         onChange={(e) => {
           const selected = ranges.find((r) => r.label === e.target.value);
-          if (selected) onChange(selected);
+          if (selected) {
+            if (selected.label === "Custom") {
+              setIsCustomMode(true);
+              // Don't update the range yet, wait for custom dates
+            } else {
+              setIsCustomMode(false);
+              onChange(selected);
+            }
+          }
         }}
       >
         {ranges.map((range) => (
@@ -292,6 +176,46 @@ const DateRangePicker = ({
           </option>
         ))}
       </select>
+
+      {isCustomMode && (
+        <div className="flex items-center gap-2">
+          <input
+            type="date"
+            value={customStartDate}
+            onChange={(e) => {
+              setCustomStartDate(e.target.value);
+              const startDate = new Date(e.target.value);
+              const endDate = new Date(customEndDate);
+              onChange({
+                label: "Custom",
+                period: "d",
+                start: startDate,
+                end: endDate,
+              });
+            }}
+            className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white text-gray-900"
+            placeholder="Start date"
+          />
+          <span className="text-gray-500">to</span>
+          <input
+            type="date"
+            value={customEndDate}
+            onChange={(e) => {
+              setCustomEndDate(e.target.value);
+              const startDate = new Date(customStartDate);
+              const endDate = new Date(e.target.value);
+              onChange({
+                label: "Custom",
+                period: "d",
+                start: startDate,
+                end: endDate,
+              });
+            }}
+            className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white text-gray-900"
+            placeholder="End date"
+          />
+        </div>
+      )}
     </div>
   );
 };
@@ -301,28 +225,51 @@ export default function AnalyticsDashboardPage() {
   const { isDarkTheme } = useTheme();
   const router = useRouter();
   const [dateRange, setDateRange] = useState({
-    label: "d",
+    label: "Last 30 days",
+    period: "d",
     start: subDays(new Date(), 30),
     end: new Date(),
   });
+  
+  // State for dashboard data
+  const [dashboardData, setDashboardData] = useState<DashboardResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   useEffect(() => {
     loadDashboard(
       dateRange.start.toISOString(),
       dateRange.end.toISOString(),
-      dateRange.label,
+      dateRange.period,
     );
-  }, []);
+  }, [dateRange]);
 
   const loadDashboard = async (start: string, end: string, label: string) => {
-    const response = await dashboardService.getDashboard(start, end, label);
-    console.log(response.data);
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await dashboardService.getDashboard(start, end, label);
+      console.log(response.data);
+      
+      if (response.success && response.data) {
+        setDashboardData(response.data);
+      } else {
+        setError('Failed to load dashboard data');
+      }
+    } catch (err) {
+      setError('Error loading dashboard data');
+      console.error('Dashboard error:', err);
+    } finally {
+      setLoading(false);
+    }
   };
+
   // Filter data based on date range
   const filterDataByDateRange = (
-    data: RevenueData[] | TicketsData[],
+    data: RevenueTrend[] | TicketsTrend[],
     range: DateRange,
   ) => {
-    if (!range.start || !range.end) return data;
+    if (!range.start || !range.end || !data) return data;
     return data.filter((d) => {
       const date = new Date(d.date);
       return isWithinInterval(date, { start: range.start, end: range.end });
@@ -330,11 +277,11 @@ export default function AnalyticsDashboardPage() {
   };
 
   const filteredRevenueSeries = filterDataByDateRange(
-    mockRevenueTimeSeries,
+    dashboardData?.revenueTrend || [],
     dateRange,
   );
   const filteredTicketsSeries = filterDataByDateRange(
-    mockTicketsTimeSeries,
+    dashboardData?.ticketsTrend || [],
     dateRange,
   );
 
@@ -355,9 +302,9 @@ export default function AnalyticsDashboardPage() {
               value={dateRange.label}
               onChange={(e) => {
                 const ranges = [
-                  { label: 'Last 7 days', start: subDays(new Date(), 7), end: new Date() },
-                  { label: 'Last 30 days', start: subDays(new Date(), 30), end: new Date() },
-                  { label: 'Last 3 months', start: subDays(new Date(), 90), end: new Date() },
+                  { label: 'Last 7 days', period: 'd', start: subDays(new Date(), 7), end: new Date() },
+                  { label: 'Last 30 days', period: 'd', start: subDays(new Date(), 30), end: new Date() },
+                  { label: 'Last 3 months', period: 'd', start: subDays(new Date(), 90), end: new Date() },
                 ];
                 const selected = ranges.find(r => r.label === e.target.value);
                 if (selected) setDateRange(selected);
@@ -402,11 +349,36 @@ export default function AnalyticsDashboardPage() {
 
         {/* Dashboard Content */}
         <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <KpiCard title="Total Revenue" value="$247,000" icon={DollarSign} isDarkTheme={isDarkTheme} />
-            <KpiCard title="Total Tickets Sold" value="8,250" icon={Ticket} isDarkTheme={isDarkTheme} />
-            <KpiCard title="Active Games" value="2" icon={Activity} isDarkTheme={isDarkTheme} />
-          </div>
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            </div>
+          ) : error ? (
+            <div className={`rounded-xl p-6 ${isDarkTheme ? 'bg-red-900/20 border-red-700' : 'bg-red-50 border-red-200'}`}>
+              <p className={`text-center ${isDarkTheme ? 'text-red-400' : 'text-red-600'}`}>{error}</p>
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <KpiCard 
+                  title="Total Revenue" 
+                  value={`$${dashboardData?.stats.totalRevenue.toLocaleString() || '0'}`} 
+                  icon={DollarSign} 
+                  isDarkTheme={isDarkTheme} 
+                />
+                <KpiCard 
+                  title="Total Tickets Sold" 
+                  value={dashboardData?.stats.totalTicketsSold.toLocaleString() || '0'} 
+                  icon={Ticket} 
+                  isDarkTheme={isDarkTheme} 
+                />
+                <KpiCard 
+                  title="Active Games" 
+                  value={dashboardData?.stats.activeGames.toString() || '0'} 
+                  icon={Activity} 
+                  isDarkTheme={isDarkTheme} 
+                />
+              </div>
 
           {/* Financial Analytics Section */}
           <div className={`rounded-xl overflow-hidden ${isDarkTheme ? 'bg-[#0A0A0A] border-gray-700' : 'bg-white border-gray-200'}`}>
@@ -435,7 +407,7 @@ export default function AnalyticsDashboardPage() {
               <div className={`rounded-xl p-4 ${isDarkTheme ? 'bg-[#1a1a1a] border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
                 <h3 className={`font-semibold mb-4 ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}>Top Games by Revenue</h3>
                 <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={revenueByGame}>
+                  <BarChart data={dashboardData?.topGames || []}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="game" />
                     <YAxis />
@@ -474,44 +446,9 @@ export default function AnalyticsDashboardPage() {
             </div>
           </div>
 
-          {/* Recent Events Section */}
-          <div className={`rounded-xl overflow-hidden ${isDarkTheme ? 'bg-[#0A0A0A] border-gray-700' : 'bg-white border-gray-200'}`}>
-            <div className={`px-6 py-4 border-b ${isDarkTheme ? 'border-gray-700 bg-[#1a1a1a]' : 'border-gray-200 bg-gray-50'}`}>
-              <h2 className={`text-lg font-semibold ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}>Recent Events</h2>
-              <p className={`text-sm mt-1 ${isDarkTheme ? 'text-gray-400' : 'text-gray-600'}`}>Latest event activities and performance</p>
-            </div>
-            <div className="p-6">
-              <table className="w-full text-sm">
-                <thead className={`${isDarkTheme ? 'bg-[#1a1a1a]' : 'bg-gray-50'}`}>
-                  <tr>
-                    <th className={`px-4 py-2 text-left ${isDarkTheme ? 'text-gray-400' : 'text-gray-700'}`}>Event</th>
-                    <th className={`px-4 py-2 text-left ${isDarkTheme ? 'text-gray-400' : 'text-gray-700'}`}>Game</th>
-                    <th className={`px-4 py-2 text-left ${isDarkTheme ? 'text-gray-400' : 'text-gray-700'}`}>Date</th>
-                    <th className={`px-4 py-2 text-left ${isDarkTheme ? 'text-gray-400' : 'text-gray-700'}`}>Occupancy</th>
-                    <th className={`px-4 py-2 text-left ${isDarkTheme ? 'text-gray-400' : 'text-gray-700'}`}>Revenue</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {mockEvents.slice(0, 3).map(event => (
-                    <tr key={event.id} className={`cursor-pointer border-t hover:${isDarkTheme ? 'bg-gray-800' : 'bg-gray-50'} ${isDarkTheme ? 'border-gray-700' : 'border-gray-100'}`} onClick={() => router.push(`/analitics/events/${event.id}`)}>
-                      <td className={`px-4 py-2 font-medium ${isDarkTheme ? 'text-white' : ''}`}>{event.name}</td>
-                      <td className={`px-4 py-2 ${isDarkTheme ? 'text-gray-300' : ''}`}>{event.game}</td>
-                      <td className={`px-4 py-2 ${isDarkTheme ? 'text-gray-300' : ''}`}>{event.date}</td>
-                      <td className="px-4 py-2">
-                        <div className="flex items-center gap-2">
-                          <div className={`w-16 rounded-full h-2 ${isDarkTheme ? 'bg-gray-700' : 'bg-gray-200'}`}>
-                            <div className="bg-accent h-2 rounded-full" style={{ width: `${event.occupancy}%` }} />
-                          </div>
-                          <span className={`${isDarkTheme ? 'text-gray-300' : ''}`}>{event.occupancy}%</span>
-                        </div>
-                      </td>
-                      <td className={`px-4 py-2 ${isDarkTheme ? 'text-gray-300' : ''}`}>${event.revenue}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          {/* Recent Events Section - Removed until real data is available */}
+          </>
+          )}
         </div>
       </div>
     </div>

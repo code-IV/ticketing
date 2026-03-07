@@ -275,6 +275,34 @@ export interface CartItem {
 }
 
 export interface DashboardStats {
+  totalRevenue: number;
+  totalTicketsSold: number;
+  activeGames: number;
+}
+
+export interface RevenueTrend {
+  date: string;
+  revenue: number;
+}
+
+export interface TopGame {
+  game: string;
+  revenue: number;
+}
+
+export interface TicketsTrend {
+  date: string;
+  ticketsSold: number;
+}
+
+export interface DashboardResponse {
+  stats: DashboardStats;
+  revenueTrend: RevenueTrend[];
+  topGames: TopGame[];
+  ticketsTrend: TicketsTrend[];
+}
+
+export interface LegacyDashboardStats {
   revenue: {
     total_transactions: number;
     total_revenue: string;

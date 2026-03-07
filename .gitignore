@@ -25,7 +25,8 @@ npm-debug.log*
 # Operating System files
 .DS_Store
 Thumbs.db
-
+.next
+.next/*
 # IDEs and editors
 .visualstudio/
 .vscode/

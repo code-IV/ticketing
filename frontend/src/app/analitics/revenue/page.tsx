@@ -114,11 +114,14 @@ const KpiCard = ({
 export default function RevenueAnalyticsPage() {
   const { isDarkTheme } = useTheme();
   const router = useRouter();
-  const [dateRange, setDateRange] = useState({
+  const [dateRange, setDateRange] = useState<DateRange>({
     label: "1d",
     start: subDays(new Date(), 14),
     end: new Date(),
   });
+  const [isCustomMode, setIsCustomMode] = useState(false);
+  const [customStartDate, setCustomStartDate] = useState(format(subDays(new Date(), 30), "yyyy-MM-dd"));
+  const [customEndDate, setCustomEndDate] = useState(format(new Date(), "yyyy-MM-dd"));
 
   useEffect(() => {
     loadDashboard(
@@ -192,19 +195,70 @@ export default function RevenueAnalyticsPage() {
                     end: new Date(),
                   },
                   {
-                    label: "Last 3 months",
+                    label: "Last 90 days",
                     start: subDays(new Date(), 90),
                     end: new Date(),
                   },
+                  {
+                    label: "Custom",
+                    start: null,
+                    end: null,
+                  },
                 ];
                 const selected = ranges.find((r) => r.label === e.target.value);
-                if (selected) setDateRange(selected);
+                if (selected) {
+                  if (selected.label === "Custom") {
+                    setIsCustomMode(true);
+                    setDateRange({ label: "Custom", start: null, end: null });
+                  } else {
+                    setIsCustomMode(false);
+                    setDateRange(selected as DateRange);
+                  }
+                }
               }}
             >
               <option value="Last 7 days">Last 7 days</option>
               <option value="Last 30 days">Last 30 days</option>
-              <option value="Last 3 months">Last 3 months</option>
+              <option value="Last 90 days">Last 90 days</option>
+              <option value="Custom">Custom</option>
             </select>
+            {isCustomMode && (
+              <div className="flex items-center gap-2">
+                <input
+                  type="date"
+                  value={customStartDate}
+                  onChange={(e) => {
+                    setCustomStartDate(e.target.value);
+                    const startDate = new Date(e.target.value);
+                    const endDate = new Date(customEndDate);
+                    setDateRange({
+                      label: "Custom",
+                      start: startDate,
+                      end: endDate,
+                    });
+                  }}
+                  className={`px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white text-gray-900`}
+                  placeholder="Start date"
+                />
+                <span className="text-gray-500">to</span>
+                <input
+                  type="date"
+                  value={customEndDate}
+                  onChange={(e) => {
+                    setCustomEndDate(e.target.value);
+                    const startDate = new Date(customStartDate);
+                    const endDate = new Date(e.target.value);
+                    setDateRange({
+                      label: "Custom",
+                      start: startDate,
+                      end: endDate,
+                    });
+                  }}
+                  className={`px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white text-gray-900`}
+                  placeholder="End date"
+                />
+              </div>
+            )}
           </div>
         </div>
 
