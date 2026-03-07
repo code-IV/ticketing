@@ -16,6 +16,7 @@ import {
   DollarSign,
   Divide,
   BarChart3,
+  Calendar,
 } from "lucide-react";
 import { gameService } from "@/services/adminService";
 import { Game, CreateTicketTypeRequest, TicketType } from "@/types";
@@ -29,8 +30,10 @@ const GamesManagementPage = () => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [games, setGames] = useState<Game[]>([]);
+  const [filteredGames, setFilteredGames] = useState<Game[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [formData, setFormData] = useState<{
     name: string;
     description: string;
@@ -46,7 +49,7 @@ const GamesManagementPage = () => {
   });
   const [newTicket, setNewTicket] = useState<CreateTicketTypeRequest>({
     name: "",
-    category: "adult",
+    category: "ADULT",
     price: 0,
     description: "",
     maxQuantityPerBooking: 10,
@@ -55,6 +58,25 @@ const GamesManagementPage = () => {
   useEffect(() => {
     loadGames();
   }, []);
+
+  // Apply filters whenever games, search, or status filter changes
+  useEffect(() => {
+    let filtered = games;
+
+    // Apply status filter
+    if (statusFilter !== "ALL") {
+      filtered = filtered.filter(game => game.status === statusFilter);
+    }
+
+    // Apply search filter
+    if (searchQuery.trim()) {
+      filtered = filtered.filter(game => 
+        game.name.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+
+    setFilteredGames(filtered);
+  }, [games, searchQuery, statusFilter]);
 
   const loadGames = async () => {
     setLoading(true);
@@ -99,6 +121,33 @@ const GamesManagementPage = () => {
     }
   };
 
+  const handleStatusChange = async (gameId: string, newStatus: string) => {
+    try {
+      // Use updateGame instead of updateGameStatus
+      await gameService.updateGame(gameId, { status: newStatus as Game['status'] });
+      // Update local state
+      setGames(prevGames => 
+        prevGames.map(game => 
+          game.id === gameId ? { ...game, status: newStatus as Game['status'] } : game
+        )
+      );
+    } catch (error) {
+      console.error("Failed to update game status:", error);
+    }
+  };
+
+  const handleDelete = async (gameId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (confirm('Are you sure you want to delete this game?')) {
+      try {
+        await gameService.deleteGame(gameId);
+        setGames(prevGames => prevGames.filter(game => game.id !== gameId));
+      } catch (error) {
+        console.error("Failed to delete game:", error);
+      }
+    }
+  };
+
   const addCategory = () => {
     if (!newTicket.name || newTicket.price == null || isNaN(newTicket.price)) {
       alert("Please provide at least a name and price");
@@ -123,7 +172,7 @@ const GamesManagementPage = () => {
 
     setNewTicket({
       name: "",
-      category: "adult",
+      category: "ADULT",
       price: 0,
       description: "",
       maxQuantityPerBooking: 10,
@@ -185,50 +234,81 @@ const GamesManagementPage = () => {
       </div>
 
       {/* STATS OVERVIEW */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        {[
-          {
-            label: "Active Rides",
-            value: "18",
-            icon: <Activity />,
-            color: "text-green-600",
-          },
-          {
-            label: "Under Repair",
-            value: "2",
-            icon: <Settings />,
-            color: "text-orange-600",
-          },
-          {
-            label: "CLOSED",
-            value: "5",
-            icon: <AlertTriangle />,
-            color: "text-red-600",
-          },
-          {
-            label: "ANALYTICS",
-            value: "",
-            icon: <BarChart3 />,
-            color: "text-yellow-500",
-          },
-        ].map((stat, i) => (
-          <div
-            key={i}
-            className={`p-5 rounded-2xl border shadow-sm ${isDarkTheme ? 'bg-[#0A0A0A] border-gray-700' : 'bg-white border-slate-100'}`}
-          >
-            <div className="flex items-center gap-3 mb-2">
-              <div className={`${stat.color} bg-opacity-10 p-2 rounded-lg`}>
-                {stat.icon}
+      <div className="flex flex-col md:flex-row gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 flex-1">
+          {[
+            {
+              label: "Active Rides",
+              value: games.filter(g => g.status === 'OPEN').length.toString(),
+              icon: <Activity />,
+              color: "text-green-600",
+            },
+            {
+              label: "Under Repair",
+              value: games.filter(g => g.status === 'ON_MAINTENANCE').length.toString(),
+              icon: <Settings />,
+              color: "text-orange-600",
+            },
+            {
+              label: "Closed",
+              value: games.filter(g => g.status === 'CLOSED').length.toString(),
+              icon: <AlertTriangle />,
+              color: "text-red-600",
+            },
+            {
+              label: "Upcoming",
+              value: games.filter(g => g.status === 'UPCOMING').length.toString(),
+              icon: <Calendar />,
+              color: "text-blue-600",
+            },
+          ].map((stat, i) => (
+            <div
+              key={i}
+              className={`p-5 rounded-2xl border shadow-sm ${isDarkTheme ? 'bg-[#0A0A0A] border-gray-700' : 'bg-white border-slate-100'}`}
+            >
+              <div className="flex items-center gap-3 mb-2">
+                <div className={`${stat.color} bg-opacity-10 p-2 rounded-lg`}>
+                  {stat.icon}
+                </div>
+                <span className={`text-xs font-bold uppercase tracking-wider ${isDarkTheme ? 'text-gray-500' : 'text-slate-400'}`}>
+                  {stat.label}
+                </span>
               </div>
-              <span className={`text-xs font-bold uppercase tracking-wider ${isDarkTheme ? 'text-gray-500' : 'text-slate-400'}`}>
-                {stat.label}
-              </span>
+              <div className={`text-2xl font-black ${isDarkTheme ? 'text-white' : 'text-slate-800'}`}>
+                {stat.value}
+              </div>
             </div>
-            <div className={`text-2xl font-black ${isDarkTheme ? 'text-white' : 'text-slate-800'}`}>
-              {stat.value}
+          ))}
+        </div>
+        
+        {/* ANALYTICS BUTTON - Far Right of Page */}
+        <div className="flex items-end">
+          <Link
+            href="/analitics/games"
+            className={`group flex items-center gap-3 px-6 py-4 rounded-2xl border shadow-lg transition-all duration-300 hover:shadow-xl hover:-translate-y-1 ${
+              isDarkTheme 
+                ? 'bg-gradient-to-r from-indigo-600 to-purple-600 border-indigo-500 hover:from-indigo-700 hover:to-purple-700' 
+                : 'bg-gradient-to-r from-indigo-500 to-purple-500 border-indigo-400 hover:from-indigo-600 hover:to-purple-600'
+            } text-white`}
+          >
+            <div className={`p-2 rounded-lg bg-white/20 transition-all duration-300 group-hover:bg-white/30`}>
+              <BarChart3 size={20} />
             </div>
-          </div>
-        ))}
+            <div className="text-left">
+              <div className="text-xs font-medium uppercase tracking-wider opacity-90">
+                View
+              </div>
+              <div className="text-lg font-black">
+                ANALYTICS
+              </div>
+            </div>
+            <div className={`p-1 rounded-full transition-all duration-300 group-hover:translate-x-1`}>
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="opacity-70">
+                <path d="M6 12L10 8L6 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+          </Link>
+        </div>
       </div>
 
       {/* SEARCH & FILTERS */}
@@ -247,6 +327,20 @@ const GamesManagementPage = () => {
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
+        
+        {/* Status Filter Dropdown */}
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          className={`px-4 py-3 border-none rounded-xl focus:ring-2 focus:ring-accent2 outline-none font-medium min-w-40
+            ${isDarkTheme ? 'bg-bg3 text-white' : 'bg-slate-50 text-slate-900'}`}
+        >
+          <option value="ALL">All Status</option>
+          <option value="OPEN">Open</option>
+          <option value="CLOSED">Closed</option>
+          <option value="ON_MAINTENANCE">Under Maintenance</option>
+          <option value="UPCOMING">Upcoming</option>
+        </select>
       </div>
 
       {/* GAMES GRID */}
@@ -258,31 +352,45 @@ const GamesManagementPage = () => {
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-          {games.map((game) => (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+          {filteredGames.map((game) => (
             <div
               key={game.id}
               onClick={() => router.push(`/admin/games/${game.id}`)}
-              className={`group rounded-3xl border shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden cursor-pointer ${isDarkTheme ? 'bg-[#0A0A0A] border-gray-700' : 'bg-white border-slate-100'}`}
+              className={`group relative rounded-3xl border shadow-lg hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 overflow-hidden cursor-pointer ${
+                isDarkTheme ? 'bg-gradient-to-br from-[#0A0A0A] to-[#1a1a1a] border-gray-700' : 'bg-gradient-to-br from-white to-gray-50 border-slate-200'
+              }`}
             >
-              <div className="p-6">
-                <div className="flex justify-between items-start mb-4">
-                  {/* Status chip (always visible) */}
+              {/* Gradient Overlay on Hover */}
+              <div className={`absolute inset-0 bg-gradient-to-br from-indigo-500/10 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none`} />
+              
+              <div className="relative p-8">
+                <div className="flex justify-between items-start mb-6">
+                  {/* Status chip with enhanced styling */}
                   <div
-                    className={`flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${statusConfig(isDarkTheme)[game.status]?.bg} ${statusConfig(isDarkTheme)[game.status]?.text}`}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-full text-[11px] font-black uppercase tracking-wider shadow-md ${
+                      statusConfig(isDarkTheme)[game.status]?.bg
+                    } ${statusConfig(isDarkTheme)[game.status]?.text}`}
                   >
-                    {statusConfig(isDarkTheme)[game.status]?.icon}
+                    <span className="w-2 h-2 rounded-full bg-current opacity-60" />
                     {statusConfig(isDarkTheme)[game.status]?.label}
                   </div>
 
-                  {/* Hover actions: status dropdown, edit, delete */}
-                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  {/* Hover actions: status dropdown, delete */}
+                  <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-1 group-hover:translate-y-0">
                     {/* Status Dropdown */}
                     <select
-                      className={`text-[10px] font-bold uppercase px-2 py-1 rounded-full border-none outline-none cursor-pointer ${statusConfig(isDarkTheme)[game.status]?.bg} ${statusConfig(isDarkTheme)[game.status]?.text}`}
+                      className={`text-[10px] font-bold uppercase px-3 py-1.5 rounded-full border outline-none cursor-pointer shadow-sm transition-all ${
+                        isDarkTheme 
+                          ? 'bg-gray-900 text-white border-gray-600' 
+                          : 'bg-gray-800 text-white border-gray-600'
+                      }`}
                       value={game.status}
                       onClick={(e) => e.stopPropagation()}
-                      onChange={(e) => e.stopPropagation()}
+                      onChange={(e) => {
+                        e.stopPropagation();
+                        handleStatusChange(game.id, e.target.value);
+                      }}
                     >
                       <option value="OPEN">OPEN</option>
                       <option value="ON_MAINTENANCE">MAINTENANCE</option>
@@ -292,7 +400,11 @@ const GamesManagementPage = () => {
 
                     {/* Delete Button */}
                     <button
-                      className={`p-1.5 rounded-lg text-slate-400 hover:text-red-600 ${isDarkTheme ? 'hover:bg-gray-800' : 'hover:bg-slate-100'}`}
+                      className={`p-2 rounded-xl shadow-sm transition-all hover:shadow-md hover:scale-105 ${
+                        isDarkTheme 
+                          ? 'text-slate-400 hover:text-red-400 hover:bg-red-900/20' 
+                          : 'text-slate-400 hover:text-red-600 hover:bg-red-50'
+                      }`}
                       onClick={(e) => e.stopPropagation()}
                     >
                       <Trash2 size={16} />
@@ -300,56 +412,30 @@ const GamesManagementPage = () => {
                   </div>
                 </div>
 
-                <h3 className={`text-xl font-black mb-1 ${isDarkTheme ? 'text-white' : 'text-slate-800'}`}>
+                <h3 className={`text-2xl font-black mb-6 bg-gradient-to-r ${
+                  isDarkTheme 
+                    ? 'from-white to-gray-300' 
+                    : 'from-slate-900 to-slate-700'
+                } bg-clip-text text-transparent`}>
                   {game.name}
                 </h3>
-                <div className={`mt-4 space-y-2 border-t pt-4 ${isDarkTheme ? 'border-gray-700' : 'border-slate-50'}`}>
-                  <p className={`text-[10px] font-black uppercase tracking-widest ${isDarkTheme ? 'text-gray-500' : 'text-slate-400'}`}>
-                    Pricing Matrix
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {game.ticket_types && game.ticket_types.length > 0 ? (
-                      game.ticket_types.map((tt) => (
-                        <div
-                          key={tt.id}
-                          className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border ${isDarkTheme ? 'bg-gray-800 border-gray-600' : 'bg-slate-50 border-slate-100'}`}
-                        >
-                          <span className={`text-[10px] font-bold uppercase ${isDarkTheme ? 'text-white' : 'text-accent2'}`}>
-                            {tt.category}
-                          </span>
-                          <span className={`text-sm font-black ${isDarkTheme ? 'text-gray-300' : 'text-slate-700'}`}>
-                            {tt.price} <span className="text-[10px]">ETB</span>
-                          </span>
-                        </div>
-                      ))
-                    ) : (
-                      <span className={`text-xs italic ${isDarkTheme ? 'text-gray-500' : 'text-slate-400'}`}>
-                        No pricing set
-                      </span>
-                    )}
-                  </div>
-                </div>
-                <p className={`text-sm my-2 font-medium ${isDarkTheme ? 'text-gray-500' : 'text-slate-400'}`}>
-                  • Rules: {game.rules}
-                </p>
-
-                <div className={`flex items-end justify-between border-t px-2 pt-1 ${isDarkTheme ? 'border-gray-700' : 'border-slate-50'}`}>
-                  <div>
-                    <span className={`text-xs font-bold uppercase ${isDarkTheme ? 'text-gray-500' : 'text-slate-400'}`}>
-                      Single Access
-                    </span>
-                    <div className={`text-2xl font-black ${isDarkTheme ? 'text-white' : 'text-slate-700'}`}>
-                      {game.ticket_types?.find((t) => t.category === "adult")
-                        ?.price ?? "—"}
-                      <span className="text-xs ml-1">ETB</span>
-                    </div>
-                  </div>
+                
+                {/* Action Button with enhanced styling */}
+                <div className={`flex justify-end border-t pt-6 ${
+                  isDarkTheme ? 'border-gray-700/50' : 'border-slate-200/50'
+                }`}>
                   <Link
-                    href={`/admin/games/${game.id}`}
-                    className={`text-xs font-bold px-4 py-2 rounded-xl transition-colors ${isDarkTheme ? 'bg-gray-800 text-white hover:bg-gray-700' : 'bg-slate-900 text-white hover:bg-slate-800'}`}
+                    href={`/analitics/games/${game.id}`}
+                    className={`group/btn relative px-6 py-3 rounded-2xl font-bold text-sm transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl ${
+                      isDarkTheme 
+                        ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:from-indigo-700 hover:to-purple-700' 
+                        : 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white hover:from-indigo-600 hover:to-purple-600'
+                    }`}
                     onClick={(e) => e.stopPropagation()}
                   >
-                    View Analytics
+                    <span className="relative z-10">View Statistics</span>
+                    {/* Button shine effect */}
+                    <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300" />
                   </Link>
                 </div>
               </div>
@@ -533,15 +619,15 @@ const GamesManagementPage = () => {
                             setNewTicket({
                               ...newTicket,
                               category: e.target.value as
-                                | "adult"
-                                | "student"
-                                | "child"
-                                | "group"
-                                | "senior",
+                                | "ADULT"
+                                | "STUDENT"
+                                | "CHILD"
+                                | "GROUP"
+                                | "SENIOR",
                             })
                           }
                         >
-                          {["adult", "child", "senior", "student", "group"].map(
+                          {["ADULT", "CHILD", "SENIOR", "STUDENT", "GROUP"].map(
                             (cat) => {
                               const isAlreadyAdded = formData.ticket_types.some(
                                 (tt) => tt.category === cat,

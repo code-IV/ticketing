@@ -28,8 +28,10 @@ const EventsManagementPage = () => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [events, setEvents] = useState<Event[]>([]);
+  const [filteredEvents, setFilteredEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [formData, setFormData] = useState<{
     name: string;
     description: string;
@@ -58,6 +60,32 @@ const EventsManagementPage = () => {
   useEffect(() => {
     loadEvents();
   }, []);
+
+  // Apply filters whenever events, search, or status filter changes
+  useEffect(() => {
+    let filtered = events;
+
+    // Apply status filter
+    if (statusFilter !== "ALL") {
+      filtered = filtered.filter(event => {
+        if (statusFilter === "ACTIVE") {
+          return event.is_active === true;
+        } else if (statusFilter === "INACTIVE") {
+          return event.is_active === false;
+        }
+        return true;
+      });
+    }
+
+    // Apply search filter
+    if (searchQuery.trim()) {
+      filtered = filtered.filter(event => 
+        event.name.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+
+    setFilteredEvents(filtered);
+  }, [events, searchQuery, statusFilter]);
 
   const loadEvents = async () => {
     setLoading(true);
@@ -90,7 +118,7 @@ const EventsManagementPage = () => {
     };
 
     try {
-      await adminService.createEventWithTicketTypes(payload);
+      await adminService.createEvent(payload);
       loadEvents();
 
       setFormData({
@@ -106,6 +134,20 @@ const EventsManagementPage = () => {
       setIsDrawerOpen(false);
     } catch (error) {
       console.error("Failed to create event:", error);
+    }
+  };
+
+  const handleStatusChange = async (eventId: string, newStatus: boolean) => {
+    try {
+      await adminService.updateEvent(eventId, { isActive: newStatus });
+      // Update local state
+      setEvents(prevEvents => 
+        prevEvents.map(event => 
+          event.id === eventId ? { ...event, is_active: newStatus } : event
+        )
+      );
+    } catch (error) {
+      console.error("Failed to update event status:", error);
     }
   };
 
@@ -195,50 +237,70 @@ const EventsManagementPage = () => {
       </div>
 
       {/* STATS OVERVIEW */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        {[
-          {
-            label: "Active Events",
-            value: events.filter(e => e.is_active).length.toString(),
-            icon: <Activity />,
-            color: "text-green-600",
-          },
-          {
-            label: "Upcoming",
-            value: events.filter(e => new Date(e.event_date) > new Date()).length.toString(),
-            icon: <Calendar />,
-            color: "text-blue-600",
-          },
-          {
-            label: "Total Attendees",
-            value: events.reduce((sum, e) => sum + e.tickets_sold, 0).toString(),
-            icon: <Users />,
-            color: "text-purple-600",
-          },
-          {
-            label: "ANALYTICS",
-            value: "",
-            icon: <BarChart3 />,
-            color: "text-yellow-600",
-          },
-        ].map((stat, i) => (
-          <div
-            key={i}
-            className={`p-5 rounded-2xl border shadow-sm ${isDarkTheme ? 'bg-[#0A0A0A] border-gray-700' : 'bg-white border-slate-100'}`}
-          >
-            <div className="flex items-center gap-3 mb-2">
-              <div className={`${stat.color} bg-opacity-10 p-2 rounded-lg`}>
-                {stat.icon}
+      <div className="flex flex-col md:flex-row gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 flex-1">
+          {[
+            {
+              label: "Active Events",
+              value: events.filter(e => e.is_active).length.toString(),
+              icon: <Activity />,
+              color: "text-green-600",
+            },
+            {
+              label: "Inactive Events",
+              value: events.filter(e => !e.is_active).length.toString(),
+              icon: <AlertTriangle />,
+              color: "text-red-600",
+            },
+
+          ].map((stat, i) => (
+            <div
+              key={i}
+              className={`p-5 rounded-2xl border shadow-sm ${isDarkTheme ? 'bg-[#0A0A0A] border-gray-700' : 'bg-white border-slate-100'}`}
+            >
+              <div className="flex items-center gap-3 mb-2">
+                <div className={`${stat.color} bg-opacity-10 p-2 rounded-lg`}>
+                  {stat.icon}
+                </div>
+                <span className={`text-xs font-bold uppercase tracking-wider ${isDarkTheme ? 'text-gray-500' : 'text-slate-400'}`}>
+                  {stat.label}
+                </span>
               </div>
-              <span className={`text-xs font-bold uppercase tracking-wider ${isDarkTheme ? 'text-gray-500' : 'text-slate-400'}`}>
-                {stat.label}
-              </span>
+              <div className={`text-2xl font-black ${isDarkTheme ? 'text-white' : 'text-slate-800'}`}>
+                {stat.value}
+              </div>
             </div>
-            <div className={`text-2xl font-black ${isDarkTheme ? 'text-white' : 'text-slate-800'}`}>
-              {stat.value}
+          ))}
+        </div>
+        
+        {/* ANALYTICS BUTTON - Far Right of Page */}
+        <div className="flex items-end">
+          <Link
+            href="/analitics/events"
+            className={`group flex items-center gap-3 px-6 py-4 rounded-2xl border shadow-lg transition-all duration-300 hover:shadow-xl hover:-translate-y-1 ${
+              isDarkTheme 
+                ? 'bg-gradient-to-r from-indigo-600 to-purple-600 border-indigo-500 hover:from-indigo-700 hover:to-purple-700' 
+                : 'bg-gradient-to-r from-indigo-500 to-purple-500 border-indigo-400 hover:from-indigo-600 hover:to-purple-600'
+            } text-white`}
+          >
+            <div className={`p-2 rounded-lg bg-white/20 transition-all duration-300 group-hover:bg-white/30`}>
+              <BarChart3 size={20} />
             </div>
-          </div>
-        ))}
+            <div className="text-left">
+              <div className="text-xs font-medium uppercase tracking-wider opacity-90">
+                View
+              </div>
+              <div className="text-lg font-black">
+                ANALYTICS
+              </div>
+            </div>
+            <div className={`p-1 rounded-full transition-all duration-300 group-hover:translate-x-1`}>
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="opacity-70">
+                <path d="M6 12L10 8L6 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+          </Link>
+        </div>
       </div>
 
       {/* SEARCH & FILTERS */}
@@ -256,6 +318,18 @@ const EventsManagementPage = () => {
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
+        
+        {/* Status Filter Dropdown */}
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          className={`px-4 py-3 border-none rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-medium min-w-40
+            ${isDarkTheme ? 'bg-bg3 text-white' : 'bg-slate-50'}`}
+        >
+          <option value="ALL">All Status</option>
+          <option value="ACTIVE">Active</option>
+          <option value="INACTIVE">Inactive</option>
+        </select>
       </div>
 
       {/* EVENTS GRID */}
@@ -267,33 +341,57 @@ const EventsManagementPage = () => {
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-          {events
-            .filter(event => 
-              searchQuery === "" || 
-              event.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-              (event.description || '').toLowerCase().includes(searchQuery.toLowerCase())
-            )
-            .map((event) => (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+          {filteredEvents.map((event) => (
             <div
               key={event.id}
               onClick={() => router.push(`/admin/events/${event.id}`)}
-              className={`group rounded-3xl border shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden cursor-pointer ${isDarkTheme ? 'bg-[#0A0A0A] border-gray-700' : 'bg-white border-slate-100'}`}
+              className={`group relative rounded-3xl border shadow-lg hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 overflow-hidden cursor-pointer ${
+                isDarkTheme ? 'bg-gradient-to-br from-[#0A0A0A] to-[#1a1a1a] border-gray-700' : 'bg-gradient-to-br from-white to-gray-50 border-slate-200'
+              }`}
             >
-              <div className="p-6">
-                <div className="flex justify-between items-start mb-4">
-                  {/* Status chip */}
+              {/* Gradient Overlay on Hover */}
+              <div className={`absolute inset-0 bg-gradient-to-br from-indigo-500/10 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none`} />
+              
+              <div className="relative p-8">
+                <div className="flex justify-between items-start mb-6">
+                  {/* Status chip with enhanced styling */}
                   <div
-                    className={`flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${statusConfig(isDarkTheme)[event.is_active ? 'active' : 'inactive']?.bg} ${statusConfig(isDarkTheme)[event.is_active ? 'active' : 'inactive']?.text}`}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-full text-[11px] font-black uppercase tracking-wider shadow-md ${
+                      statusConfig(isDarkTheme)[event.is_active ? 'active' : 'inactive']?.bg
+                    } ${statusConfig(isDarkTheme)[event.is_active ? 'active' : 'inactive']?.text}`}
                   >
-                    {statusConfig(isDarkTheme)[event.is_active ? 'active' : 'inactive']?.icon}
+                    <span className="w-2 h-2 rounded-full bg-current opacity-60" />
                     {statusConfig(isDarkTheme)[event.is_active ? 'active' : 'inactive']?.label}
                   </div>
 
-                  {/* Hover actions */}
-                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  {/* Hover actions: status dropdown, delete */}
+                  <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-1 group-hover:translate-y-0">
+                    {/* Status Dropdown */}
+                    <select
+                      className={`text-[10px] font-bold uppercase px-3 py-1.5 rounded-full border outline-none cursor-pointer shadow-sm transition-all ${
+                        isDarkTheme 
+                          ? 'bg-gray-900 text-white border-gray-600' 
+                          : 'bg-gray-800 text-white border-gray-600'
+                      }`}
+                      value={event.is_active ? 'ACTIVE' : 'INACTIVE'}
+                      onClick={(e) => e.stopPropagation()}
+                      onChange={(e) => {
+                        e.stopPropagation();
+                        handleStatusChange(event.id, e.target.value === 'ACTIVE');
+                      }}
+                    >
+                      <option value="ACTIVE">ACTIVE</option>
+                      <option value="INACTIVE">INACTIVE</option>
+                    </select>
+
+                    {/* Delete Button */}
                     <button
-                      className={`p-1.5 rounded-lg text-slate-400 hover:text-red-600 ${isDarkTheme ? 'hover:bg-gray-800' : 'hover:bg-slate-100'}`}
+                      className={`p-2 rounded-xl shadow-sm transition-all hover:shadow-md hover:scale-105 ${
+                        isDarkTheme 
+                          ? 'text-slate-400 hover:text-red-400 hover:bg-red-900/20' 
+                          : 'text-slate-400 hover:text-red-600 hover:bg-red-50'
+                      }`}
                       onClick={(e) => {
                         e.stopPropagation();
                         handleDeleteEvent(event.id);
@@ -304,47 +402,30 @@ const EventsManagementPage = () => {
                   </div>
                 </div>
 
-                <h3 className={`text-xl font-black mb-1 ${isDarkTheme ? 'text-white' : 'text-slate-800'}`}>
+                <h3 className={`text-2xl font-black mb-6 bg-gradient-to-r ${
+                  isDarkTheme 
+                    ? 'from-white to-gray-300' 
+                    : 'from-slate-900 to-slate-700'
+                } bg-clip-text text-transparent`}>
                   {event.name}
                 </h3>
                 
-                <div className={`space-y-3 border-t pt-4 ${isDarkTheme ? 'border-gray-700' : 'border-slate-50'}`}>
-                  <div className={`flex items-center gap-2 text-sm ${isDarkTheme ? 'text-gray-400' : 'text-slate-600'}`}>
-                    <Calendar size={14} />
-                    <span>{format(new Date(event.event_date), "MMM dd, yyyy")}</span>
-                  </div>
-                  <div className={`flex items-center gap-2 text-sm ${isDarkTheme ? 'text-gray-400' : 'text-slate-600'}`}>
-                    <Clock size={14} />
-                    <span>{event.start_time} - {event.end_time}</span>
-                  </div>
-                  <div className={`flex items-center gap-2 text-sm ${isDarkTheme ? 'text-gray-400' : 'text-slate-600'}`}>
-                    <Users size={14} />
-                    <span>{event.tickets_sold} / {event.capacity} attendees</span>
-                  </div>
-                </div>
-
-                <p className={`text-sm mb-6 font-medium line-clamp-2 ${isDarkTheme ? 'text-gray-500' : 'text-slate-400'}`}>
-                  {event.description}
-                </p>
-
-                <div className={`flex items-end justify-between border-t pt-4 ${isDarkTheme ? 'border-gray-700' : 'border-slate-50'}`}>
-                  <div>
-                    <span className={`text-xs font-bold uppercase ${isDarkTheme ? 'text-gray-500' : 'text-slate-400'}`}>
-                      Starting From
-                    </span>
-                    <div className="text-2xl font-black style={{ color: 'var(--accent)' }}">
-                      {event.ticket_types && event.ticket_types.length > 0
-                        ? Math.min(...event.ticket_types.map(t => t.price))
-                        : "—"}
-                      <span className="text-xs ml-1">ETB</span>
-                    </div>
-                  </div>
+                {/* Action Button with enhanced styling */}
+                <div className={`flex justify-end border-t pt-6 ${
+                  isDarkTheme ? 'border-gray-700/50' : 'border-slate-200/50'
+                }`}>
                   <Link
-                    href={`/admin/events/${event.id}`}
-                    className={`text-xs font-bold px-4 py-2 rounded-xl transition-colors ${isDarkTheme ? 'bg-gray-800 text-white hover:bg-gray-700' : 'bg-slate-900 text-white hover:bg-slate-800'}`}
+                    href={`/analitics/events/${event.id}`}
+                    className={`group/btn relative px-6 py-3 rounded-2xl font-bold text-sm transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl ${
+                      isDarkTheme 
+                        ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:from-indigo-700 hover:to-purple-700' 
+                        : 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white hover:from-indigo-600 hover:to-purple-600'
+                    }`}
                     onClick={(e) => e.stopPropagation()}
                   >
-                    View Analytics
+                    <span className="relative z-10">View Statistics</span>
+                    {/* Button shine effect */}
+                    <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300" />
                   </Link>
                 </div>
               </div>
