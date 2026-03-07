@@ -166,10 +166,7 @@ const CollectorTicketCard = ({
           <h3 className="font-black text-3xl text-white tracking-tighter drop-shadow-lg leading-tight uppercase italic">
             {item.productName}
           </h3>
-          Prem
-          <p className="flex items-center gap-1.5 text-white/70 text-[10px] font-black uppercase mt-2 tracking-widest">
-            <Sparkles size={12} className="text-indigo-400" /> Premium Access
-          </p>
+
         </div>
         <div className="bg-white/10 backdrop-blur-md px-5 py-3 rounded-[24px] border border-white/20 text-right text-white shadow-xl">
           <span className="text-[9px] font-black opacity-60 uppercase block mb-1 tracking-tighter">
