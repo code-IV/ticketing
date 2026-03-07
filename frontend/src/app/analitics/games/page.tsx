@@ -37,13 +37,13 @@ type DateRange = {
 };
 
 type Game = {
-  id: number;
+  id: string;
   name: string;
   status: string;
   totalRevenue: number;
-  totalBookings: number;
-  avgOccupancy: number;
-  eventsCount: number;
+  totalBookings: number; // same as ticketsSold for now
+  avgOccupancy: number;   // not provided by API, default 0
+  eventsCount: number;    // not provided, default 0
   ticketsSold: number;
 };
 
@@ -76,117 +76,51 @@ type TicketTypeData = {
   revenue: number;
 };
 
-// ==================== Mock Data ====================
-const mockGames: Game[] = [
-  {
-    id: 1,
-    name: "Cyber Realm",
-    status: "active",
-    totalRevenue: 85000,
-    totalBookings: 2100,
-    avgOccupancy: 82,
-    eventsCount: 5,
-    ticketsSold: 2100,
-  },
-  {
-    id: 2,
-    name: "Speed Racer",
-    status: "maintenance",
-    totalRevenue: 42000,
-    totalBookings: 1100,
-    avgOccupancy: 68,
-    eventsCount: 3,
-    ticketsSold: 1100,
-  },
-  {
-    id: 3,
-    name: "Fantasy Quest",
-    status: "active",
-    totalRevenue: 120000,
-    totalBookings: 3200,
-    avgOccupancy: 91,
-    eventsCount: 8,
-    ticketsSold: 3200,
-  },
-  {
-    id: 4,
-    name: "Space Odyssey",
-    status: "active",
-    totalRevenue: 65000,
-    totalBookings: 1800,
-    avgOccupancy: 75,
-    eventsCount: 4,
-    ticketsSold: 1800,
-  },
-  {
-    id: 5,
-    name: "Dragon Warriors",
-    status: "active",
-    totalRevenue: 95000,
-    totalBookings: 2700,
-    avgOccupancy: 88,
-    eventsCount: 6,
-    ticketsSold: 2700,
-  },
-];
+// API response types
+type DashboardSummary = {
+  totalRevenue: number;
+  totalTickets: number;
+  topPerformingGame: string;
+};
 
-const mockEvents: Event[] = [
-  {
-    id: 101,
-    name: "Summer Pro League",
-    game: "Cyber Realm",
-    date: "2026-08-15",
-    status: "Active",
-    revenue: 12000,
-    ticketsSold: 85,
-    capacity: 100,
-    occupancy: 85,
-  },
-  {
-    id: 102,
-    name: "Midnight Scrims",
-    game: "Cyber Realm",
-    date: "2026-08-20",
-    status: "Sold Out",
-    revenue: 18000,
-    ticketsSold: 120,
-    capacity: 120,
-    occupancy: 100,
-  },
-  {
-    id: 103,
-    name: "Newbie Bootcamp",
-    game: "Fantasy Quest",
-    date: "2026-09-01",
-    status: "Draft",
-    revenue: 0,
-    ticketsSold: 12,
-    capacity: 50,
-    occupancy: 24,
-  },
-  {
-    id: 104,
-    name: "Pro Tournament",
-    game: "Speed Racer",
-    date: "2026-08-10",
-    status: "Active",
-    revenue: 8500,
-    ticketsSold: 42,
-    capacity: 60,
-    occupancy: 70,
-  },
-];
+type RevenueByGameItem = {
+  game: string;
+  revenue: number;
+};
 
-const getGameRevenueSeries = (
-  gameId: number,
-  dateRange: DateRange,
-): RevenueData[] => {
+type TicketsByGameItem = {
+  game: string;
+  tickets: number;
+};
+
+type TableGameItem = {
+  id: string;
+  name: string;
+  status: string;
+  totalRevenue: number;
+  ticketsSold: number;
+  topTicketType: string;
+  topTicketPrice: number;
+  topTicketSold: number;
+};
+
+type DashboardData = {
+  summary: DashboardSummary;
+  revenueByGame: RevenueByGameItem[];
+  ticketsByGame: TicketsByGameItem[];
+  tableData: TableGameItem[];
+};
+
+// ==================== Mock Chart Data Generators (will be replaced when API provides) ====================
+const getGameRevenueSeries = (gameId: string, dateRange: DateRange): RevenueData[] => {
   if (!dateRange.start || !dateRange.end) return [];
   const days = Math.ceil(
     (dateRange.end.getTime() - dateRange.start.getTime()) /
       (1000 * 60 * 60 * 24),
   );
-  const base = gameId * 1000;
+  // Simple hash from string to number for seed
+  const seed = gameId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  const base = seed % 10000;
   return Array.from({ length: days }, (_, i) => {
     const date = new Date(dateRange.start!.getTime() + i * 24 * 60 * 60 * 1000);
     return {
@@ -196,16 +130,14 @@ const getGameRevenueSeries = (
   });
 };
 
-const getGameBookingsSeries = (
-  gameId: number,
-  dateRange: DateRange,
-): BookingData[] => {
+const getGameBookingsSeries = (gameId: string, dateRange: DateRange): BookingData[] => {
   if (!dateRange.start || !dateRange.end) return [];
   const days = Math.ceil(
     (dateRange.end.getTime() - dateRange.start.getTime()) /
       (1000 * 60 * 60 * 24),
   );
-  const base = gameId * 50;
+  const seed = gameId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  const base = seed % 500;
   return Array.from({ length: days }, (_, i) => {
     const date = new Date(dateRange.start!.getTime() + i * 24 * 60 * 60 * 1000);
     return {
@@ -215,16 +147,7 @@ const getGameBookingsSeries = (
   });
 };
 
-const revenueByGame = mockGames.map((g) => ({
-  game: g.name,
-  revenue: g.totalRevenue,
-}));
-const ticketsSoldByGame = mockGames.map((g) => ({
-  game: g.name,
-  tickets: g.ticketsSold,
-}));
-
-const getTicketTypeData = (gameId: number): TicketTypeData[] => {
+const getTicketTypeData = (gameId: string): TicketTypeData[] => {
   // Base ticket types for all games
   const baseTicketTypes = [
     { type: "Standard", avgPrice: 25, sold: 150, revenue: 3750 },
@@ -232,22 +155,28 @@ const getTicketTypeData = (gameId: number): TicketTypeData[] => {
     { type: "VIP", avgPrice: 85, sold: 20, revenue: 1700 },
   ];
 
-  // Add game-specific variations
-  if (gameId === 1) {
-    // Cyber Realm
-    return [
-      ...baseTicketTypes,
-      { type: "Pro Pass", avgPrice: 120, sold: 15, revenue: 1800 },
-    ];
-  } else if (gameId === 3) {
-    // Fantasy Quest
-    return [
-      ...baseTicketTypes,
-      { type: "Family Pack", avgPrice: 95, sold: 25, revenue: 2375 },
-    ];
+  // Add game-specific variations based on game id
+  const seed = gameId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  if (seed % 3 === 0) {
+    return [...baseTicketTypes, { type: "Pro Pass", avgPrice: 120, sold: 15, revenue: 1800 }];
+  } else if (seed % 3 === 1) {
+    return [...baseTicketTypes, { type: "Family Pack", avgPrice: 95, sold: 25, revenue: 2375 }];
   }
-
   return baseTicketTypes;
+};
+
+// ==================== Helper to map API status to display status ====================
+const mapStatus = (apiStatus: string): string => {
+  switch (apiStatus) {
+    case "OPEN":
+      return "active";
+    case "ON_MAINTENANCE":
+      return "maintenance";
+    case "CLOSED":
+      return "closed";
+    default:
+      return apiStatus.toLowerCase();
+  }
 };
 
 // ==================== KPI Card Component ====================
@@ -295,38 +224,63 @@ export default function GamesAnalyticsPage() {
   const router = useRouter();
   const [selectedGame, setSelectedGame] = useState<Game | null>(null);
   const [dateRange, setDateRange] = useState<DateRange>({
-    label: "3d",
+    label: "Last 7 days",
     start: subDays(new Date(), 7),
     end: new Date(),
   });
   const [isCustomMode, setIsCustomMode] = useState(false);
   const [customStartDate, setCustomStartDate] = useState(format(subDays(new Date(), 30), "yyyy-MM-dd"));
   const [customEndDate, setCustomEndDate] = useState(format(new Date(), "yyyy-MM-dd"));
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadEvent(
-      dateRange.start.toISOString(),
-      dateRange.end.toISOString(),
-      dateRange.label,
-    );
-  }, []);
+    fetchDashboardData();
+  }, [dateRange]);
 
-  const loadEvent = async (
-    startDate: string,
-    endDate: string,
-    period: string,
-  ) => {
-    const response = await gameService.getDashboard(startDate, endDate, period);
-    console.log(response.data);
+  const fetchDashboardData = async () => {
+    if (!dateRange.start || !dateRange.end) return;
+    setLoading(true);
+    try {
+      const response = await gameService.getDashboard(
+        dateRange.start.toISOString(),
+        dateRange.end.toISOString(),
+        dateRange.label
+      );
+      if (response.success) {
+        setDashboardData(response.data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch dashboard data", error);
+    } finally {
+      setLoading(false);
+    }
   };
+
+  // Transform API games to our Game type
+  const games: Game[] = dashboardData?.tableData.map(item => ({
+    id: item.id,
+    name: item.name,
+    status: mapStatus(item.status),
+    totalRevenue: item.totalRevenue,
+    totalBookings: item.ticketsSold,
+    avgOccupancy: 0, // not provided
+    eventsCount: 0,  // not provided
+    ticketsSold: item.ticketsSold,
+  })) || [];
+
+  if (loading) {
+    return (
+      <div className={`min-h-screen p-6 flex items-center justify-center ${isDarkTheme ? "bg-[#0A0A0A]" : "bg-gray-50"}`}>
+        <p className={isDarkTheme ? "text-white" : "text-gray-900"}>Loading analytics...</p>
+      </div>
+    );
+  }
 
   if (selectedGame) {
     // Show detailed view for selected game
     const gameRevenueSeries = getGameRevenueSeries(selectedGame.id, dateRange);
-    const gameBookingsSeries = getGameBookingsSeries(
-      selectedGame.id,
-      dateRange,
-    );
+    const gameBookingsSeries = getGameBookingsSeries(selectedGame.id, dateRange);
     const ticketTypeData = getTicketTypeData(selectedGame.id);
 
     return (
@@ -712,6 +666,30 @@ export default function GamesAnalyticsPage() {
             ← Back to Analytics Dashboard
           </button>
 
+          {/* Summary KPIs */}
+          {dashboardData && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              <KpiCard
+                title="Total Revenue"
+                value={`$${dashboardData.summary.totalRevenue.toLocaleString()}`}
+                icon={DollarSign}
+                isDarkTheme={isDarkTheme}
+              />
+              <KpiCard
+                title="Total Tickets Sold"
+                value={dashboardData.summary.totalTickets.toLocaleString()}
+                icon={Ticket}
+                isDarkTheme={isDarkTheme}
+              />
+              <KpiCard
+                title="Top Performing Game"
+                value={dashboardData.summary.topPerformingGame}
+                icon={TrendingUp}
+                isDarkTheme={isDarkTheme}
+              />
+            </div>
+          )}
+
           <div className="space-y-6">
             {/* Revenue by Game Chart */}
             <div
@@ -723,7 +701,7 @@ export default function GamesAnalyticsPage() {
                 Revenue by Game
               </h3>
               <ResponsiveContainer width="100%" height={250}>
-                <BarChart data={revenueByGame}>
+                <BarChart data={dashboardData?.revenueByGame || []}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="game" />
                   <YAxis />
@@ -743,7 +721,7 @@ export default function GamesAnalyticsPage() {
                 Tickets Sold by Game
               </h3>
               <ResponsiveContainer width="100%" height={250}>
-                <BarChart data={ticketsSoldByGame}>
+                <BarChart data={dashboardData?.ticketsByGame || []}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="game" />
                   <YAxis />
@@ -795,7 +773,7 @@ export default function GamesAnalyticsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {mockGames.map((game) => (
+                  {games.map((game) => (
                     <tr
                       key={game.id}
                       className={`border-t cursor-pointer ${isDarkTheme ? "border-gray-700 hover:bg-[#1a1a1a]" : "border-gray-100 hover:bg-gray-50"}`}
@@ -813,9 +791,13 @@ export default function GamesAnalyticsPage() {
                               ? isDarkTheme
                                 ? "bg-green-900/20 text-green-400"
                                 : "bg-green-100 text-green-700"
-                              : isDarkTheme
+                              : game.status === "maintenance"
+                              ? isDarkTheme
                                 ? "bg-yellow-900/20 text-yellow-400"
                                 : "bg-yellow-100 text-yellow-700"
+                              : isDarkTheme
+                                ? "bg-red-900/20 text-red-400"
+                                : "bg-red-100 text-red-700"
                           }`}
                         >
                           {game.status}

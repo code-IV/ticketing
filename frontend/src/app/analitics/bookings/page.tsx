@@ -65,122 +65,6 @@ type EventBookingData = {
   revenue: number;
 };
 
-// ==================== Mock Data ====================
-const generateBookingTimeSeries = (days = 30): BookingData[] => {
-  const data = [];
-  for (let i = days; i >= 0; i--) {
-    const date = subDays(new Date(), i);
-    const baseTickets = 150;
-    const variation = Math.floor(Math.random() * 100) - 50;
-    const tickets = Math.max(50, baseTickets + variation);
-    data.push({
-      date: format(date, "yyyy-MM-dd"),
-      tickets,
-      revenue: tickets * 45, // Average ticket price
-    });
-  }
-  return data;
-};
-
-const mockBookingTimeSeries = generateBookingTimeSeries(30);
-
-const gameBookingData: GameBookingData[] = [
-  { game: "Cyber Realm", tickets: 2100, revenue: 85000, sessions: 420 },
-  { game: "Speed Racer", tickets: 1100, revenue: 42000, sessions: 220 },
-  { game: "Fantasy Quest", tickets: 3200, revenue: 120000, sessions: 640 },
-  { game: "Virtual Reality", tickets: 1800, revenue: 65000, sessions: 360 },
-  { game: "Laser Tag", tickets: 2400, revenue: 88000, sessions: 480 },
-];
-
-// Event data only for the Event Booking vs Capacity section
-const eventBookingData: EventBookingData[] = [
-  {
-    event: "Summer Pro League",
-    booked: 85,
-    capacity: 100,
-    occupancy: 85,
-    revenue: 12000,
-  },
-  {
-    event: "Midnight Scrims",
-    booked: 120,
-    capacity: 120,
-    occupancy: 100,
-    revenue: 18000,
-  },
-  {
-    event: "Newbie Bootcamp",
-    booked: 12,
-    capacity: 50,
-    occupancy: 24,
-    revenue: 0,
-  },
-  {
-    event: "Pro Tournament",
-    booked: 42,
-    capacity: 60,
-    occupancy: 70,
-    revenue: 8500,
-  },
-  {
-    event: "Weekend Special",
-    booked: 95,
-    capacity: 100,
-    occupancy: 95,
-    revenue: 14000,
-  },
-  {
-    event: "Championship Finals",
-    booked: 150,
-    capacity: 150,
-    occupancy: 100,
-    revenue: 25000,
-  },
-];
-
-const topGamesData: TopGameData[] = [
-  {
-    game: "Fantasy Quest",
-    tickets: 3200,
-    revenue: 120000,
-    topTicketType: "VIP Pass",
-    topTicketPrice: 150,
-    topTicketSold: 800,
-  },
-  {
-    game: "Cyber Realm",
-    tickets: 2100,
-    revenue: 85000,
-    topTicketType: "Premium Session",
-    topTicketPrice: 85,
-    topTicketSold: 600,
-  },
-  {
-    game: "Laser Tag",
-    tickets: 2400,
-    revenue: 88000,
-    topTicketType: "Team Battle",
-    topTicketPrice: 75,
-    topTicketSold: 720,
-  },
-  {
-    game: "Virtual Reality",
-    tickets: 1800,
-    revenue: 65000,
-    topTicketType: "VR Experience",
-    topTicketPrice: 90,
-    topTicketSold: 450,
-  },
-  {
-    game: "Speed Racer",
-    tickets: 1100,
-    revenue: 42000,
-    topTicketType: "Racing Package",
-    topTicketPrice: 65,
-    topTicketSold: 320,
-  },
-];
-
 // ==================== Components ====================
 const KpiCard = ({
   title,
@@ -244,65 +128,113 @@ export default function BookingAnalyticsPage() {
   const [isCustomMode, setIsCustomMode] = useState(false);
   const [customStartDate, setCustomStartDate] = useState(format(subDays(new Date(), 30), "yyyy-MM-dd"));
   const [customEndDate, setCustomEndDate] = useState(format(new Date(), "yyyy-MM-dd"));
+  const [customPeriod, setCustomPeriod] = useState("5");
+  
+  // API Data States
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [analyticsData, setAnalyticsData] = useState<any>(null);
 
   useEffect(() => {
-    loadEvent(
-      dateRange.start.toISOString(),
-      dateRange.end.toISOString(),
-      dateRange.label,
-    );
-  }, []);
+    if (dateRange.start && dateRange.end) {
+      let period = dateRange.label === "Custom" ? customPeriod : dateRange.label;
+      
+      // Auto-add 'd' suffix for numeric periods
+      if (dateRange.label === "Custom" && /^\d+$/.test(period)) {
+        period = period + "d";
+      }
+      
+      loadEvent(
+        dateRange.start.toISOString(),
+        dateRange.end.toISOString(),
+        period,
+      );
+    }
+  }, [dateRange, customPeriod]);
 
   const loadEvent = async (
     startDate: string,
     endDate: string,
     period: string,
   ) => {
-    const response = await bookingService.getAnalytics(
-      startDate,
-      endDate,
-      period,
-    );
-    console.log(response.data);
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Debug logging
+      console.log('API Call Data:', {
+        startDate,
+        endDate,
+        period,
+        dateRangeLabel: dateRange.label
+      });
+      
+      const response = await bookingService.getAnalytics(
+        startDate,
+        endDate,
+        period,
+      );
+      
+      if (response.success && response.data) {
+        setAnalyticsData(response.data);
+      } else {
+        setError('Failed to load analytics data');
+      }
+    } catch (err) {
+      setError('Error loading analytics data');
+      console.error('Analytics API Error:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // Filter data based on date range
-  const filterDataByDateRange = (data: BookingData[], range: DateRange) => {
-    if (!range.start || !range.end) return data;
-    return data.filter((d) => {
-      const date = new Date(d.date);
-      return (
-        range.start &&
-        range.end &&
-        isWithinInterval(date, {
-          start: range.start as Date,
-          end: range.end as Date,
-        })
-      );
+  // Data transformation functions
+  const transformGameBookingData = (apiData: any[]): BookingData[] => {
+    return apiData.map(item => ({
+      date: format(new Date(item.date), "yyyy-MM-dd"),
+      tickets: parseInt(item.tickets) || 0,
+      revenue: parseFloat(item.revenue) || 0
+    }));
+  };
+
+  const transformEventBookingData = (apiData: any[]): EventBookingData[] => {
+    return apiData.map(item => {
+      const booked = parseInt(item["tickets bought"]) || 0;
+      const capacity = parseInt(item.capacity) || 0;
+      const occupancy = capacity > 0 ? Math.round((booked / capacity) * 100) : 0;
+      
+      return {
+        event: item.event,
+        booked,
+        capacity,
+        occupancy,
+        revenue: parseFloat(item.revenue) || 0
+      };
     });
   };
 
-  const filteredBookingSeries = filterDataByDateRange(
-    mockBookingTimeSeries,
-    dateRange,
-  );
+  const transformTopGameData = (apiData: any[]): TopGameData[] => {
+    return apiData.map(item => ({
+      game: item.game,
+      tickets: parseInt(item.topTicketSold) || 0,
+      revenue: parseFloat(item.revenue) || 0,
+      topTicketType: item.topTicketType,
+      topTicketPrice: parseFloat(item.topTicketPrice) || 0,
+      topTicketSold: parseInt(item.topTicketSold) || 0
+    }));
+  };
 
-  // Calculate KPIs
-  const totalBookings = filteredBookingSeries.reduce(
-    (sum, day) => sum + day.tickets,
-    0,
-  );
-  const avgDailyBookings = Math.round(
-    totalBookings / filteredBookingSeries.length,
-  );
-  const peakDay = filteredBookingSeries.reduce(
-    (max, day) => (day.tickets > max.tickets ? day : max),
-    filteredBookingSeries[0] || { tickets: 0 },
-  );
-  const totalRevenue = filteredBookingSeries.reduce(
-    (sum, day) => sum + day.revenue,
-    0,
-  );
+  // Get transformed data from API or fallback to empty arrays
+  const transformedGameBookingData = analyticsData ? transformGameBookingData(analyticsData.gameBookingData || []) : [];
+  const transformedEventBookingData = analyticsData ? transformEventBookingData(analyticsData.eventBookingData || []) : [];
+  const transformedTopGameData = analyticsData ? transformTopGameData(analyticsData.topGameData || []) : [];
+  
+  // Calculate KPIs from API data
+  const bookingStats = analyticsData?.bookingData?.[0] || {};
+  const totalBookings = parseInt(bookingStats.total_bookings) || 0;
+  const avgDailyBookings = parseInt(bookingStats.avg_bookings_per_day) || 0;
+  const peakDayBookings = parseInt(bookingStats.peak_bookings_day) || 0;
+  const totalRevenue = parseFloat(bookingStats.total_revenue) || 0;
 
   return (
     <div
@@ -328,22 +260,26 @@ export default function BookingAnalyticsPage() {
               onChange={(e) => {
                 const ranges = [
                   {
-                    label: "Last 7 days",
+                    label: "7d",
+                    display: "Last 7 days",
                     start: subDays(new Date(), 7),
                     end: new Date(),
                   },
                   {
-                    label: "Last 30 days",
+                    label: "30d",
+                    display: "Last 30 days",
                     start: subDays(new Date(), 30),
                     end: new Date(),
                   },
                   {
-                    label: "Last 90 days",
+                    label: "90d",
+                    display: "Last 90 days",
                     start: subDays(new Date(), 90),
                     end: new Date(),
                   },
                   {
                     label: "Custom",
+                    display: "Custom",
                     start: null,
                     end: null,
                   },
@@ -352,7 +288,19 @@ export default function BookingAnalyticsPage() {
                 if (selected) {
                   if (selected.label === "Custom") {
                     setIsCustomMode(true);
-                    setDateRange({ label: "Custom", start: null, end: null });
+                    // Initialize custom inputs with the current date range (from the preset)
+                    if (dateRange.start && dateRange.end) {
+                      setCustomStartDate(format(dateRange.start, "yyyy-MM-dd"));
+                      setCustomEndDate(format(dateRange.end, "yyyy-MM-dd"));
+                    }
+                    // Reset custom period to default
+                    setCustomPeriod("custom");
+                    // Set the date range to custom with the same dates (so the API call uses the same range initially)
+                    setDateRange({
+                      label: "Custom",
+                      start: dateRange.start,
+                      end: dateRange.end,
+                    });
                   } else {
                     setIsCustomMode(false);
                     setDateRange(selected as DateRange);
@@ -360,46 +308,72 @@ export default function BookingAnalyticsPage() {
                 }
               }}
             >
-              <option value="Last 7 days">Last 7 days</option>
-              <option value="Last 30 days">Last 30 days</option>
-              <option value="Last 90 days">Last 90 days</option>
+              <option value="7d">Last 7 days</option>
+              <option value="30d">Last 30 days</option>
+              <option value="90d">Last 90 days</option>
               <option value="Custom">Custom</option>
             </select>
             {isCustomMode && (
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <input
                   type="date"
                   value={customStartDate}
                   onChange={(e) => {
                     setCustomStartDate(e.target.value);
-                    const startDate = new Date(e.target.value);
-                    const endDate = new Date(customEndDate);
-                    setDateRange({
-                      label: "Custom",
-                      start: startDate,
-                      end: endDate,
-                    });
+                    if (customEndDate) {
+                      // Create UTC date to avoid timezone issues
+                      const startDate = new Date(e.target.value + 'T00:00:00.000Z');
+                      const endDate = new Date(customEndDate + 'T00:00:00.000Z');
+                      setDateRange({
+                        label: "Custom",
+                        start: startDate,
+                        end: endDate,
+                      });
+                    }
                   }}
-                  className={`px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white text-gray-900`}
+                  className={`px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 text-sm ${
+                    isDarkTheme
+                      ? "bg-gray-800 border-gray-600 text-white focus:ring-blue-400"
+                      : "bg-white border-gray-300 text-gray-900 focus:ring-blue-500"
+                  }`}
                   placeholder="Start date"
                 />
-                <span className="text-gray-500">to</span>
+                <span className={`text-sm ${isDarkTheme ? "text-gray-300" : "text-gray-500"}`}>to</span>
                 <input
                   type="date"
                   value={customEndDate}
                   onChange={(e) => {
                     setCustomEndDate(e.target.value);
-                    const startDate = new Date(customStartDate);
-                    const endDate = new Date(e.target.value);
-                    setDateRange({
-                      label: "Custom",
-                      start: startDate,
-                      end: endDate,
-                    });
+                    if (customStartDate) {
+                      // Create UTC date to avoid timezone issues
+                      const startDate = new Date(customStartDate + 'T00:00:00.000Z');
+                      const endDate = new Date(e.target.value + 'T00:00:00.000Z');
+                      setDateRange({
+                        label: "Custom",
+                        start: startDate,
+                        end: endDate,
+                      });
+                    }
                   }}
-                  className={`px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white text-gray-900`}
+                  className={`px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 text-sm ${
+                    isDarkTheme
+                      ? "bg-gray-800 border-gray-600 text-white focus:ring-blue-400"
+                      : "bg-white border-gray-300 text-gray-900 focus:ring-blue-500"
+                  }`}
                   placeholder="End date"
                 />
+                {/* Period input */}
+                      <input
+        type="number"
+        value={customPeriod}
+        onChange={(e) => setCustomPeriod(e.target.value)}
+        placeholder="1"
+        className={`px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 text-sm w-32 ${
+          isDarkTheme
+            ? "bg-gray-800 border-gray-600 text-white focus:ring-blue-400"
+            : "bg-white border-gray-300 text-gray-900 focus:ring-blue-500"
+        }`}
+      />
               </div>
             )}
           </div>
@@ -413,6 +387,34 @@ export default function BookingAnalyticsPage() {
           ← Back to Analytics Dashboard
         </button>
 
+        {/* Loading State */}
+        {loading && (
+          <div className="flex items-center justify-center py-12">
+            <div className="flex items-center gap-3">
+              <Loader2 className="w-6 h-6 animate-spin" style={{ color: "var(--accent)" }} />
+              <span className={isDarkTheme ? "text-white" : "text-gray-900"}>Loading analytics data...</span>
+            </div>
+          </div>
+        )}
+
+        {/* Error State */}
+        {error && !loading && (
+          <div className={`rounded-xl p-6 mb-6 ${isDarkTheme ? "bg-red-900/20 border-red-700" : "bg-red-50 border-red-200"}`}>
+            <div className="flex items-center gap-3">
+              <div className="w-6 h-6 rounded-full bg-red-500 flex items-center justify-center">
+                <span className="text-white text-sm font-bold">!</span>
+              </div>
+              <div>
+                <p className={`font-semibold ${isDarkTheme ? "text-red-400" : "text-red-800"}`}>Error loading data</p>
+                <p className={`text-sm ${isDarkTheme ? "text-red-300" : "text-red-600"}`}>{error}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Content - Only show when not loading and no error */}
+        {!loading && !error && analyticsData && (
+          <>
         {/* KPI Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <KpiCard
@@ -429,9 +431,9 @@ export default function BookingAnalyticsPage() {
           />
           <KpiCard
             title="Peak Day"
-            value={`${peakDay.tickets} tickets`}
+            value={`${peakDayBookings} tickets`}
             icon={TrendingUp}
-            change={format(new Date(peakDay.date), "MMM dd")}
+            change={dateRange.label}
             changeType="positive"
             isDarkTheme={isDarkTheme}
           />
@@ -453,7 +455,7 @@ export default function BookingAnalyticsPage() {
             Total Tickets Bought Over Time
           </h3>
           <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={filteredBookingSeries}>
+            <LineChart data={transformedGameBookingData}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis
                 dataKey="date"
@@ -488,7 +490,7 @@ export default function BookingAnalyticsPage() {
             Event Booking vs Capacity
           </h3>
           <ResponsiveContainer width="100%" height={300}>
-            <ComposedChart data={eventBookingData}>
+            <ComposedChart data={transformedEventBookingData}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="event" angle={-45} textAnchor="end" height={80} />
               <YAxis />
@@ -553,7 +555,7 @@ export default function BookingAnalyticsPage() {
                 </tr>
               </thead>
               <tbody>
-                {topGamesData
+                {transformedTopGameData
                   .sort((a, b) => b.tickets - a.tickets)
                   .map((game, index) => (
                     <tr
@@ -614,6 +616,8 @@ export default function BookingAnalyticsPage() {
             </table>
           </div>
         </div>
+          </>
+        )}
       </div>
     </div>
   );

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useRouter } from "next/navigation";
-import { Calendar, Ticket, DollarSign, PieChart } from "lucide-react";
+import { Calendar, Ticket, DollarSign, PieChart, Loader2 } from "lucide-react";
 import {
   LineChart,
   Line,
@@ -23,86 +23,30 @@ type DateRange = {
   label: string;
 };
 
-// ==================== Types ====================
 type Event = {
-  id: number;
+  id: string;
   name: string;
-  game: string;
   date: string;
-  status: string;
+  capacity: number;
+  ticketsSold: number;
+  revenue: number;
+  status: boolean; // true = active, false = inactive
+};
+
+type DisplayEvent = {
+  id: string;
+  name: string;
+  date: string;
+  status: string; // "Active" or "Inactive"
   revenue: number;
   ticketsSold: number;
   capacity: number;
-  occupancy: number;
 };
 
 type BookingData = {
   date: string;
   bookings: number;
 };
-
-// ==================== Mock Data ====================
-const mockEvents: Event[] = [
-  {
-    id: 101,
-    name: "Summer Pro League",
-    game: "Cyber Realm",
-    date: "2026-08-15",
-    status: "Active",
-    revenue: 12000,
-    ticketsSold: 85,
-    capacity: 100,
-    occupancy: 85,
-  },
-  {
-    id: 102,
-    name: "Midnight Scrims",
-    game: "Cyber Realm",
-    date: "2026-08-20",
-    status: "Sold Out",
-    revenue: 18000,
-    ticketsSold: 120,
-    capacity: 120,
-    occupancy: 100,
-  },
-  {
-    id: 103,
-    name: "Newbie Bootcamp",
-    game: "Fantasy Quest",
-    date: "2026-09-01",
-    status: "Draft",
-    revenue: 0,
-    ticketsSold: 12,
-    capacity: 50,
-    occupancy: 24,
-  },
-  {
-    id: 104,
-    name: "Pro Tournament",
-    game: "Speed Racer",
-    date: "2026-08-10",
-    status: "Active",
-    revenue: 8500,
-    ticketsSold: 42,
-    capacity: 60,
-    occupancy: 70,
-  },
-];
-
-// Generate revenue time series (last 30 days)
-const generateRevenueTimeSeries = (days = 30): BookingData[] => {
-  const data = [];
-  for (let i = days; i >= 0; i--) {
-    const date = subDays(new Date(), i);
-    data.push({
-      date: format(date, "yyyy-MM-dd"),
-      bookings: Math.floor(Math.random() * 50) + 20,
-    });
-  }
-  return data;
-};
-
-const mockBookingsTimeSeries = generateRevenueTimeSeries(30);
 
 // ==================== Components ====================
 const KpiCard = ({
@@ -149,55 +93,66 @@ export default function EventsAnalyticsPage() {
   const { isDarkTheme } = useTheme();
   const router = useRouter();
   const [dateRange, setDateRange] = useState<DateRange>({
-    label: "1d",
+    label: "7d",
     start: subDays(new Date(), 7),
     end: new Date(),
   });
   const [isCustomMode, setIsCustomMode] = useState(false);
   const [customStartDate, setCustomStartDate] = useState(format(subDays(new Date(), 30), "yyyy-MM-dd"));
   const [customEndDate, setCustomEndDate] = useState(format(new Date(), "yyyy-MM-dd"));
+  const [customPeriod, setCustomPeriod] = useState("custom");
+
+  const [events, setEvents] = useState<Event[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    loadEvent(
-      dateRange.start.toISOString(),
-      dateRange.end.toISOString(),
-      dateRange.label,
-    );
-  }, []);
+    if (dateRange.start && dateRange.end) {
+      const period = dateRange.label === "Custom" ? customPeriod : dateRange.label;
+      fetchEvents(
+        dateRange.start.toISOString(),
+        dateRange.end.toISOString(),
+        period,
+      );
+    }
+  }, [dateRange, customPeriod]);
 
-  const loadEvent = async (
+  const fetchEvents = async (
     startDate: string,
     endDate: string,
     period: string,
   ) => {
-    const response = await eventService.getDashboard(
-      startDate,
-      endDate,
-      period,
-    );
-    console.log(response.data);
-  };
-
-  // Filter data based on date range
-  const filterDataByDateRange = (data: BookingData[], range: DateRange) => {
-    if (!range.start || !range.end) return data;
-    return data.filter((d) => {
-      const date = new Date(d.date);
-      return (
-        range.start &&
-        range.end &&
-        isWithinInterval(date, {
-          start: range.start as Date,
-          end: range.end as Date,
-        })
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await eventService.getDashboard(
+        startDate,
+        endDate,
+        period,
       );
-    });
+      if (response.success && Array.isArray(response.data)) {
+        setEvents(response.data);
+      } else {
+        setError("Failed to load events");
+      }
+    } catch (err) {
+      setError("Error loading events");
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const filteredBookingsSeries = filterDataByDateRange(
-    mockBookingsTimeSeries,
-    dateRange,
-  );
+  // Transform API events to display format
+  const displayEvents: DisplayEvent[] = events.map(event => ({
+    id: event.id,
+    name: event.name,
+    date: format(new Date(event.date), "MMM dd, yyyy"),
+    status: event.status ? "Active" : "Inactive",
+    revenue: parseFloat(event.revenue as any) || 0,
+    ticketsSold: parseInt(event.ticketsSold as any) || 0,
+    capacity: event.capacity,
+  }));
 
   return (
     <div
@@ -223,22 +178,26 @@ export default function EventsAnalyticsPage() {
               onChange={(e) => {
                 const ranges = [
                   {
-                    label: "Last 7 days",
+                    label: "7d",
+                    display: "Last 7 days",
                     start: subDays(new Date(), 7),
                     end: new Date(),
                   },
                   {
-                    label: "Last 30 days",
+                    label: "30d",
+                    display: "Last 30 days",
                     start: subDays(new Date(), 30),
                     end: new Date(),
                   },
                   {
-                    label: "Last 90 days",
+                    label: "90d",
+                    display: "Last 90 days",
                     start: subDays(new Date(), 90),
                     end: new Date(),
                   },
                   {
                     label: "Custom",
+                    display: "Custom",
                     start: null,
                     end: null,
                   },
@@ -247,7 +206,16 @@ export default function EventsAnalyticsPage() {
                 if (selected) {
                   if (selected.label === "Custom") {
                     setIsCustomMode(true);
-                    setDateRange({ label: "Custom", start: null, end: null });
+                    if (dateRange.start && dateRange.end) {
+                      setCustomStartDate(format(dateRange.start, "yyyy-MM-dd"));
+                      setCustomEndDate(format(dateRange.end, "yyyy-MM-dd"));
+                    }
+                    setCustomPeriod("custom");
+                    setDateRange({
+                      label: "Custom",
+                      start: dateRange.start,
+                      end: dateRange.end,
+                    });
                   } else {
                     setIsCustomMode(false);
                     setDateRange(selected as DateRange);
@@ -255,45 +223,68 @@ export default function EventsAnalyticsPage() {
                 }
               }}
             >
-              <option value="Last 7 days">Last 7 days</option>
-              <option value="Last 30 days">Last 30 days</option>
-              <option value="Last 90 days">Last 90 days</option>
+              <option value="7d">Last 7 days</option>
+              <option value="30d">Last 30 days</option>
+              <option value="90d">Last 90 days</option>
               <option value="Custom">Custom</option>
             </select>
             {isCustomMode && (
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <input
                   type="date"
                   value={customStartDate}
                   onChange={(e) => {
                     setCustomStartDate(e.target.value);
-                    const startDate = new Date(e.target.value);
-                    const endDate = new Date(customEndDate);
-                    setDateRange({
-                      label: "Custom",
-                      start: startDate,
-                      end: endDate,
-                    });
+                    if (customEndDate) {
+                      const startDate = new Date(e.target.value + 'T00:00:00.000Z');
+                      const endDate = new Date(customEndDate + 'T00:00:00.000Z');
+                      setDateRange({
+                        label: "Custom",
+                        start: startDate,
+                        end: endDate,
+                      });
+                    }
                   }}
-                  className={`px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white text-gray-900`}
+                  className={`px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 text-sm ${
+                    isDarkTheme
+                      ? "bg-gray-800 border-gray-600 text-white focus:ring-blue-400"
+                      : "bg-white border-gray-300 text-gray-900 focus:ring-blue-500"
+                  }`}
                   placeholder="Start date"
                 />
-                <span className="text-gray-500">to</span>
+                <span className={`text-sm ${isDarkTheme ? "text-gray-300" : "text-gray-500"}`}>to</span>
                 <input
                   type="date"
                   value={customEndDate}
                   onChange={(e) => {
                     setCustomEndDate(e.target.value);
-                    const startDate = new Date(customStartDate);
-                    const endDate = new Date(e.target.value);
-                    setDateRange({
-                      label: "Custom",
-                      start: startDate,
-                      end: endDate,
-                    });
+                    if (customStartDate) {
+                      const startDate = new Date(customStartDate + 'T00:00:00.000Z');
+                      const endDate = new Date(e.target.value + 'T00:00:00.000Z');
+                      setDateRange({
+                        label: "Custom",
+                        start: startDate,
+                        end: endDate,
+                      });
+                    }
                   }}
-                  className={`px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white text-gray-900`}
+                  className={`px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 text-sm ${
+                    isDarkTheme
+                      ? "bg-gray-800 border-gray-600 text-white focus:ring-blue-400"
+                      : "bg-white border-gray-300 text-gray-900 focus:ring-blue-500"
+                  }`}
                   placeholder="End date"
+                />
+                <input
+                  type="text"
+                  value={customPeriod}
+                  onChange={(e) => setCustomPeriod(e.target.value)}
+                  placeholder="Period label"
+                  className={`px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 text-sm w-32 ${
+                    isDarkTheme
+                      ? "bg-gray-800 border-gray-600 text-white focus:ring-blue-400"
+                      : "bg-white border-gray-300 text-gray-900 focus:ring-blue-500"
+                  }`}
                 />
               </div>
             )}
@@ -308,96 +299,126 @@ export default function EventsAnalyticsPage() {
           ← Back to Analytics Dashboard
         </button>
 
-        {/* Events Content */}
-        <div className="space-y-6">
-          {/* Events Table */}
-          <div
-            className={`rounded-xl overflow-hidden ${isDarkTheme ? "bg-[#0A0A0A] border-gray-700" : "bg-white border-gray-200"}`}
-          >
-            <table className="w-full text-sm">
-              <thead
-                className={`${isDarkTheme ? "bg-[#1a1a1a]" : "bg-gray-50"}`}
-              >
-                <tr>
-                  <th
-                    className={`px-4 py-3 text-left ${isDarkTheme ? "text-gray-400" : "text-gray-700"}`}
-                  >
-                    Event
-                  </th>
-                  <th
-                    className={`px-4 py-3 text-left ${isDarkTheme ? "text-gray-400" : "text-gray-700"}`}
-                  >
-                    Date
-                  </th>
-                  <th
-                    className={`px-4 py-3 text-left ${isDarkTheme ? "text-gray-400" : "text-gray-700"}`}
-                  >
-                    Status
-                  </th>
-                  <th
-                    className={`px-4 py-3 text-left ${isDarkTheme ? "text-gray-400" : "text-gray-700"}`}
-                  >
-                    Revenue
-                  </th>
-                  <th
-                    className={`px-4 py-3 text-left ${isDarkTheme ? "text-gray-400" : "text-gray-700"}`}
-                  >
-                    Sold/Capacity
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {mockEvents.map((event) => (
-                  <tr
-                    key={event.id}
-                    className={`cursor-pointer border-t hover:${isDarkTheme ? "bg-gray-800" : "bg-gray-50"} ${isDarkTheme ? "border-gray-700" : "border-gray-100"}`}
-                    onClick={() => router.push(`/analitics/events/${event.id}`)}
-                  >
-                    <td
-                      className={`px-4 py-3 font-medium ${isDarkTheme ? "text-white" : ""}`}
-                    >
-                      {event.name}
-                    </td>
-                    <td
-                      className={`px-4 py-3 ${isDarkTheme ? "text-gray-300" : ""}`}
-                    >
-                      {event.date}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span
-                        className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          event.status === "Active"
-                            ? isDarkTheme
-                              ? "bg-green-900/20 text-green-400"
-                              : "bg-green-100 text-green-700"
-                            : event.status === "Sold Out"
-                              ? isDarkTheme
-                                ? "bg-red-900/20 text-red-400"
-                                : "bg-red-100 text-red-700"
-                              : isDarkTheme
-                                ? "bg-gray-900/20 text-gray-400"
-                                : "bg-gray-100 text-gray-700"
-                        }`}
-                      >
-                        {event.status}
-                      </span>
-                    </td>
-                    <td
-                      className={`px-4 py-3 ${isDarkTheme ? "text-gray-300" : ""}`}
-                    >
-                      ${event.revenue.toLocaleString()}
-                    </td>
-                    <td
-                      className={`px-4 py-3 ${isDarkTheme ? "text-gray-300" : ""}`}
-                    >
-                      {event.ticketsSold}/{event.capacity}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        {/* Loading State */}
+        {loading && (
+          <div className="flex items-center justify-center py-12">
+            <div className="flex items-center gap-3">
+              <Loader2 className="w-6 h-6 animate-spin" style={{ color: "var(--accent)" }} />
+              <span className={isDarkTheme ? "text-white" : "text-gray-900"}>Loading events...</span>
+            </div>
           </div>
-        </div>
+        )}
+
+        {/* Error State */}
+        {error && !loading && (
+          <div className={`rounded-xl p-6 mb-6 ${isDarkTheme ? "bg-red-900/20 border-red-700" : "bg-red-50 border-red-200"}`}>
+            <div className="flex items-center gap-3">
+              <div className="w-6 h-6 rounded-full bg-red-500 flex items-center justify-center">
+                <span className="text-white text-sm font-bold">!</span>
+              </div>
+              <div>
+                <p className={`font-semibold ${isDarkTheme ? "text-red-400" : "text-red-800"}`}>Error loading data</p>
+                <p className={`text-sm ${isDarkTheme ? "text-red-300" : "text-red-600"}`}>{error}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Events Table */}
+        {!loading && !error && (
+          <div className="space-y-6">
+            <div
+              className={`rounded-xl overflow-hidden ${isDarkTheme ? "bg-[#0A0A0A] border-gray-700" : "bg-white border-gray-200"}`}
+            >
+              <table className="w-full text-sm">
+                <thead
+                  className={`${isDarkTheme ? "bg-[#1a1a1a]" : "bg-gray-50"}`}
+                >
+                  <tr>
+                    <th
+                      className={`px-4 py-3 text-left ${isDarkTheme ? "text-gray-400" : "text-gray-700"}`}
+                    >
+                      Event
+                    </th>
+                    <th
+                      className={`px-4 py-3 text-left ${isDarkTheme ? "text-gray-400" : "text-gray-700"}`}
+                    >
+                      Date
+                    </th>
+                    <th
+                      className={`px-4 py-3 text-left ${isDarkTheme ? "text-gray-400" : "text-gray-700"}`}
+                    >
+                      Status
+                    </th>
+                    <th
+                      className={`px-4 py-3 text-left ${isDarkTheme ? "text-gray-400" : "text-gray-700"}`}
+                    >
+                      Revenue
+                    </th>
+                    <th
+                      className={`px-4 py-3 text-left ${isDarkTheme ? "text-gray-400" : "text-gray-700"}`}
+                    >
+                      Sold/Capacity
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {displayEvents.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className={`px-4 py-8 text-center ${isDarkTheme ? "text-gray-400" : "text-gray-600"}`}>
+                        No events found for the selected period.
+                      </td>
+                    </tr>
+                  ) : (
+                    displayEvents.map((event) => (
+                      <tr
+                        key={event.id}
+                        className={`cursor-pointer border-t hover:${isDarkTheme ? "bg-gray-800" : "bg-gray-50"} ${isDarkTheme ? "border-gray-700" : "border-gray-100"}`}
+                        onClick={() => router.push(`/analitics/events/${event.id}`)}
+                      >
+                        <td
+                          className={`px-4 py-3 font-medium ${isDarkTheme ? "text-white" : ""}`}
+                        >
+                          {event.name}
+                        </td>
+                        <td
+                          className={`px-4 py-3 ${isDarkTheme ? "text-gray-300" : ""}`}
+                        >
+                          {event.date}
+                        </td>
+                        <td className="px-4 py-3">
+                          <span
+                            className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              event.status === "Active"
+                                ? isDarkTheme
+                                  ? "bg-green-900/20 text-green-400"
+                                  : "bg-green-100 text-green-700"
+                                : isDarkTheme
+                                  ? "bg-gray-900/20 text-gray-400"
+                                  : "bg-gray-100 text-gray-700"
+                            }`}
+                          >
+                            {event.status}
+                          </span>
+                        </td>
+                        <td
+                          className={`px-4 py-3 ${isDarkTheme ? "text-gray-300" : ""}`}
+                        >
+                          ${event.revenue.toLocaleString()}
+                        </td>
+                        <td
+                          className={`px-4 py-3 ${isDarkTheme ? "text-gray-300" : ""}`}
+                        >
+                          {event.ticketsSold}/{event.capacity}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
