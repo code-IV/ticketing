@@ -3,7 +3,10 @@ const { Event } = require("../models/Event");
 const TicketType = require("../models/TicketType");
 const Ticket = require("../models/Ticket");
 const { apiResponse } = require("../../utils/helpers");
-const bookingStatsService = require("../services/bookingStatsService");
+const {
+  bookingService,
+  bookingStatsService,
+} = require("../services/bookingService");
 
 const bookingController = {
   /**
@@ -86,7 +89,7 @@ const bookingController = {
       expires.setMonth(expires.getMonth() + 1);
 
       // Create the booking (transactional)
-      const booking = await Booking.bookEvent({
+      const booking = await bookingService.bookEvent({
         userId,
         eventId,
         items: resolvedItems,

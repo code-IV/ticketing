@@ -10,104 +10,60 @@ const Booking = {
    * Create a full booking with items and tickets (transactional) for an Event
    * items: [{ ticketTypeId, quantity, unitPrice }]
    */
-  async bookEvent({
-    userId,
-    items, // Array of { ticketTypeId, quantity, unitPrice, productId }
-    paymentMethod,
-    guestEmail,
-    guestName,
-    expires_at,
-  }) {
-    const client = await getClient();
-    try {
-      await client.query("BEGIN");
+  async createBooking(client, data) {
+    const { reference, userId, total, guestEmail, guestName } = data;
+    const sql = `
+      INSERT INTO bookings (booking_reference, user_id, total_amount, status, guest_email, guest_name)
+      VALUES ($1, $2, $3, 'CONFIRMED', $4, $5) RETURNING *`;
+    return (
+      await client.query(sql, [reference, userId, total, guestEmail, guestName])
+    ).rows[0];
+  },
 
-      // 1. Calculate Totals
-      const totalAmount = items.reduce(
-        (sum, item) => sum + item.quantity * item.unitPrice,
-        0,
-      );
-      const bookingReference = generateBookingReference();
+  async createMasterTicket(client, data) {
+    const { bookingId, code, token, expiresAt } = data;
+    const sql = `
+      INSERT INTO tickets (booking_id, ticket_code, qr_token, status, expires_at)
+      VALUES ($1, $2, $3, 'ACTIVE', $4) RETURNING *`;
+    return (await client.query(sql, [bookingId, code, token, expiresAt]))
+      .rows[0];
+  },
 
-      // 2. Create Booking (Order Header)
-      // Removed event_id as the product catalog handles the relationship
-      const bookingResult = await client.query(
-        `INSERT INTO bookings (booking_reference, user_id, total_amount, status, guest_email, guest_name)
-       VALUES ($1, $2, $3, 'CONFIRMED', $4, $5)
-       RETURNING *`,
-        [bookingReference, userId, totalAmount, guestEmail, guestName],
-      );
-      const booking = bookingResult.rows[0];
+  async addBookingItem(client, item) {
+    const sql = `
+      INSERT INTO booking_items (booking_id, ticket_type_id, quantity, unit_price, subtotal)
+      VALUES ($1, $2, $3, $4, $5)`;
+    return client.query(sql, [
+      item.bookingId,
+      item.ticketTypeId,
+      item.quantity,
+      item.unitPrice,
+      item.subtotal,
+    ]);
+  },
 
-      // 3. Create Master Ticket (The only QR the user needs)
-      const ticketCode = generateTicketCode();
-      const qrToken = generateQRToken();
+  async createEntitlement(client, { ticketId, ticketTypeId, quantity }) {
+    const sql = `
+      INSERT INTO ticket_products (ticket_id, product_id, ticket_type_id, total_quantity, status)
+      SELECT $1, product_id, $2, $3, 'AVAILABLE'
+      FROM ticket_types WHERE id = $2;`;
+    return client.query(sql, [ticketId, ticketTypeId, quantity]);
+  },
 
-      const ticketResult = await client.query(
-        `INSERT INTO tickets (booking_id, ticket_code, qr_token, status, expires_at)
-       VALUES ($1, $2, $3, 'ACTIVE', $4)
-       RETURNING *`,
-        [booking.id, ticketCode, qrToken, expires_at],
-      );
-      const masterTicket = ticketResult.rows[0];
+  async updateEventCapacity(client, ticketTypeId, quantity) {
+    const sql = `
+      UPDATE events SET tickets_sold = tickets_sold + $1 
+      WHERE id = (SELECT event_id FROM products p JOIN ticket_types tt ON tt.product_id = p.id WHERE tt.id = $2)`;
+    return client.query(sql, [quantity, ticketTypeId]);
+  },
 
-      // 4. Process Items & Entitlements
-      for (const item of items) {
-        const subtotal = item.quantity * item.unitPrice;
-
-        // Save the line item record
-        await client.query(
-          `INSERT INTO booking_items (booking_id, ticket_type_id, quantity, unit_price, subtotal)
-         VALUES ($1, $2, $3, $4, $5)`,
-          [
-            booking.id,
-            item.ticketTypeId,
-            item.quantity,
-            item.unitPrice,
-            subtotal,
-          ],
-        );
-
-        // Link the Product to the Master Ticket with the purchased quantity
-        // This is your "Digital Punch Card"
-        await client.query(
-          `INSERT INTO ticket_products (ticket_id, product_id, ticket_type_id, total_quantity, status)
-         VALUES ($1, (SELECT product_id FROM ticket_types WHERE id = $2), $3, $4, 'AVAILABLE')`,
-          [
-            masterTicket.id,
-            item.ticketTypeId,
-            item.ticketTypeId,
-            item.quantity,
-          ],
-        );
-
-        // If this is an Event, update the capacity
-        await client.query(
-          `UPDATE events SET tickets_sold = tickets_sold + $1 
-         WHERE id = (SELECT event_id FROM products p JOIN ticket_types tt ON tt.product_id = p.id WHERE tt.id = $2)`,
-          [item.quantity, item.ticketTypeId],
-        );
-      }
-
-      // 5. Record Payment
-      await client.query(
-        `INSERT INTO payments (booking_id, amount, method, status, paid_at)
+  // 3️⃣ Record Payment
+  async recordPayment(client, { bookingId, amount, method }) {
+    return client.query(
+      `INSERT INTO payments (booking_id, amount, method, status, paid_at)
        VALUES ($1, $2, $3, 'COMPLETED', NOW())`,
-        [booking.id, totalAmount, paymentMethod.toUpperCase()],
-      );
-
-      await client.query("COMMIT");
-
-      return {
-        ...booking,
-        ticket: masterTicket,
-      };
-    } catch (err) {
-      await client.query("ROLLBACK");
-      throw err;
-    } finally {
-      client.release();
-    }
+      [bookingId, amount, method],
+    );
   },
   /**
    * Create a full booking with items and tickets (transactional) for Games
@@ -188,7 +144,7 @@ const Booking = {
       await client.query(
         `INSERT INTO payments (booking_id, amount, method, status, paid_at)
        VALUES ($1, $2, $3, 'COMPLETED', NOW())`,
-        [booking.id, totalAmount, paymentMethod.toUpperCase()],
+        [booking.id, totalAmount, paymentMethod],
       );
 
       await client.query("COMMIT");
