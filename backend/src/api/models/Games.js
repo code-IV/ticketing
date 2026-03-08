@@ -218,6 +218,7 @@ const GameStats = {
   async getGameSummary(gameId, { startDate, endDate }) {
     const sql = `
     SELECT 
+      p.name,
       SUM(bi.subtotal) as total_revenue,
       SUM(bi.quantity) as total_bookings
     FROM booking_items bi
@@ -227,6 +228,7 @@ const GameStats = {
     WHERE p.game_id = $1 
       AND pay.status = 'COMPLETED'
       AND pay.paid_at BETWEEN $2 AND $3
+    GROUP BY p.name;
   `;
     const res = await query(sql, [gameId, startDate, endDate]);
     return res.rows[0];

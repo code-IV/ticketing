@@ -53,6 +53,7 @@ const gameStatsService = {
     ]);
 
     return {
+      name: summary.name || "",
       totalRevenue: parseFloat(summary.total_revenue || 0),
       totalBookings: parseInt(summary.total_bookings || 0),
       revenueTrend: trends.map((t) => ({

@@ -144,7 +144,7 @@ const Booking = {
       await client.query(
         `INSERT INTO payments (booking_id, amount, method, status, paid_at)
        VALUES ($1, $2, $3, 'COMPLETED', NOW())`,
-        [booking.id, totalAmount, paymentMethod],
+        [booking.id, totalAmount, paymentMethod.toUpperCase()],
       );
 
       await client.query("COMMIT");
