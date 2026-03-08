@@ -136,21 +136,19 @@ const Event = {
     const offset = (page - 1) * limit;
     const sql = `
       SELECT 
-    e.*,
-    u.first_name || ' ' || u.last_name AS created_by_name,
+    e.id, e.name, e.description, e.event_date, e.start_time, e.end_time, e.capacity, e.is_active, e.tickets_sold,
     p.id AS product_id,
     -- Calculate total tickets sold across all ticket types for this event's product
     COALESCE(SUM(bi.quantity), 0) AS tickets_sold,
     -- Calculate remaining capacity
     (e.capacity - COALESCE(SUM(bi.quantity), 0)) AS available_tickets
 FROM events e
-LEFT JOIN users u ON e.created_by = u.id
 LEFT JOIN products p ON p.event_id = e.id AND p.product_type = 'EVENT'
 LEFT JOIN ticket_types tt ON tt.product_id = p.id
 LEFT JOIN booking_items bi ON bi.ticket_type_id = tt.id
 -- Optional: Only count items from confirmed bookings
 LEFT JOIN bookings b ON bi.booking_id = b.id AND b.status = 'CONFIRMED'
-GROUP BY e.id, u.id, p.id
+GROUP BY e.id, p.id
 ORDER BY e.event_date DESC
 LIMIT $1 OFFSET $2;`;
     const result = await query(sql, [limit, offset]);
