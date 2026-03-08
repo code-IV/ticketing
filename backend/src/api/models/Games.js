@@ -219,7 +219,7 @@ const GameStats = {
     const sql = `
     SELECT 
       SUM(bi.subtotal) as total_revenue,
-      COUNT(DISTINCT bi.booking_id) as total_bookings
+      SUM(bi.quantity) as total_bookings
     FROM booking_items bi
     JOIN ticket_types tt ON bi.ticket_type_id = tt.id
     JOIN products p ON tt.product_id = p.id
@@ -263,7 +263,7 @@ const GameStats = {
       tt.id,
       tt.category,
       tt.price,
-      SUM(bi.quantity) as "ticket sold",
+      SUM(bi.quantity) as "ticketSold",
       SUM(bi.subtotal) as revenue
     FROM ticket_types tt
     JOIN products p ON tt.product_id = p.id

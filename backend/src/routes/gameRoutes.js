@@ -23,8 +23,8 @@ router.get(
   gameStatsController.fetchGameDashboard,
 );
 router.get(
-  "/games/stats/:id",
-  uuidParamRule("id"),
+  "/games/stats/:gameId",
+  uuidParamRule("gameId"),
   handleValidation,
   gameStatsController.getGameStats,
 );

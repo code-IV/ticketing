@@ -3,7 +3,14 @@
 import { useState, useEffect } from "react";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useRouter, useParams } from "next/navigation";
-import { ChevronLeft, Ticket, DollarSign, Activity, Calendar, Loader2 } from "lucide-react";
+import {
+  ChevronLeft,
+  Ticket,
+  DollarSign,
+  Activity,
+  Calendar,
+  Loader2,
+} from "lucide-react";
 import {
   LineChart,
   Line,
@@ -29,23 +36,37 @@ type GameAnalytics = {
   revenueTrend: Array<{ date: string; revenue: number }>;
   bookingsTrend: Array<{ date: string; bookings: number }>;
   topPerformingTickets: Array<{
-    type: string;
-    avgPrice: number;
-    sold: number;
+    category: string;
+    price: number;
+    ticketSold: number;
     revenue: number;
   }>;
 };
 
 // KPI Card Component
 const KpiCard = ({ title, value, icon: Icon, isDarkTheme }: any) => (
-  <div className={`rounded-xl p-6 ${isDarkTheme ? "bg-[#0A0A0A] border-gray-700" : "bg-white border-gray-200"}`}>
+  <div
+    className={`rounded-xl p-6 ${isDarkTheme ? "bg-[#0A0A0A] border-gray-700" : "bg-white border-gray-200"}`}
+  >
     <div className="flex items-center justify-between">
       <div>
-        <p className={`text-sm font-medium ${isDarkTheme ? "text-gray-400" : "text-gray-600"}`}>{title}</p>
-        <p className={`text-2xl font-bold ${isDarkTheme ? "text-white" : "text-gray-900"}`}>{value}</p>
+        <p
+          className={`text-sm font-medium ${isDarkTheme ? "text-gray-400" : "text-gray-600"}`}
+        >
+          {title}
+        </p>
+        <p
+          className={`text-2xl font-bold ${isDarkTheme ? "text-white" : "text-gray-900"}`}
+        >
+          {value}
+        </p>
       </div>
-      <div className={`p-3 rounded-lg ${isDarkTheme ? "bg-blue-900/20" : "bg-blue-50"}`}>
-        <Icon className={`w-6 h-6 ${isDarkTheme ? "text-blue-400" : "text-blue-600"}`} />
+      <div
+        className={`p-3 rounded-lg ${isDarkTheme ? "bg-blue-900/20" : "bg-blue-50"}`}
+      >
+        <Icon
+          className={`w-6 h-6 ${isDarkTheme ? "text-blue-400" : "text-blue-600"}`}
+        />
       </div>
     </div>
   </div>
@@ -62,13 +83,17 @@ export default function GameDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState<DateRange>({
-    label: "7d",
+    label: "d",
     start: subDays(new Date(), 7),
     end: new Date(),
   });
   const [isCustomMode, setIsCustomMode] = useState(false);
-  const [customStartDate, setCustomStartDate] = useState(format(subDays(new Date(), 30), "yyyy-MM-dd"));
-  const [customEndDate, setCustomEndDate] = useState(format(new Date(), "yyyy-MM-dd"));
+  const [customStartDate, setCustomStartDate] = useState(
+    format(subDays(new Date(), 30), "yyyy-MM-dd"),
+  );
+  const [customEndDate, setCustomEndDate] = useState(
+    format(new Date(), "yyyy-MM-dd"),
+  );
   const [customPeriod, setCustomPeriod] = useState("custom");
 
   useEffect(() => {
@@ -77,22 +102,23 @@ export default function GameDetailPage() {
         try {
           setLoading(true);
           setError(null);
-          const period = dateRange.label === "Custom" ? customPeriod : dateRange.label;
+          const period =
+            dateRange.label === "Custom" ? customPeriod : dateRange.label;
           const response = await gameService.getAnalytics(
             gameId,
             dateRange.start.toISOString(),
             dateRange.end.toISOString(),
-            period
+            period,
           );
           setAnalytics(response.data);
         } catch (err) {
-          console.error('Error fetching game analytics:', err);
-          setError('Failed to load game data');
+          console.error("Error fetching game analytics:", err);
+          setError("Failed to load game data");
         } finally {
           setLoading(false);
         }
       };
-      
+
       fetchAnalytics();
     }
   }, [gameId, dateRange, customPeriod]);
@@ -108,10 +134,17 @@ export default function GameDetailPage() {
 
   if (loading) {
     return (
-      <div className={`min-h-screen p-6 flex items-center justify-center ${isDarkTheme ? "bg-[#0A0A0A]" : "bg-gray-50"}`}>
+      <div
+        className={`min-h-screen p-6 flex items-center justify-center ${isDarkTheme ? "bg-[#0A0A0A]" : "bg-gray-50"}`}
+      >
         <div className="flex items-center gap-3">
-          <Loader2 className="w-6 h-6 animate-spin" style={{ color: "var(--accent)" }} />
-          <p className={isDarkTheme ? "text-white" : "text-gray-900"}>Loading game analytics...</p>
+          <Loader2
+            className="w-6 h-6 animate-spin"
+            style={{ color: "var(--accent)" }}
+          />
+          <p className={isDarkTheme ? "text-white" : "text-gray-900"}>
+            Loading game analytics...
+          </p>
         </div>
       </div>
     );
@@ -119,7 +152,9 @@ export default function GameDetailPage() {
 
   if (error) {
     return (
-      <div className={`min-h-screen p-6 flex items-center justify-center ${isDarkTheme ? "bg-[#0A0A0A]" : "bg-gray-50"}`}>
+      <div
+        className={`min-h-screen p-6 flex items-center justify-center ${isDarkTheme ? "bg-[#0A0A0A]" : "bg-gray-50"}`}
+      >
         <div className="text-center">
           <p className="text-red-600 mb-4">{error}</p>
           <button
@@ -135,9 +170,13 @@ export default function GameDetailPage() {
 
   if (!analytics) {
     return (
-      <div className={`min-h-screen p-6 ${isDarkTheme ? "bg-[#0A0A0A]" : "bg-gray-50"}`}>
+      <div
+        className={`min-h-screen p-6 ${isDarkTheme ? "bg-[#0A0A0A]" : "bg-gray-50"}`}
+      >
         <div className="max-w-7xl mx-auto text-center">
-          <h1 className={`text-2xl font-bold mb-4 ${isDarkTheme ? "text-white" : "text-gray-900"}`}>
+          <h1
+            className={`text-2xl font-bold mb-4 ${isDarkTheme ? "text-white" : "text-gray-900"}`}
+          >
             Game Not Found
           </h1>
           <p className={`${isDarkTheme ? "text-gray-400" : "text-gray-600"}`}>
@@ -157,14 +196,14 @@ export default function GameDetailPage() {
   // Prepare data for charts (sort by date)
   const revenueData = [...analytics.revenueTrend]
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-    .map(item => ({
+    .map((item) => ({
       ...item,
       displayDate: formatChartDate(item.date),
     }));
 
   const bookingsData = [...analytics.bookingsTrend]
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-    .map(item => ({
+    .map((item) => ({
       ...item,
       displayDate: formatChartDate(item.date),
     }));
@@ -172,11 +211,15 @@ export default function GameDetailPage() {
   const ticketData = analytics.topPerformingTickets || [];
 
   return (
-    <div className={`min-h-screen p-6 ${isDarkTheme ? "bg-[#0A0A0A]" : "bg-gray-50"}`}>
+    <div
+      className={`min-h-screen p-6 ${isDarkTheme ? "bg-[#0A0A0A]" : "bg-gray-50"}`}
+    >
       <div className="max-w-7xl mx-auto">
         {/* Header with title and date picker */}
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-6">
-          <h1 className={`text-3xl font-bold ${isDarkTheme ? "text-white" : "text-gray-900"}`}>
+          <h1
+            className={`text-3xl font-bold ${isDarkTheme ? "text-white" : "text-gray-900"}`}
+          >
             Game Analytics
           </h1>
           <div className="flex items-center gap-2">
@@ -189,9 +232,21 @@ export default function GameDetailPage() {
               value={dateRange.label}
               onChange={(e) => {
                 const ranges = [
-                  { label: "7d", start: subDays(new Date(), 7), end: new Date() },
-                  { label: "30d", start: subDays(new Date(), 30), end: new Date() },
-                  { label: "90d", start: subDays(new Date(), 90), end: new Date() },
+                  {
+                    label: "7d",
+                    start: subDays(new Date(), 7),
+                    end: new Date(),
+                  },
+                  {
+                    label: "30d",
+                    start: subDays(new Date(), 30),
+                    end: new Date(),
+                  },
+                  {
+                    label: "90d",
+                    start: subDays(new Date(), 90),
+                    end: new Date(),
+                  },
                   { label: "Custom", start: null, end: null },
                 ];
                 const selected = ranges.find((r) => r.label === e.target.value);
@@ -228,8 +283,12 @@ export default function GameDetailPage() {
                   onChange={(e) => {
                     setCustomStartDate(e.target.value);
                     if (customEndDate) {
-                      const startDate = new Date(e.target.value + 'T00:00:00.000Z');
-                      const endDate = new Date(customEndDate + 'T00:00:00.000Z');
+                      const startDate = new Date(
+                        e.target.value + "T00:00:00.000Z",
+                      );
+                      const endDate = new Date(
+                        customEndDate + "T00:00:00.000Z",
+                      );
                       setDateRange({
                         label: "Custom",
                         start: startDate,
@@ -244,15 +303,23 @@ export default function GameDetailPage() {
                   }`}
                   placeholder="Start"
                 />
-                <span className={`text-sm ${isDarkTheme ? "text-gray-300" : "text-gray-500"}`}>to</span>
+                <span
+                  className={`text-sm ${isDarkTheme ? "text-gray-300" : "text-gray-500"}`}
+                >
+                  to
+                </span>
                 <input
                   type="date"
                   value={customEndDate}
                   onChange={(e) => {
                     setCustomEndDate(e.target.value);
                     if (customStartDate) {
-                      const startDate = new Date(customStartDate + 'T00:00:00.000Z');
-                      const endDate = new Date(e.target.value + 'T00:00:00.000Z');
+                      const startDate = new Date(
+                        customStartDate + "T00:00:00.000Z",
+                      );
+                      const endDate = new Date(
+                        e.target.value + "T00:00:00.000Z",
+                      );
                       setDateRange({
                         label: "Custom",
                         start: startDate,
@@ -308,8 +375,12 @@ export default function GameDetailPage() {
 
         {/* Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          <div className={`rounded-xl p-4 ${isDarkTheme ? "bg-[#0A0A0A] border-gray-700" : "bg-white border-gray-200"}`}>
-            <h3 className={`font-semibold mb-4 ${isDarkTheme ? "text-white" : "text-gray-900"}`}>
+          <div
+            className={`rounded-xl p-4 ${isDarkTheme ? "bg-[#0A0A0A] border-gray-700" : "bg-white border-gray-200"}`}
+          >
+            <h3
+              className={`font-semibold mb-4 ${isDarkTheme ? "text-white" : "text-gray-900"}`}
+            >
               Revenue Trend
             </h3>
             <ResponsiveContainer width="100%" height={300}>
@@ -326,8 +397,12 @@ export default function GameDetailPage() {
             </ResponsiveContainer>
           </div>
 
-          <div className={`rounded-xl p-4 ${isDarkTheme ? "bg-[#0A0A0A] border-gray-700" : "bg-white border-gray-200"}`}>
-            <h3 className={`font-semibold mb-4 ${isDarkTheme ? "text-white" : "text-gray-900"}`}>
+          <div
+            className={`rounded-xl p-4 ${isDarkTheme ? "bg-[#0A0A0A] border-gray-700" : "bg-white border-gray-200"}`}
+          >
+            <h3
+              className={`font-semibold mb-4 ${isDarkTheme ? "text-white" : "text-gray-900"}`}
+            >
               Bookings Trend
             </h3>
             <ResponsiveContainer width="100%" height={300}>
@@ -346,31 +421,47 @@ export default function GameDetailPage() {
         </div>
 
         {/* Ticket Types Table */}
-        <div className={`rounded-xl overflow-hidden ${isDarkTheme ? "bg-[#0A0A0A] border-gray-700" : "bg-white border-gray-200"}`}>
-          <div className={`px-6 py-4 border-b ${isDarkTheme ? "border-gray-700 bg-[#1a1a1a]" : "border-gray-200 bg-gray-50"}`}>
-            <h3 className={`text-lg font-semibold ${isDarkTheme ? "text-white" : "text-gray-900"}`}>
+        <div
+          className={`rounded-xl overflow-hidden ${isDarkTheme ? "bg-[#0A0A0A] border-gray-700" : "bg-white border-gray-200"}`}
+        >
+          <div
+            className={`px-6 py-4 border-b ${isDarkTheme ? "border-gray-700 bg-[#1a1a1a]" : "border-gray-200 bg-gray-50"}`}
+          >
+            <h3
+              className={`text-lg font-semibold ${isDarkTheme ? "text-white" : "text-gray-900"}`}
+            >
               Ticket Types Performance
             </h3>
           </div>
           <div className="p-6">
             {ticketData.length === 0 ? (
-              <p className={`text-center ${isDarkTheme ? "text-gray-400" : "text-gray-600"}`}>
+              <p
+                className={`text-center ${isDarkTheme ? "text-gray-400" : "text-gray-600"}`}
+              >
                 No ticket data available for this period.
               </p>
             ) : (
               <table className="w-full text-sm">
                 <thead className={isDarkTheme ? "bg-[#1a1a1a]" : "bg-gray-50"}>
                   <tr>
-                    <th className={`px-4 py-3 text-left ${isDarkTheme ? "text-gray-400" : "text-gray-700"}`}>
+                    <th
+                      className={`px-4 py-3 text-left ${isDarkTheme ? "text-gray-400" : "text-gray-700"}`}
+                    >
                       Ticket Type
                     </th>
-                    <th className={`px-4 py-3 text-left ${isDarkTheme ? "text-gray-400" : "text-gray-700"}`}>
+                    <th
+                      className={`px-4 py-3 text-left ${isDarkTheme ? "text-gray-400" : "text-gray-700"}`}
+                    >
                       Avg Price
                     </th>
-                    <th className={`px-4 py-3 text-left ${isDarkTheme ? "text-gray-400" : "text-gray-700"}`}>
+                    <th
+                      className={`px-4 py-3 text-left ${isDarkTheme ? "text-gray-400" : "text-gray-700"}`}
+                    >
                       Tickets Sold
                     </th>
-                    <th className={`px-4 py-3 text-left ${isDarkTheme ? "text-gray-400" : "text-gray-700"}`}>
+                    <th
+                      className={`px-4 py-3 text-left ${isDarkTheme ? "text-gray-400" : "text-gray-700"}`}
+                    >
                       Revenue
                     </th>
                   </tr>
@@ -381,16 +472,24 @@ export default function GameDetailPage() {
                       key={index}
                       className={`border-t ${isDarkTheme ? "border-gray-700" : "border-gray-100"}`}
                     >
-                      <td className={`px-4 py-2 font-medium ${isDarkTheme ? "text-white" : ""}`}>
-                        {ticket.type}
+                      <td
+                        className={`px-4 py-2 font-medium ${isDarkTheme ? "text-white" : ""}`}
+                      >
+                        {ticket.category}
                       </td>
-                      <td className={`px-4 py-2 ${isDarkTheme ? "text-gray-300" : ""}`}>
-                        ${ticket.avgPrice.toFixed(2)}
+                      <td
+                        className={`px-4 py-2 ${isDarkTheme ? "text-gray-300" : ""}`}
+                      >
+                        ${ticket.price}
                       </td>
-                      <td className={`px-4 py-2 ${isDarkTheme ? "text-gray-300" : ""}`}>
-                        {ticket.sold}
+                      <td
+                        className={`px-4 py-2 ${isDarkTheme ? "text-gray-300" : ""}`}
+                      >
+                        {ticket.ticketSold}
                       </td>
-                      <td className={`px-4 py-2 ${isDarkTheme ? "text-gray-300" : ""}`}>
+                      <td
+                        className={`px-4 py-2 ${isDarkTheme ? "text-gray-300" : ""}`}
+                      >
                         ${ticket.revenue.toLocaleString()}
                       </td>
                     </tr>
