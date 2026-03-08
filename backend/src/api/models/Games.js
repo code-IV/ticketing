@@ -120,7 +120,7 @@ const Games = {
 
   async getAll() {
     const sql = `
-      SELECT g.*,
+      SELECT g.id, g.name, g.description, g.rules, g.status,
       COALESCE(
         JSON_AGG(
           JSON_BUILD_OBJECT(
