@@ -21,6 +21,7 @@ const eventStatsService = {
     ]);
 
     return {
+      name: summary.name || "",
       revenue: parseFloat(summary.total_revenue || 0),
       ticketsSold: parseInt(summary.tickets_sold || 0),
       capacity: parseInt(summary.capacity || 0),

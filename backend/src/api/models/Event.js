@@ -285,6 +285,7 @@ const EventStats = {
     const sql = `
       SELECT 
         e.capacity,
+        e.name,
         SUM(bi.quantity) as tickets_sold,
         SUM(bi.subtotal) as total_revenue
       FROM events e
@@ -293,7 +294,8 @@ const EventStats = {
       LEFT JOIN booking_items bi ON bi.ticket_type_id = tt.id
       LEFT JOIN bookings b ON bi.booking_id = b.id AND b.status = 'CONFIRMED'
       WHERE e.id = $1
-      GROUP BY e.capacity`;
+      GROUP BY e.name,
+      e.capacity`;
     const res = await query(sql, [eventId]);
     return res.rows[0] || {};
   },
