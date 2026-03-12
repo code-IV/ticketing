@@ -52,65 +52,15 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
   const loadEvent = async () => {
     try {
       setLoading(true);
-      // Use mock data for now to support guest users without backend
-      const mockEvent: Event = {
-        id: id,
-        name: "Summer Music Festival",
-        description: "Experience the ultimate summer celebration with top artists and live performances. Join us for an unforgettable evening of music, art, and culture under the stars.",
-        event_date: "2024-07-15",
-        start_time: "18:00",
-        end_time: "23:00",
-        capacity: 5000,
-        tickets_sold: 3200,
-        available_tickets: 1800,
-        is_active: true,
-        created_at: "2024-01-01T00:00:00Z",
-        updated_at: "2024-01-01T00:00:00Z",
-        ticket_types: [
-          {
-            id: "1",
-            event_id: id,
-            name: "VIP Pass",
-            category: "ADULT",
-            price: 1500,
-            description: "Premium access with backstage pass",
-            max_quantity_per_booking: 4,
-            is_active: true,
-            created_at: "",
-            updated_at: ""
-          },
-          {
-            id: "2",
-            event_id: id,
-            name: "General Admission",
-            category: "ADULT",
-            price: 500,
-            description: "Standard entry access",
-            max_quantity_per_booking: 10,
-            is_active: true,
-            created_at: "",
-            updated_at: ""
-          },
-          {
-            id: "3",
-            event_id: id,
-            name: "Student Pass",
-            category: "STUDENT",
-            price: 300,
-            description: "Discounted entry for students",
-            max_quantity_per_booking: 6,
-            is_active: true,
-            created_at: "",
-            updated_at: ""
-          }
-        ],
-        location: "Main Arena",
-        image_url: "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?q=80&w=1200&auto=format&fit=crop",
-        video_url: "https://assets.mixkit.co/videos/preview/mixkit-crowd-at-a-concert-with-lights-out-focus-4874-large.mp4"
-      };
+      const response = await eventService.getEventById(id);
       
-      setEvent(mockEvent);
+      if (response.success && response.data) {
+        setEvent(response.data.event);
+      } else {
+        setError(response.message || "Event not found");
+      }
     } catch (err: any) {
+      console.error('Failed to load event:', err);
       setError(err.response?.data?.message || "Failed to load event");
     } finally {
       setLoading(false);
@@ -138,21 +88,39 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
 
   const handleBooking = async () => {
     if (getTotalTickets() === 0) { setError("Please select at least one ticket"); return; }
+    if (!event) { setError("Event not found"); return; }
+    
     setBooking(true);
     setError("");
+    
     try {
-      // Simulate successful booking for demo purposes
-      setTimeout(() => {
-        const mockBookingReference = "EVT-" + Date.now();
-        const mockBookingId = "event_booking_" + Date.now();
-        
-        setBookingReference(mockBookingReference);
-        setBookingId(mockBookingId);
+      // Prepare booking items from cart
+      const bookingItems: BookingItem[] = Object.entries(cart)
+        .filter(([_, quantity]) => quantity > 0)
+        .map(([ticketTypeId, quantity]) => ({
+          ticketTypeId,
+          quantity,
+        }));
+
+      // Create booking with backend (no guest info required)
+      const response = await bookingService.createBooking({
+        eventId: event.id,
+        items: bookingItems,
+        paymentMethod: paymentMethod,
+      });
+
+      if (response.success && response.data) {
+        setBookingReference(response.data.booking.bookingReference);
+        setBookingId(response.data.booking.id);
         setShowSuccessModal(true);
-        setBooking(false);
-      }, 2000); // Simulate API delay
+        setCart({}); // Clear cart after successful booking
+      } else {
+        setError(response.message || "Booking failed");
+      }
     } catch (err: any) {
-      setError(err.response?.data?.message || "Booking failed.");
+      console.error('Booking error:', err);
+      setError(err.response?.data?.message || "Booking failed. Please try again.");
+    } finally {
       setBooking(false);
     }
   };
@@ -617,7 +585,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
                     disabled={getTotalTickets() === 0 || booking || isSoldOut}
                     className="w-full py-5 bg-[#ffd84f] text-gray-900 rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-[#f0c63f] transition-all flex items-center justify-center gap-2 shadow-lg disabled:opacity-30"
                   >
-                    {booking ? "Processing..." : user ? "Confirm Order" : "Login to Book"} <ArrowRight size={18} />
+                    {booking ? "Processing..." : "Buy Tickets"} <ArrowRight size={18} />
                   </button>
 
                   <p className="text-gray-400 text-xs text-center">

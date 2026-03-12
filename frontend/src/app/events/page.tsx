@@ -15,8 +15,32 @@ export default function EventsPage() {
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(5);
 
-  useEffect(() => { loadEvents(); }, [page]);
+  useEffect(() => { loadEvents(); }, [page, itemsPerPage]);
+
+  // Responsive items per page logic
+  useEffect(() => {
+    const updateItemsPerPage = () => {
+      const width = window.innerWidth;
+      if (width >= 1024) {
+        setItemsPerPage(5); // Desktop
+      } else if (width >= 768) {
+        setItemsPerPage(4); // Tablet
+      } else {
+        setItemsPerPage(3); // Mobile
+      }
+    };
+
+    updateItemsPerPage();
+    window.addEventListener('resize', updateItemsPerPage);
+    return () => window.removeEventListener('resize', updateItemsPerPage);
+  }, []);
+
+  // Reset to page 1 when itemsPerPage changes
+  useEffect(() => {
+    setPage(1);
+  }, [itemsPerPage]);
 
   const handlePreviousPage = () => {
     setPage(prev => Math.max(1, prev - 1));
@@ -33,131 +57,20 @@ export default function EventsPage() {
   const loadEvents = async () => {
     try {
       setLoading(true);
-      // Use mock data for now to support guest users without backend
-      const mockEvents = [
-        {
-          id: "1",
-          name: "Summer Music Festival",
-          description: "Experience the ultimate summer celebration with top artists and live performances",
-          event_date: "2024-07-15",
-          start_time: "18:00",
-          end_time: "23:00",
-          capacity: 5000,
-          tickets_sold: 3200,
-          available_tickets: 1800,
-          is_active: true,
-          created_at: "2024-01-01T00:00:00Z",
-          updated_at: "2024-01-01T00:00:00Z",
-          ticket_types: [
-            {
-              id: "1",
-              event_id: "1",
-              name: "VIP Pass",
-              category: "ADULT" as const,
-              price: 1500,
-              description: "Premium access with backstage pass",
-              max_quantity_per_booking: 4,
-              is_active: true,
-              created_at: "",
-              updated_at: ""
-            },
-            {
-              id: "2",
-              event_id: "1",
-              name: "General Admission",
-              category: "ADULT" as const,
-              price: 500,
-              description: "Standard entry access",
-              max_quantity_per_booking: 10,
-              is_active: true,
-              created_at: "",
-              updated_at: ""
-            }
-          ],
-          location: "Main Arena",
-          image_url: "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?q=80&w=1200&auto=format&fit=crop",
-          video_url: "https://assets.mixkit.co/videos/preview/mixkit-crowd-at-a-concert-with-lights-out-focus-4874-large.mp4"
-        },
-        {
-          id: "2",
-          name: "Food & Wine Expo",
-          description: "Savor exquisite cuisines and fine wines from renowned chefs and vineyards",
-          event_date: "2024-08-20",
-          start_time: "12:00",
-          end_time: "22:00",
-          capacity: 2000,
-          tickets_sold: 1500,
-          available_tickets: 500,
-          is_active: true,
-          created_at: "2024-01-01T00:00:00Z",
-          updated_at: "2024-01-01T00:00:00Z",
-          ticket_types: [
-            {
-              id: "3",
-              event_id: "2",
-              name: "Tasting Pass",
-              category: "ADULT" as const,
-              price: 800,
-              description: "All-inclusive tasting experience",
-              max_quantity_per_booking: 6,
-              is_active: true,
-              created_at: "",
-              updated_at: ""
-            }
-          ],
-          location: "Convention Center",
-          image_url: "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?q=80&w=1200&auto=format&fit=crop",
-          video_url: ""
-        },
-        {
-          id: "3",
-          name: "Kids Carnival",
-          description: "A magical day of fun, games, and adventures for children of all ages",
-          event_date: "2024-09-10",
-          start_time: "10:00",
-          end_time: "18:00",
-          capacity: 3000,
-          tickets_sold: 2800,
-          available_tickets: 200,
-          is_active: true,
-          created_at: "2024-01-01T00:00:00Z",
-          updated_at: "2024-01-01T00:00:00Z",
-          ticket_types: [
-            {
-              id: "4",
-              event_id: "3",
-              name: "Child Ticket",
-              category: "CHILD" as const,
-              price: 200,
-              description: "Access for children under 12",
-              max_quantity_per_booking: 8,
-              is_active: true,
-              created_at: "",
-              updated_at: ""
-            },
-            {
-              id: "5",
-              event_id: "3",
-              name: "Family Pack",
-              category: "GROUP" as const,
-              price: 600,
-              description: "2 adults + 2 children",
-              max_quantity_per_booking: 4,
-              is_active: true,
-              created_at: "",
-              updated_at: ""
-            }
-          ],
-          location: "Family Zone",
-          image_url: "https://images.unsplash.com/photo-1606989215512-5e5a89b164d5?q=80&w=1200&auto=format&fit=crop",
-          video_url: ""
-        }
-      ];
+      const response = await eventService.getActiveEvents(page, itemsPerPage);
       
-      setEvents(mockEvents);
-      setTotalPages(1);
+      if (response.success && response.data) {
+        setEvents(response.data.events || []);
+        setTotalPages(response.data.pagination?.totalPages || 1);
+      } else {
+        console.error('Invalid response format from backend');
+        setEvents([]);
+        setTotalPages(1);
+      }
     } catch (err: any) {
-      console.error('Failed to load events');
+      console.error('Failed to load events:', err);
+      setEvents([]);
+      setTotalPages(1);
     } finally {
       setLoading(false);
     }
