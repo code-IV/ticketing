@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { eventService } from '@/services/eventService';
 import { Event } from '@/types';
 import { format } from 'date-fns';
-import { Clock, ArrowRight, MapPin, Sparkles, Calendar, Play, Image as ImageIcon } from 'lucide-react';
+import { Clock, ArrowRight, MapPin, Sparkles, Calendar, Play, Image as ImageIcon, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 
 export default function EventsPage() {
@@ -18,10 +18,22 @@ export default function EventsPage() {
 
   useEffect(() => { loadEvents(); }, [page]);
 
+  const handlePreviousPage = () => {
+    setPage(prev => Math.max(1, prev - 1));
+  };
+
+  const handleNextPage = () => {
+    setPage(prev => Math.min(totalPages, prev + 1));
+  };
+
+  const handlePageClick = (pageNumber: number) => {
+    setPage(pageNumber);
+  };
+
   const loadEvents = async () => {
     try {
       setLoading(true);
-      const response = await eventService.getActiveEvents(page, 10);
+      const response = await eventService.getActiveEvents(page, 4);
       setEvents(response.data.events || []);
       setTotalPages(response.data.pagination.totalPages);
     } catch (err: any) {
@@ -177,6 +189,79 @@ export default function EventsPage() {
           })}
         </div>
       </main>
+
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="max-w-7xl mx-auto px-4 pb-8">
+          <div className="flex flex-col items-center gap-4">
+            <div className="flex items-center gap-2 pt-10">
+              <button
+                onClick={handlePreviousPage}
+                disabled={page === 1}
+                className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all ${
+                  page === 1
+                    ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                    : "text-white shadow-lg hover:shadow-xl transform hover:scale-105"
+                }`}
+                style={{
+                  backgroundColor: page === 1 ? undefined : '#ffd84f',
+                  color: page === 1 ? undefined : '#000'
+                }}
+              >
+                <ChevronLeft size={16} />
+                Previous
+              </button>
+              
+              <div className="flex items-center gap-2">
+                <span className={`text-sm font-medium ${isDarkTheme ? 'text-gray-400' : 'text-gray-600'}`}>
+                  Page
+                </span>
+                <span className={`text-lg font-bold ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}>
+                  {page}
+                </span>
+                <span className={`text-sm font-medium ${isDarkTheme ? 'text-gray-400' : 'text-gray-600'}`}>
+                  of {totalPages}
+                </span>
+              </div>
+              
+              <button
+                onClick={handleNextPage}
+                disabled={page === totalPages}
+                className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all ${
+                  page === totalPages
+                    ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                    : "text-white shadow-lg hover:shadow-xl transform hover:scale-105"
+                }`}
+                style={{
+                  backgroundColor: page === totalPages ? undefined : '#ffd84f',
+                  color: page === totalPages ? undefined : '#000'
+                }}
+              >
+                Next
+                <ChevronRight size={16} />
+              </button>
+            </div>
+            
+            {/* Page indicator dots */}
+            <div className="flex gap-2">
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNumber) => (
+                <button
+                  key={pageNumber}
+                  onClick={() => handlePageClick(pageNumber)}
+                  className={`w-2 h-2 rounded-full transition-all ${
+                    page === pageNumber
+                      ? "w-8"
+                      : ""
+                  }`}
+                  style={{
+                    backgroundColor: page === pageNumber ? '#ffd84f' : isDarkTheme ? '#374151' : '#d1d5db'
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

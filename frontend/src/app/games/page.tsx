@@ -10,7 +10,9 @@ import {
   Sparkles,
   Ticket,
   ArrowUpRight,
-  Zap
+  Zap,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
 import { useTheme } from '@/contexts/ThemeContext';
 
@@ -26,6 +28,8 @@ export default function GamesListingPage() {
   const [games, setGames] = useState<Game[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("ALL");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(12);
 
   useEffect(() => {
     const mockGames = [
@@ -33,6 +37,7 @@ export default function GamesListingPage() {
         id: "1",
         name: "Thunder Coaster",
         description: "Ethiopia's tallest roller coaster with breathtaking drops and high-speed twists",
+        rules: "Must be 48\" or taller. No loose articles permitted. Not recommended for pregnant riders or those with heart conditions.",
         status: "OPEN" as const,
         ticket_types: [
           { 
@@ -57,6 +62,7 @@ export default function GamesListingPage() {
         id: "2",
         name: "Splash Mountain",
         description: "Epic water adventure with thrilling drops and refreshing fun",
+        rules: "Must be 40\" or taller. You will get wet. Secure all loose items. Not recommended for those who cannot swim.",
         status: "OPEN" as const,
         ticket_types: [
           { 
@@ -81,6 +87,7 @@ export default function GamesListingPage() {
         id: "3",
         name: "Haunted Mansion",
         description: "Spooky adventure through dark corridors and supernatural realms",
+        rules: "Not recommended for young children or those with heart conditions. No flash photography permitted.",
         status: "OPEN" as const,
         ticket_types: [
           { 
@@ -100,6 +107,306 @@ export default function GamesListingPage() {
         capacity: 6,
         created_at: "",
         updated_at: ""
+      },
+      {
+        id: "4",
+        name: "Sky Drop",
+        description: "Experience the ultimate freefall from 200 feet above ground",
+        rules: "Must be 48\" or taller. Secure all loose items. Not recommended for pregnant riders or those with back problems.",
+        status: "OPEN" as const,
+        ticket_types: [
+          { 
+            id: "10", 
+            event_id: "4",
+            name: "Standard",
+            category: "ADULT" as const, 
+            price: 180,
+            description: "Single ride access",
+            max_quantity_per_booking: 4,
+            is_active: true,
+            created_at: "",
+            updated_at: ""
+          }
+        ],
+        category: "Thrill Ride",
+        capacity: 12,
+        created_at: "",
+        updated_at: ""
+      },
+      {
+        id: "5",
+        name: "Pirate's Revenge",
+        description: "Swinging pirate ship that reaches incredible heights",
+        rules: "Must be 42\" or taller. Hold onto handrails at all times. Secure all loose items.",
+        status: "OPEN" as const,
+        ticket_types: [
+          { 
+            id: "13", 
+            event_id: "5",
+            name: "Child Ticket",
+            category: "CHILD" as const, 
+            price: 120,
+            description: "Under 12 years",
+            max_quantity_per_booking: 6,
+            is_active: true,
+            created_at: "",
+            updated_at: ""
+          }
+        ],
+        category: "Family Ride",
+        capacity: 20,
+        created_at: "",
+        updated_at: ""
+      },
+      {
+        id: "6",
+        name: "Ferris Wheel",
+        description: "Classic wheel with panoramic views of the entire park",
+        rules: "No height restrictions. Remain seated at all times. No rocking or standing during ride.",
+        status: "OPEN" as const,
+        ticket_types: [
+          { 
+            id: "16", 
+            event_id: "6",
+            name: "Standard",
+            category: "ADULT" as const, 
+            price: 80,
+            description: "30-minute ride",
+            max_quantity_per_booking: 8,
+            is_active: true,
+            created_at: "",
+            updated_at: ""
+          }
+        ],
+        category: "Family Ride",
+        capacity: 6,
+        created_at: "",
+        updated_at: ""
+      },
+      {
+        id: "7",
+        name: "Bumper Cars",
+        description: "Classic bumping fun for the whole family",
+        rules: "Must be 36\" or taller to drive. Follow traffic directions. No intentional head-on collisions.",
+        status: "OPEN" as const,
+        ticket_types: [
+          { 
+            id: "19", 
+            event_id: "7",
+            name: "Single Ride",
+            category: "ADULT" as const, 
+            price: 60,
+            description: "5-minute session",
+            max_quantity_per_booking: 10,
+            is_active: true,
+            created_at: "",
+            updated_at: ""
+          }
+        ],
+        category: "Family Ride",
+        capacity: 12,
+        created_at: "",
+        updated_at: ""
+      },
+      {
+        id: "8",
+        name: "Log Flume",
+        description: "Wet and wild splash adventure through winding waterways",
+        rules: "Must be 40\" or taller. You will get soaked. Secure all electronic devices.",
+        status: "OPEN" as const,
+        ticket_types: [
+          { 
+            id: "22", 
+            event_id: "8",
+            name: "Express Pass",
+            category: "ADULT" as const, 
+            price: 150,
+            description: "Skip the lines",
+            max_quantity_per_booking: 6,
+            is_active: true,
+            created_at: "",
+            updated_at: ""
+          }
+        ],
+        category: "Water Ride",
+        capacity: 4,
+        created_at: "",
+        updated_at: ""
+      },
+      {
+        id: "9",
+        name: "Tea Cups",
+        description: "Spinning tea cups with adjustable speed control",
+        rules: "No height restrictions. Remain seated. Control your own spinning speed.",
+        status: "OPEN" as const,
+        ticket_types: [
+          { 
+            id: "25", 
+            event_id: "9",
+            name: "Child Ticket",
+            category: "CHILD" as const, 
+            price: 40,
+            description: "Under 12 years",
+            max_quantity_per_booking: 8,
+            is_active: true,
+            created_at: "",
+            updated_at: ""
+          }
+        ],
+        category: "Family Ride",
+        capacity: 24,
+        created_at: "",
+        updated_at: ""
+      },
+      {
+        id: "10",
+        name: "Space Shooter",
+        description: "Interactive space-themed shooting gallery",
+        rules: "No height restrictions. Keep laser pointed at targets only. Eye protection provided.",
+        status: "OPEN" as const,
+        ticket_types: [
+          { 
+            id: "28", 
+            event_id: "10",
+            name: "Game Pass",
+            category: "ADULT" as const, 
+            price: 90,
+            description: "Unlimited shots",
+            max_quantity_per_booking: 4,
+            is_active: true,
+            created_at: "",
+            updated_at: ""
+          }
+        ],
+        category: "Arcade",
+        capacity: 8,
+        created_at: "",
+        updated_at: ""
+      },
+      {
+        id: "11",
+        name: "Jungle Adventure",
+        description: "Mini coaster through dense jungle theming",
+        rules: "Must be 38\" or taller. Keep hands and arms inside vehicle at all times.",
+        status: "OPEN" as const,
+        ticket_types: [
+          { 
+            id: "31", 
+            event_id: "11",
+            name: "Family Pack",
+            category: "GROUP" as const, 
+            price: 320,
+            description: "2 adults + 3 children",
+            max_quantity_per_booking: 5,
+            is_active: true,
+            created_at: "",
+            updated_at: ""
+          }
+        ],
+        category: "Family Ride",
+        capacity: 16,
+        created_at: "",
+        updated_at: ""
+      },
+      {
+        id: "12",
+        name: "Laser Maze",
+        description: "Navigate through a web of laser beams",
+        rules: "Must be 8 years or older. No running in maze. Follow designated path only.",
+        status: "OPEN" as const,
+        ticket_types: [
+          { 
+            id: "34", 
+            event_id: "12",
+            name: "Challenge Pass",
+            category: "ADULT" as const, 
+            price: 110,
+            description: "15-minute challenge",
+            max_quantity_per_booking: 6,
+            is_active: true,
+            created_at: "",
+            updated_at: ""
+          }
+        ],
+        category: "Adventure",
+        capacity: 4,
+        created_at: "",
+        updated_at: ""
+      },
+      {
+        id: "13",
+        name: "Carousel",
+        description: "Beautiful classic carousel with handcrafted horses",
+        rules: "No height restrictions. Remain seated on animals. Adults must accompany small children.",
+        status: "OPEN" as const,
+        ticket_types: [
+          { 
+            id: "37", 
+            event_id: "13",
+            name: "Single Ride",
+            category: "CHILD" as const, 
+            price: 50,
+            description: "5-minute ride",
+            max_quantity_per_booking: 10,
+            is_active: true,
+            created_at: "",
+            updated_at: ""
+          }
+        ],
+        category: "Family Ride",
+        capacity: 32,
+        created_at: "",
+        updated_at: ""
+      },
+      {
+        id: "14",
+        name: "Zip Line",
+        description: "High-speed zip line across the entire park",
+        rules: "Must be 48\" or taller and under 250 lbs. Follow instructor directions. Secure all loose items.",
+        status: "OPEN" as const,
+        ticket_types: [
+          { 
+            id: "40", 
+            event_id: "14",
+            name: "Adventure Pass",
+            category: "ADULT" as const, 
+            price: 280,
+            description: "Full zip line experience",
+            max_quantity_per_booking: 2,
+            is_active: true,
+            created_at: "",
+            updated_at: ""
+          }
+        ],
+        category: "Adventure",
+        capacity: 2,
+        created_at: "",
+        updated_at: ""
+      },
+      {
+        id: "15",
+        name: "4D Cinema",
+        description: "Immersive 4D movie experience with special effects",
+        rules: "No height restrictions. Remain seated throughout show. Effects include water, wind, and motion.",
+        status: "OPEN" as const,
+        ticket_types: [
+          { 
+            id: "43", 
+            event_id: "15",
+            name: "Movie Ticket",
+            category: "ADULT" as const, 
+            price: 130,
+            description: "30-minute show",
+            max_quantity_per_booking: 8,
+            is_active: true,
+            created_at: "",
+            updated_at: ""
+          }
+        ],
+        category: "Entertainment",
+        capacity: 40,
+        created_at: "",
+        updated_at: ""
       }
     ];
     
@@ -109,7 +416,42 @@ export default function GamesListingPage() {
     }, 500);
   }, []);
 
+  // Responsive items per page logic
+  useEffect(() => {
+    const updateItemsPerPage = () => {
+      const width = window.innerWidth;
+      if (width >= 1024) {
+        setItemsPerPage(12); // Desktop
+      } else if (width >= 768) {
+        setItemsPerPage(10); // Tablet
+      } else {
+        setItemsPerPage(8); // Mobile
+      }
+    };
+
+    updateItemsPerPage();
+    window.addEventListener('resize', updateItemsPerPage);
+    return () => window.removeEventListener('resize', updateItemsPerPage);
+  }, []);
+
+  // Reset to page 1 when filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filter]);
+
   const filteredGames = filter === "ALL" ? games : games.filter((g) => g.status === filter);
+  const totalPages = Math.ceil(filteredGames.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentGames = filteredGames.slice(startIndex, endIndex);
+
+  const handlePreviousPage = () => {
+    setCurrentPage(prev => Math.max(1, prev - 1));
+  };
+
+  const handleNextPage = () => {
+    setCurrentPage(prev => Math.min(totalPages, prev + 1));
+  };
 
   if (loading) return (
     <div className={`min-h-screen flex items-center justify-center ${isDarkTheme ? 'bg-[#0A0A0A]' : 'bg-white'}`} >
@@ -175,7 +517,7 @@ export default function GamesListingPage() {
       {/* Card grid – original dark card design with #ffd84f accents */}
       <div className="relative z-10 max-w-7xl mx-auto px-6 pb-20">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {filteredGames.map((game, index) => (
+          {currentGames.map((game, index) => (
             <motion.div
               key={game.id}
               initial={{ opacity: 0, y: 80 }}
@@ -251,6 +593,77 @@ export default function GamesListingPage() {
             </motion.div>
           ))}
         </div>
+
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <div className="mt-12 flex flex-col items-center gap-4">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handlePreviousPage}
+                disabled={currentPage === 1}
+                className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all ${
+                  currentPage === 1
+                    ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                    : "text-white shadow-lg hover:shadow-xl transform hover:scale-105"
+                }`}
+                style={{
+                  backgroundColor: currentPage === 1 ? undefined : '#ffd84f',
+                  color: currentPage === 1 ? undefined : '#000'
+                }}
+              >
+                <ChevronLeft size={16} />
+                Previous
+              </button>
+              
+              <div className="flex items-center gap-2">
+                <span className={`text-sm font-medium ${isDarkTheme ? 'text-gray-400' : 'text-gray-600'}`}>
+                  Page
+                </span>
+                <span className={`text-lg font-bold ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}>
+                  {currentPage}
+                </span>
+                <span className={`text-sm font-medium ${isDarkTheme ? 'text-gray-400' : 'text-gray-600'}`}>
+                  of {totalPages}
+                </span>
+              </div>
+              
+              <button
+                onClick={handleNextPage}
+                disabled={currentPage === totalPages}
+                className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all ${
+                  currentPage === totalPages
+                    ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                    : "text-white shadow-lg hover:shadow-xl transform hover:scale-105"
+                }`}
+                style={{
+                  backgroundColor: currentPage === totalPages ? undefined : '#ffd84f',
+                  color: currentPage === totalPages ? undefined : '#000'
+                }}
+              >
+                Next
+                <ChevronRight size={16} />
+              </button>
+            </div>
+            
+            {/* Page indicator dots */}
+            <div className="flex gap-2">
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                <button
+                  key={page}
+                  onClick={() => setCurrentPage(page)}
+                  className={`w-2 h-2 rounded-full transition-all ${
+                    currentPage === page
+                      ? "w-8"
+                      : ""
+                  }`}
+                  style={{
+                    backgroundColor: currentPage === page ? '#ffd84f' : isDarkTheme ? '#374151' : '#d1d5db'
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+        )}
 
         {filteredGames.length === 0 && (
           <div className="text-center py-20">
