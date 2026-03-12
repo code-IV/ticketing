@@ -8,7 +8,7 @@ export const gameService = {
       success: response.data.success,
       message: response.data.message,
       data: {
-        games: response.data.data || response.data.games || [],
+        games: response.data.data || [],
         pagination: response.data.pagination || {
           page: 1,
           limit: 20,

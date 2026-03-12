@@ -52,8 +52,64 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
   const loadEvent = async () => {
     try {
       setLoading(true);
-      const response = await eventService.getEventById(id);
-      setEvent(response.data?.event || null);
+      // Use mock data for now to support guest users without backend
+      const mockEvent: Event = {
+        id: id,
+        name: "Summer Music Festival",
+        description: "Experience the ultimate summer celebration with top artists and live performances. Join us for an unforgettable evening of music, art, and culture under the stars.",
+        event_date: "2024-07-15",
+        start_time: "18:00",
+        end_time: "23:00",
+        capacity: 5000,
+        tickets_sold: 3200,
+        available_tickets: 1800,
+        is_active: true,
+        created_at: "2024-01-01T00:00:00Z",
+        updated_at: "2024-01-01T00:00:00Z",
+        ticket_types: [
+          {
+            id: "1",
+            event_id: id,
+            name: "VIP Pass",
+            category: "ADULT",
+            price: 1500,
+            description: "Premium access with backstage pass",
+            max_quantity_per_booking: 4,
+            is_active: true,
+            created_at: "",
+            updated_at: ""
+          },
+          {
+            id: "2",
+            event_id: id,
+            name: "General Admission",
+            category: "ADULT",
+            price: 500,
+            description: "Standard entry access",
+            max_quantity_per_booking: 10,
+            is_active: true,
+            created_at: "",
+            updated_at: ""
+          },
+          {
+            id: "3",
+            event_id: id,
+            name: "Student Pass",
+            category: "STUDENT",
+            price: 300,
+            description: "Discounted entry for students",
+            max_quantity_per_booking: 6,
+            is_active: true,
+            created_at: "",
+            updated_at: ""
+          }
+        ],
+        location: "Main Arena",
+        image_url: "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?q=80&w=1200&auto=format&fit=crop",
+        video_url: "https://assets.mixkit.co/videos/preview/mixkit-crowd-at-a-concert-with-lights-out-focus-4874-large.mp4"
+      };
+      
+      setEvent(mockEvent);
     } catch (err: any) {
       setError(err.response?.data?.message || "Failed to load event");
     } finally {
@@ -81,32 +137,22 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
   const getTotalTickets = () => Object.values(cart).reduce((sum, qty) => sum + qty, 0);
 
   const handleBooking = async () => {
-    if (!user) { router.push("/login"); return; }
     if (getTotalTickets() === 0) { setError("Please select at least one ticket"); return; }
     setBooking(true);
     setError("");
     try {
-      const items: BookingItem[] = Object.entries(cart).map(([ticketTypeId, quantity]) => ({
-        ticketTypeId, quantity,
-      }));
-      const response = await bookingService.createBooking({
-        eventId: id,
-        items,
-        paymentMethod,
-      });
-      
-      // Extract booking data from API response
-      const booking = response?.data?.booking;
-      if (booking) {
-        setBookingReference(booking.bookingReference || "EVT-" + Date.now());
-        setBookingId(booking.id || "");
+      // Simulate successful booking for demo purposes
+      setTimeout(() => {
+        const mockBookingReference = "EVT-" + Date.now();
+        const mockBookingId = "event_booking_" + Date.now();
+        
+        setBookingReference(mockBookingReference);
+        setBookingId(mockBookingId);
         setShowSuccessModal(true);
-        // Redirect to booking details page
-        // router.push(`/my-bookings/${booking.id}`); // Commented out - let user navigate via modal
-      }
+        setBooking(false);
+      }, 2000); // Simulate API delay
     } catch (err: any) {
       setError(err.response?.data?.message || "Booking failed.");
-    } finally {
       setBooking(false);
     }
   };

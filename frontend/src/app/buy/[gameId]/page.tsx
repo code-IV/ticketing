@@ -22,6 +22,7 @@ export default function GameDetailPage({
 }) {
   const resolvedparams = use(params);
   const gameId = resolvedparams.gameId;
+  console.log('GameDetailPage loaded with gameId:', gameId);
   const router = useRouter();
   const { user } = useAuth();
   const { isDarkTheme } = useTheme();
@@ -80,11 +81,6 @@ export default function GameDetailPage({
   };
 
   const handlePurchase = async () => {
-    if (!user) {
-      router.push("/login");
-      return;
-    }
-
     if (getTotalTickets() === 0) {
       setError("Please select at least one ticket");
       return;
@@ -110,7 +106,7 @@ export default function GameDetailPage({
         setCurrentBookingId(firstBookingId);
         setShowSuccessModal(true);
         // Redirect to the booking details page
-        // router.push(`/my-bookings/${firstBookingId}`); // Commented out - let user navigate via modal
+        router.push(`/my-bookings/${firstBookingId}`);
       } else {
         // Fallback to the bookings list if no ID is returned
         router.push("/my-bookings");
@@ -624,7 +620,7 @@ export default function GameDetailPage({
                     disabled={getTotalTickets() === 0 || booking}
                     isLoading={booking}
                   >
-                    {user ? "Complete Purchase" : "Login to Purchase"}
+                    Complete Purchase
                   </Button>
                 </CardBody>
               </Card>
@@ -637,7 +633,7 @@ export default function GameDetailPage({
       <QRModal
         isOpen={isQRModalOpen}
         onClose={() => setIsQRModalOpen(false)}
-        guestName={`${user?.first_name} ${user?.last_name}`}
+        guestName={user ? `${user.first_name} ${user.last_name}` : "Guest User"}
         refId={bookingData?.bookingReference || "GAME-PURCHASE"}
         qrValue={bookingData?.ticket?.qr_token}
       />

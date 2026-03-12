@@ -36,9 +36,10 @@ export default function GameTicketDetailsPage({
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (!authLoading && !user) {
-      router.push("/login");
-    } else if (user) {
+    if (!authLoading && user) {
+      loadGameTicketDetails();
+    } else if (!authLoading && !user) {
+      // Allow guest users to view ticket details
       loadGameTicketDetails();
     }
   }, [user, authLoading, gameId]);

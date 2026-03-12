@@ -90,14 +90,12 @@ export function Navbar() {
                 </Link>
               ))}
 
-              {user && (
-                <Link
-                  href="/buy"
-                  className={`text-sm font-semibold transition-colors ${linkColor}`}
-                >
-                  Buy Tickets
-                </Link>
-              )}
+              <Link
+                href="/buy"
+                className={`text-sm font-semibold transition-colors ${linkColor}`}
+              >
+                Buy Tickets
+              </Link>
 
               {user?.role === "ADMIN" && (
                 <>
@@ -239,7 +237,7 @@ export function Navbar() {
               { href: "/events", label: "Events" },
               { href: "/my-bookings", label: "My Bookings" },
               { href: "/analitics", label: "Analytics" },
-              ...(user ? [{ href: "/buy", label: "Buy Tickets" }] : []),
+              { href: "/buy", label: "Buy Tickets" },
             ].map((item) => (
               <Link
                 key={item.href}

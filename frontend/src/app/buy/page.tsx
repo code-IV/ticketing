@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { 
   Ticket, 
   ShoppingCart, 
@@ -14,8 +15,9 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Game } from "@/types";
-import { gameService } from "@/services/adminService";
+import { gameService } from "@/services/gameService";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { bookingService } from "@/services/bookingService";
 import SuccessModal from "@/components/ui/SuccessModal";
 
@@ -29,6 +31,7 @@ const gameVisuals = [
 ];
 
 const BuyTicketsPage = () => {
+  const router = useRouter();
   const [games, setGames] = useState<Game[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -43,6 +46,7 @@ const BuyTicketsPage = () => {
   const [isSummaryVisible, setIsSummaryVisible] = useState(false);
   const summaryRef = useRef<HTMLDivElement>(null);
   const { isDarkTheme } = useTheme();
+  const { user } = useAuth();
 
   useEffect(() => {
     loadGames();
@@ -64,8 +68,8 @@ const BuyTicketsPage = () => {
   const loadGames = async () => {
     setLoading(true);
     try {
-      const response = await gameService.getAll();
-      setGames(response.data || []);
+      const response = await gameService.getActiveGames();
+      setGames(response.data.games || []);
     } catch (error) {
       setError("Failed to load adventures.");
     } finally {
@@ -126,15 +130,15 @@ const BuyTicketsPage = () => {
         items: itemsPayload,
         totalAmount: total,
         paymentMethod: "telebirr",
-        guestEmail: "guest@bora.com",
-        guestName: "Explorer User",
+        guestEmail: user?.email || "guest@bora.com",
+        guestName: user ? `${user.first_name} ${user.last_name}` : "Guest User",
       });
       // Extract booking data from API response
       const booking = result?.data?.booking;
       if (booking) {
         // For games API, the response structure is different
-        setBookingReference(booking.reference || booking.bookingReference || "BORA-" + Date.now());
-        setBookingId(booking.bookingId || booking.id || "");
+        setBookingReference(booking.bookingReference || "BORA-" + Date.now());
+        setBookingId(booking.id || "");
         setShowSuccessModal(true);
         setCart({}); // Clear cart after successful booking
       }
@@ -199,7 +203,15 @@ const BuyTicketsPage = () => {
                         className={`group relative min-h-[400px] rounded-[40px] overflow-hidden border-2 transition-all cursor-pointer ${
                           hasItems ? " ring-4 ring-indigo-50" : `border-transparent shadow-sm hover:shadow-xl ${isDarkTheme ? 'bg-gray-800' : 'bg-white'}`
                         }`}
-                        onClick={() => setOpenGameId(isOpen ? null : game.id)}
+                        onClick={(e) => {
+  // Check if the click target is the "View Details" button
+  const target = e.target as HTMLElement;
+  if (target.closest('button')) {
+    // Don't handle the click if it's on a button
+    return;
+  }
+  setOpenGameId(isOpen ? null : game.id);
+}}
                       >
                         <div className="absolute inset-0 h-full w-full">
                           <img src={visual.image} alt={game.name} className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110" />
@@ -221,9 +233,23 @@ const BuyTicketsPage = () => {
                           <h3 className="font-black text-3xl text-white tracking-tighter leading-none uppercase italic mb-2">
                             {game.name}
                           </h3>
-                          <p className="flex items-center gap-1.5 text-white/60 text-[10px] font-black uppercase tracking-widest mb-6">
+                          <p className="flex items-center gap-1.5 text-white/60 text-[10px] font-black uppercase tracking-widest mb-4">
                             <MapPin size={12} /> Bora Stage 0{index + 1}
                           </p>
+                          
+                          <button
+                            onClick={(e) => {
+                              console.log('Game object:', game);
+                              console.log('Game ID:', game.id);
+                              console.log('Game ID type:', typeof game.id);
+                              console.log('View Details clicked for game:', game.id);
+                              console.log('Navigating to:', `/buy/${game.id}`);
+                              window.location.href = `/buy/${game.id}`;
+                            }}
+                            className="relative z-20 bg-white/20 backdrop-blur-md px-4 py-2 rounded-2xl border border-white/20 text-white font-black text-[10px] uppercase tracking-widest hover:bg-white/30 transition-colors"
+                          >
+                            View Details
+                          </button>
 
                           <AnimatePresence>
                             {isOpen && (

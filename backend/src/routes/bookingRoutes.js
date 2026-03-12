@@ -9,38 +9,52 @@ const {
   handleValidation,
 } = require("../middleware/validate");
 
-// All booking routes require authentication
-router.use(isAuthenticated);
+// Remove global authentication - apply per route instead
 
+// Event bookings - allow guests
 router.post(
   "/event",
   createBookingRules,
   handleValidation,
   bookingController.createBookingEvent,
 );
+
+// Game bookings - allow guests
 router.post("/games", handleValidation, bookingController.createBookingGames);
+
+// User-specific routes require authentication
 router.get(
   "/my",
+  isAuthenticated,
   paginationRules,
   handleValidation,
   bookingController.getMyBookings,
 );
+
+// Admin-only routes
 router.get("/stats", isAdmin, bookingController.getAnalytics);
+
+// Public reference lookup
 router.get("/reference/:reference", bookingController.getBookingByReference);
+
+// Protected booking operations
 router.get(
   "/:id",
+  isAuthenticated,
   uuidParamRule("id"),
   handleValidation,
   bookingController.getBookingById,
 );
 router.post(
   "/:id/cancel",
+  isAuthenticated,
   uuidParamRule("id"),
   handleValidation,
   bookingController.cancelBooking,
 );
 router.get(
   "/:id/tickets",
+  isAuthenticated,
   uuidParamRule("id"),
   handleValidation,
   bookingController.getBookingTickets,

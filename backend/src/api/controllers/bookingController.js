@@ -23,7 +23,7 @@ const bookingController = {
         notes,
         expires_at,
       } = req.body;
-      const userId = req.session.user.id;
+      const userId = req.session?.user?.id || null;
 
       // Verify event exists and is active
       const event = await Event.findById(eventId);
@@ -118,7 +118,7 @@ const bookingController = {
         guestName,
         notes,
       } = req.body;
-      const userId = req.session.user.id;
+      const userId = req.session?.user?.id || null;
       const expiresAt = new Date(); //leave it like this for now
 
       // 4️⃣ Call transactional booking service

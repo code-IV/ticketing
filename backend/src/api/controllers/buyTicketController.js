@@ -24,13 +24,11 @@ const buyTicketController = {
           g.created_at,
           g.updated_at,
           tt.id as ticket_type_id,
-          tt.name as ticket_type_name,
           tt.category,
-          tt.price,
-          tt.description as ticket_description,
-          tt.is_active
+          tt.price
         FROM games g
-        LEFT JOIN ticket_types tt ON g.id = tt.game_id AND tt.is_active = true
+        LEFT JOIN products p ON g.id = p.game_id AND p.is_active = true AND p.product_type = 'GAME'
+        LEFT JOIN ticket_types tt ON p.id = tt.product_id
         WHERE g.id = $1 AND g.status = 'OPEN'
         ORDER BY tt.price
       `;
@@ -57,17 +55,18 @@ const buyTicketController = {
         if (row.ticket_type_id) {
           game.ticket_types.push({
             id: row.ticket_type_id,
-            name: row.ticket_type_name,
+            name: row.category, // Use category as name since no name column
             category: row.category,
             price: parseFloat(row.price),
-            description: row.ticket_description,
-            is_active: row.is_active,
+            description: `${row.category} ticket`, // Generate description
+            is_active: true, // Default to true since no is_active column
           });
         }
       });
 
       return apiResponse(res, 200, true, "Game retrieved successfully", {
         game,
+        ticketTypes: game.ticket_types,
       });
     } catch (err) {
       next(err);
@@ -79,7 +78,7 @@ const buyTicketController = {
    */
   async getOpenGames(req, res, next) {
     try {
-      // Query games with their ticket types
+      // Query games with their ticket types through products
       const sql = `
         SELECT DISTINCT
           g.id,
@@ -90,13 +89,11 @@ const buyTicketController = {
           g.created_at,
           g.updated_at,
           tt.id as ticket_type_id,
-          tt.name as ticket_type_name,
           tt.category,
-          tt.price,
-          tt.description as ticket_description,
-          tt.is_active
+          tt.price
         FROM games g
-        LEFT JOIN ticket_types tt ON g.id = tt.game_id AND tt.is_active = true
+        LEFT JOIN products p ON g.id = p.game_id AND p.is_active = true AND p.product_type = 'GAME'
+        LEFT JOIN ticket_types tt ON p.id = tt.product_id
         WHERE g.status = 'OPEN' 
         ORDER BY g.created_at DESC, tt.price
       `;
@@ -124,11 +121,11 @@ const buyTicketController = {
         if (row.ticket_type_id) {
           game.ticket_types.push({
             id: row.ticket_type_id,
-            name: row.ticket_type_name,
+            name: row.category, // Use category as name since no name column
             category: row.category,
             price: parseFloat(row.price), // Convert to number
-            description: row.ticket_description,
-            is_active: row.is_active,
+            description: `${row.category} ticket`, // Generate description
+            is_active: true, // Default to true since no is_active column
           });
         }
       });
@@ -153,7 +150,7 @@ const buyTicketController = {
   async purchaseTickets(req, res, next) {
     try {
       const { game_id, quantity, ticket_type_id } = req.body;
-      const userId = req.session.user.id;
+      const userId = req.session?.user?.id || null;
 
       const client = await getClient();
       try {
@@ -252,7 +249,7 @@ const buyTicketController = {
           new Date().toISOString().split("T")[0],
         );
         const paymentReference = `PAY-${Date.now()}`;
-        const buyerContact = req.session.user.email;
+        const buyerContact = req.session?.user?.email || null;
 
         const ticketValues = [
           null, // booking_id (can be null for direct game purchases)
