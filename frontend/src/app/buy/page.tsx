@@ -17,6 +17,7 @@ import { Game } from "@/types";
 import { gameService } from "@/services/adminService";
 import { useTheme } from "@/contexts/ThemeContext";
 import { bookingService } from "@/services/bookingService";
+import SuccessModal from "@/components/ui/SuccessModal";
 
 const gameVisuals = [
   { emoji: "🎢", image: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600&h=800&fit=crop" },
@@ -34,6 +35,9 @@ const BuyTicketsPage = () => {
   const [openGameId, setOpenGameId] = useState<string | null>(null);
   const [cart, setCart] = useState<Record<string, Record<string, number>>>({});
   const [bookingLoading, setBookingLoading] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [bookingReference, setBookingReference] = useState<string>("");
+  const [bookingId, setBookingId] = useState<string>("");
   
   // Visibility Tracking
   const [isSummaryVisible, setIsSummaryVisible] = useState(false);
@@ -118,16 +122,24 @@ const BuyTicketsPage = () => {
           }
         }
       }
-      await bookingService.createBookingGames({
+      const result = await bookingService.createBookingGames({
         items: itemsPayload,
         totalAmount: total,
         paymentMethod: "telebirr",
         guestEmail: "guest@bora.com",
         guestName: "Explorer User",
       });
-      alert("Adventure Booked!");
+      // Extract booking data from API response
+      const booking = result?.data?.booking;
+      if (booking) {
+        setBookingReference(booking.reference || "BORA-" + Date.now());
+        setBookingId(booking.bookingId || "");
+        setShowSuccessModal(true);
+        setCart({}); // Clear cart after successful booking
+      }
     } catch (err) {
-      alert("Booking failed.");
+      console.error("Booking failed:", err);
+      // You could add an error modal here too
     } finally {
       setBookingLoading(false);
     }
@@ -367,6 +379,17 @@ const BuyTicketsPage = () => {
           </motion.div>
         )}
       </AnimatePresence>
+      
+      {/* Success Modal */}
+      <SuccessModal
+        isOpen={showSuccessModal}
+        onClose={() => setShowSuccessModal(false)}
+        title="Adventure Booked!"
+        message="Your adventure passes have been confirmed. Get ready for an amazing experience at Bora Park!"
+        bookingReference={bookingReference}
+        bookingId={bookingId}
+        showActions={true}
+      />
     </div>
   );
 };
