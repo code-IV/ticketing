@@ -110,7 +110,7 @@ export default function GameDetailPage({
         setCurrentBookingId(firstBookingId);
         setShowSuccessModal(true);
         // Redirect to the booking details page
-        router.push(`/my-bookings/${firstBookingId}`);
+        // router.push(`/my-bookings/${firstBookingId}`); // Commented out - let user navigate via modal
       } else {
         // Fallback to the bookings list if no ID is returned
         router.push("/my-bookings");

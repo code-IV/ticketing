@@ -132,8 +132,9 @@ const BuyTicketsPage = () => {
       // Extract booking data from API response
       const booking = result?.data?.booking;
       if (booking) {
-        setBookingReference(booking.reference || "BORA-" + Date.now());
-        setBookingId(booking.bookingId || "");
+        // For games API, the response structure is different
+        setBookingReference(booking.reference || booking.bookingReference || "BORA-" + Date.now());
+        setBookingId(booking.bookingId || booking.id || "");
         setShowSuccessModal(true);
         setCart({}); // Clear cart after successful booking
       }

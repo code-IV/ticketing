@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { format } from "date-fns";
+import SuccessModal from "@/components/ui/SuccessModal";
 
 export default function EventDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
@@ -32,6 +33,9 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
   const [paymentMethod, setPaymentMethod] = useState<"credit_card" | "debit_card" | "telebirr" | "cash">("telebirr");
   const [selectedMediaIndex, setSelectedMediaIndex] = useState(0);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [bookingReference, setBookingReference] = useState<string>("");
+  const [bookingId, setBookingId] = useState<string>("");
 
   // ── MOCK MEDIA ──
   const MOCK_VID = "https://player.vimeo.com/external/434045526.sd.mp4?s=c27ee37da9897116710497645167f536968d876d&profile_id=164&oauth2_token_id=57447761";
@@ -90,7 +94,16 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
         items,
         paymentMethod,
       });
-      router.push(`/my-bookings/${response.data?.booking.id}`);
+      
+      // Extract booking data from API response
+      const booking = response?.data?.booking;
+      if (booking) {
+        setBookingReference(booking.bookingReference || "EVT-" + Date.now());
+        setBookingId(booking.id || "");
+        setShowSuccessModal(true);
+        // Redirect to booking details page
+        // router.push(`/my-bookings/${booking.id}`); // Commented out - let user navigate via modal
+      }
     } catch (err: any) {
       setError(err.response?.data?.message || "Booking failed.");
     } finally {
@@ -644,6 +657,17 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
           </motion.div>
         )}
       </AnimatePresence>
+      
+      {/* Success Modal */}
+      <SuccessModal
+        isOpen={showSuccessModal}
+        onClose={() => setShowSuccessModal(false)}
+        title="Event Tickets Booked!"
+        message="Your event tickets have been confirmed. Get ready for an amazing experience at Bora Park!"
+        bookingReference={bookingReference}
+        bookingId={bookingId}
+        showActions={true}
+      />
     </div>
   );
 }
