@@ -43,15 +43,29 @@ export function Navbar() {
   // Theme-aware navbar styling
   const navBg = isHomePage
     ? scrolled
-      ? (isDarkTheme ? "bg-black/80 backdrop-blur-xl border-b border-white/10" : "bg-white/80 backdrop-blur-xl border-b border-gray-200/60")
+      ? isDarkTheme
+        ? "bg-black/80 backdrop-blur-xl border-b border-white/10"
+        : "bg-white/80 backdrop-blur-xl border-b border-gray-200/60"
       : "bg-transparent border-b border-transparent"
-    : (isDarkTheme ? "bg-[#0A0A0A]/95 backdrop-blur-xl border-b border-gray-700/60 shadow-sm" : "bg-white/95 backdrop-blur-xl border-b border-gray-200/60 shadow-sm");
+    : isDarkTheme
+      ? "bg-[#0A0A0A]/95 backdrop-blur-xl border-b border-gray-700/60 shadow-sm"
+      : "bg-white/95 backdrop-blur-xl border-b border-gray-200/60 shadow-sm";
 
   const linkColor = isHomePage
-    ? (isDarkTheme ? "text-white/80 hover:text-[#FFD84D]" : "text-gray-600 hover:text-gray-900")
-    : (isDarkTheme ? "text-white/80 hover:text-[#FFD84D]" : "text-gray-600 hover:text-gray-900");
+    ? isDarkTheme
+      ? "text-white/80 hover:text-[#FFD84D]"
+      : "text-gray-600 hover:text-gray-900"
+    : isDarkTheme
+      ? "text-white/80 hover:text-[#FFD84D]"
+      : "text-gray-600 hover:text-gray-900";
 
-  const logoFilter = isHomePage ? (isDarkTheme ? "brightness-0 invert" : "") : (isDarkTheme ? "brightness-0 invert" : "");
+  const logoFilter = isHomePage
+    ? isDarkTheme
+      ? "brightness-0 invert"
+      : ""
+    : isDarkTheme
+      ? "brightness-0 invert"
+      : "";
 
   return (
     <>
@@ -79,7 +93,7 @@ export function Navbar() {
               {[
                 { href: "/events", label: "Events" },
                 { href: "/games", label: "Games" },
-                { href: "/my-bookings", label: "My Bookings" },
+                { href: "/buy", label: "Buy Tickets" },
               ].map((item) => (
                 <Link
                   key={item.href}
@@ -90,12 +104,14 @@ export function Navbar() {
                 </Link>
               ))}
 
-              <Link
-                href="/buy"
-                className={`text-sm font-semibold transition-colors ${linkColor}`}
-              >
-                Buy Tickets
-              </Link>
+              {user && (
+                <Link
+                  href="/my-bookings"
+                  className={`text-sm font-semibold transition-colors ${linkColor}`}
+                >
+                  MY Bookings
+                </Link>
+              )}
 
               {user?.role === "ADMIN" && (
                 <>
@@ -247,7 +263,6 @@ export function Navbar() {
               >
                 {item.label}
               </Link>
-
             ))}
 
             {user?.role === "ADMIN" && (
@@ -266,7 +281,6 @@ export function Navbar() {
                 >
                   <BarChart3 className="h-5 w-5" /> Analytics
                 </Link>
-
               </>
             )}
 
