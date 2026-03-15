@@ -19,6 +19,7 @@ import { gameService } from "@/services/gameService";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { bookingService } from "@/services/bookingService";
+import { guestCookieUtils } from "@/utils/cookies";
 import SuccessModal from "@/components/ui/SuccessModal";
 
 const gameVisuals = [
@@ -137,10 +138,54 @@ const BuyTicketsPage = () => {
       const booking = result?.data?.booking;
       if (booking) {
         // For games API, the response structure is different
-        setBookingReference(booking.bookingReference || "BORA-" + Date.now());
-        setBookingId(booking.id || "");
+        setBookingReference((booking as any).reference || "BORA-" + Date.now());
+        setBookingId((booking as any).bookingId || "");
         setShowSuccessModal(true);
         setCart({}); // Clear cart after successful booking
+        
+        // Save guest booking to cookies if user is not authenticated
+        if (!user) {
+          // Save the entire API response with all fields
+          const bookingForCookie = {
+            // Map API response to our expected structure
+            id: (booking as any).bookingId,
+            bookingReference: (booking as any).reference,
+            totalAmount: total.toString(),
+            status: "CONFIRMED",
+            type: "GAME" as const,
+            eventDate: new Date().toISOString(),
+            bookedAt: new Date().toISOString(),
+            // Guest-specific fields
+            firstName: "Guest",
+            lastName: "User",
+            email: "guest@bora.com",
+            paymentStatus: "COMPLETED",
+            paymentMethod: "TELEBIRR",
+            // Save the complete passes structure from API
+            passes: {
+              games: (booking as any).passes,
+              events: []
+            },
+            // Save ticket structure with complete passDetails
+            ticket: {
+              status: "ACTIVE",
+              expiresAt: new Date(Date.now() + 21 * 24 * 60 * 60 * 1000).toISOString(),
+              passDetails: ((booking as any).passes as any[])?.flatMap((pass: any) => 
+                pass.ticketTypes?.map((tt: any) => ({
+                  productName: pass.gameName || "Game Pass",
+                  totalQuantity: tt.quantity,
+                  usedQuantity: 0,
+                  category: tt.category,
+                  unitPrice: tt.unitPrice,
+                })) || []
+              ) || []
+            },
+            // Save additional API fields for details page
+            ticketCode: (booking as any).ticketCode,
+            qrToken: (booking as any).qrToken,
+          };
+          guestCookieUtils.setGuestBooking(bookingForCookie as any);
+        }
       }
     } catch (err) {
       console.error("Booking failed:", err);
@@ -417,6 +462,7 @@ const BuyTicketsPage = () => {
         bookingId={bookingId}
         showActions={true}
         router={router}
+        user={user}
       />
     </div>
   );

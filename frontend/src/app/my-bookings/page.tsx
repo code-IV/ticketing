@@ -32,11 +32,7 @@ export default function MyBookingsPage() {
   const [isUsageOpen, setIsUsageOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Guest-only state variables (don't affect user functionality)
-  const [guestReference, setGuestReference] = useState("");
-  const [guestBooking, setGuestBooking] = useState<any>(null);
-  const [guestLoading, setGuestLoading] = useState(false);
-  const [guestError, setGuestError] = useState("");
+  // Guest-only state variables
   const [cookieBookings, setCookieBookings] = useState<Bookings[]>([]);
 
   useEffect(() => {
@@ -61,42 +57,6 @@ export default function MyBookingsPage() {
       console.error("Failed to load bookings", err);
     } finally {
       setLoading(false);
-    }
-  };
-
-  // Guest-only function for reference lookup
-  const handleReferenceLookup = async () => {
-    if (!guestReference.trim()) {
-      setGuestError("Please enter a booking reference");
-      return;
-    }
-
-    try {
-      setGuestLoading(true);
-      setGuestError("");
-      const response = await bookingService.getBookingByReference(guestReference.trim());
-      
-      if (response.success && response.data) {
-        setGuestBooking(response.data.booking);
-        // Also save to cookies for future visits
-        const bookingForCookie = {
-          ...response.data.booking,
-          type: "EVENT" as const,
-          eventDate: response.data.booking.bookedAt || new Date().toISOString(),
-          bookedAt: response.data.booking.bookedAt || new Date().toISOString(),
-        };
-        guestCookieUtils.setGuestBooking(bookingForCookie as any);
-        setCookieBookings(guestCookieUtils.getGuestBookings());
-      } else {
-        setGuestError(response.message || "Booking not found");
-        setGuestBooking(null);
-      }
-    } catch (err: any) {
-      console.error("Guest lookup error:", err);
-      setGuestError(err.response?.data?.message || "Booking not found");
-      setGuestBooking(null);
-    } finally {
-      setGuestLoading(false);
     }
   };
 
@@ -142,7 +102,7 @@ export default function MyBookingsPage() {
   });
 
   // Guest bookings display logic
-  const displayItems = user ? filteredItems : [...cookieBookings, ...(guestBooking ? [guestBooking] : [])];
+  const displayItems = user ? filteredItems : cookieBookings;
 
   return (
     <div
@@ -349,60 +309,46 @@ export default function MyBookingsPage() {
             </div>
           </>
         ) : (
-          // NEW GUEST INTERFACE - Reference Lookup
-          <div className={`w-full max-w-md mx-auto ${isDarkTheme ? "bg-[#1a1a1a]" : "bg-white"} rounded-2xl border ${isDarkTheme ? "border-gray-700" : "border-slate-200"} p-6 shadow-lg`}>
-            <div className="text-center mb-6">
-              <h2 className={`text-xl font-black ${isDarkTheme ? "text-white" : "text-slate-900"} mb-2`}>
-                Find Your Booking
-              </h2>
-              <p className={`text-sm ${isDarkTheme ? "text-gray-400" : "text-slate-500"}`}>
-                Enter your booking reference number to view your ticket details
-              </p>
-            </div>
-            
-            <div className="space-y-4">
-              <div>
-                <input
-                  type="text"
-                  placeholder="Booking Reference (e.g., EVT-1234567890)"
-                  value={guestReference}
-                  onChange={(e) => setGuestReference(e.target.value)}
-                  className={`w-full px-4 py-3 border rounded-xl text-sm font-medium ${
-                    isDarkTheme
-                      ? "bg-[#0A0A0A] border-gray-600 text-white placeholder-gray-500"
-                      : "bg-slate-50 border-slate-200 text-slate-900 placeholder-slate-400"
-                  }`}
-                  onKeyPress={(e) => e.key === "Enter" && handleReferenceLookup()}
-                />
+          // GUEST INTERFACE - Show stored bookings
+          cookieBookings.length === 0 ? (
+            <div className={`w-full max-w-md mx-auto ${isDarkTheme ? "bg-[#1a1a1a]" : "bg-white"} rounded-2xl border ${isDarkTheme ? "border-gray-700" : "border-slate-200"} p-8 shadow-lg text-center`}>
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center">
+                <Calendar className={`w-8 h-8 ${isDarkTheme ? "text-gray-500" : "text-gray-400"}`} />
               </div>
-              
-              {guestError && (
-                <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-xs font-black uppercase">
-                  {guestError}
-                </div>
-              )}
-              
-              <button
-                onClick={handleReferenceLookup}
-                disabled={guestLoading || !guestReference.trim()}
-                className="w-full py-3 bg-[#ffd84f] text-gray-900 rounded-xl font-black text-sm uppercase tracking-widest hover:bg-[#f0c63f] transition-all flex items-center justify-center gap-2 shadow-lg disabled:opacity-30"
-              >
-                {guestLoading ? "Looking Up..." : "Find Booking"} <ArrowRight size={16} />
-              </button>
+              <h3 className={`text-xl font-black ${isDarkTheme ? "text-white" : "text-slate-900"} mb-2`}>
+                No Bookings Yet
+              </h3>
+              <p className={`text-sm ${isDarkTheme ? "text-gray-400" : "text-slate-500"} mb-6`}>
+                You haven't purchased any tickets yet. Start exploring our events and games!
+              </p>
+              <div className="flex gap-3 justify-center">
+                <button
+                  onClick={() => router.push("/events")}
+                  className="px-4 py-2 bg-[#ffd84f] text-gray-900 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-[#f0c63f] transition-all"
+                >
+                  Browse Events
+                </button>
+                <button
+                  onClick={() => router.push("/games")}
+                  className="px-4 py-2 border border-gray-300 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-gray-50 transition-all"
+                >
+                  Browse Games
+                </button>
+              </div>
             </div>
-            
-            <div className={`mt-4 pt-4 border-t ${isDarkTheme ? "border-gray-700" : "border-slate-200"} text-center`}>
-              <p className={`text-xs ${isDarkTheme ? "text-gray-500" : "text-slate-400"}`}>
-                Your booking reference was provided after purchase
+          ) : (
+            <div className="text-center mb-6">
+              <p className={`text-sm ${isDarkTheme ? "text-gray-400" : "text-slate-500"}`}>
+                Showing {cookieBookings.length} booking{cookieBookings.length !== 1 ? 's' : ''} from your purchases
               </p>
             </div>
-          </div>
+          )
         )}
 
         {/* LIST SECTION */}
         <div className="grid grid-cols-1 gap-6">
           <AnimatePresence mode="popLayout">
-            {displayItems?.map((item) => {
+            {displayItems?.map((item, index) => {
               const { totalQty, totalUsed } = (
                 item.ticket?.passDetails || []
               ).reduce(

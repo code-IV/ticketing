@@ -13,6 +13,7 @@ import {
   TicketType,
 } from "@/types";
 import { useAuth } from "../../../contexts/AuthContext";
+import { guestCookieUtils } from "../../../utils/cookies";
 import { format } from "date-fns";
 import { QRCodeSVG } from "qrcode.react";
 import {
@@ -38,9 +39,47 @@ const getDynamicPassName = (items: any[]) => {
   if (!items || items.length === 0) return "Custom Pass";
   const uniqueGames = [...new Set(items.map((i) => i.productName))];
   if (uniqueGames.length === 1) return uniqueGames[0];
-  if (uniqueGames.length === 2)
-    return `${uniqueGames[0]} & ${uniqueGames[1]}`;
-  return `${uniqueGames[0]} & ${uniqueGames[1]} ...`;
+  return `${uniqueGames.length} Experiences`;
+};
+
+// Type detection functions for backward compatibility
+const isUserMode = (booking: any) => {
+  const result = booking.userId && booking.passes && (booking.passes.events?.length > 0 || booking.passes.games?.length > 0);
+  console.log('isUserMode check:', { userId: booking.userId, passes: booking.passes, result });
+  return result;
+};
+
+const isGuestMode = (booking: any) => {
+  const result = !booking.userId && booking.ticketCode && booking.qrToken;
+  console.log('isGuestMode check:', { userId: booking.userId, ticketCode: booking.ticketCode, qrToken: booking.qrToken, result });
+  return result;
+};
+
+// Data conversion for guest mode
+const convertGuestDataToTicketProduct = (booking: any) => {
+  console.log('convertGuestDataToTicketProduct called with:', booking);
+  
+  if (isUserMode(booking)) {
+    console.log('User mode detected, returning ticket.passes:', booking.ticket?.passes);
+    return booking.ticket?.passes || [];
+  }
+  
+  // Convert guest games to Ticket_Product format
+  const guestGames = booking.passes?.games?.map((game: any) => ({
+    id: game.gameName || 'unknown',
+    productName: game.gameName || 'Game Pass',
+    productType: "GAME" as const,
+    usageDetails: game.ticketTypes?.map((tt: any) => ({
+      category: tt.category || "ADULT",
+      totalQuantity: tt.quantity,
+      usedQuantity: 0,
+      status: "AVAILABLE" as const,
+      lastUsedAt: new Date().toISOString(),
+    })) || []
+  })) || [];
+  
+  console.log('Guest mode, converted games:', guestGames);
+  return guestGames;
 };
 
 // ── COMPONENTS ─────────────────────────────────────────────────────────────
@@ -145,7 +184,7 @@ const CollectorTicketCard = ({
   isDarkTheme: boolean;
 }) => {
   const { totalQuantity, usedQuantity } = (item?.usageDetails || []).reduce(
-    (acc, i) => ({
+    (acc: any, i: any) => ({
       totalQuantity: acc.totalQuantity + i.totalQuantity,
       usedQuantity: acc.usedQuantity + i.usedQuantity,
     }),
@@ -245,14 +284,54 @@ export default function BookingDetailPage({
   const { user, loading: authLoading } = useAuth();
   const { isDarkTheme } = useTheme();
 
-  const [booking, setBooking] = useState<Booking | null>(null);
+  const [booking, setBooking] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [isQRModalOpen, setIsQRModalOpen] = useState(false);
 
   useEffect(() => {
-    if (!authLoading && !user) router.push("/auth");
-    else if (user) loadBookingDetails();
+    if (!authLoading) {
+      if (user) {
+        // Logged-in users: load from API
+        loadBookingDetails();
+      } else {
+        // Guests: check local storage first
+        const guestBookings = guestCookieUtils.getGuestBookings();
+        const bookingFromStorage = guestBookings.find(b => b.id === id);
+        
+        if (bookingFromStorage) {
+          // Found in local storage - use complete booking data
+          const enhancedBooking = {
+            // Use all existing Bookings properties
+            id: bookingFromStorage.id,
+            bookingReference: bookingFromStorage.bookingReference,
+            totalAmount: bookingFromStorage.totalAmount,
+            status: bookingFromStorage.status || "CONFIRMED",
+            type: bookingFromStorage.type || "EVENT",
+            eventDate: bookingFromStorage.eventDate || bookingFromStorage.bookedAt,
+            bookedAt: bookingFromStorage.bookedAt,
+            ticket: bookingFromStorage.ticket,
+            // Include the complete passes data we saved
+            passes: (bookingFromStorage as any).passes || { games: [], events: [] },
+            // Include additional fields for guest mode
+            ticketCode: (bookingFromStorage as any).ticketCode,
+            qrToken: (bookingFromStorage as any).qrToken,
+            firstName: (bookingFromStorage as any).firstName,
+            lastName: (bookingFromStorage as any).lastName,
+            email: (bookingFromStorage as any).email,
+            paymentStatus: (bookingFromStorage as any).paymentStatus,
+            paymentMethod: (bookingFromStorage as any).paymentMethod,
+          };
+          
+          console.log('Guest booking loaded for details:', enhancedBooking); // Debug log
+          setBooking(enhancedBooking as any);
+          setLoading(false);
+        } else {
+          // Not found in local storage, redirect to my-bookings list
+          router.push("/my-bookings");
+        }
+      }
+    }
   }, [user, authLoading, id]);
 
   const loadBookingDetails = async () => {
@@ -284,8 +363,12 @@ export default function BookingDetailPage({
       </div>
     );
 
-  const games = booking.passes.games;
-  const event = booking.passes.events?.[0];
+  const games = isUserMode(booking) 
+    ? booking.passes?.games || []
+    : booking.passes?.games || [];
+  const event = isUserMode(booking)
+    ? booking.passes?.events?.[0] || null
+    : null; // Guest events have no passes array
   const ticket = booking.ticket;
 
   return (
@@ -327,7 +410,7 @@ export default function BookingDetailPage({
                 <h1
                   className={`text-5xl md:text-6xl font-black tracking-tighter leading-none italic uppercase ${isDarkTheme ? "text-white" : "text-slate-900"}`}
                 >
-                  {event?.name || getDynamicPassName(ticket?.passes || [])}
+                  {event && 'name' in event ? event.name : getDynamicPassName(convertGuestDataToTicketProduct(booking))}
                 </h1>
               </div>
               <p
@@ -335,7 +418,7 @@ export default function BookingDetailPage({
               >
                 Pass for{" "}
                 <span className="text-accent font-bold uppercase">
-                  {user?.first_name} {user?.last_name}
+                  {user ? `${user.first_name} ${user.last_name}` : "Guest User"}
                 </span>{" "}
                 · REF:{" "}
                 <span className="font-mono text-accent font-bold">
@@ -400,7 +483,7 @@ export default function BookingDetailPage({
         {/* COLLECTOR GRID */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10">
           <AnimatePresence>
-            {ticket?.passes?.map((item, i) => (
+            {convertGuestDataToTicketProduct(booking).map((item: any, i: number) => (
               <CollectorTicketCard
                 key={i}
                 item={item}
@@ -440,9 +523,9 @@ export default function BookingDetailPage({
                   <p
                     className={`text-lg font-black ${isDarkTheme ? "text-white" : "text-slate-900"}`}
                   >
-                    {event?.eventDate
-                      ? format(new Date(event?.eventDate), "EEEE, MMM dd, yyyy")
-                      : "N/A"}
+                    {event && 'eventDate' in event
+                      ? format(new Date(event.eventDate), "EEEE, MMM dd, yyyy")
+                      : booking.bookedAt ? format(new Date(booking.bookedAt), "EEEE, MMM dd, yyyy") : "N/A"}
                   </p>
                 </div>
               </div>
@@ -462,7 +545,9 @@ export default function BookingDetailPage({
                   <p
                     className={`text-lg font-black ${isDarkTheme ? "text-white" : "text-slate-900"}`}
                   >
-                    {event?.startTime} - {event?.endTime}
+                    {event && 'startTime' in event && 'endTime' in event
+                      ? `${event.startTime} - ${event.endTime}`
+                      : "All Day Access"}
                   </p>
                 </div>
               </div>
@@ -495,9 +580,9 @@ export default function BookingDetailPage({
       <QRModal
         isOpen={isQRModalOpen}
         onClose={() => setIsQRModalOpen(false)}
-        guestName={`${user?.first_name} ${user?.last_name}`}
+        guestName={user ? `${user.first_name} ${user.last_name}` : "Guest User"}
         refId={booking.bookingReference}
-        qrValue={booking.ticket?.qr_token}
+        qrValue={booking.ticket?.qr_token || booking.qrToken}
         isDarkTheme={isDarkTheme}
       />
     </div>

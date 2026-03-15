@@ -118,12 +118,42 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
         
         // Save guest booking to cookies if user is not authenticated
         if (!user) {
-          // Convert Booking to Bookings type for cookie storage
+          // Save the entire API response with all fields
           const bookingForCookie = {
-            ...response.data.booking,
+            // Map API response to our expected structure
+            id: (response.data.booking as any).id,
+            bookingReference: (response.data.booking as any).booking_reference,
+            totalAmount: (response.data.booking as any).total_amount,
+            status: (response.data.booking as any).status,
             type: "EVENT" as const,
-            eventDate: response.data.booking.bookedAt || new Date().toISOString(),
-            bookedAt: response.data.booking.bookedAt || new Date().toISOString(),
+            eventDate: (response.data.booking as any).created_at || new Date().toISOString(),
+            bookedAt: (response.data.booking as any).created_at || new Date().toISOString(),
+            // Guest-specific fields
+            firstName: "Guest",
+            lastName: "User",
+            email: (response.data.booking as any).guest_email || "guest@bora.com",
+            paymentStatus: "COMPLETED",
+            paymentMethod: "TELEBIRR",
+            // Save the complete ticket structure from API
+            passes: {
+              games: [],
+              events: [] // Events API doesn't seem to have passes array in current response
+            },
+            ticket: {
+              status: (response.data.booking as any).ticket?.status || "ACTIVE",
+              expiresAt: (response.data.booking as any).ticket?.expires_at || new Date(Date.now() + 21 * 24 * 60 * 60 * 1000).toISOString(),
+              ticket_code: (response.data.booking as any).ticket?.ticket_code,
+              qr_token: (response.data.booking as any).ticket?.qr_token,
+              // Create passDetails for list display
+              passDetails: [{
+                productName: "Event Ticket",
+                totalQuantity: 1,
+                usedQuantity: 0,
+              }]
+            },
+            // Save additional API fields
+            ticketCode: (response.data.booking as any).ticket?.ticket_code,
+            qrToken: (response.data.booking as any).ticket?.qr_token,
           };
           guestCookieUtils.setGuestBooking(bookingForCookie as any);
         }
@@ -694,6 +724,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
         bookingReference={bookingReference}
         bookingId={bookingId}
         showActions={true}
+        user={user}
       />
     </div>
   );

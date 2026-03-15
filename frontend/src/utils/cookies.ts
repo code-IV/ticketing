@@ -9,6 +9,12 @@ export const guestCookieUtils = {
    */
   setGuestBooking: (booking: Bookings) => {
     try {
+      // Validate booking data before saving
+      if (!booking || !booking.id || !booking.bookingReference) {
+        console.error('Invalid booking data: missing required fields');
+        return;
+      }
+      
       const existingBookings = guestCookieUtils.getGuestBookings();
       
       // Check if booking already exists (by ID)
@@ -35,7 +41,16 @@ export const guestCookieUtils = {
         const [name, value] = cookie.trim().split('=');
         if (name === GUEST_BOOKINGS_COOKIE) {
           const bookings = JSON.parse(decodeURIComponent(value));
-          return Array.isArray(bookings) ? bookings : [];
+          // Validate and filter bookings
+          if (Array.isArray(bookings)) {
+            return bookings.filter(booking => 
+              booking && 
+              booking.id && 
+              booking.bookingReference && 
+              booking.totalAmount
+            );
+          }
+          return [];
         }
       }
       return [];

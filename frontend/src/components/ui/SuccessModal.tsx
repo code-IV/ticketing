@@ -14,6 +14,7 @@ interface SuccessModalProps {
   bookingId?: string;
   showActions?: boolean;
   router?: any; // Add router prop
+  user?: any; // Add user prop for guest detection
 }
 
 export default function SuccessModal({
@@ -25,6 +26,7 @@ export default function SuccessModal({
   bookingId,
   showActions = true,
   router,
+  user,
 }: SuccessModalProps) {
   const { isDarkTheme } = useTheme();
   const modalRouter = router || useRouter(); // Use passed router or create new one
@@ -180,12 +182,16 @@ Thank you for choosing Bora Park!
 
                 <button
                   onClick={() => {
-                    if (bookingId) {
-                      // Navigate to booking details using booking ID
-                      modalRouter.push(`/my-bookings/${bookingId}`);
+                    if (user) {
+                      // Logged-in users: Navigate to booking details using booking ID
+                      if (bookingId) {
+                        modalRouter.push(`/my-bookings/${bookingId}`);
+                      } else {
+                        onClose();
+                      }
                     } else {
-                      // Otherwise just close the modal
-                      onClose();
+                      // Guests: Navigate to my-bookings list to see all their bookings
+                      modalRouter.push("/my-bookings");
                     }
                   }}
                   className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-medium text-sm transition-colors bg-[#ffd84f] text-gray-900 hover:bg-[#f0c63f]"
