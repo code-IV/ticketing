@@ -5,9 +5,10 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { bookingService } from "@/services/bookingService";
+import { guestCookieUtils } from "@/utils/cookies";
 import { Bookings } from "@/types";
 import { Button } from "@/components/ui/Button";
-import { Calendar, Gamepad2, ChevronDown } from "lucide-react";
+import { Calendar, Gamepad2, ChevronDown, ArrowRight } from "lucide-react";
 import { CiFilter } from "react-icons/ci";
 import { format } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
@@ -31,9 +32,24 @@ export default function MyBookingsPage() {
   const [isUsageOpen, setIsUsageOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  // Guest-only state variables (don't affect user functionality)
+  const [guestReference, setGuestReference] = useState("");
+  const [guestBooking, setGuestBooking] = useState<any>(null);
+  const [guestLoading, setGuestLoading] = useState(false);
+  const [guestError, setGuestError] = useState("");
+  const [cookieBookings, setCookieBookings] = useState<Bookings[]>([]);
+
   useEffect(() => {
-    if (!authLoading && !user) router.push("/auth");
-    else if (user) loadBookings();
+    if (!authLoading) {
+      if (user) {
+        loadBookings(); // Existing user functionality - NO CHANGES
+      } else {
+        // Load guest bookings from cookies
+        const savedBookings = guestCookieUtils.getGuestBookings();
+        setCookieBookings(savedBookings);
+        setLoading(false);
+      }
+    }
   }, [user, authLoading]);
 
   const loadBookings = async () => {
@@ -48,7 +64,51 @@ export default function MyBookingsPage() {
     }
   };
 
-  if (loading || authLoading) {
+  // Guest-only function for reference lookup
+  const handleReferenceLookup = async () => {
+    if (!guestReference.trim()) {
+      setGuestError("Please enter a booking reference");
+      return;
+    }
+
+    try {
+      setGuestLoading(true);
+      setGuestError("");
+      const response = await bookingService.getBookingByReference(guestReference.trim());
+      
+      if (response.success && response.data) {
+        setGuestBooking(response.data.booking);
+        // Also save to cookies for future visits
+        const bookingForCookie = {
+          ...response.data.booking,
+          type: "EVENT" as const,
+          eventDate: response.data.booking.bookedAt || new Date().toISOString(),
+          bookedAt: response.data.booking.bookedAt || new Date().toISOString(),
+        };
+        guestCookieUtils.setGuestBooking(bookingForCookie as any);
+        setCookieBookings(guestCookieUtils.getGuestBookings());
+      } else {
+        setGuestError(response.message || "Booking not found");
+        setGuestBooking(null);
+      }
+    } catch (err: any) {
+      console.error("Guest lookup error:", err);
+      setGuestError(err.response?.data?.message || "Booking not found");
+      setGuestBooking(null);
+    } finally {
+      setGuestLoading(false);
+    }
+  };
+
+  // Guest-only function to remove booking from cookies
+  const handleRemoveBooking = (bookingId: string) => {
+    guestCookieUtils.removeGuestBooking(bookingId);
+    const updatedBookings = guestCookieUtils.getGuestBookings();
+    setCookieBookings(updatedBookings);
+  };
+
+  // Update loading logic for guests
+  if (authLoading || (user && loading)) {
     return (
       <div
         className={`min-h-screen ${isDarkTheme ? "bg-[#0A0A0A]" : "bg-[#F8FAFC]"} flex items-center justify-center`}
@@ -80,6 +140,9 @@ export default function MyBookingsPage() {
 
     return matchesTab && matchesUsage;
   });
+
+  // Guest bookings display logic
+  const displayItems = user ? filteredItems : [...cookieBookings, ...(guestBooking ? [guestBooking] : [])];
 
   return (
     <div
@@ -191,14 +254,159 @@ export default function MyBookingsPage() {
           </div>
         </div>
 
+        {/* CONDITIONAL RENDERING: User vs Guest Interface */}
+        {user ? (
+          // EXISTING USER INTERFACE - NO CHANGES
+          <>
+            {/* Tabs and Filters (existing functionality) */}
+            <div className="flex flex-col sm:flex-row items-center gap-3">
+              {/* Filter Dropdown */}
+              <div className="relative w-full sm:w-auto" ref={dropdownRef}>
+                <button
+                  onClick={() => setIsUsageOpen(!isUsageOpen)}
+                  className={`w-full flex items-center justify-between sm:justify-start gap-2 px-4 py-3 border rounded-2xl text-xs font-black shadow-sm ${
+                    isDarkTheme
+                      ? "bg-[#1a1a1a] border-gray-700 text-gray-300"
+                      : "bg-white border-slate-200 text-slate-700"
+                  }`}
+                >
+                  <CiFilter className="text-lg text-accent stroke-[1.5px]" />
+                  <span className="uppercase">
+                    {usageFilter === "ALL" ? "All Usage" : usageFilter}
+                  </span>
+                  <ChevronDown size={14} />
+                </button>
+                <AnimatePresence>
+                  {isUsageOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 5, scale: 1 }}
+                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                      className={`absolute right-0 mt-2 w-44 border rounded-2xl shadow-xl z-50 overflow-hidden p-1.5 ${
+                        isDarkTheme
+                          ? "bg-[#1a1a1a] border-gray-700"
+                          : "bg-white border-slate-100"
+                      }`}
+                    >
+                      {(
+                        [
+                          "ALL",
+                          "Available",
+                          "Pending",
+                          "Cancelled",
+                          "Refunded",
+                          "Fully Used",
+                        ] as const
+                      ).map((usage) => (
+                        <button
+                          key={usage}
+                          onClick={() => {
+                            setUsageFilter(usage);
+                            setIsUsageOpen(false);
+                          }}
+                          className={`w-full text-left px-4 py-2.5 text-[10px] font-black uppercase rounded-lg transition-colors ${
+                            usageFilter === usage
+                              ? "text-accent bg-accent/10"
+                              : isDarkTheme
+                                ? "text-gray-400 hover:bg-gray-700"
+                                : "text-slate-500 hover:bg-slate-50"
+                          }`}
+                        >
+                          {usage}
+                        </button>
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              {/* Tabs */}
+              <div
+                className={`flex p-1 rounded-2xl w-full sm:w-auto border ${
+                  isDarkTheme
+                    ? "bg-slate-700/50 border-gray-600"
+                    : "bg-slate-200/50 border-slate-200/50"
+                }`}
+              >
+                {(["ALL", "EVENT", "GAME"] as const).map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => setActiveTab(tab)}
+                    className={`flex-1 sm:flex-none px-6 py-2 rounded-xl text-[10px] font-black tracking-widest transition-all ${
+                      activeTab === tab
+                        ? isDarkTheme
+                          ? "bg-[#1a1a1a] text-accent shadow-sm"
+                          : "bg-white text-accent shadow-sm"
+                        : isDarkTheme
+                          ? "text-gray-400"
+                          : "text-slate-500"
+                    }`}
+                  >
+                    {tab}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </>
+        ) : (
+          // NEW GUEST INTERFACE - Reference Lookup
+          <div className={`w-full max-w-md mx-auto ${isDarkTheme ? "bg-[#1a1a1a]" : "bg-white"} rounded-2xl border ${isDarkTheme ? "border-gray-700" : "border-slate-200"} p-6 shadow-lg`}>
+            <div className="text-center mb-6">
+              <h2 className={`text-xl font-black ${isDarkTheme ? "text-white" : "text-slate-900"} mb-2`}>
+                Find Your Booking
+              </h2>
+              <p className={`text-sm ${isDarkTheme ? "text-gray-400" : "text-slate-500"}`}>
+                Enter your booking reference number to view your ticket details
+              </p>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <input
+                  type="text"
+                  placeholder="Booking Reference (e.g., EVT-1234567890)"
+                  value={guestReference}
+                  onChange={(e) => setGuestReference(e.target.value)}
+                  className={`w-full px-4 py-3 border rounded-xl text-sm font-medium ${
+                    isDarkTheme
+                      ? "bg-[#0A0A0A] border-gray-600 text-white placeholder-gray-500"
+                      : "bg-slate-50 border-slate-200 text-slate-900 placeholder-slate-400"
+                  }`}
+                  onKeyPress={(e) => e.key === "Enter" && handleReferenceLookup()}
+                />
+              </div>
+              
+              {guestError && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-xs font-black uppercase">
+                  {guestError}
+                </div>
+              )}
+              
+              <button
+                onClick={handleReferenceLookup}
+                disabled={guestLoading || !guestReference.trim()}
+                className="w-full py-3 bg-[#ffd84f] text-gray-900 rounded-xl font-black text-sm uppercase tracking-widest hover:bg-[#f0c63f] transition-all flex items-center justify-center gap-2 shadow-lg disabled:opacity-30"
+              >
+                {guestLoading ? "Looking Up..." : "Find Booking"} <ArrowRight size={16} />
+              </button>
+            </div>
+            
+            <div className={`mt-4 pt-4 border-t ${isDarkTheme ? "border-gray-700" : "border-slate-200"} text-center`}>
+              <p className={`text-xs ${isDarkTheme ? "text-gray-500" : "text-slate-400"}`}>
+                Your booking reference was provided after purchase
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* LIST SECTION */}
         <div className="grid grid-cols-1 gap-6">
           <AnimatePresence mode="popLayout">
-            {filteredItems?.map((item) => {
+            {displayItems?.map((item) => {
               const { totalQty, totalUsed } = (
                 item.ticket?.passDetails || []
               ).reduce(
-                (acc, i) => ({
+                (acc: any, i: any) => ({
                   totalQty: acc.totalQty + i.totalQuantity,
                   totalUsed: acc.totalUsed + i.usedQuantity,
                 }),
@@ -261,7 +469,7 @@ export default function MyBookingsPage() {
                         <p
                           className={`text-[10px] font-bold uppercase tracking-widest mt-1 ${isDarkTheme ? "text-gray-400" : "text-slate-400"}`}
                         >
-                          Ref: #{item.bookingReference.slice(0, 10)}..
+                          Ref: #{item.bookingReference ? item.bookingReference.slice(0, 10) : 'Unknown'}..
                         </p>
                       </div>
 
@@ -323,7 +531,7 @@ export default function MyBookingsPage() {
                         >
                           {format(
                             new Date(
-                              item.eventDate || item.ticket?.expiresAt || 0,
+                              item.eventDate || item.bookedAt || item.ticket?.expiresAt || Date.now(),
                             ),
                             "MMM dd",
                           )}
@@ -340,7 +548,7 @@ export default function MyBookingsPage() {
                         <span
                           className={`text-sm font-black ${isDarkTheme ? "text-gray-300" : "text-slate-700"}`}
                         >
-                          {Math.round(parseFloat(item.totalAmount))} ETB
+                          {Math.round(parseFloat(item.totalAmount || '0'))} ETB
                         </span>
                       </div>
                     </div>

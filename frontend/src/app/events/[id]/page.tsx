@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { eventService } from "@/services/eventService";
 import { bookingService } from "@/services/bookingService";
+import { guestCookieUtils } from "@/utils/cookies";
 import { Event, BookingItem } from "@/types";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
@@ -114,6 +115,18 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
         setBookingId(response.data.booking.id);
         setShowSuccessModal(true);
         setCart({}); // Clear cart after successful booking
+        
+        // Save guest booking to cookies if user is not authenticated
+        if (!user) {
+          // Convert Booking to Bookings type for cookie storage
+          const bookingForCookie = {
+            ...response.data.booking,
+            type: "EVENT" as const,
+            eventDate: response.data.booking.bookedAt || new Date().toISOString(),
+            bookedAt: response.data.booking.bookedAt || new Date().toISOString(),
+          };
+          guestCookieUtils.setGuestBooking(bookingForCookie as any);
+        }
       } else {
         setError(response.message || "Booking failed");
       }

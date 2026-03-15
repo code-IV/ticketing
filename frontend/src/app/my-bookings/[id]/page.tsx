@@ -32,6 +32,17 @@ import {
 } from "lucide-react";
 import { QRCodeCanvas } from "qrcode.react";
 
+// ── HELPER FUNCTIONS ─────────────────────────────────────────────────────────────
+
+const getDynamicPassName = (items: any[]) => {
+  if (!items || items.length === 0) return "Custom Pass";
+  const uniqueGames = [...new Set(items.map((i) => i.productName))];
+  if (uniqueGames.length === 1) return uniqueGames[0];
+  if (uniqueGames.length === 2)
+    return `${uniqueGames[0]} & ${uniqueGames[1]}`;
+  return `${uniqueGames[0]} & ${uniqueGames[1]} ...`;
+};
+
 // ── COMPONENTS ─────────────────────────────────────────────────────────────
 
 const QRModal = ({
@@ -146,7 +157,7 @@ const CollectorTicketCard = ({
       initial={{ opacity: 0, y: 30 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.1 }}
-      className={`group relative h-[380px] w-full rounded-[40px] overflow-hidden border border-accent shadow-sm transition-all ${
+      className={`group relative h-[420px] w-full rounded-[40px] overflow-hidden border border-accent shadow-sm transition-all ${
         isFullyUsed
           ? "grayscale opacity-80"
           : "hover:shadow-2xl hover:scale-[1.02]"
@@ -180,23 +191,41 @@ const CollectorTicketCard = ({
 
       <div className="absolute bottom-8 left-8 right-8 z-10">
         <div className="bg-white/10 backdrop-blur-xl p-6 rounded-[32px] border border-white/20 shadow-2xl">
-          <>
-            <div className="flex justify-between items-center text-white text-[11px] font-black uppercase mb-4 tracking-widest">
-              <span className="opacity-80">Utilization</span>
-              <span className="flex items-center gap-2 bg-accent px-3 py-1 rounded-full text-[9px]">
-                <TicketIcon size={12} /> {usedQuantity}/{totalQuantity}
-              </span>
+          {/* Ticket Type Breakdown */}
+          <div className="mb-4">
+
+            <div className="space-y-2">
+              {(item?.usageDetails || []).map((detail, idx) => (
+                <div key={idx} className="flex justify-between items-center text-white">
+                  <span className="text-xs font-medium opacity-90">
+                    {detail.category}
+                  </span>
+                  <span className="text-xs font-black">
+                    {detail.totalQuantity - detail.usedQuantity} left
+                  </span>
+                </div>
+              ))}
             </div>
-            <div className="w-full h-2 bg-white/20 rounded-full overflow-hidden">
-              <motion.div
-                initial={{ width: 0 }}
-                animate={{
-                  width: `${(usedQuantity / totalQuantity) * 100}%`,
-                }}
-                className="h-full bg-white shadow-[0_0_15px_rgba(255,255,255,0.5)]"
-              />
-            </div>
-          </>
+          </div>
+          
+          <div className="w-full h-px bg-white/20 mb-4"></div>
+          
+          {/* Progress Bar */}
+          <div className="flex justify-between items-center text-white text-[11px] font-black uppercase mb-4 tracking-widest">
+            <span className="opacity-80">Utilization</span>
+            <span className="flex items-center gap-2 bg-accent px-3 py-1 rounded-full text-[9px]">
+              <TicketIcon size={12} /> {usedQuantity}/{totalQuantity}
+            </span>
+          </div>
+          <div className="w-full h-2 bg-white/20 rounded-full overflow-hidden">
+            <motion.div
+              initial={{ width: 0 }}
+              animate={{
+                width: `${(usedQuantity / totalQuantity) * 100}%`,
+              }}
+              className="h-full bg-white shadow-[0_0_15px_rgba(255,255,255,0.5)]"
+            />
+          </div>
         </div>
       </div>
     </motion.div>
@@ -298,7 +327,7 @@ export default function BookingDetailPage({
                 <h1
                   className={`text-5xl md:text-6xl font-black tracking-tighter leading-none italic uppercase ${isDarkTheme ? "text-white" : "text-slate-900"}`}
                 >
-                  {event?.name}
+                  {event?.name || getDynamicPassName(ticket?.passes || [])}
                 </h1>
               </div>
               <p
@@ -313,6 +342,20 @@ export default function BookingDetailPage({
                   {booking.bookingReference}
                 </span>
               </p>
+              <div className={`mt-2 flex flex-col sm:flex-row gap-4 text-xs font-medium ${isDarkTheme ? "text-gray-500" : "text-slate-500"}`}>
+                <div className="flex items-center gap-2">
+                  <Calendar size={14} />
+                  <span>
+                    Booked: <span className="text-accent font-bold">{booking.bookedAt ? format(new Date(booking.bookedAt), "MMM dd, yyyy") : "N/A"}</span>
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Calendar size={14} />
+                  <span>
+                    Expires: <span className="text-accent font-bold">{booking.bookedAt ? format(new Date(new Date(booking.bookedAt).getTime() + (21 * 24 * 60 * 60 * 1000)), "MMM dd, yyyy") : "N/A"}</span>
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
 
