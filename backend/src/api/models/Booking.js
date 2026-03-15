@@ -111,33 +111,50 @@ const Booking = {
       );
       const ticketId = ticketResult.rows[0].id;
 
+      const passesMap = {}; // Helper to group by gameName
+
       for (const item of items) {
-        // Get price and the associated Product ID for this ticket type
+        // Fetch price, product_id AND the product name
         const typeResult = await client.query(
-          `SELECT price, product_id FROM ticket_types WHERE id = $1`,
+          `SELECT tt.price, tt.category, p.id as product_id, p.name as product_name 
+     FROM ticket_types tt
+     JOIN products p ON tt.product_id = p.id
+     WHERE tt.id = $1`,
           [item.ticketTypeId],
         );
 
         if (typeResult.rows.length === 0)
           throw new Error(`Invalid Ticket Type ID: ${item.ticketTypeId}`);
 
-        const { price, product_id } = typeResult.rows[0];
+        const { price, category, product_id, product_name } =
+          typeResult.rows[0];
         const subtotal = price * item.quantity;
 
-        // Create the record of the sale
+        // 1. Record the Sale
         await client.query(
           `INSERT INTO booking_items (booking_id, ticket_type_id, quantity, unit_price, subtotal)
-         VALUES ($1, $2, $3, $4, $5)`,
+     VALUES ($1, $2, $3, $4, $5)`,
           [booking.id, item.ticketTypeId, item.quantity, price, subtotal],
         );
 
-        // Create the "Punch Card" entitlement
-        // Note: We use the product_id we just fetched
+        // 2. Create the Entitlement
         await client.query(
           `INSERT INTO ticket_products (ticket_id, product_id, ticket_type_id, total_quantity, status)
-         VALUES ($1, $2, $3, $4, 'AVAILABLE')`,
+     VALUES ($1, $2, $3, $4, 'AVAILABLE')`,
           [ticketId, product_id, item.ticketTypeId, item.quantity],
         );
+
+        // 3. Group for Response
+        if (!passesMap[product_name]) {
+          passesMap[product_name] = { gameName: product_name, ticketTypes: [] };
+        }
+
+        passesMap[product_name].ticketTypes.push({
+          category: category, // e.g., "ADULT"
+          quantity: item.quantity,
+          unitPrice: price,
+          subtotal: subtotal,
+        });
       }
 
       // 3️⃣ Record Payment
@@ -154,6 +171,7 @@ const Booking = {
         reference: bookingReference,
         ticketCode,
         qrToken,
+        passes: Object.values(passesMap),
       };
     } catch (err) {
       await client.query("ROLLBACK");

@@ -57,7 +57,6 @@ export default function MyBookingsPage() {
       </div>
     );
   }
-  console.log(bookings);
 
   const getDynamicPassName = (items: PassDetails[]) => {
     if (!items || items.length === 0) return "Custom Pass";
