@@ -23,10 +23,10 @@ api.interceptors.response.use(
       
       if (
         typeof window !== "undefined" &&
-        !window.location.pathname.includes("/login") &&
+        !window.location.pathname.includes("/auth") &&
         !isPublicRoute
       ) {
-        window.location.href = "/login";
+        window.location.href = "/auth";
       }
     }
     return Promise.reject(error);

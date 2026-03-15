@@ -32,7 +32,7 @@ export default function MyBookingsPage() {
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!authLoading && !user) router.push("/login");
+    if (!authLoading && !user) router.push("/auth");
     else if (user) loadBookings();
   }, [user, authLoading]);
 

@@ -158,7 +158,7 @@ export default function GameDetailPage() {
         <div className="text-center">
           <p className="text-red-600 mb-4">{error}</p>
           <button
-            onClick={() => router.push("/analitics/games")}
+            onClick={() => router.push("/admin/analitics/games")}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
           >
             Back to Games
@@ -183,7 +183,7 @@ export default function GameDetailPage() {
             No analytics data available for this game.
           </p>
           <button
-            onClick={() => router.push("/analitics/games")}
+            onClick={() => router.push("/admin/analitics/games")}
             className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
           >
             Back to Games
@@ -351,7 +351,7 @@ export default function GameDetailPage() {
         </div>
 
         <button
-          onClick={() => router.push("/analitics/games")}
+          onClick={() => router.push("/admin/analitics/games")}
           className={`flex items-center gap-2 text-sm mb-6 ${isDarkTheme ? "text-gray-400 hover:text-white" : "text-gray-600 hover:text-gray-900"}`}
         >
           <ChevronLeft size={16} /> Back to Games

@@ -107,7 +107,7 @@ export default function ProfilePage() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <p className="text-gray-600 mb-4">Please log in to view your profile</p>
-          <Link href="/login">
+          <Link href="/auth">
             <Button>Login</Button>
           </Link>
         </div>

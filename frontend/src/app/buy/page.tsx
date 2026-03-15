@@ -69,7 +69,7 @@ const BuyTicketsPage = () => {
     setLoading(true);
     try {
       const response = await gameService.getActiveGames();
-      setGames(response.data.games || []);
+      setGames(response.data || []);
     } catch (error) {
       setError("Failed to load adventures.");
     } finally {
@@ -238,13 +238,13 @@ const BuyTicketsPage = () => {
                           </p>
                           
                           <button
-                            onClick={(e) => {
+                            onClick={() => {
                               console.log('Game object:', game);
                               console.log('Game ID:', game.id);
                               console.log('Game ID type:', typeof game.id);
                               console.log('View Details clicked for game:', game.id);
                               console.log('Navigating to:', `/buy/${game.id}`);
-                              window.location.href = `/buy/${game.id}`;
+                              router.push(`/buy/${game.id}`);
                             }}
                             className="relative z-20 bg-white/20 backdrop-blur-md px-4 py-2 rounded-2xl border border-white/20 text-white font-black text-[10px] uppercase tracking-widest hover:bg-white/30 transition-colors"
                           >
@@ -416,6 +416,7 @@ const BuyTicketsPage = () => {
         bookingReference={bookingReference}
         bookingId={bookingId}
         showActions={true}
+        router={router}
       />
     </div>
   );

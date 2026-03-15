@@ -2,21 +2,9 @@ import { api } from "@/lib/api";
 import { Game, TicketType, PaginatedResponse, ApiResponse } from "@/types";
 
 export const gameService = {
-  async getActiveGames(page = 1, limit = 20): Promise<PaginatedResponse<Game>> {
-    const response = await api.get("/buy/games", { params: { page, limit } });
-    return {
-      success: response.data.success,
-      message: response.data.message,
-      data: {
-        games: response.data.data || [],
-        pagination: response.data.pagination || {
-          page: 1,
-          limit: 20,
-          total: response.data.data?.length || 0,
-          totalPages: 1,
-        },
-      },
-    };
+  async getActiveGames(): Promise<ApiResponse<Game[]>> {
+    const response = await api.get("/buy/games");
+    return response.data;
   },
 
   async getGameById(

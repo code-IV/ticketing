@@ -321,25 +321,25 @@ export default function AnalyticsDashboardPage() {
         <div className={`rounded-xl p-4 mb-6 ${isDarkTheme ? 'bg-[#0A0A0A] border-gray-700' : 'bg-white border-gray-200'}`}>
           <div className="flex flex-wrap gap-4">
             <Link
-              href="/analitics/revenue"
+              href="/admin/analitics/revenue"
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
             >
               Revenue Analytics
             </Link>
             <Link
-              href="/analitics/games"
+              href="/admin/analitics/games"
               className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
             >
               Games Analytics
             </Link>
             <Link
-              href="/analitics/events"
+              href="/admin/analitics/events"
               className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
             >
               Events Analytics
             </Link>
             <Link
-              href="/analitics/bookings"
+              href="/admin/analitics/bookings"
               className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700"
             >
               Booking Analytics

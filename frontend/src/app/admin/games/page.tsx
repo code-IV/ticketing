@@ -17,6 +17,7 @@ import {
   Divide,
   BarChart3,
   Calendar,
+  ArrowUp,
 } from "lucide-react";
 import { gameService } from "@/services/adminService";
 import { Game, CreateTicketTypeRequest, TicketType } from "@/types";
@@ -284,29 +285,16 @@ const GamesManagementPage = () => {
         {/* ANALYTICS BUTTON - Far Right of Page */}
         <div className="flex items-end">
           <Link
-            href="/analitics/games"
+            href="/admin/analitics/games"
             className={`group flex items-center gap-3 px-6 py-4 rounded-2xl border shadow-lg transition-all duration-300 hover:shadow-xl hover:-translate-y-1 ${
               isDarkTheme 
                 ? 'bg-gradient-to-r from-indigo-600 to-purple-600 border-indigo-500 hover:from-indigo-700 hover:to-purple-700' 
-                : 'bg-gradient-to-r from-indigo-500 to-purple-500 border-indigo-400 hover:from-indigo-600 hover:to-purple-600'
-            } text-white`}
+                : 'bg-gradient-to-r from-blue-500 to-purple-500 border-blue-400 hover:from-blue-600 hover:to-purple-600'
+            } text-white font-bold shadow-lg`}
           >
-            <div className={`p-2 rounded-lg bg-white/20 transition-all duration-300 group-hover:bg-white/30`}>
-              <BarChart3 size={20} />
-            </div>
-            <div className="text-left">
-              <div className="text-xs font-medium uppercase tracking-wider opacity-90">
-                View
-              </div>
-              <div className="text-lg font-black">
-                ANALYTICS
-              </div>
-            </div>
-            <div className={`p-1 rounded-full transition-all duration-300 group-hover:translate-x-1`}>
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="opacity-70">
-                <path d="M6 12L10 8L6 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </div>
+            <BarChart3 className="w-5 h-5" />
+            <span>View Analytics</span>
+            <ArrowUp className="w-4 h-4 group-hover:translate-y-0.5 transition-transform" />
           </Link>
         </div>
       </div>
@@ -425,7 +413,7 @@ const GamesManagementPage = () => {
                   isDarkTheme ? 'border-gray-700/50' : 'border-slate-200/50'
                 }`}>
                   <Link
-                    href={`/analitics/games/${game.id}`}
+                    href={`/admin/analitics/games/${game.id}`}
                     className={`group/btn relative px-6 py-3 rounded-2xl font-bold text-sm transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl ${
                       isDarkTheme 
                         ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:from-indigo-700 hover:to-purple-700' 

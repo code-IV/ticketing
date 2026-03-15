@@ -293,7 +293,7 @@ export default function EventsAnalyticsPage() {
 
         {/* Back Navigation */}
         <button
-          onClick={() => router.push("/analitics")}
+          onClick={() => router.push("/admin/analitics")}
           className={`flex items-center gap-2 text-sm mb-6 ${isDarkTheme ? "text-gray-400 hover:text-white" : "text-gray-600 hover:text-gray-900"}`}
         >
           ← Back to Analytics Dashboard
@@ -374,7 +374,7 @@ export default function EventsAnalyticsPage() {
                       <tr
                         key={event.id}
                         className={`cursor-pointer border-t hover:${isDarkTheme ? "bg-gray-800" : "bg-gray-50"} ${isDarkTheme ? "border-gray-700" : "border-gray-100"}`}
-                        onClick={() => router.push(`/analitics/events/${event.id}`)}
+                        onClick={() => router.push(`/admin/analitics/events/${event.id}`)}
                       >
                         <td
                           className={`px-4 py-3 font-medium ${isDarkTheme ? "text-white" : ""}`}

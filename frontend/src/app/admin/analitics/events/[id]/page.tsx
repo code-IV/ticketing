@@ -121,8 +121,8 @@ export default function EventDetailPage() {
       try {
         const response = await eventService.getAnalytics(
           eventId, // string UUID
-          dateRange.start.toISOString(),
-          dateRange.end.toISOString(),
+          dateRange.start!.toISOString(),
+          dateRange.end!.toISOString(),
           dateRange.label,
         );
         const apiData = response.data?.data;
@@ -259,7 +259,7 @@ export default function EventDetailPage() {
 
           {/* Back button */}
           <button
-            onClick={() => router.push("/analitics/events")}
+            onClick={() => router.push("/admin/analitics/events")}
             className={`flex items-center gap-2 text-sm ${
               isDarkTheme
                 ? "text-gray-400 hover:text-white"

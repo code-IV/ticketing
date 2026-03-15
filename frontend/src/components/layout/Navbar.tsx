@@ -122,7 +122,7 @@ export function Navbar() {
                     <LayoutDashboard className="h-4 w-4" /> Admin
                   </Link>
                   <Link
-                    href="/analitics"
+                    href="/admin/analitics"
                     className={`flex items-center gap-1.5 text-sm font-semibold transition-colors ${linkColor}`}
                   >
                     <BarChart3 className="h-4 w-4" /> Analytics
@@ -185,7 +185,7 @@ export function Navbar() {
                 </>
               ) : (
                 <>
-                  <Link href="/login">
+                  <Link href="/auth">
                     <button
                       className={`text-sm font-semibold px-5 py-2 rounded-full transition-all ${
                         isDarkTheme
@@ -196,7 +196,7 @@ export function Navbar() {
                       Login
                     </button>
                   </Link>
-                  <Link href="/register">
+                  <Link href="/auth">
                     <button className="text-sm font-black px-6 py-2.5 rounded-full bg-[#FFD84D] text-black hover:bg-white transition-all shadow-lg shadow-yellow-400/20">
                       Sign Up
                     </button>
@@ -252,7 +252,7 @@ export function Navbar() {
             {[
               { href: "/events", label: "Events" },
               { href: "/my-bookings", label: "My Bookings" },
-              { href: "/analitics", label: "Analytics" },
+              { href: "/admin/analitics", label: "Analytics" },
               { href: "/buy", label: "Buy Tickets" },
             ].map((item) => (
               <Link
@@ -275,7 +275,7 @@ export function Navbar() {
                   <LayoutDashboard className="h-5 w-5" /> Admin
                 </Link>
                 <Link
-                  href="/analitics"
+                  href="/admin/analitics"
                   onClick={() => setMobileOpen(false)}
                   className="flex items-center gap-2 text-white/80 hover:text-[#FFD84D] font-semibold py-1 text-lg"
                 >
@@ -314,12 +314,12 @@ export function Navbar() {
                 </div>
               ) : (
                 <div className="flex flex-col gap-3">
-                  <Link href="/login" onClick={() => setMobileOpen(false)}>
+                  <Link href="/auth" onClick={() => setMobileOpen(false)}>
                     <button className="w-full border border-white/20 text-white font-semibold py-3 rounded-2xl hover:bg-white/10 transition-colors">
                       Login
                     </button>
                   </Link>
-                  <Link href="/register" onClick={() => setMobileOpen(false)}>
+                  <Link href="/auth" onClick={() => setMobileOpen(false)}>
                     <button className="w-full bg-[#FFD84D] text-black font-black py-3 rounded-2xl hover:bg-white transition-colors">
                       Sign Up
                     </button>

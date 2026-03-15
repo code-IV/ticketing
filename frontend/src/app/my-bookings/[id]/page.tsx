@@ -222,7 +222,7 @@ export default function BookingDetailPage({
   const [isQRModalOpen, setIsQRModalOpen] = useState(false);
 
   useEffect(() => {
-    if (!authLoading && !user) router.push("/login");
+    if (!authLoading && !user) router.push("/auth");
     else if (user) loadBookingDetails();
   }, [user, authLoading, id]);
 

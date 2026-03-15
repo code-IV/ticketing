@@ -258,7 +258,7 @@ export default function AdminDashboard() {
                 { href: '/admin/games', label: 'Add New Game', icon: <Plus className="w-4 h-4 sm:w-5 sm:h-5" />, color: 'emerald' },
                 { href: '/admin/events', label: 'Create Event', icon: <Calendar className="w-4 h-4 sm:w-5 sm:h-5" />, color: 'blue' },
                 { href: '/admin/user', label: 'Manage Users', icon: <Users className="w-4 h-4 sm:w-5 sm:h-5" />, color: 'purple' },
-                { href: '/analitics/bookings', label: 'View Analytics', icon: <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5" />, color: 'orange' }
+                { href: '/admin/analitics/bookings', label: 'View Analytics', icon: <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5" />, color: 'orange' }
               ].map((action, index) => (
                 <Link
                   key={index}

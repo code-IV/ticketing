@@ -319,7 +319,7 @@ export default function GamesAnalyticsPage() {
 
           {/* Back Navigation */}
           <button
-            onClick={() => router.push("/analitics")}
+            onClick={() => router.push("/admin/analitics")}
             className={`flex items-center gap-2 text-sm mb-6 ${isDarkTheme ? "text-gray-400 hover:text-white" : "text-gray-600 hover:text-gray-900"}`}
           >
             ← Back to Analytics Dashboard
@@ -436,7 +436,7 @@ export default function GamesAnalyticsPage() {
                     <tr
                       key={game.id}
                       className={`border-t cursor-pointer ${isDarkTheme ? "border-gray-700 hover:bg-[#1a1a1a]" : "border-gray-100 hover:bg-gray-50"}`}
-                      onClick={() => router.push(`/analitics/games/${game.id}`)}
+                      onClick={() => router.push(`/admin/analitics/games/${game.id}`)}
                     >
                       <td
                         className={`px-4 py-3 font-medium ${isDarkTheme ? "text-white" : ""}`}

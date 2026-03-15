@@ -2,6 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { CheckCircle, X, Download, Share2, ArrowRight } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useTheme } from "@/contexts/ThemeContext";
 
 interface SuccessModalProps {
@@ -12,6 +13,7 @@ interface SuccessModalProps {
   bookingReference?: string;
   bookingId?: string;
   showActions?: boolean;
+  router?: any; // Add router prop
 }
 
 export default function SuccessModal({
@@ -22,8 +24,10 @@ export default function SuccessModal({
   bookingReference,
   bookingId,
   showActions = true,
+  router,
 }: SuccessModalProps) {
   const { isDarkTheme } = useTheme();
+  const modalRouter = router || useRouter(); // Use passed router or create new one
 
   const handleDownload = () => {
     // Create a simple text file with booking details
@@ -178,7 +182,7 @@ Thank you for choosing Bora Park!
                   onClick={() => {
                     if (bookingId) {
                       // Navigate to booking details using booking ID
-                      window.location.href = `/my-bookings/${bookingId}`;
+                      modalRouter.push(`/my-bookings/${bookingId}`);
                     } else {
                       // Otherwise just close the modal
                       onClose();

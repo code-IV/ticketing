@@ -381,7 +381,7 @@ export default function BookingAnalyticsPage() {
 
         {/* Back Navigation */}
         <button
-          onClick={() => router.push("/analitics")}
+          onClick={() => router.push("/admin/analitics")}
           className={`flex items-center gap-2 text-sm mb-6 ${isDarkTheme ? "text-gray-400 hover:text-white" : "text-gray-600 hover:text-gray-900"}`}
         >
           ← Back to Analytics Dashboard

@@ -14,15 +14,16 @@ export function MainLayout({ children }: MainLayoutProps) {
   const pathname = usePathname();
   const { isDarkTheme } = useTheme();
   const isHomePage = pathname === "/";
+  const isAuthPage = pathname === "/auth" || pathname === "/login" || pathname === "/register";
 
   return (
     <div className={`min-h-screen flex flex-col relative ${isDarkTheme ? 'bg-[#0A0A0A]' : 'bg-white'}`}>
       {/* Navbar is fixed, so no padding needed on home; add top padding elsewhere */}
-      <Navbar />
-      <main className={`flex-1 ${isHomePage ? "" : "pt-16"}`}>
+      {!isAuthPage && <Navbar />}
+      <main className={`flex-1 ${isHomePage || isAuthPage ? "" : "pt-16"}`}>
         {children}
       </main>
-      <Footer />
+      {!isAuthPage && <Footer />}
     </div>
   );
 }

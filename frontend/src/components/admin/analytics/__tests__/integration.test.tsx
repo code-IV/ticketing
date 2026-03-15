@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import AnalyticsPage from '../../app/admin/analytics/page';
+import AnalyticsPage from '../../app/admin/analitics/page';
 import { AuthProvider } from '@/contexts/AuthContext';
 
 // Mock the auth context

@@ -3,7 +3,7 @@
 import { use, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useTheme } from '@/contexts/ThemeContext';
-import { gameService } from "@/services/adminService";
+import { gameService } from "@/services/gameService";
 import { Game } from "@/types";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
@@ -28,9 +28,9 @@ import {
 const gameMedia = {
   "1": { // Thunder Coaster
     images: [
-      "https://images.unsplash.com/photo-1571003123894-1fbae28f2b73?w=1200&q=80", // Roller coaster
-      "https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=1200&q=80", // Theme park
       "https://images.unsplash.com/photo-1563298723-dcfebaa392e3?w=1200&q=80", // Amusement ride
+      "https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=1200&q=80", // Theme park
+      "https://images.unsplash.com/photo-1571003123894-1fbae28f2b73?w=1200&q=80", // Roller coaster
       "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200&q=80" // Park view
     ],
     videos: [
@@ -83,153 +83,31 @@ export default function GameDetailPage({
   }, [gameId]);
 
   const loadGame = async () => {
-    // Use mock data for design testing
-    const mockGames = {
-      "1": {
-        id: "1",
-        name: "Thunder Coaster",
-        description: "Experience the ultimate adrenaline rush on Ethiopia's tallest roller coaster. With breathtaking drops, high-speed twists, and gravity-defying loops, this state-of-the-art coaster reaches speeds of up to 120 km/h while offering spectacular views of the entire park.",
-        rules: "Minimum height: 140cm. Secure all loose items. Follow staff instructions. Not recommended for pregnant riders or those with heart conditions. Keep hands and feet inside at all times.",
-        status: "OPEN" as const,
-        ticket_types: [
-          {
-            id: "1",
-            event_id: "1",
-            name: "Express Pass",
-            category: "ADULT" as const,
-            price: 250,
-            description: "Skip the lines with priority access",
-            max_quantity_per_booking: 6,
-            is_active: true,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          },
-          {
-            id: "2", 
-            event_id: "1",
-            name: "Standard Ticket",
-            category: "ADULT" as const,
-            price: 180,
-            description: "Regular admission to Thunder Coaster",
-            max_quantity_per_booking: 6,
-            is_active: true,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          },
-          {
-            id: "3", 
-            event_id: "1",
-            name: "Child Ticket",
-            category: "CHILD" as const,
-            price: 120,
-            description: "For children under 12 (minimum height 140cm)",
-            max_quantity_per_booking: 6,
-            is_active: true,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          }
-        ],
-        category: "Thrill Ride",
-        capacity: 24,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      },
-      "2": {
-        id: "2",
-        name: "Splash Mountain",
-        description: "Cool off on this epic water adventure! Navigate through winding rapids, experience thrilling drops, and get soaked in the final splash finale. Perfect for hot days and families looking for refreshing fun.",
-        rules: "You will get wet! Secure electronic devices. Wear appropriate swimwear. Minimum height: 100cm. Life jackets provided for children under 8.",
-        status: "OPEN" as const,
-        ticket_types: [
-          {
-            id: "4",
-            event_id: "2",
-            name: "Family Package",
-            category: "GROUP" as const,
-            price: 450,
-            description: "2 adults + 2 children bundle",
-            max_quantity_per_booking: 4,
-            is_active: true,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          },
-          {
-            id: "5", 
-            event_id: "2",
-            name: "Adult Ticket",
-            category: "ADULT" as const,
-            price: 150,
-            description: "Single adult admission",
-            max_quantity_per_booking: 6,
-            is_active: true,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          },
-          {
-            id: "6", 
-            event_id: "2",
-            name: "Child Ticket",
-            category: "CHILD" as const,
-            price: 100,
-            description: "For children under 12",
-            max_quantity_per_booking: 6,
-            is_active: true,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          }
-        ],
-        category: "Water Ride",
-        capacity: 8,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      },
-      "3": {
-        id: "3",
-        name: "Haunted Mansion",
-        description: "Step into a world of mystery and suspense in this haunted house adventure. Navigate through dark corridors, encounter spooky surprises, and solve puzzles to escape the supernatural realm.",
-        rules: "Not recommended for children under 8. No flash photography. Stay with your group. Touching props is prohibited. Emergency exits are clearly marked.",
-        status: "OPEN" as const,
-        ticket_types: [
-          {
-            id: "7",
-            event_id: "3",
-            name: "VIP Experience",
-            category: "ADULT" as const,
-            price: 200,
-            description: "Skip lines + exclusive behind-the-scenes access",
-            max_quantity_per_booking: 4,
-            is_active: true,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          },
-          {
-            id: "8", 
-            event_id: "3",
-            name: "Standard Admission",
-            category: "ADULT" as const,
-            price: 130,
-            description: "Regular haunted house experience",
-            max_quantity_per_booking: 6,
-            is_active: true,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          }
-        ],
-        category: "Dark Ride",
-        capacity: 6,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+    try {
+      setLoading(true);
+      setError("");
+      
+      const response = await gameService.getGameById(gameId);
+      
+      if (response.success && response.data) {
+        // Map database response to match Game interface
+        const mappedGame = {
+          ...response.data.game,
+          category: response.data.game.category || "Adventure", // Default category if not present
+          capacity: response.data.game.capacity || 10, // Default capacity if not present
+        };
+        setGame(mappedGame);
+      } else {
+        setError("Game not found");
+        setGame(null);
       }
-    };
-
-    setLoading(true);
-    
-    // Simulate loading delay for better UX testing
-    setTimeout(() => {
-      const mockGame = mockGames[gameId as keyof typeof mockGames] || mockGames["1"];
-      setGame(mockGame);
+    } catch (err) {
+      console.error("Failed to load game:", err);
+      setError("Failed to load game. Please try again.");
+      setGame(null);
+    } finally {
       setLoading(false);
-    }, 1000);
+    }
   };
 
   const getMediaItems = () => {
@@ -243,7 +121,7 @@ export default function GameDetailPage({
       type: 'image',
       url: media.images[0],
       thumbnail: media.images[0],
-      alt: `${game.name} - Main View`
+      alt: `${game?.name || 'Game'} - Main View`
     });
     
     // Add additional images
@@ -252,7 +130,7 @@ export default function GameDetailPage({
         type: 'image',
         url: media.images[i],
         thumbnail: media.images[i],
-        alt: `${game.name} - View ${i + 1}`
+        alt: `${game?.name || 'Game'} - View ${i + 1}`
       });
     }
     
@@ -262,7 +140,7 @@ export default function GameDetailPage({
         type: 'video',
         url: media.videos[0],
         thumbnail: media.images[media.images.length - 1],
-        alt: `${game.name} - Video Tour`
+        alt: `${game?.name || 'Game'} - Video Tour`
       });
     }
     
@@ -289,7 +167,28 @@ export default function GameDetailPage({
     );
   }
 
-  if (!game) {
+  if (!game && !loading && error) {
+    return (
+      <div className={`min-h-screen ${isDarkTheme ? 'bg-[#0A0A0A]' : 'bg-white'} flex items-center justify-center`}>
+        <div className="text-center">
+          <h2 className={`text-3xl font-black mb-4 ${isDarkTheme ? 'text-white' : 'text-gray-800'}`}>Error</h2>
+          <p className={`mb-8 ${isDarkTheme ? 'text-gray-400' : 'text-gray-500'}`}>{error}</p>
+          <button 
+            onClick={() => router.push("/games")}
+            className={`px-8 py-4 backdrop-blur-sm border rounded-2xl font-black text-xs uppercase tracking-widest hover:transition-all flex items-center gap-2 mx-auto shadow-sm ${
+              isDarkTheme 
+                ? 'bg-[#1a1a1a]/80 border-gray-700 text-white hover:bg-[#1a1a1a]' 
+                : 'bg-white/80 border-gray-200 text-gray-800 hover:bg-white'
+            }`}
+          >
+            <ArrowLeft size={16} /> Back to Games
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!game && !loading) {
     return (
       <div className={`min-h-screen ${isDarkTheme ? 'bg-[#0A0A0A]' : 'bg-white'} flex items-center justify-center`}>
         <div className="text-center">
@@ -334,7 +233,7 @@ export default function GameDetailPage({
             <img 
               src={currentMedia?.url || gameMedia["1"].images[0]} 
               className="w-full h-full object-cover" 
-              alt={currentMedia?.alt || game.name}
+              alt={currentMedia?.alt || game?.name || 'Game'}
             />
           )}
           <div className={`absolute inset-0 bg-gradient-to-b ${
@@ -392,7 +291,7 @@ export default function GameDetailPage({
           >
             <div className="flex items-center gap-3 mb-6">
               <div className="bg-[#ffd84f] text-gray-900 px-4 py-2 rounded-full shadow-md font-black text-[10px] uppercase tracking-widest">
-                {game.status}
+                {game?.status}
               </div>
               <div className="flex items-center gap-1 text-yellow-500">
                 {[...Array(5)].map((_, i) => (
@@ -408,7 +307,7 @@ export default function GameDetailPage({
               transition={{ delay: 0.4, duration: 1, type: "spring", stiffness: 100 }}
               className={`text-6xl md:text-8xl font-black tracking-tighter uppercase italic leading-none mb-6 ${isDarkTheme ? 'text-white' : 'text-gray-800'}`}
             >
-              {game.name}
+              {game?.name}
             </motion.h1>
             
             <motion.p
@@ -417,7 +316,7 @@ export default function GameDetailPage({
               transition={{ delay: 0.5, duration: 0.8, type: "spring", stiffness: 120 }}
               className={`text-xl font-medium leading-relaxed mb-8 max-w-3xl ${isDarkTheme ? 'text-gray-300' : 'text-gray-600'}`}
             >
-              {game.description}
+              {game?.description}
             </motion.p>
 
             <div className={`flex flex-wrap gap-6 text-sm ${isDarkTheme ? 'text-gray-400' : 'text-gray-500'}`}>
@@ -427,7 +326,7 @@ export default function GameDetailPage({
               </div>
               <div className="flex items-center gap-2">
                 <Users size={18} className="text-[#ffd84f]" />
-                <span>{game.capacity || "Unlimited"} Players</span>
+                <span>{game?.capacity || "Unlimited"} Players</span>
               </div>
               <div className="flex items-center gap-2">
                 <Clock size={18} className="text-[#ffd84f]" />
@@ -435,7 +334,7 @@ export default function GameDetailPage({
               </div>
               <div className="flex items-center gap-2">
                 <Ticket size={18} className="text-[#ffd84f]" />
-                <span>From {game.ticket_types?.[0]?.price || "0"} ETB</span>
+                <span>From {game?.ticket_types?.[0]?.price || "0"} ETB</span>
               </div>
             </div>
           </motion.div>
@@ -529,7 +428,7 @@ export default function GameDetailPage({
               </motion.h3>
               <div className={`prose max-w-none ${isDarkTheme ? 'prose-invert' : 'prose-gray'}`}>
                 <p className={`text-lg leading-relaxed ${isDarkTheme ? 'text-gray-300' : 'text-gray-600'}`}>
-                  {game.description}
+                  {game?.description}
                 </p>
                 <p className={`text-lg leading-relaxed mt-4 ${isDarkTheme ? 'text-gray-300' : 'text-gray-600'}`}>
                   Experience the thrill of a lifetime at Bora Park's premier attraction. This state-of-the-art game combines cutting-edge technology with heart-pounding excitement to create an unforgettable adventure for visitors of all ages.
@@ -538,7 +437,7 @@ export default function GameDetailPage({
             </motion.div>
 
             {/* Rules */}
-            {game.rules && (
+            {game?.rules && (
               <motion.div
                 initial={{ opacity: 0, x: -80 }}
                 whileInView={{ opacity: 1, x: 0 }}
@@ -642,7 +541,7 @@ export default function GameDetailPage({
                 </div>
 
                 <button
-                  onClick={() => router.push(`/buy?id=${game.id}`)}
+                  onClick={() => router.push(`/buy?id=${game?.id}`)}
                   className={`w-full py-4 bg-[#ffd84f] text-gray-900 rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-[#f0c63f] transition-all flex items-center justify-center gap-2 shadow-lg border-0`}
                 >
                   Get Tickets <ArrowUpRight size={18} />

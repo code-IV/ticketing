@@ -174,7 +174,7 @@ export default function GameDetailPage() {
             {error || "Game not found"}
           </h1>
           <button
-            onClick={() => router.push("/analitics/games")}
+            onClick={() => router.push("/admin/analitics/games")}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
           >
             Back to Games
@@ -229,7 +229,7 @@ export default function GameDetailPage() {
             Game Analytics
           </h1>
           <button
-            onClick={() => router.push("/analitics/games")}
+            onClick={() => router.push("/admin/analitics/games")}
             className={`flex items-center gap-2 text-sm ${isDarkTheme ? "text-gray-400 hover:text-white" : "text-gray-600 hover:text-gray-900"}`}
           >
             <ChevronLeft size={16} /> Back to Games
