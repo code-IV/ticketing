@@ -44,23 +44,16 @@ const getDynamicPassName = (items: any[]) => {
 
 // Type detection functions for backward compatibility
 const isUserMode = (booking: any) => {
-  const result = booking.userId && booking.passes && (booking.passes.events?.length > 0 || booking.passes.games?.length > 0);
-  console.log('isUserMode check:', { userId: booking.userId, passes: booking.passes, result });
-  return result;
+  return booking.userId && booking.passes && (booking.passes.events?.length > 0 || booking.passes.games?.length > 0);
 };
 
 const isGuestMode = (booking: any) => {
-  const result = !booking.userId && booking.ticketCode && booking.qrToken;
-  console.log('isGuestMode check:', { userId: booking.userId, ticketCode: booking.ticketCode, qrToken: booking.qrToken, result });
-  return result;
+  return !booking.userId && booking.ticketCode && booking.qrToken;
 };
 
 // Data conversion for guest mode
 const convertGuestDataToTicketProduct = (booking: any) => {
-  console.log('convertGuestDataToTicketProduct called with:', booking);
-  
   if (isUserMode(booking)) {
-    console.log('User mode detected, returning ticket.passes:', booking.ticket?.passes);
     return booking.ticket?.passes || [];
   }
   
@@ -78,7 +71,6 @@ const convertGuestDataToTicketProduct = (booking: any) => {
     })) || []
   })) || [];
   
-  console.log('Guest mode, converted games:', guestGames);
   return guestGames;
 };
 
@@ -150,7 +142,10 @@ const QRModal = ({
                   fgColor={isDarkTheme ? "white" : "black"}
                 />
               ) : (
-                <div>loadinc...</div>
+                <div className="text-center p-4">
+                  <div className="text-red-500 text-sm font-black uppercase mb-2">QR Code Unavailable</div>
+                  <div className="text-xs text-gray-500">Booking Reference: {refId}</div>
+                </div>
               )}
             </div>
 
@@ -323,7 +318,6 @@ export default function BookingDetailPage({
             paymentMethod: (bookingFromStorage as any).paymentMethod,
           };
           
-          console.log('Guest booking loaded for details:', enhancedBooking); // Debug log
           setBooking(enhancedBooking as any);
           setLoading(false);
         } else {
@@ -582,7 +576,23 @@ export default function BookingDetailPage({
         onClose={() => setIsQRModalOpen(false)}
         guestName={user ? `${user.first_name} ${user.last_name}` : "Guest User"}
         refId={booking.bookingReference}
-        qrValue={booking.ticket?.qr_token || booking.qrToken}
+        qrValue={(() => {
+          const ticketQrToken = booking.ticket?.qrToken; // Fixed: use qrToken not qr_token
+          const guestQrToken = booking.qrToken;
+          const finalToken = ticketQrToken || guestQrToken;
+          
+          console.log('QR Token Debug:', {
+            bookingId: booking.id,
+            ticketQrToken,
+            guestQrToken,
+            finalToken,
+            isUserMode: !!user,
+            hasTicket: !!booking.ticket,
+            ticketData: booking.ticket // Debug full ticket object
+          });
+          
+          return finalToken;
+        })()}
         isDarkTheme={isDarkTheme}
       />
     </div>

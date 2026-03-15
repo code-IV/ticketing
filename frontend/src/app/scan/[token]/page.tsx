@@ -294,7 +294,10 @@ const GameCard = ({
 // ── MAIN PAGE ──────────────────────────────────────────────────────────────
 export default function StaffTransactionPage() {
   const params = useParams();
-  const id = params.id as string;
+  const router = useRouter();
+  const token = params.id as string;
+
+  console.log('Scan page loaded with token:', token); // Debug log
 
   const [items, setItems] = useState(MOCK_ITEMS);
   const [draftQty, setDraftQty] = useState({});
@@ -383,9 +386,9 @@ export default function StaffTransactionPage() {
                 Transaction <span className="text-accent">Details</span>
               </h1>
               <p className="text-slate-500 text-sm mt-1">
-                Ref:{" "}
+                Token:{" "}
                 <span className="font-mono">
-                  {MOCK_TRANSACTION.transaction_code}
+                  {token || 'Unknown'}
                 </span>
               </p>
             </div>
