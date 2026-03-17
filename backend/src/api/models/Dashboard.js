@@ -21,15 +21,23 @@ const Dashboard = {
     const sql = `
       SELECT 
         -- Booking Engagement (Users who have at least one 'confirmed' booking)
-        (SELECT COUNT(DISTINCT user_id)::INT FROM bookings WHERE booking_status = 'CONFIRMED') as users_with_bookings,
+        (SELECT COUNT(DISTINCT user_id)::INT FROM bookings WHERE status = 'CONFIRMED') as users_with_bookings,
         
         -- Total active users for percentage calculation
         (SELECT COUNT(*)::INT FROM users WHERE is_active = true) as total_active_users,
 
         -- Role Distribution (JSON Aggregation)
-        (SELECT json_agg(roles) FROM (
-            SELECT role, COUNT(*)::INT as count FROM users GROUP BY role
-        ) roles) as role_distribution,
+        (
+    SELECT json_agg(role_distribution) 
+    FROM (
+        SELECT 
+            r.name as role, 
+            COUNT(ur.user_id)::INT as count 
+        FROM roles r
+        LEFT JOIN users_roles ur ON r.id = ur.role_id
+        GROUP BY r.name
+    ) role_distribution
+) as role_distribution,
 
         -- Status Distribution
         (SELECT json_agg(stats) FROM (

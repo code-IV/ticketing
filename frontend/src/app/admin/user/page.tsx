@@ -1,409 +1,257 @@
 "use client";
-import { useState } from 'react';
-import { Search, Trash2, Users, AlertTriangle, CheckCircle, Shield } from 'lucide-react';
-import { useTheme } from '@/contexts/ThemeContext';
+import { useState, useEffect, useMemo } from "react";
+import { User } from "@/types";
+import {
+  Search,
+  UserPlus,
+  Mail,
+  ShieldCheck,
+  ShieldX,
+  Shield,
+  CircleUser,
+  Trash2,
+  Edit2,
+  Filter,
+  Zap,
+  ChevronDown,
+  X,
+} from "lucide-react";
+import { adminService } from "@/services/adminService";
+import UserTable from "./components/UserTable";
+import UserAnalyticsTab from "./components/userAnalyticsTab";
 
-export default function UserManagement() {
-  const { isDarkTheme } = useTheme();
-  const [searchTerm, setSearchTerm] = useState("");
-  const [roleFilter, setRoleFilter] = useState<string>("ALL");
-  const [statusFilter, setStatusFilter] = useState<string>("ALL");
-  const [users, setUsers] = useState([
-    { id: '1', email: 'alex@example.com', role: 'Admin', status: 'Active' },
-    { id: '2', email: 'jordan@gaming.com', role: 'User', status: 'Active' },
-    { id: '3', email: 'sam@dev.com', role: 'Staff', status: 'Suspended' },
-  ]);
+/**
+ * Individual data point for Distributions (Roles/Status)
+ */
+interface DistributionPoint {
+  role?: string; // Present in roleDistribution
+  is_active?: boolean; // Present in statusDistribution
+  count: number;
+}
 
-  const filteredUsers = users.filter(user => {
-    if (roleFilter !== "ALL" && user.role !== roleFilter) return false;
-    if (statusFilter !== "ALL" && user.status !== statusFilter) return false;
-    return user.email.toLowerCase().includes(searchTerm.toLowerCase());
-  });
+/**
+ * Booking Engagement Metrics
+ */
+interface BookingEngagement {
+  usersWithBookings: number;
+  totalActiveUsers: number;
+  percentage: string | number;
+}
 
-  const handleStatusChange = (userId: string, newStatus: string) => {
-    setUsers(prevUsers =>
-      prevUsers.map(user => (user.id === userId ? { ...user, status: newStatus } : user))
-    );
+/**
+ * Time-based counts (Live/New)
+ */
+interface PeriodStats {
+  newUsers: number;
+  totalUsers: number;
+  period: string;
+}
+
+/**
+ * The Complete Analytics Object
+ * Matches the structure returned by metrics.getUserAnalytics()
+ */
+export interface UserAnalyticsData {
+  bookingEngagement: BookingEngagement;
+  roleDistribution: DistributionPoint[];
+  statusDistribution: DistributionPoint[];
+  periodStats: PeriodStats;
+}
+
+/**
+ * The Standard API Response Wrapper
+ */
+export interface UserAnalyticsResponse {
+  success: boolean;
+  message: string;
+  data: UserAnalyticsData;
+}
+
+export default function UserManagementPage() {
+  const [activeTab, setActiveTab] = useState<"list" | "analytics">("analytics");
+  const [analyticsData, setUserCountMetrics] = useState<
+    Partial<UserAnalyticsData>
+  >({});
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  // Load analytics metrics on mount
+  useEffect(() => {
+    loadMetrics("today");
+  }, []);
+
+  const [error, setError] = useState<string | null>(null);
+
+  const loadMetrics = async (period: string) => {
+    setUserCountMetrics((prev) => ({ ...prev, user_count: undefined, period }));
+    try {
+      const response = await adminService.getUserCount(period);
+      setUserCountMetrics(response.data || {});
+    } catch (error) {
+      console.error("Failed to load users Count:", error);
+      setError("Failed to load users Count. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleRoleChange = (userId: string, newRole: string) => {
-    setUsers(prevUsers =>
-      prevUsers.map(user => (user.id === userId ? { ...user, role: newRole } : user))
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading users...</p>
+        </div>
+      </div>
     );
-  };
+  }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <h1
-          className={`text-2xl font-black tracking-tight ${
-            isDarkTheme ? 'text-white' : 'text-slate-900'
-          }`}
-        >
-          Manage Users
-        </h1>
-      </div>
-
-      {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        {[
-          {
-            label: 'Total Users',
-            value: users.length.toString(),
-            icon: <Users />,
-            color: 'text-green-600',
-          },
-          {
-            label: 'Active Users',
-            value: users.filter(u => u.status === 'Active').length.toString(),
-            icon: <CheckCircle />,
-            color: 'text-blue-600',
-          },
-          {
-            label: 'Suspended',
-            value: users.filter(u => u.status === 'Suspended').length.toString(),
-            icon: <AlertTriangle />,
-            color: 'text-red-600',
-          },
-          {
-            label: 'Admins',
-            value: users.filter(u => u.role === 'Admin').length.toString(),
-            icon: <Shield />,
-            color: 'text-purple-600',
-          },
-        ].map((stat, i) => (
-          <div
-            key={i}
-            className={`p-5 rounded-2xl border shadow-sm ${
-              isDarkTheme ? 'bg-[#0A0A0A] border-gray-700' : 'bg-white border-slate-100'
-            }`}
-          >
-            <div className="flex items-center gap-3 mb-2">
-              <div className={`${stat.color} bg-opacity-10 p-2 rounded-lg`}>{stat.icon}</div>
-              <span
-                className={`text-xs font-bold uppercase tracking-wider ${
-                  isDarkTheme ? 'text-gray-500' : 'text-slate-400'
-                }`}
-              >
-                {stat.label}
-              </span>
-            </div>
-            <div
-              className={`text-2xl font-black ${
-                isDarkTheme ? 'text-white' : 'text-slate-800'
-              }`}
-            >
-              {stat.value}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Search and Filters */}
-      <div
-        className={`p-3 sm:p-4 rounded-2xl border shadow-sm flex flex-col gap-3 sm:gap-4 ${
-          isDarkTheme ? 'bg-[#0A0A0A] border-gray-700' : 'bg-white border-slate-100'
-        }`}
-      >
-        {/* Search Input */}
-        <div className="relative w-full">
-          <Search
-            className={`absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 transition-colors ${
-              isDarkTheme
-                ? 'text-gray-500 group-focus-within:text-indigo-400'
-                : 'text-slate-400 group-focus-within:text-indigo-500'
-            }`}
-            size={16}
-          />
-          <input
-            type="text"
-            placeholder="Search by email..."
-            className={`w-full pl-9 sm:pl-12 pr-3 sm:pr-4 py-2.5 sm:py-3 border-none rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-medium text-sm sm:text-base ${
-              isDarkTheme
-                ? 'bg-[#1a1a1a] text-white placeholder-gray-500'
-                : 'bg-slate-50 text-slate-900 placeholder-slate-400'
-            }`}
-            value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
-          />
+    <div className="min-h-screen bg-gray-50/50">
+      <header className="bg-gradient-to-r from-blue-700 to-blue-900 text-white py-10 px-6">
+        <div className="max-w-7xl mx-auto">
+          <h1 className="text-3xl font-bold flex items-center gap-3">
+            <Shield className="h-8 w-8 text-blue-300" />
+            Command Center
+          </h1>
+          <p className="text-blue-100 mt-2 opacity-90">
+            Manage park visitors, staff permissions, and account security.
+          </p>
         </div>
+      </header>
 
-        {/* Filters Row */}
-        <div className="flex gap-2 sm:gap-3">
-          {/* Role Filter */}
-          <select
-            value={roleFilter}
-            onChange={e => setRoleFilter(e.target.value)}
-            className={`flex-1 px-3 sm:px-4 py-2 rounded-xl outline-none transition-all text-sm sm:text-base ${
-              isDarkTheme
-                ? 'bg-[#1a1a1a] border border-gray-700 text-white focus:border-indigo-500'
-                : 'bg-slate-50 border border-slate-200 focus:border-indigo-500'
-            }`}
-          >
-            <option value="ALL">All Roles</option>
-            <option value="Admin">Admin</option>
-            <option value="Staff">Staff</option>
-            <option value="User">User</option>
-          </select>
-
-          {/* Status Filter */}
-          <select
-            value={statusFilter}
-            onChange={e => setStatusFilter(e.target.value)}
-            className={`flex-1 px-3 sm:px-4 py-2 rounded-xl outline-none transition-all text-sm sm:text-base ${
-              isDarkTheme
-                ? 'bg-[#1a1a1a] border border-gray-700 text-white focus:border-indigo-500'
-                : 'bg-slate-50 border border-slate-200 focus:border-indigo-500'
-            }`}
-          >
-            <option value="ALL">All Status</option>
-            <option value="Active">Active</option>
-            <option value="Suspended">Suspended</option>
-          </select>
-        </div>
-      </div>
-
-      {/* Users Table - Desktop */}
-      <div className="hidden lg:block">
-        <div
-          className={`rounded-2xl border shadow-sm overflow-hidden ${
-            isDarkTheme ? 'bg-[#0A0A0A] border-gray-700' : 'bg-white border-slate-200'
-          }`}
-        >
-          <table className="w-full text-left border-collapse">
-            <thead
-              className={`border-b ${
-                isDarkTheme ? 'bg-[#1a1a1a] border-gray-700' : 'bg-gray-50/50 border-slate-200'
-              }`}
-            >
-              <tr
-                className={`text-xs font-black uppercase tracking-wider ${
-                  isDarkTheme ? 'text-gray-400' : 'text-slate-500'
-                }`}
-              >
-                <th className="px-6 py-4">User Details</th>
-                <th className="px-6 py-4">Role Configuration</th>
-                <th className="px-6 py-4">Status</th>
-                <th className="px-6 py-4 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className={`divide-y ${isDarkTheme ? 'divide-gray-700' : 'divide-slate-100'}`}>
-              {filteredUsers.map(user => (
-                <tr
-                  key={user.id}
-                  className={`transition-colors ${
-                    isDarkTheme ? 'hover:bg-gray-800/50' : 'hover:bg-blue-50/30'
-                  }`}
-                >
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <div
-                        className={`h-8 w-8 rounded-full flex items-center justify-center text-xs font-black ${
-                          isDarkTheme
-                            ? 'bg-indigo-900/50 text-indigo-300'
-                            : 'bg-gradient-to-tr from-blue-500 to-indigo-500 text-white'
-                        }`}
-                      >
-                        {user.email[0].toUpperCase()}
-                      </div>
-                      <span
-                        className={`text-sm font-medium ${
-                          isDarkTheme ? 'text-white' : 'text-slate-900'
-                        }`}
-                      >
-                        {user.email}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <select
-                      className={`text-xs font-medium rounded-lg px-3 py-1.5 outline-none focus:ring-2 focus:ring-indigo-500/20 w-24 cursor-pointer ${
-                        isDarkTheme
-                          ? 'bg-[#1a1a1a] border border-gray-700 text-white focus:border-indigo-500'
-                          : 'bg-slate-50 border border-slate-200 focus:border-indigo-500'
-                      }`}
-                      value={user.role}
-                      onChange={e => handleRoleChange(user.id, e.target.value)}
-                    >
-                      <option value="User" className={isDarkTheme ? 'bg-[#1a1a1a]' : ''}>
-                        User
-                      </option>
-                      <option value="Staff" className={isDarkTheme ? 'bg-[#1a1a1a]' : ''}>
-                        Staff
-                      </option>
-                      <option value="Admin" className={isDarkTheme ? 'bg-[#1a1a1a]' : ''}>
-                        Admin
-                      </option>
-                    </select>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span
-                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        user.status === 'Active'
-                          ? isDarkTheme
-                            ? 'bg-green-900/50 text-green-400'
-                            : 'bg-green-100 text-green-700'
-                          : isDarkTheme
-                          ? 'bg-red-900/50 text-red-400'
-                          : 'bg-red-100 text-red-700'
-                      }`}
-                    >
-                      {user.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      <select
-                        className={`text-xs font-medium rounded-lg px-2 py-1.5 outline-none focus:ring-2 focus:ring-indigo-500/20 w-24 cursor-pointer ${
-                          isDarkTheme
-                            ? 'bg-[#1a1a1a] border border-gray-700 text-white focus:border-indigo-500'
-                            : 'bg-slate-50 border border-slate-200 focus:border-indigo-500'
-                        }`}
-                        value={user.status}
-                        onChange={e => handleStatusChange(user.id, e.target.value)}
-                      >
-                        <option value="Active" className={isDarkTheme ? 'bg-[#1a1a1a]' : ''}>
-                          Active
-                        </option>
-                        <option value="Suspended" className={isDarkTheme ? 'bg-[#1a1a1a]' : ''}>
-                          Suspended
-                        </option>
-                      </select>
-                      <button
-                        className={`transition-colors p-2 rounded-lg ${
-                          isDarkTheme
-                            ? 'text-gray-500 hover:bg-red-900/30 hover:text-red-400'
-                            : 'text-slate-400 hover:bg-red-50 hover:text-red-600'
-                        }`}
-                      >
-                        <Trash2 size={18} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Users Cards - Mobile */}
-      <div className="lg:hidden space-y-3">
-        {filteredUsers.map(user => (
-          <div
-            key={user.id}
-            className={`p-4 rounded-2xl border shadow-sm ${
-              isDarkTheme ? 'bg-[#0A0A0A] border-gray-700' : 'bg-white border-slate-200'
-            }`}
-          >
-            {/* User Header */}
-            <div className="flex items-center gap-3 mb-4">
-              <div
-                className={`h-10 w-10 rounded-full flex items-center justify-center text-sm font-black ${
-                  isDarkTheme
-                    ? 'bg-indigo-900/50 text-indigo-300'
-                    : 'bg-gradient-to-tr from-blue-500 to-indigo-500 text-white'
-                }`}
-              >
-                {user.email[0].toUpperCase()}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className={`text-sm font-medium truncate ${
-                  isDarkTheme ? 'text-white' : 'text-slate-900'
-                }`}>
-                  {user.email}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* 1. Total & Online Users Card */}
+          <div className="group bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="flex items-center gap-2">
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+                    Total Personnel{" "}
+                  </p>
+                  <ShieldCheck className="h-3 w-3 text-indigo-600" />
+                </div>
+                <p className="text-3xl font-black text-gray-900 mt-1 tabular-nums">
+                  {analyticsData?.periodStats?.totalUsers || (
+                    <span className="animate-pulse">—</span>
+                  )}
                 </p>
-                <span
-                  className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium mt-1 ${
-                    user.status === 'Active'
-                      ? isDarkTheme
-                        ? 'bg-green-900/50 text-green-400'
-                        : 'bg-green-100 text-green-700'
-                      : isDarkTheme
-                      ? 'bg-red-900/50 text-red-400'
-                      : 'bg-red-100 text-red-700'
-                  }`}
-                >
-                  {user.status}
-                </span>
               </div>
-            </div>
-
-            {/* User Actions */}
-            <div className="flex flex-col sm:flex-row gap-3">
-              <div className="flex-1">
-                <label className={`text-xs font-medium mb-1 block ${
-                  isDarkTheme ? 'text-gray-400' : 'text-slate-600'
-                }`}>
-                  Role
-                </label>
-                <select
-                  className={`w-full text-xs font-medium rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500/20 cursor-pointer ${
-                    isDarkTheme
-                      ? 'bg-[#1a1a1a] border border-gray-700 text-white focus:border-indigo-500'
-                      : 'bg-slate-50 border border-slate-200 focus:border-indigo-500'
-                  }`}
-                  value={user.role}
-                  onChange={e => handleRoleChange(user.id, e.target.value)}
-                >
-                  <option value="User" className={isDarkTheme ? 'bg-[#1a1a1a]' : ''}>
-                    User
-                  </option>
-                  <option value="Staff" className={isDarkTheme ? 'bg-[#1a1a1a]' : ''}>
-                    Staff
-                  </option>
-                  <option value="Admin" className={isDarkTheme ? 'bg-[#1a1a1a]' : ''}>
-                    Admin
-                  </option>
-                </select>
-              </div>
-              
-              <div className="flex-1">
-                <label className={`text-xs font-medium mb-1 block ${
-                  isDarkTheme ? 'text-gray-400' : 'text-slate-600'
-                }`}>
-                  Status
-                </label>
-                <select
-                  className={`w-full text-xs font-medium rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500/20 cursor-pointer ${
-                    isDarkTheme
-                      ? 'bg-[#1a1a1a] border border-gray-700 text-white focus:border-indigo-500'
-                      : 'bg-slate-50 border border-slate-200 focus:border-indigo-500'
-                  }`}
-                  value={user.status}
-                  onChange={e => handleStatusChange(user.id, e.target.value)}
-                >
-                  <option value="Active" className={isDarkTheme ? 'bg-[#1a1a1a]' : ''}>
-                    Active
-                  </option>
-                  <option value="Suspended" className={isDarkTheme ? 'bg-[#1a1a1a]' : ''}>
-                    Suspended
-                  </option>
-                </select>
-              </div>
-              
-              <div className="flex items-end">
-                <label className={`text-xs font-medium mb-1 block sm:hidden ${
-                  isDarkTheme ? 'text-gray-400' : 'text-slate-600'
-                }`}>
-                  Actions
-                </label>
-                <button
-                  className={`transition-colors p-2 rounded-lg w-full sm:w-auto justify-center flex items-center gap-2 ${
-                    isDarkTheme
-                      ? 'text-gray-500 hover:bg-red-900/30 hover:text-red-400'
-                      : 'text-slate-400 hover:bg-red-50 hover:text-red-600'
-                  }`}
-                >
-                  <Trash2 size={16} />
-                  <span className="text-xs sm:hidden">Delete</span>
-                </button>
+              <div className="grid grid-cols-2">
+                <div>
+                  {/* Role Statistic Badge */}
+                  {analyticsData?.roleDistribution &&
+                    analyticsData.roleDistribution.length > 0 && (
+                      <div className="flex flex-col items-center gap-1 bg-indigo-50 p-4 rounded-2xl">
+                        <span className="text-[10px] font-bold text-indigo-600">
+                          {/* Finding the 'admin' count specifically */}
+                          {analyticsData.roleDistribution.find(
+                            (r) => r.role === "admin",
+                          )?.count || 0}{" "}
+                          Admins
+                        </span>
+                        <span className="text-[10px] font-bold text-blue-600">
+                          {/* Finding the 'admin' count specifically */}
+                          {analyticsData.roleDistribution.find(
+                            (r) => r.role === "visitor",
+                          )?.count || 0}{" "}
+                          Visitors
+                        </span>
+                      </div>
+                    )}
+                </div>
+                <div className="flex items-center justify-center p-4 bg-indigo-50 rounded-2xl group-hover:bg-blue-600 transition-colors duration-300">
+                  <CircleUser className="h-8 w-8 text-blue-600 group-hover:text-white transition-colors" />
+                </div>
               </div>
             </div>
           </div>
-        ))}
-      </div>
+
+          {/* 2. Booking Engagement Card (New!) */}
+          <div className="group bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300">
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+                  Booking Engagement Rate
+                </p>
+                <div className="flex items-baseline gap-2">
+                  <p className="text-3xl font-black text-gray-900 mt-1">
+                    {analyticsData?.bookingEngagement?.percentage || (
+                      <span className="animate-pulse">—</span>
+                    )}
+                    {analyticsData?.bookingEngagement?.percentage != null &&
+                      "%"}
+                  </p>
+                </div>
+                {/* Progress bar for visual engagement */}
+                <div className="w-full bg-gray-100 h-1.5 rounded-full mt-3 overflow-hidden">
+                  <div
+                    className="bg-purple-500 h-full transition-all duration-1000"
+                    style={{
+                      width: `${analyticsData?.bookingEngagement?.percentage ?? 0}%`,
+                    }}
+                  />
+                </div>
+              </div>
+              <div className="p-4 bg-purple-50 rounded-2xl group-hover:bg-purple-600 transition-colors duration-300 ml-4">
+                <Zap className="h-6 w-6 text-purple-600 group-hover:text-white transition-colors" />
+              </div>
+            </div>
+          </div>
+
+          {/* 3. Dynamic Acquisition Card */}
+          <div className="group bg-white p-6 rounded-2xl border border-blue-100 shadow-sm hover:shadow-md transition-all duration-300 ring-1 ring-blue-50">
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <div className="relative inline-block w-full">
+                  <select
+                    value={analyticsData?.periodStats?.period}
+                    onChange={(e) => loadMetrics(e.target.value)}
+                    className="appearance-none bg-transparent pr-8 text-xs font-bold text-blue-600 uppercase tracking-wider focus:outline-none cursor-pointer hover:text-blue-700"
+                  >
+                    <option value="today">New Today</option>
+                    <option value="this_week">New This Week</option>
+                    <option value="this_month">New This Month</option>
+                    <option value="this_year">New This Year</option>
+                    <option value="all_time">Total Growth</option>
+                  </select>
+                </div>
+                <div className="flex items-baseline gap-2">
+                  <p className="text-3xl font-black text-gray-900 mt-1 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                    {analyticsData?.periodStats?.newUsers || (
+                      <span className="animate-pulse">—</span>
+                    )}
+                  </p>
+                  <span className="text-[10px] font-bold text-green-500 bg-green-50 px-2 py-0.5 rounded-full">
+                    + Acquisition
+                  </span>
+                </div>
+              </div>
+              <div className="p-4 bg-yellow-50 rounded-2xl group-hover:bg-yellow-500 transition-colors duration-300">
+                <ShieldCheck className="h-6 w-6 text-yellow-600 group-hover:text-white transition-colors" />
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="p-8">
+          <div className="flex items-center gap-4 mb-8 border-b border-gray-100">
+            <button
+              onClick={() => setActiveTab("analytics")}
+              className={`pb-4 px-2 font-bold text-sm transition-all ${activeTab === "analytics" ? "border-b-2 border-blue-600 text-blue-600" : "text-gray-400"}`}
+            >
+              User Analytics
+            </button>
+            <button
+              onClick={() => setActiveTab("list")}
+              className={`pb-4 px-2 font-bold text-sm transition-all ${activeTab === "list" ? "border-b-2 border-blue-600 text-blue-600" : "text-gray-400"}`}
+            >
+              User List
+            </button>
+          </div>
+
+          {activeTab === "list" ? <UserTable /> : <UserAnalyticsTab />}
+        </div>
+      </main>
     </div>
   );
 }

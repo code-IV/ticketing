@@ -207,109 +207,85 @@ const analyticsController = {
    */
   async getUserAnalytics(req, res, next) {
     try {
-      // Completely disable caching for analytics endpoints
-      res.setHeader(
-        "Cache-Control",
-        "no-cache, no-store, must-revalidate, max-age=0",
-      );
-      res.setHeader("Pragma", "no-cache");
-      res.setHeader("Expires", "0");
-      res.setHeader("ETag", ""); // Clear ETag to prevent 304 responses
+      // Disable caching
+      res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
 
-      const { startDate, endDate, groupBy = "day" } = req.query;
+      const { startDate, endDate } = req.query;
 
+      // Build Dynamic Date Filter
       let dateFilter = "";
       let queryParams = [];
 
       if (startDate && endDate) {
-        dateFilter = "WHERE DATE(u.created_at) BETWEEN $1 AND $2";
+        dateFilter = "WHERE u.created_at::date BETWEEN $1 AND $2";
         queryParams = [startDate, endDate];
       } else if (startDate) {
-        dateFilter = "WHERE DATE(u.created_at) >= $1";
+        dateFilter = "WHERE u.created_at::date >= $1";
         queryParams = [startDate];
       } else if (endDate) {
-        dateFilter = "WHERE DATE(u.created_at) <= $1";
+        dateFilter = "WHERE u.created_at::date <= $1";
         queryParams = [endDate];
       } else {
-        // Default to last 30 days if no dates provided
-        dateFilter =
-          "WHERE DATE(u.created_at) >= CURRENT_DATE - INTERVAL '30 day'";
-        queryParams = [];
+        dateFilter = "WHERE u.created_at >= CURRENT_DATE - INTERVAL '30 day'";
       }
 
-      // User registrations over time
+      // 1. User registrations over time
       const registrationQuery = `
-        SELECT 
-          DATE(u.created_at) as date,
-          COUNT(*) as new_users
-        FROM users u
-        ${dateFilter}
-        GROUP BY DATE(u.created_at)
-        ORDER BY date DESC
-        LIMIT 365
-      `;
+      SELECT u.created_at::date as date, COUNT(*) as new_users
+      FROM users u
+      ${dateFilter}
+      GROUP BY date
+      ORDER BY date DESC
+    `;
 
-      // User role breakdown
+      // 2. User role breakdown (Updated for Junction Table)
       const roleQuery = `
-        SELECT 
-          u.role,
-          COUNT(*) as count,
-          ROUND(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM users), 2) as percentage
-        FROM users u
-        GROUP BY u.role
-        ORDER BY count DESC
-      `;
+      SELECT 
+        r.name as role,
+        COUNT(ur.user_id) as count,
+        ROUND(COUNT(ur.user_id) * 100.0 / (SELECT COUNT(*) FROM users), 2) as percentage
+      FROM roles r
+      LEFT JOIN users_roles ur ON r.id = ur.role_id
+      GROUP BY r.name
+      ORDER BY count DESC
+    `;
 
-      // Active vs inactive users
-      const activeQuery = `
-        SELECT 
-          u.is_active,
-          COUNT(*) as count
-        FROM users u
-        GROUP BY u.is_active
-      `;
+      // 3. Active status
+      const activeQuery = `SELECT is_active, COUNT(*) as count FROM users GROUP BY is_active`;
 
-      // Booking participation - unique users with bookings
-      const bookingParticipationQuery = `
-        SELECT 
-          COUNT(DISTINCT b.user_id) as users_with_bookings,
-          (SELECT COUNT(*) FROM users WHERE is_active = true) as total_users,
-          ROUND(COUNT(DISTINCT b.user_id) * 100.0 / (SELECT COUNT(*) FROM users WHERE is_active = true), 2) as percentage
-        FROM bookings b
-        WHERE b.booking_status = 'confirmed'
-      `;
+      // 4. Booking participation (Updated Status to Uppercase 'CONFIRMED')
+      const participationQuery = `
+      SELECT 
+        COUNT(DISTINCT b.user_id) as users_with_bookings,
+        (SELECT COUNT(*) FROM users WHERE is_active = true) as total_users,
+        ROUND(
+          COUNT(DISTINCT b.user_id) * 100.0 / 
+          NULLIF((SELECT COUNT(*) FROM users WHERE is_active = true), 0), 2
+        ) as percentage
+      FROM bookings b
+      WHERE b.status = 'CONFIRMED'
+    `;
 
-      const [registrationData, roleData, activeData, bookingParticipationData] =
-        await Promise.all([
-          query(registrationQuery, queryParams),
-          query(roleQuery, []),
-          query(activeQuery, []),
-          query(bookingParticipationQuery, []),
-        ]);
+      const [registration, roles, active, participation] = await Promise.all([
+        query(registrationQuery, queryParams),
+        query(roleQuery, []),
+        query(activeQuery, []),
+        query(participationQuery, []),
+      ]);
 
-      return apiResponse(res, 200, true, "User analytics retrieved.", {
-        registrationData: registrationData.rows,
-        roleBreakdown: roleData.rows,
-        activeStatus: activeData.rows,
-        bookingParticipation: bookingParticipationData.rows[0] || {
+      return apiResponse(res, 200, true, "Analytics retrieved", {
+        registrationData: registration.rows,
+        roleBreakdown: roles.rows,
+        activeStatus: active.rows,
+        bookingParticipation: participation.rows[0] || {
           users_with_bookings: 0,
           total_users: 0,
           percentage: 0,
         },
       });
     } catch (err) {
-      console.error("User analytics error:", err);
-      // Return empty data instead of error
-      return apiResponse(res, 200, true, "User analytics retrieved.", {
-        registrationData: [],
-        roleBreakdown: [],
-        activeStatus: [],
-        bookingParticipation: {
-          users_with_bookings: 0,
-          total_users: 0,
-          percentage: 0,
-        },
-      });
+      console.error("Analytics Error:", err);
+      return next(err); // Better to let global error handler catch it
     }
   },
 
