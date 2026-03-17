@@ -216,11 +216,25 @@ const Ticket = {
   async getPasses(db, ticketId) {
     const sql = `
       SELECT 
-        tp.id as pass_id, tp.product_id, p.name, p.product_type,
-        tp.total_quantity, tp.used_quantity, tp.status
+          p.id as "product_id",
+          p.name,
+          p.product_type,
+          json_agg(
+              json_build_object(
+                  'passId', tt.id,
+                  'category', tt.category,
+                  'quantity', tp.total_quantity,
+                  'usedQuantity', tp.used_quantity,
+                  -- If you have unitPrice and subtotal in your booking_items, 
+                  -- you'll need to JOIN booking_items here as well.
+                  'status', tp.status
+              )
+          ) as "ticketTypes"
       FROM ticket_products tp
       JOIN products p ON tp.product_id = p.id
+      JOIN ticket_types tt ON tp.ticket_type_id = tt.id
       WHERE tp.ticket_id = $1
+      GROUP BY p.id, p.name, p.product_type;
     `;
     const result = await db.query(sql, [ticketId]);
     return result.rows;

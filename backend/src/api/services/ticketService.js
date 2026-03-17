@@ -1,5 +1,5 @@
 const { getClient, pool } = require("../../config/db");
-const { Ticket } = require("../models/Ticket");
+const Ticket = require("../models/Ticket");
 
 const TicketService = {
   async scan(qrToken) {

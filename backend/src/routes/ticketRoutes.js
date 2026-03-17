@@ -2,7 +2,11 @@ const express = require("express");
 const router = express.Router();
 const ticketController = require("../api/controllers/ticketController");
 const { isAuthenticated, isAdmin, isStaff } = require("../middleware/auth");
-const { uuidParamRule, handleValidation } = require("../middleware/validate");
+const {
+  uuidParamRule,
+  handleValidation,
+  scanTicketRules,
+} = require("../middleware/validate");
 
 // Authenticated routes
 router.get("/my", isAuthenticated, ticketController.getMyTickets);
@@ -14,18 +18,10 @@ router.get(
   handleValidation,
   ticketController.getGameTicketsDetails,
 );
-router.get(
-  "/:id",
-  isAuthenticated,
-  uuidParamRule("id"),
-  handleValidation,
-  ticketController.getTicketById,
-);
 // Admin only - validate ticket at gate
 router.get(
-  "/scan/:token",
-  isAuthenticated,
-  uuidParamRule("token"),
+  "/scan",
+  scanTicketRules,
   handleValidation,
   ticketController.scanTicket,
 );
@@ -40,6 +36,14 @@ router.post(
   isAuthenticated,
   isAdmin,
   ticketController.validateTicket,
+);
+
+router.get(
+  "/:id",
+  isAuthenticated,
+  uuidParamRule("id"),
+  handleValidation,
+  ticketController.getTicketById,
 );
 
 module.exports = router;
