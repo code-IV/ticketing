@@ -23,18 +23,6 @@ exports.up = async function (knex) {
     `CREATE TYPE ticket_product_status AS ENUM ('AVAILABLE', 'USED')`,
   );
 
-  // 2. PRODUCTS: The Definition
-  await knex.schema.createTable("products", (table) => {
-    table.uuid("id").primary().defaultTo(knex.raw("uuid_generate_v4()"));
-    table.string("name").notNullable();
-    table.enu("product_type", ["GAME", "EVENT", "BUNDLE"]).notNullable();
-    table.uuid("game_id").nullable();
-    table.uuid("event_id").nullable();
-    table.integer("valid_days").defaultTo(1);
-    table.boolean("is_active").defaultTo(true);
-    table.timestamps(true, true);
-  });
-
   // 3. TICKET_TYPES: Use the category ENUM
   await knex.schema.createTable("ticket_types", (table) => {
     table.uuid("id").primary().defaultTo(knex.raw("uuid_generate_v4()"));
@@ -152,7 +140,6 @@ exports.down = async function (knex) {
   await knex.schema.dropTableIfExists("booking_items");
   await knex.schema.dropTableIfExists("bookings");
   await knex.schema.dropTableIfExists("ticket_types");
-  await knex.schema.dropTableIfExists("products");
 
   // Drop custom types
   await knex.raw(`DROP TYPE IF EXISTS ticket_product_status`);

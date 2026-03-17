@@ -15,6 +15,7 @@ exports.up = async function (knex) {
   await knex.schema.createTable("roles", (table) => {
     table.uuid("id").primary().defaultTo(knex.raw("uuid_generate_v4()"));
     table.string("name").unique().notNullable(); // SUPERADMIN, ADMIN, etc.
+    table.integer("level").notNullable();
     table.string("description").nullable();
     table.timestamps(true, true);
   });
@@ -55,21 +56,25 @@ exports.up = async function (knex) {
     {
       id: "00000000-0000-0000-0000-000000000001",
       name: "SUPERADMIN",
+      level: 100,
       description: "System Owner",
     },
     {
       id: "00000000-0000-0000-0000-000000000002",
       name: "ADMIN",
+      level: 50,
       description: "General Administrator",
     },
     {
       id: "00000000-0000-0000-0000-000000000003",
       name: "STAFF",
+      level: 20,
       description: "Park/Staff Manager",
     },
     {
       id: "00000000-0000-0000-0000-000000000004",
       name: "VISITOR",
+      level: 0,
       description: "Standard Customer",
     },
   ];
@@ -115,6 +120,56 @@ exports.up = async function (knex) {
     table.specificType("status", "game_status").defaultTo("OPEN");
     table.timestamps(true, true);
   });
+
+  // PRODUCTS: The Definition
+  await knex.schema.createTable("products", (table) => {
+    table.uuid("id").primary().defaultTo(knex.raw("uuid_generate_v4()"));
+    table.string("name").notNullable();
+    table.enu("product_type", ["GAME", "EVENT"]).notNullable();
+    table
+      .uuid("game_id")
+      .nullable()
+      .references("id")
+      .inTable("games")
+      .onDelete("SET NULL");
+    table
+      .uuid("event_id")
+      .nullable()
+      .references("id")
+      .inTable("events")
+      .onDelete("SET NULL");
+    table.integer("valid_days").defaultTo(1);
+    table.boolean("is_active").defaultTo(true);
+    table.timestamps(true, true);
+  });
+
+  await knex.schema.createTable("media", (table) => {
+    table.uuid("id").primary().defaultTo(knex.raw("uuid_generate_v4()"));
+    table.string("name").notNullable();
+    table.string("url").notNullable();
+    table.string("type").notNullable(); // e.g., 'image/jpeg', 'video/mp4'
+    table.string("provider").defaultTo("LOCAL"); // e.g., 'local', 's3', 'cloudinary'
+    table.jsonb("metadata").nullable(); // Store { size: 1024, width: 1920, etc }
+    table.timestamps(true, true);
+  });
+
+  await knex.schema.createTable("products_media", (table) => {
+    table.uuid("id").primary().defaultTo(knex.raw("uuid_generate_v4()"));
+    table
+      .uuid("product_id")
+      .notNullable()
+      .references("id")
+      .inTable("products")
+      .onDelete("CASCADE");
+    table
+      .uuid("media_id")
+      .notNullable()
+      .references("id")
+      .inTable("media")
+      .onDelete("CASCADE");
+    table.integer("sort_order").defaultTo(0);
+    table.unique(["product_id", "media_id"]);
+  });
 };
 
 /**
@@ -122,6 +177,9 @@ exports.up = async function (knex) {
  * @returns { Promise<void> }
  */
 exports.down = async function (knex) {
+  await knex.schema.dropTableIfExists("products_media");
+  await knex.schema.dropTableIfExists("media");
+  await knex.schema.dropTableIfExists("products");
   await knex.schema.dropTableIfExists("games");
   await knex.schema.dropTableIfExists("events");
   await knex.schema.dropTableIfExists("users_roles");
