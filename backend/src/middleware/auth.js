@@ -19,7 +19,11 @@ const isAuthenticated = (req, res, next) => {
  * Check if user is an admin
  */
 const isAdmin = (req, res, next) => {
-  if (req.session && req.session.user && req.session.user.role === "ADMIN") {
+  if (
+    req.session &&
+    req.session.user &&
+    req.session.user.roles.includes("ADMIN")
+  ) {
     return next();
   }
   return apiResponse(
@@ -37,7 +41,7 @@ const isStaff = (req, res, next) => {
   if (
     req.session &&
     req.session.user &&
-    (req.session.user.role === "ADMIN" || req.session.user.role === "STAFF")
+    req.session.user.roles.includes("STAFF")
   ) {
     return next();
   }

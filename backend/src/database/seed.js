@@ -10,11 +10,24 @@ const seed = async () => {
 
     // 1. Create Users
     const adminPassword = await bcrypt.hash("admin123", 12);
-    const adminRes = await client.query(
-      `INSERT INTO users (first_name, last_name, email, password_hash, role)
-       VALUES ($1, $2, $3, $4, $5) ON CONFLICT (email) DO NOTHING RETURNING id`,
-      ["Bora", "Admin", "admin@borapark.com", adminPassword, "ADMIN"],
+    const roles = await client.query(`SELECT id FROM roles`);
+
+    const userId = await client.query(
+      `INSERT INTO users (first_name, last_name, email, password_hash)
+       VALUES ($1, $2, $3, $4) ON CONFLICT (email) DO NOTHING RETURNING id`,
+      ["Bora", "Admin", "admin@borapark.com", adminPassword],
     );
+
+    if (userId.rows.length === 0) {
+      console.log("Admin user already exists, skipping role assignment.");
+    } else {
+      for (const role of roles.rows) {
+        await client.query(
+          `INSERT INTO users_roles (user_id, role_id) VALUES ($1, $2)`,
+          [userId.rows[0].id, role.id],
+        );
+      }
+    }
 
     // 2. Define 8 Events
     const eventsData = [

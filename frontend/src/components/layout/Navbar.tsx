@@ -108,10 +108,10 @@ export function Navbar() {
                 href="/my-bookings"
                 className={`text-sm font-semibold transition-colors ${linkColor}`}
               >
-                MY Bookings
+                My Bookings
               </Link>
 
-              {user?.role === "ADMIN" && (
+              {user?.roles.includes("ADMIN") && (
                 <>
                   <Link
                     href="/admin"
@@ -162,11 +162,16 @@ export function Navbar() {
                       />
                     </div>
                     {user.first_name}
-                    {user.role === "ADMIN" && (
-                      <span className="px-2 py-0.5 bg-yellow-400 text-black text-[10px] font-black rounded-full uppercase tracking-wide">
-                        Admin
+                    {(user?.roles.includes("SUPERADMIN") && (
+                      <span className="text-[10px] bg-[#FFD84D] text-black px-2 py-0.5 rounded-full font-black uppercase">
+                        Super Admin
                       </span>
-                    )}
+                    )) ||
+                      (user?.roles.includes("ADMIN") && (
+                        <span className="text-[10px] bg-[#FFD84D] text-black px-2 py-0.5 rounded-full font-black uppercase">
+                          Admin
+                        </span>
+                      ))}
                   </Link>
 
                   <button
@@ -263,7 +268,7 @@ export function Navbar() {
               </Link>
             ))}
 
-            {user?.role === "ADMIN" && (
+            {user?.roles.includes("ADMIN") && (
               <>
                 <Link
                   href="/admin"
@@ -293,11 +298,16 @@ export function Navbar() {
                       <p className="font-bold text-white">
                         {user.first_name} {user.last_name}
                       </p>
-                      {user.role === "ADMIN" && (
+                      {(user?.roles.includes("SUPERADMIN") && (
                         <span className="text-[10px] bg-[#FFD84D] text-black px-2 py-0.5 rounded-full font-black uppercase">
-                          Admin
+                          Super Admin
                         </span>
-                      )}
+                      )) ||
+                        (user?.roles.includes("ADMIN") && (
+                          <span className="text-[10px] bg-[#FFD84D] text-black px-2 py-0.5 rounded-full font-black uppercase">
+                            Admin
+                          </span>
+                        ))}
                     </div>
                   </div>
                   <button

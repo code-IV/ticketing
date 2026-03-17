@@ -209,7 +209,7 @@ const GameStats = {
     LEFT JOIN booking_items bi ON tt.id = bi.ticket_type_id
     LEFT JOIN bookings b ON bi.booking_id = b.id
     WHERE (b.status = 'CONFIRMED' OR b.status IS NULL)
-      AND (b.created_at >= $1 AND b.created_at <= $2 OR b.created_at IS NULL)
+      AND ((b.created_at >= $1 AND b.created_at <= $2) OR b.created_at IS NULL)
     GROUP BY g.id;
   `;
     const res = await query(sql, [startDate, endDate]);
@@ -231,7 +231,7 @@ const GameStats = {
     GROUP BY p.name;
   `;
     const res = await query(sql, [gameId, startDate, endDate]);
-    return res.rows[0];
+    return res.rows[0] || {};
   },
 
   async getTrends(gameId, { startDate, endDate, fullInterval }) {
@@ -256,7 +256,7 @@ const GameStats = {
     ORDER BY ds.period_start ASC
   `;
     const res = await query(sql, [gameId, startDate, endDate, fullInterval]);
-    return res.rows;
+    return res.rows || [];
   },
 
   async getTicketPerformance(gameId, { startDate, endDate }) {
@@ -278,7 +278,7 @@ const GameStats = {
     ORDER BY revenue DESC
   `;
     const res = await query(sql, [gameId, startDate, endDate]);
-    return res.rows;
+    return res.rows || [];
   },
 };
 module.exports = { Games, GameStats };

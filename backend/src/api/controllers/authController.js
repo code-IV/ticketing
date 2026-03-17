@@ -32,7 +32,7 @@ const authController = {
       req.session.user = {
         id: user.id,
         email: user.email,
-        role: user.role,
+        roles: user.roles,
         firstName: user.first_name,
         lastName: user.last_name,
       };
@@ -73,7 +73,7 @@ const authController = {
       req.session.user = {
         id: user.id,
         email: user.email,
-        role: user.role,
+        roles: user.roles,
         firstName: user.first_name,
         lastName: user.last_name,
       };
@@ -130,6 +130,7 @@ const authController = {
       }
       return apiResponse(res, 200, true, "User retrieved.", { user });
     } catch (err) {
+      console.log(err);
       next(err);
     }
   },
