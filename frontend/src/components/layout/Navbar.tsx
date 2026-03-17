@@ -18,7 +18,13 @@ import { useState } from "react";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 
-export function Navbar() {
+interface Nav {
+  name: string;
+  href: string;
+  iconName: string;
+}
+
+export function Navbar({ nav }: { nav: Nav[] }) {
   const { user, logout } = useAuth();
   const { isDarkTheme, toggleTheme } = useTheme();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -90,43 +96,15 @@ export function Navbar() {
 
             {/* Desktop Nav Links */}
             <div className="hidden md:flex items-center gap-8">
-              {[
-                { href: "/events", label: "Events" },
-                { href: "/games", label: "Games" },
-                { href: "/buy", label: "Buy Tickets" },
-              ].map((item) => (
+              {nav.map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}
                   className={`text-sm font-semibold transition-colors ${linkColor} ${pathname === item.href ? (isDarkTheme ? "text-[#FFD84D]" : "text-gray-900") : ""}`}
                 >
-                  {item.label}
+                  {item.name}
                 </Link>
               ))}
-
-              <Link
-                href="/my-bookings"
-                className={`text-sm font-semibold transition-colors ${linkColor}`}
-              >
-                My Bookings
-              </Link>
-
-              {user?.roles.includes("ADMIN") && (
-                <>
-                  <Link
-                    href="/admin"
-                    className={`flex items-center gap-1.5 text-sm font-semibold transition-colors ${linkColor}`}
-                  >
-                    <LayoutDashboard className="h-4 w-4" /> Admin
-                  </Link>
-                  <Link
-                    href="/admin/analitics"
-                    className={`flex items-center gap-1.5 text-sm font-semibold transition-colors ${linkColor}`}
-                  >
-                    <BarChart3 className="h-4 w-4" /> Analytics
-                  </Link>
-                </>
-              )}
             </div>
 
             {/* Desktop Auth */}
@@ -252,40 +230,16 @@ export function Navbar() {
               )}
             </button>
 
-            {[
-              { href: "/events", label: "Events" },
-              { href: "/games", label: "Games" },
-              { href: "/buy", label: "Buy Tickets" },
-              { href: "/my-bookings", label: "My Bookings" },
-            ].map((item) => (
+            {nav.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
                 onClick={() => setMobileOpen(false)}
                 className="block text-white/80 hover:text-[#FFD84D] font-semibold py-1 transition-colors text-lg"
               >
-                {item.label}
+                {item.name}
               </Link>
             ))}
-
-            {user?.roles.includes("ADMIN") && (
-              <>
-                <Link
-                  href="/admin"
-                  onClick={() => setMobileOpen(false)}
-                  className="flex items-center gap-2 text-white/80 hover:text-[#FFD84D] font-semibold py-1 text-lg"
-                >
-                  <LayoutDashboard className="h-5 w-5" /> Admin
-                </Link>
-                <Link
-                  href="/admin/analitics"
-                  onClick={() => setMobileOpen(false)}
-                  className="flex items-center gap-2 text-white/80 hover:text-[#FFD84D] font-semibold py-1 text-lg"
-                >
-                  <BarChart3 className="h-5 w-5" /> Analytics
-                </Link>
-              </>
-            )}
 
             <div className="pt-6 border-t border-white/10">
               {user ? (

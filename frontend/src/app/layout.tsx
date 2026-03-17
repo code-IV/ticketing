@@ -9,7 +9,8 @@ const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Bora Amusement Park - Online Ticketing",
-  description: "Book your tickets online for Bora Amusement Park, Ethiopia's premier entertainment destination.",
+  description:
+    "Book your tickets online for Bora Amusement Park, Ethiopia's premier entertainment destination.",
 };
 
 export default function RootLayout({
@@ -21,11 +22,7 @@ export default function RootLayout({
     <html lang="en">
       <body className={inter.className}>
         <ThemeProvider>
-          <AuthProvider>
-            <MainLayout>
-              {children}
-            </MainLayout>
-          </AuthProvider>
+          <AuthProvider>{children}</AuthProvider>
         </ThemeProvider>
       </body>
     </html>

@@ -1,25 +1,29 @@
-'use client';
+"use client";
 
-import { ReactNode } from 'react';
-import { Navbar } from './Navbar';
-import { Footer } from './Footer';
-import { usePathname } from 'next/navigation';
-import { useTheme } from '@/contexts/ThemeContext';
+import { ReactNode } from "react";
+import { Navbar } from "./Navbar";
+import { Footer } from "./Footer";
+import { usePathname } from "next/navigation";
+import { useTheme } from "@/contexts/ThemeContext";
 
 interface MainLayoutProps {
   children: ReactNode;
+  Nav: { name: string; href: string; iconName: string }[];
 }
 
-export function MainLayout({ children }: MainLayoutProps) {
+export function MainLayout({ children, Nav }: MainLayoutProps) {
   const pathname = usePathname();
   const { isDarkTheme } = useTheme();
   const isHomePage = pathname === "/";
-  const isAuthPage = pathname === "/auth" || pathname === "/login" || pathname === "/register";
+  const isAuthPage =
+    pathname === "/auth" || pathname === "/login" || pathname === "/register";
 
   return (
-    <div className={`min-h-screen flex flex-col relative ${isDarkTheme ? 'bg-[#0A0A0A]' : 'bg-white'}`}>
+    <div
+      className={`min-h-screen flex flex-col relative ${isDarkTheme ? "bg-[#0A0A0A]" : "bg-white"}`}
+    >
       {/* Navbar is fixed, so no padding needed on home; add top padding elsewhere */}
-      {!isAuthPage && <Navbar />}
+      {!isAuthPage && <Navbar nav={Nav} />}
       <main className={`flex-1 ${isHomePage || isAuthPage ? "" : "pt-16"}`}>
         {children}
       </main>
