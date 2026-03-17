@@ -255,6 +255,17 @@ export const adminService = {
   },
 };
 
+export const ticketService = {
+  async scanToken(token: string): Promise<ApiResponse<any>> {
+    const response = await api.get("/tickets/scan", {
+      params: {
+        token,
+      },
+    });
+    return response.data;
+  },
+};
+
 export const gameService = {
   async createGame(data: CreateGame): Promise<ApiResponse<Game>> {
     const response = await api.post("/admin/games", data);

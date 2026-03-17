@@ -44,7 +44,11 @@ const getDynamicPassName = (items: any[]) => {
 
 // Type detection functions for backward compatibility
 const isUserMode = (booking: any) => {
-  return booking.userId && booking.passes && (booking.passes.events?.length > 0 || booking.passes.games?.length > 0);
+  return (
+    booking.userId &&
+    booking.passes &&
+    (booking.passes.events?.length > 0 || booking.passes.games?.length > 0)
+  );
 };
 
 const isGuestMode = (booking: any) => {
@@ -56,21 +60,23 @@ const convertGuestDataToTicketProduct = (booking: any) => {
   if (isUserMode(booking)) {
     return booking.ticket?.passes || [];
   }
-  
+
   // Convert guest games to Ticket_Product format
-  const guestGames = booking.passes?.games?.map((game: any) => ({
-    id: game.gameName || 'unknown',
-    productName: game.gameName || 'Game Pass',
-    productType: "GAME" as const,
-    usageDetails: game.ticketTypes?.map((tt: any) => ({
-      category: tt.category || "ADULT",
-      totalQuantity: tt.quantity,
-      usedQuantity: 0,
-      status: "AVAILABLE" as const,
-      lastUsedAt: new Date().toISOString(),
-    })) || []
-  })) || [];
-  
+  const guestGames =
+    booking.passes?.games?.map((game: any) => ({
+      id: game.gameName || "unknown",
+      productName: game.gameName || "Game Pass",
+      productType: "GAME" as const,
+      usageDetails:
+        game.ticketTypes?.map((tt: any) => ({
+          category: tt.category || "ADULT",
+          totalQuantity: tt.quantity,
+          usedQuantity: 0,
+          status: "AVAILABLE" as const,
+          lastUsedAt: new Date().toISOString(),
+        })) || [],
+    })) || [];
+
   return guestGames;
 };
 
@@ -143,8 +149,12 @@ const QRModal = ({
                 />
               ) : (
                 <div className="text-center p-4">
-                  <div className="text-red-500 text-sm font-black uppercase mb-2">QR Code Unavailable</div>
-                  <div className="text-xs text-gray-500">Booking Reference: {refId}</div>
+                  <div className="text-red-500 text-sm font-black uppercase mb-2">
+                    QR Code Unavailable
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    Booking Reference: {refId}
+                  </div>
                 </div>
               )}
             </div>
@@ -211,7 +221,6 @@ const CollectorTicketCard = ({
           <h3 className="font-black text-3xl text-white tracking-tighter drop-shadow-lg leading-tight uppercase italic">
             {item.productName}
           </h3>
-
         </div>
         <div className="bg-white/10 backdrop-blur-md px-5 py-3 rounded-[24px] border border-white/20 text-right text-white shadow-xl">
           <span className="text-[9px] font-black opacity-60 uppercase block mb-1 tracking-tighter">
@@ -227,10 +236,12 @@ const CollectorTicketCard = ({
         <div className="bg-white/10 backdrop-blur-xl p-6 rounded-[32px] border border-white/20 shadow-2xl">
           {/* Ticket Type Breakdown */}
           <div className="mb-4">
-
             <div className="space-y-2">
               {(item?.usageDetails || []).map((detail, idx) => (
-                <div key={idx} className="flex justify-between items-center text-white">
+                <div
+                  key={idx}
+                  className="flex justify-between items-center text-white"
+                >
                   <span className="text-xs font-medium opacity-90">
                     {detail.category}
                   </span>
@@ -241,9 +252,9 @@ const CollectorTicketCard = ({
               ))}
             </div>
           </div>
-          
+
           <div className="w-full h-px bg-white/20 mb-4"></div>
-          
+
           {/* Progress Bar */}
           <div className="flex justify-between items-center text-white text-[11px] font-black uppercase mb-4 tracking-widest">
             <span className="opacity-80">Utilization</span>
@@ -292,8 +303,8 @@ export default function BookingDetailPage({
       } else {
         // Guests: check local storage first
         const guestBookings = guestCookieUtils.getGuestBookings();
-        const bookingFromStorage = guestBookings.find(b => b.id === id);
-        
+        const bookingFromStorage = guestBookings.find((b) => b.id === id);
+
         if (bookingFromStorage) {
           // Found in local storage - use complete booking data
           const enhancedBooking = {
@@ -303,11 +314,15 @@ export default function BookingDetailPage({
             totalAmount: bookingFromStorage.totalAmount,
             status: bookingFromStorage.status || "CONFIRMED",
             type: bookingFromStorage.type || "EVENT",
-            eventDate: bookingFromStorage.eventDate || bookingFromStorage.bookedAt,
+            eventDate:
+              bookingFromStorage.eventDate || bookingFromStorage.bookedAt,
             bookedAt: bookingFromStorage.bookedAt,
             ticket: bookingFromStorage.ticket,
             // Include the complete passes data we saved
-            passes: (bookingFromStorage as any).passes || { games: [], events: [] },
+            passes: (bookingFromStorage as any).passes || {
+              games: [],
+              events: [],
+            },
             // Include additional fields for guest mode
             ticketCode: (bookingFromStorage as any).ticketCode,
             qrToken: (bookingFromStorage as any).qrToken,
@@ -317,7 +332,7 @@ export default function BookingDetailPage({
             paymentStatus: (bookingFromStorage as any).paymentStatus,
             paymentMethod: (bookingFromStorage as any).paymentMethod,
           };
-          
+
           setBooking(enhancedBooking as any);
           setLoading(false);
         } else {
@@ -357,7 +372,7 @@ export default function BookingDetailPage({
       </div>
     );
 
-  const games = isUserMode(booking) 
+  const games = isUserMode(booking)
     ? booking.passes?.games || []
     : booking.passes?.games || [];
   const event = isUserMode(booking)
@@ -404,7 +419,11 @@ export default function BookingDetailPage({
                 <h1
                   className={`text-5xl md:text-6xl font-black tracking-tighter leading-none italic uppercase ${isDarkTheme ? "text-white" : "text-slate-900"}`}
                 >
-                  {event && 'name' in event ? event.name : getDynamicPassName(convertGuestDataToTicketProduct(booking))}
+                  {event && "name" in event
+                    ? event.name
+                    : getDynamicPassName(
+                        convertGuestDataToTicketProduct(booking),
+                      )}
                 </h1>
               </div>
               <p
@@ -419,17 +438,35 @@ export default function BookingDetailPage({
                   {booking.bookingReference}
                 </span>
               </p>
-              <div className={`mt-2 flex flex-col sm:flex-row gap-4 text-xs font-medium ${isDarkTheme ? "text-gray-500" : "text-slate-500"}`}>
+              <div
+                className={`mt-2 flex flex-col sm:flex-row gap-4 text-xs font-medium ${isDarkTheme ? "text-gray-500" : "text-slate-500"}`}
+              >
                 <div className="flex items-center gap-2">
                   <Calendar size={14} />
                   <span>
-                    Booked: <span className="text-accent font-bold">{booking.bookedAt ? format(new Date(booking.bookedAt), "MMM dd, yyyy") : "N/A"}</span>
+                    Booked:{" "}
+                    <span className="text-accent font-bold">
+                      {booking.bookedAt
+                        ? format(new Date(booking.bookedAt), "MMM dd, yyyy")
+                        : "N/A"}
+                    </span>
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Calendar size={14} />
                   <span>
-                    Expires: <span className="text-accent font-bold">{booking.bookedAt ? format(new Date(new Date(booking.bookedAt).getTime() + (21 * 24 * 60 * 60 * 1000)), "MMM dd, yyyy") : "N/A"}</span>
+                    Expires:{" "}
+                    <span className="text-accent font-bold">
+                      {booking.bookedAt
+                        ? format(
+                            new Date(
+                              new Date(booking.bookedAt).getTime() +
+                                21 * 24 * 60 * 60 * 1000,
+                            ),
+                            "MMM dd, yyyy",
+                          )
+                        : "N/A"}
+                    </span>
                   </span>
                 </div>
               </div>
@@ -477,14 +514,16 @@ export default function BookingDetailPage({
         {/* COLLECTOR GRID */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10">
           <AnimatePresence>
-            {convertGuestDataToTicketProduct(booking).map((item: any, i: number) => (
-              <CollectorTicketCard
-                key={i}
-                item={item}
-                index={i}
-                isDarkTheme={isDarkTheme}
-              />
-            ))}
+            {convertGuestDataToTicketProduct(booking).map(
+              (item: any, i: number) => (
+                <CollectorTicketCard
+                  key={i}
+                  item={item}
+                  index={i}
+                  isDarkTheme={isDarkTheme}
+                />
+              ),
+            )}
           </AnimatePresence>
         </div>
 
@@ -500,74 +539,82 @@ export default function BookingDetailPage({
               >
                 Event Itinerary
               </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div className="flex items-center gap-5">
-                <div
-                  className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 ${isDarkTheme ? "bg-indigo-900/20" : "bg-indigo-50"}`}
-                  style={{ color: "var(--accent)" }}
-                >
-                  <Calendar size={24} />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="flex items-center gap-5">
+                  <div
+                    className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 ${isDarkTheme ? "bg-indigo-900/20" : "bg-indigo-50"}`}
+                    style={{ color: "var(--accent)" }}
+                  >
+                    <Calendar size={24} />
+                  </div>
+                  <div>
+                    <p
+                      className={`text-[10px] font-black uppercase ${isDarkTheme ? "text-gray-400" : "text-slate-400"}`}
+                    >
+                      Schedule Date
+                    </p>
+                    <p
+                      className={`text-lg font-black ${isDarkTheme ? "text-white" : "text-slate-900"}`}
+                    >
+                      {event && "eventDate" in event
+                        ? format(
+                            new Date(event.eventDate),
+                            "EEEE, MMM dd, yyyy",
+                          )
+                        : booking.bookedAt
+                          ? format(
+                              new Date(booking.bookedAt),
+                              "EEEE, MMM dd, yyyy",
+                            )
+                          : "N/A"}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p
-                    className={`text-[10px] font-black uppercase ${isDarkTheme ? "text-gray-400" : "text-slate-400"}`}
+                <div className="flex items-center gap-5">
+                  <div
+                    className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 ${isDarkTheme ? "bg-indigo-900/20" : "bg-indigo-50"}`}
+                    style={{ color: "var(--accent)" }}
                   >
-                    Schedule Date
-                  </p>
-                  <p
-                    className={`text-lg font-black ${isDarkTheme ? "text-white" : "text-slate-900"}`}
-                  >
-                    {event && 'eventDate' in event
-                      ? format(new Date(event.eventDate), "EEEE, MMM dd, yyyy")
-                      : booking.bookedAt ? format(new Date(booking.bookedAt), "EEEE, MMM dd, yyyy") : "N/A"}
-                  </p>
+                    <Clock size={24} />
+                  </div>
+                  <div>
+                    <p
+                      className={`text-[10px] font-black uppercase ${isDarkTheme ? "text-gray-400" : "text-slate-400"}`}
+                    >
+                      Show Time
+                    </p>
+                    <p
+                      className={`text-lg font-black ${isDarkTheme ? "text-white" : "text-slate-900"}`}
+                    >
+                      {event && "startTime" in event && "endTime" in event
+                        ? `${event.startTime} - ${event.endTime}`
+                        : "All Day Access"}
+                    </p>
+                  </div>
                 </div>
-              </div>
-              <div className="flex items-center gap-5">
-                <div
-                  className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 ${isDarkTheme ? "bg-indigo-900/20" : "bg-indigo-50"}`}
-                  style={{ color: "var(--accent)" }}
-                >
-                  <Clock size={24} />
-                </div>
-                <div>
-                  <p
-                    className={`text-[10px] font-black uppercase ${isDarkTheme ? "text-gray-400" : "text-slate-400"}`}
+                <div className="flex items-center gap-5">
+                  <div
+                    className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 ${isDarkTheme ? "bg-indigo-900/20" : "bg-indigo-50"}`}
+                    style={{ color: "var(--accent)" }}
                   >
-                    Show Time
-                  </p>
-                  <p
-                    className={`text-lg font-black ${isDarkTheme ? "text-white" : "text-slate-900"}`}
-                  >
-                    {event && 'startTime' in event && 'endTime' in event
-                      ? `${event.startTime} - ${event.endTime}`
-                      : "All Day Access"}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-5">
-                <div
-                  className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 ${isDarkTheme ? "bg-indigo-900/20" : "bg-indigo-50"}`}
-                  style={{ color: "var(--accent)" }}
-                >
-                  <MapPin size={24} />
-                </div>
-                <div>
-                  <p
-                    className={`text-[10px] font-black uppercase ${isDarkTheme ? "text-gray-400" : "text-slate-400"}`}
-                  >
-                    Venue Location
-                  </p>
-                  <p
-                    className={`text-lg font-black ${isDarkTheme ? "text-white" : "text-slate-900"}`}
-                  >
-                    Bora Amusement Park
-                  </p>
+                    <MapPin size={24} />
+                  </div>
+                  <div>
+                    <p
+                      className={`text-[10px] font-black uppercase ${isDarkTheme ? "text-gray-400" : "text-slate-400"}`}
+                    >
+                      Venue Location
+                    </p>
+                    <p
+                      className={`text-lg font-black ${isDarkTheme ? "text-white" : "text-slate-900"}`}
+                    >
+                      Bora Amusement Park
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
         )}
       </div>
 
@@ -580,17 +627,17 @@ export default function BookingDetailPage({
           const ticketQrToken = booking.ticket?.qrToken; // Fixed: use qrToken not qr_token
           const guestQrToken = booking.qrToken;
           const finalToken = ticketQrToken || guestQrToken;
-          
-          console.log('QR Token Debug:', {
+
+          console.log("QR Token Debug:", {
             bookingId: booking.id,
             ticketQrToken,
             guestQrToken,
             finalToken,
             isUserMode: !!user,
             hasTicket: !!booking.ticket,
-            ticketData: booking.ticket // Debug full ticket object
+            ticketData: booking.ticket, // Debug full ticket object
           });
-          
+
           return finalToken;
         })()}
         isDarkTheme={isDarkTheme}

@@ -124,7 +124,6 @@ const TicketController = {
       }
 
       const { ticket, passes } = result.data;
-      console.log(passes);
 
       return apiResponse(res, 200, true, "Ticket scan successful.", {
         valid: true,

@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
+import { ticketService } from "@/services/adminService";
 
 // ── GENERIC COLOR PALETTE ─────────────────────────────────────────────────
 const colors = {
@@ -14,6 +15,27 @@ const colors = {
   red: "#FF0000",
 };
 
+interface Ticket {
+  id: string;
+  bookingReference: string;
+  ticketCode: string;
+  guestEmail: string;
+  guestName: string;
+  status: string;
+  expiresAt: string;
+  passes: {
+    productId: string;
+    productName: string;
+    productType: string;
+    usageDetails: {
+      passId: string;
+      category: string;
+      quantity: number;
+      usedQuantity: number;
+      status: string;
+    }[];
+  }[];
+}
 // ── MOCK DATA ──────────────────────────────────────────────────────────────
 const MOCK_TRANSACTION = {
   transaction_code: "BRK-2024-X7K2",
@@ -293,11 +315,10 @@ const GameCard = ({
 
 // ── MAIN PAGE ──────────────────────────────────────────────────────────────
 export default function StaffTransactionPage() {
-  const params = useParams();
+  const { token } = useParams<{ token: string }>();
   const router = useRouter();
-  const token = params.id as string;
 
-  console.log('Scan page loaded with token:', token); // Debug log
+  console.log("Scan page loaded with token:", token); // Debug log
 
   const [items, setItems] = useState(MOCK_ITEMS);
   const [draftQty, setDraftQty] = useState({});
@@ -305,6 +326,15 @@ export default function StaffTransactionPage() {
   const [punching, setPunching] = useState(false);
   const [punchLog, setPunchLog] = useState([]);
   const [expandedId, setExpandedId] = useState(null);
+
+  useEffect(() => {
+    getTicket(token);
+  }, []);
+
+  const getTicket = async (token: string) => {
+    const response = await ticketService.scanToken(token);
+    console.log(response.data);
+  };
 
   const allPunched = items.every(isFullyUsed);
   const anyUsed = items.some((i) => totalUsed(i) > 0);
@@ -386,10 +416,7 @@ export default function StaffTransactionPage() {
                 Transaction <span className="text-accent">Details</span>
               </h1>
               <p className="text-slate-500 text-sm mt-1">
-                Token:{" "}
-                <span className="font-mono">
-                  {token || 'Unknown'}
-                </span>
+                Token: <span className="font-mono">{token || "Unknown"}</span>
               </p>
             </div>
           </div>
