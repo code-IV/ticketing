@@ -72,7 +72,7 @@ const BuyTicketsPage = () => {
       const response = await gameService.getActiveGames();
       setGames(response.data || []);
     } catch (error) {
-      setError("Failed to load adventures.");
+      setError("Failed to load Games.");
     } finally {
       setLoading(false);
     }
@@ -207,10 +207,10 @@ const BuyTicketsPage = () => {
             </div>
             <div className="text-center md:text-left">
               <h1 className={`text-4xl md:text-6xl font-black tracking-tighter uppercase italic ${isDarkTheme ? 'text-white' : 'text-slate-900'}`}>
-                Pick Your <span className="text-accent2">Adventures</span>
+                Pick Your <span className="text-accent2">Games</span>
               </h1>
               <p className={`text-sm font-medium tracking-wide mt-1 ${isDarkTheme ? 'text-gray-400' : 'text-slate-500'}`}>
-                Select attraction passes to build your custom experience.
+                Select your adventure to experiance.
               </p>
             </div>
           </div>
@@ -278,9 +278,9 @@ const BuyTicketsPage = () => {
                           <h3 className="font-black text-3xl text-white tracking-tighter leading-none uppercase italic mb-2">
                             {game.name}
                           </h3>
-                          <p className="flex items-center gap-1.5 text-white/60 text-[10px] font-black uppercase tracking-widest mb-4">
+                          {/* <p className="flex items-center gap-1.5 text-white/60 text-[10px] font-black uppercase tracking-widest mb-4">
                             <MapPin size={12} /> Bora Stage 0{index + 1}
-                          </p>
+                          </p> */}
                           
                           <button
                             onClick={() => {
@@ -289,7 +289,7 @@ const BuyTicketsPage = () => {
                               console.log('Game ID type:', typeof game.id);
                               console.log('View Details clicked for game:', game.id);
                               console.log('Navigating to:', `/buy/${game.id}`);
-                              router.push(`/buy/${game.id}`);
+                              router.push(`/games/${game.id}`);
                             }}
                             className="relative z-20 bg-white/20 backdrop-blur-md px-4 py-2 rounded-2xl border border-white/20 text-white font-black text-[10px] uppercase tracking-widest hover:bg-white/30 transition-colors"
                           >
@@ -302,7 +302,7 @@ const BuyTicketsPage = () => {
                                 initial={{ height: 0, opacity: 0 }}
                                 animate={{ height: "auto", opacity: 1 }}
                                 exit={{ height: 0, opacity: 0 }}
-                                className="overflow-hidden bg-white/10 backdrop-blur-xl rounded-3xl border border-white/20 p-4 space-y-3"
+                                className="overflow-hidden bg-white/10 backdrop-blur-xl mt-2 rounded-3xl border border-white/20 p-4 space-y-3"
                                 onClick={(e) => e.stopPropagation()}
                               >
                                 {game.ticket_types?.map((tt) => {
