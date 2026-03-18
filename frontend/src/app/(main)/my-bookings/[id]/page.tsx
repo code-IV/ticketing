@@ -39,7 +39,8 @@ const getDynamicPassName = (items: any[]) => {
   if (!items || items.length === 0) return "Custom Pass";
   const uniqueGames = [...new Set(items.map((i) => i.productName))];
   if (uniqueGames.length === 1) return uniqueGames[0];
-  return `${uniqueGames.length} Experiences`;
+  if (uniqueGames.length === 2) return `${uniqueGames[0]} & ${uniqueGames[1]}`;
+  return `${uniqueGames[0]} & ${uniqueGames[1]}...`;
 };
 
 // Type detection functions for backward compatibility

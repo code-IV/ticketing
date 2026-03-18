@@ -120,7 +120,7 @@ export default function MyBookingsPage() {
             <p
               className={`mt-1 text-sm ${isDarkTheme ? "text-gray-400" : "text-slate-500"}`}
             >
-              Your Bora Park adventure tracker.
+            All your Bora Park tickets in one place.
             </p>
           </div>
 
@@ -219,7 +219,7 @@ export default function MyBookingsPage() {
           // EXISTING USER INTERFACE - NO CHANGES
           <>
             {/* Tabs and Filters (existing functionality) */}
-            <div className="flex flex-col sm:flex-row items-center gap-3">
+            <div className="flex flex-col sm:flex-row items-center gap-3 m-5">
               {/* Filter Dropdown */}
               <div className="relative w-full sm:w-auto" ref={dropdownRef}>
                 <button
