@@ -29,7 +29,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const response = await authService.getMe();
       if (response.data) {
-        setUser(response.data.user);
+        // Handle the roles array structure from backend
+        const user = response.data.user;
+        if (user.roles && Array.isArray(user.roles) && user.roles.length > 0) {
+          // Convert roles array of objects to array of strings
+          user.roles = user.roles.map((role: any) => role.name || role);
+        }
+        setUser(user);
       }
     } catch (error) {
       setUser(null);
@@ -43,7 +49,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (email: string, password: string) => {
     const response = await authService.login(email, password);
     if (response.data) {
-      setUser(response.data.user);
+      // Handle the roles array structure from backend
+      const user = response.data.user;
+      if (user.roles && Array.isArray(user.roles) && user.roles.length > 0) {
+        // Convert roles array of objects to array of strings
+        user.roles = user.roles.map((role: any) => role.name || role);
+      }
+      setUser(user);
     }
   };
 
@@ -61,7 +73,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }) => {
     const response = await authService.register(data);
     if (response.data) {
-      setUser(response.data.user);
+      // Handle the roles array structure from backend
+      const user = response.data.user;
+      if (user.roles && Array.isArray(user.roles) && user.roles.length > 0) {
+        // Convert roles array of objects to array of strings
+        user.roles = user.roles.map((role: any) => role.name || role);
+      }
+      setUser(user);
     }
   };
 

@@ -500,7 +500,12 @@ const RegisterForm = ({ isDark, onSubmit, onSuccess }: {
     setLoading(true);
     setError("");
     try {
-      await onSubmit(formData);
+      // Remove empty phone field before sending to backend
+      const submitData = {
+        ...formData,
+        phone: formData.phone.trim() || undefined
+      };
+      await onSubmit(submitData);
       onSuccess("Account created! Redirecting...");
     } catch (err: any) {
       console.error("Registration error:", err);
