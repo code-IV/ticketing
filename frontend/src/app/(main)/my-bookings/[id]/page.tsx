@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useState, useEffect } from "react";
+import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -12,8 +12,8 @@ import {
   Ticket_Product,
   TicketType,
 } from "@/types";
-import { useAuth } from "../../../contexts/AuthContext";
-import { guestCookieUtils } from "../../../utils/cookies";
+import { useAuth } from "@/contexts/AuthContext";
+import { guestCookieUtils } from "@/utils/cookies";
 import { format } from "date-fns";
 import { QRCodeSVG } from "qrcode.react";
 import {

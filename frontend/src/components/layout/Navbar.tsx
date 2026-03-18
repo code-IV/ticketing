@@ -140,12 +140,12 @@ export function Navbar({ nav }: { nav: Nav[] }) {
                       />
                     </div>
                     {user.first_name}
-                    {(user?.roles.includes("SUPERADMIN") && (
+                    {(user?.roles && user.roles.includes("SUPERADMIN") && (
                       <span className="text-[10px] bg-[#FFD84D] text-black px-2 py-0.5 rounded-full font-black uppercase">
                         Super Admin
                       </span>
                     )) ||
-                      (user?.roles.includes("ADMIN") && (
+                      (user?.roles && user.roles.includes("ADMIN") && (
                         <span className="text-[10px] bg-[#FFD84D] text-black px-2 py-0.5 rounded-full font-black uppercase">
                           Admin
                         </span>

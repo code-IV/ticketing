@@ -61,6 +61,15 @@ export default function Home() {
     <div
       className={`min-h-screen ${isDarkTheme ? "bg-[#0A0A0A] text-white" : "bg-white text-gray-900"} overflow-x-hidden`}
     >
+      <style>{`
+        .scrollbar-hide {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+        .scrollbar-hide::-webkit-scrollbar {
+          display: none;
+        }
+      `}</style>
       {/* ── HERO ─────────────────────────────────────────────────────────── */}
       <section className="relative h-screen flex items-end pb-20 overflow-hidden">
         {/* Background image with parallax */}
@@ -164,7 +173,7 @@ export default function Home() {
       </section>
 
       {/* ── EVENTS ───────────────────────────────────────────────────────── */}
-      <section className="py-28 px-6 sm:px-10 lg:px-16">
+      <section className="py-25 px-6 sm:px-10 lg:px-16">
         <div className="max-w-7xl mx-auto">
           <motion.div
             initial="hidden"
@@ -201,100 +210,65 @@ export default function Home() {
               </Link>
             </motion.div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="flex gap-6 overflow-x-auto border-accent2 scrollbar-hide px-2 py-4">
               {events.map((event, i) => (
                 <motion.div
                   key={event.id}
                   variants={fadeUp}
-                  whileHover={{ y: -12, scale: 1.05, rotate: 1 }}
-                  transition={{ duration: 0.3, type: "spring", bounce: 0.5 }}
-                  className={`group border rounded-3xl overflow-hidden transition-all duration-500 ${
-                    isDarkTheme
-                      ? "bg-white/5 border-white/8 hover:border-[#FFD84D]/30 hover:bg-white/8"
-                      : "bg-white border-gray-200 hover:border-[#FFD84D]/30 hover:bg-gray-100"
-                  }`}
-                >
-                  <div className="relative h-52 overflow-hidden">
-                    <img
-                      src="/api/placeholder/600/400"
-                      alt={event.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 opacity-80"
-                    />
-                    <div
-                      className={`absolute inset-0 bg-gradient-to-t ${isDarkTheme ? "from-[#0A0A0A]" : "from-white"} to-transparent`}
-                    />
-                    <div className="absolute top-4 left-4 bg-[#FFD84D] text-black rounded-2xl px-4 py-2 text-center min-w-[56px] shadow-lg">
-                      <p className="text-[10px] font-black uppercase tracking-tight">
-                        {new Date(event.start_time).toLocaleString("default", {
-                          month: "short",
-                        })}
-                      </p>
-                      <p className="text-2xl font-black leading-none">
-                        {new Date(event.event_date).getDate()}
-                      </p>
-                    </div>
-                    {!event.is_active && (
-                      <div className="absolute inset-0 bg-black/70 flex items-center justify-center backdrop-blur-sm">
-                        <span className="px-6 py-2 bg-red-500 text-white font-black text-xs uppercase tracking-widest rounded-full -rotate-3">
-                          Sold Out
-                        </span>
-                      </div>
-                    )}
+                  whileHover={{ scale: 1.02, y: -8 }}
+                  transition={{ duration: 0.4 }}
+                  className="group relative rounded-3xl overflow-hidden aspect-3/4 cursor-pointer w-[calc(100vw-100px)] max-w-96 sm:w-[385Px] lg:w-96   mx-auto sm:mx-0 shrink-0 hover:border hover:border-accent2"
+             >
+                  <img
+                    src="/api/placeholder/600/800"
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                    alt={event.name}
+                  />
+                  <div
+                    className={`absolute inset-0 bg-gradient-to-t ${isDarkTheme ? "from-black" : "from-gray-800"} via-transparent to-transparent`}
+                  />
+
+                  {/* Corner accent */}
+                  <div className="absolute top-4 right-4 w-10 h-10 rounded-full bg-[#FFD84D] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 scale-75 group-hover:scale-100">
+                    <ArrowDownRight className="w-5 h-5 text-black -rotate-45" />
                   </div>
 
-                  <div className="p-6">
-                    <div
-                      className={`flex items-center gap-2 text-xs font-bold uppercase mb-3 ${
-                        isDarkTheme ? "text-white/40" : "text-gray-500"
-                      }`}
-                    >
-                      <Clock size={12} className="text-[#FFD84D]" />
-                      {new Date(event.start_time).toLocaleTimeString([], {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
+                  {/* Sold out overlay */}
+                  {!event.is_active && (
+                    <div className="absolute inset-0 bg-black/70 flex items-center justify-center backdrop-blur-sm">
+                      <span className="px-6 py-2 bg-red-500 text-white font-black text-xs uppercase tracking-widest rounded-full -rotate-3">
+                        Sold Out
+                      </span>
                     </div>
-                    <h3
-                      className={`text-xl font-black mb-2 line-clamp-1 ${isDarkTheme ? "text-white" : "text-gray-900"}`}
-                    >
+                  )}
+
+                  <div className="absolute bottom-0 left-0 right-0 p-7">
+                    <span className="text-[#FFD84D] font-black text-[10px] uppercase tracking-[0.3em] block mb-2">
+                      Special Event
+                    </span>
+                    <h3 className="text-2xl font-black mb-4 leading-tight">
                       {event.name}
                     </h3>
-                    <p
-                      className={`text-sm mb-6 line-clamp-2 leading-relaxed ${isDarkTheme ? "text-white/50" : "text-gray-600"}`}
-                    >
-                      {event.description}
-                    </p>
-
-                    <div className="flex items-center justify-between pt-4 border-t border-white/8">
-                      <div>
-                        <span
-                          className={`text-[10px] font-bold uppercase block mb-0.5 ${isDarkTheme ? "text-white/30" : "text-gray-400"}`}
-                        >
-                          From
-                        </span>
-                        <p className="text-2xl font-black">
+                    <div className="flex items-center justify-between">
+                      <p
+                        className={`text-sm ${isDarkTheme ? "text-gray-300" : "text-gray-600"}`}
+                      >
+                        From{" "}
+                        <span className="text-xl font-black text-white">
                           {event.ticket_types?.find(
                             (t) => t.category === "ADULT",
                           )?.price ?? 0}
-                          <span
-                            className={`text-sm font-bold ml-1 ${isDarkTheme ? "text-white/50" : "text-gray-500"}`}
-                          >
-                            ETB
-                          </span>
-                        </p>
-                      </div>
+                        </span>{" "}
+                        ETB
+                      </p>
                       <Link href={`/buy?event=${event.id}`}>
-                        <button
+                        <button 
                           disabled={!event.is_active}
-                          className={`rounded-2xl font-black text-sm px-6 py-3 transition-all ${
-                            !event.is_active
-                              ? isDarkTheme
-                                ? "bg-white/10 text-white/30"
-                                : "bg-gray-100 text-gray-400"
-                              : "bg-[#FFD84D] text-black hover:bg-white"
+                          className={`bg-[#FFD84D] text-black font-black text-xs px-5 py-2.5 rounded-full hover:bg-white transition-colors ${
+                            !event.is_active ? "opacity-50 cursor-not-allowed" : ""
                           }`}
                         >
-                          {event.is_active ? "Book Now" : "Full"}
+                          BOOK
                         </button>
                       </Link>
                     </div>
@@ -306,9 +280,11 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── ATTRACTIONS ──────────────────────────────────────────────────── */}
-      <section
-        className={`py-28 px-6 sm:px-10 lg:px-16 bg-gradient-to-b from-transparent ${isDarkTheme ? "to-white/3" : "to-gray-50"}`}
+            {/* ── ATTRACTIONS ──────────────────────────────────────────────────── */}
+            <section
+        className={`pb-18 px-2 sm:px-10 lg:px-16 bg-gradient-to-b from-transparent ${
+          isDarkTheme ? "to-white/3" : "to-gray-50"
+        }`}
       >
         <div className="max-w-7xl mx-auto">
           <motion.div
@@ -317,16 +293,14 @@ export default function Home() {
             viewport={{ once: true, margin: "-80px" }}
             variants={stagger}
           >
-            <motion.div
-              variants={fadeUp}
-              className="flex justify-between items-end mb-16"
-            >
+            {/* Header */}
+            <motion.div variants={fadeUp} className="flex justify-between items-end mb-16">
               <div>
-                <p className="text-[#FFD84D] font-black text-xs uppercase tracking-[0.3em] mb-3">
+                <p className="text-[#FFD84D] pl-4 font-black text-xs uppercase tracking-[0.3em] mb-3">
                   Top Picks
                 </p>
                 <h2
-                  className="text-5xl md:text-6xl font-black leading-tight"
+                  className="text-5xl pl-4 md:text-6xl font-black leading-tight"
                   style={{ fontFamily: "'Arial Black', sans-serif" }}
                 >
                   Must-Try
@@ -337,23 +311,24 @@ export default function Home() {
               <Link
                 href="/games"
                 className={`hidden md:flex items-center gap-2 font-bold text-sm transition-colors ${
-                  isDarkTheme
-                    ? "text-white/50 hover:text-[#FFD84D]"
-                    : "text-gray-500 hover:text-[#FFD84D]"
+                  isDarkTheme ? "text-white/50 hover:text-[#FFD84D]" : "text-gray-500 hover:text-[#FFD84D]"
                 }`}
               >
                 View All <ChevronRight size={16} />
               </Link>
             </motion.div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {featuredGames.map((game, i) => (
+              
+            {/* Horizontal scroll container */}
+            <div className="flex gap-6 overflow-x-auto scrollbar-hide px-2 py-4">
+              {featuredGames.map((game) => (
                 <motion.div
                   key={game.id}
                   variants={fadeUp}
                   whileHover={{ scale: 1.02, y: -8 }}
                   transition={{ duration: 0.4 }}
-                  className="group relative rounded-3xl overflow-hidden aspect-[3/4] cursor-pointer"
+                  className="group relative rounded-3xl overflow-hidden aspect-3/4 cursor-pointer 
+                             w-[calc(100vw-70px)] max-w-96  lg:w-96 
+                             mx-auto sm:mx-0 shrink-0 hover:border hover:border-accent2"
                 >
                   <img
                     src="/api/placeholder/600/800"
@@ -361,30 +336,26 @@ export default function Home() {
                     alt={game.name}
                   />
                   <div
-                    className={`absolute inset-0 bg-gradient-to-t ${isDarkTheme ? "from-black" : "from-gray-800"} via-transparent to-transparent`}
+                    className={`absolute inset-0 bg-gradient-to-t ${
+                      isDarkTheme ? "from-black" : "from-gray-800"
+                    } via-transparent to-transparent`}
                   />
 
                   {/* Corner accent */}
                   <div className="absolute top-4 right-4 w-10 h-10 rounded-full bg-[#FFD84D] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 scale-75 group-hover:scale-100">
-                    <ArrowDownRight className="w-5 h-5 text-black rotate-[-45deg]" />
+                    <ArrowDownRight className="w-5 h-5 text-black -rotate-45" />
                   </div>
-
+                  
                   <div className="absolute bottom-0 left-0 right-0 p-7">
                     <span className="text-[#FFD84D] font-black text-[10px] uppercase tracking-[0.3em] block mb-2">
                       Thrill Ride
                     </span>
-                    <h3 className="text-2xl font-black mb-4 leading-tight">
-                      {game.name}
-                    </h3>
+                    <h3 className="text-2xl font-black mb-4 leading-tight">{game.name}</h3>
                     <div className="flex items-center justify-between">
-                      <p
-                        className={`text-sm ${isDarkTheme ? "text-gray-300" : "text-gray-600"}`}
-                      >
+                      <p className={`text-sm ${isDarkTheme ? "text-gray-300" : "text-gray-600"}`}>
                         From{" "}
                         <span className="text-xl font-black text-white">
-                          {game.ticket_types?.find(
-                            (t) => t.category === "ADULT",
-                          )?.price ?? "—"}
+                          {game.ticket_types?.find((t) => t.category === "ADULT")?.price ?? "—"}
                         </span>{" "}
                         ETB
                       </p>
@@ -401,7 +372,7 @@ export default function Home() {
           </motion.div>
         </div>
       </section>
-
+            
       {/* ── STATS ────────────────────────────────────────────────────────── */}
       <section className="py-24 px-6 sm:px-10 lg:px-16">
         <div className="max-w-7xl mx-auto">
