@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { eventService } from '@/services/eventService';
 import { Event } from '@/types';
 import { format } from 'date-fns';
-import { Clock, ArrowRight, MapPin, Sparkles, Calendar, Play, Image as ImageIcon, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Clock, ArrowRight, MapPin, Play, Image as ImageIcon, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 
 export default function EventsPage() {
@@ -111,7 +111,7 @@ export default function EventsPage() {
               transition={{ delay: 0.2, type: "spring", stiffness: 100 }}
               className={`text-4xl md:text-7xl font-black tracking-tighter leading-[0.9] ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}
             >
-              The <span className="text-accent2 ">Media</span> Hub
+              Upcoming <span className="text-accent ">Events</span> 
             </motion.h1>
           </div>
         </div>
@@ -152,21 +152,13 @@ export default function EventsPage() {
                     className="absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-500 scale-105"
                   />
 
-                  {/* Media Type Badges */}
-                  <div className="absolute bottom-4 left-4 md:bottom-8 md:left-8 flex gap-2">
-                    <div className="bg-white/10 backdrop-blur-md p-2 rounded-xl text-white border border-white/10">
-                      <ImageIcon size={16} />
-                    </div>
-                    <div className="bg-accent p-2 rounded-xl text-white shadow-lg shadow-accent/20">
-                      <Play size={16} fill="currentColor" />
-                    </div>
-                  </div>
 
-                  {/* Floating Price */}
+
+                  {/* Tickets Left */}
                   <div className="absolute top-4 left-4 md:top-8 md:left-8">
                     <div className={`${isDarkTheme ? 'bg-black/95' : 'bg-white/95'} backdrop-blur-md px-4 py-2 md:px-5 md:py-3 rounded-[18px] md:rounded-[24px] shadow-xl border border-white/10`}>
-                      <p className="text-[8px] md:text-[10px] font-black text-accent2 uppercase tracking-widest leading-none mb-1">Passes</p>
-                      <p className={`text-lg md:text-2xl font-black tracking-tighter ${isDarkTheme ? 'text-white' : 'text-slate-900'}`}>{price} ETB</p>
+                      <p className="text-[8px] md:text-[10px] font-black text-accent2 uppercase tracking-widest leading-none mb-1">Tickets Left</p>
+                      <p className={`text-lg md:text-2xl font-black tracking-tighter ${isDarkTheme ? 'text-white' : 'text-slate-900'}`}>{Math.max(0, event.capacity - event.tickets_sold)}</p>
                     </div>
                   </div>
                 </div>

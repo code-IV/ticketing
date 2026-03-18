@@ -187,7 +187,7 @@ export default function Home() {
             >
               <div>
                 <p className="text-[#FFD84D] font-black text-xs uppercase tracking-[0.3em] mb-3">
-                  What's On
+                  Exclusive
                 </p>
                 <h2
                   className="text-5xl md:text-6xl font-black leading-tight"
@@ -195,7 +195,7 @@ export default function Home() {
                 >
                   Upcoming
                   <br />
-                  Events
+                  <p className=" text-accent">Events</p>
                 </h2>
               </div>
               <Link
@@ -220,7 +220,7 @@ export default function Home() {
                   className="group relative rounded-3xl overflow-hidden aspect-3/4 cursor-pointer w-[calc(100vw-100px)] max-w-96 sm:w-[385Px] lg:w-96   mx-auto sm:mx-0 shrink-0 hover:border hover:border-accent2"
              >
                   <img
-                    src="/api/placeholder/600/800"
+                    src={`https://images.unsplash.com/${i === 0 ? 'photo-1544717297-fa95b6ee9643' : i === 1 ? 'photo-1492688798571-9dddf4574e88' : 'photo-1464207687429-7505649dae38'}?w=600&h=800&fit=crop&auto=format&q=80`}
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                     alt={event.name}
                   />
@@ -305,7 +305,7 @@ export default function Home() {
                 >
                   Must-Try
                   <br />
-                  Attractions
+                  <p className=" text-accent">Games</p>
                 </h2>
               </div>
               <Link
@@ -331,7 +331,7 @@ export default function Home() {
                              mx-auto sm:mx-0 shrink-0 hover:border hover:border-accent2"
                 >
                   <img
-                    src="/api/placeholder/600/800"
+                    src={`https://images.unsplash.com/${featuredGames.indexOf(game) === 0 ? 'photo-1571003123894-1f0594d2b5d9' : featuredGames.indexOf(game) === 1 ? 'photo-1632970471392-b864fa5b0856' : 'photo-1591014617869-55d3b8d9f9c0'}?w=600&h=800&fit=crop&auto=format&q=80`}
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                     alt={game.name}
                   />
@@ -384,7 +384,7 @@ export default function Home() {
             }`}
           >
             {[
-              { num: "25+", label: "Thriller Rides" },
+              { num: "15+", label: "Thriller Rides" },
               { num: "10k+", label: "Happy Visitors" },
               { num: "100%", label: "Safe & Secure" },
               { num: "4.9★", label: "User Rating" },

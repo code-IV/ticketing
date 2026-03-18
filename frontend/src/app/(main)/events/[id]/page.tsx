@@ -450,9 +450,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
                 <p className={`text-lg leading-relaxed ${isDarkTheme ? 'text-gray-300' : 'text-gray-600'}`}>
                   {event.description || "Experience a world-class production at Bora Park. Featuring state-of-the-art visuals and performances that redefine entertainment."}
                 </p>
-                <p className={`text-lg leading-relaxed mt-4 ${isDarkTheme ? 'text-gray-300' : 'text-gray-600'}`}>
-                  Join us for an unforgettable evening of music, art, and culture. This event brings together top artists and cutting-edge production for an immersive experience like no other.
-                </p>
+
               </div>
             </motion.div>
 
