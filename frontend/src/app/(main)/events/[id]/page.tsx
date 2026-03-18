@@ -12,7 +12,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { 
   Clock, MapPin, Calendar, ArrowLeft, 
   Ticket, Play, Share2, Plus, Minus, ShoppingCart, ArrowRight,
-  Star, Heart, X, ChevronLeft, ChevronRight, Users
+  Star, X, ChevronLeft, ChevronRight, Users
 } from 'lucide-react';
 import Link from 'next/link';
 import { format } from "date-fns";
@@ -37,6 +37,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [bookingReference, setBookingReference] = useState<string>("");
   const [bookingId, setBookingId] = useState<string>("");
+  const [showToast, setShowToast] = useState(false);
 
   // ── MOCK MEDIA ──
   const MOCK_VID = "https://player.vimeo.com/external/434045526.sd.mp4?s=c27ee37da9897116710497645167f536968d876d&profile_id=164&oauth2_token_id=57447761";
@@ -276,26 +277,42 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
           <ArrowLeft size={16} /> Back to Events
         </motion.button>
 
-        {/* Share & Favorite Buttons */}
+        {/* Share Button */}
         <motion.div
           initial={{ opacity: 0, x: 50 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.2, type: "spring", stiffness: 150 }}
-          className="absolute top-8 right-8 z-20 flex gap-3"
+          className="absolute top-8 right-8 z-20"
         >
-          <button className={`w-12 h-12 backdrop-blur-md border rounded-2xl flex items-center justify-center transition-all shadow-sm ${
-            isDarkTheme
-              ? 'bg-black/70 border border-accent text-white hover:bg-black/90'
-              : 'bg-white/70 border-white/50 text-gray-700 hover:bg-white/90'
-          }`}>
+          <button 
+            onClick={() => {
+              const url = window.location.href;
+              const title = event.name;
+              
+              if (navigator.share) {
+                navigator.share({
+                  title: title,
+                  text: `Check out this event at Bora Park: ${title}`,
+                  url: url
+                }).catch(() => {
+                  // Fallback to copying URL
+                  navigator.clipboard.writeText(url);
+                  setShowToast(true);
+                  setTimeout(() => setShowToast(false), 3000);
+                });
+              } else {
+                // Fallback for desktop browsers
+                navigator.clipboard.writeText(url);
+                setShowToast(true);
+                setTimeout(() => setShowToast(false), 3000);
+              }
+            }}
+            className={`w-12 h-12 backdrop-blur-md border rounded-2xl flex items-center justify-center transition-all shadow-sm ${
+              isDarkTheme
+                ? 'bg-black/70 border border-accent text-white hover:bg-black/90'
+                : 'bg-white/70 border-white/50 text-gray-700 hover:bg-white/90'
+            }`}>
             <Share2 size={18} />
-          </button>
-          <button className={`w-12 h-12 backdrop-blur-md border rounded-2xl flex items-center justify-center transition-all shadow-sm ${
-            isDarkTheme
-              ? 'bg-black/70 border border-accent text-white hover:bg-black/90'
-              : 'bg-white/70 border-white/50 text-gray-700 hover:bg-white/90'
-          }`}>
-            <Heart size={18} />
           </button>
         </motion.div>
 
@@ -724,6 +741,35 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
         showActions={true}
         user={user}
       />
+
+      {/* Toast Notification */}
+      <AnimatePresence>
+        {showToast && (
+          <motion.div
+            initial={{ opacity: 0, y: 50, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 50, scale: 0.9 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
+            className={`fixed bottom-8 right-8 z-50 px-6 py-4 rounded-2xl shadow-2xl border ${
+              isDarkTheme 
+                ? 'bg-[#1a1a1a] border-[#ffd84f] text-white' 
+                : 'bg-white border-[#ffd84f] text-gray-900'
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-[#ffd84f] rounded-full flex items-center justify-center">
+                <Share2 size={16} className="text-black" />
+              </div>
+              <div>
+                <p className="font-bold text-sm">Link Copied!</p>
+                <p className={`text-xs ${isDarkTheme ? 'text-gray-300' : 'text-gray-600'}`}>
+                  Event link copied to clipboard
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
