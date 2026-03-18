@@ -207,7 +207,7 @@ const BuyTicketsPage = () => {
             </div>
             <div className="text-center md:text-left">
               <h1 className={`text-4xl md:text-6xl font-black tracking-tighter uppercase italic ${isDarkTheme ? 'text-white' : 'text-slate-900'}`}>
-                Pick Your <span className="text-accent2">Games</span>
+                Pick Your <span className="text-accent">Games</span>
               </h1>
               <p className={`text-sm font-medium tracking-wide mt-1 ${isDarkTheme ? 'text-gray-400' : 'text-slate-500'}`}>
                 Select your adventure to experiance.

@@ -8,7 +8,7 @@ import { bookingService } from "@/services/bookingService";
 import { guestCookieUtils } from "@/utils/cookies";
 import { Bookings } from "@/types";
 import { Button } from "@/components/ui/Button";
-import { Calendar, Gamepad2, ChevronDown, ArrowRight } from "lucide-react";
+import { Calendar, Gamepad2, ChevronDown, ChevronLeft, ChevronRight, ArrowRight } from "lucide-react";
 import { CiFilter } from "react-icons/ci";
 import { format } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
@@ -30,6 +30,8 @@ export default function MyBookingsPage() {
     "ALL" | "Available" | "Fully Used" | "Pending" | "Cancelled" | "Refunded"
   >("ALL");
   const [isUsageOpen, setIsUsageOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Guest-only state variables
@@ -47,6 +49,11 @@ export default function MyBookingsPage() {
       }
     }
   }, [user, authLoading]);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab, usageFilter, user]);
 
   const loadBookings = async () => {
     try {
@@ -103,6 +110,12 @@ export default function MyBookingsPage() {
 
   // Guest bookings display logic
   const displayItems = user ? filteredItems : cookieBookings;
+  
+  // Pagination logic
+  const totalPages = Math.ceil(displayItems.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedItems = displayItems.slice(startIndex, endIndex);
 
   return (
     <div
@@ -220,92 +233,7 @@ export default function MyBookingsPage() {
           <>
             {/* Tabs and Filters (existing functionality) */}
             <div className="flex flex-col sm:flex-row items-center gap-3 m-5">
-              {/* Filter Dropdown */}
-              <div className="relative w-full sm:w-auto" ref={dropdownRef}>
-                <button
-                  onClick={() => setIsUsageOpen(!isUsageOpen)}
-                  className={`w-full flex items-center justify-between sm:justify-start gap-2 px-4 py-3 border rounded-2xl text-xs font-black shadow-sm ${
-                    isDarkTheme
-                      ? "bg-[#1a1a1a] border-gray-700 text-gray-300"
-                      : "bg-white border-slate-200 text-slate-700"
-                  }`}
-                >
-                  <CiFilter className="text-lg text-accent stroke-[1.5px]" />
-                  <span className="uppercase">
-                    {usageFilter === "ALL" ? "All Usage" : usageFilter}
-                  </span>
-                  <ChevronDown size={14} />
-                </button>
-                <AnimatePresence>
-                  {isUsageOpen && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                      animate={{ opacity: 1, y: 5, scale: 1 }}
-                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                      className={`absolute right-0 mt-2 w-44 border rounded-2xl shadow-xl z-50 overflow-hidden p-1.5 ${
-                        isDarkTheme
-                          ? "bg-[#1a1a1a] border-gray-700"
-                          : "bg-white border-slate-100"
-                      }`}
-                    >
-                      {(
-                        [
-                          "ALL",
-                          "Available",
-                          "Pending",
-                          "Cancelled",
-                          "Refunded",
-                          "Fully Used",
-                        ] as const
-                      ).map((usage) => (
-                        <button
-                          key={usage}
-                          onClick={() => {
-                            setUsageFilter(usage);
-                            setIsUsageOpen(false);
-                          }}
-                          className={`w-full text-left px-4 py-2.5 text-[10px] font-black uppercase rounded-lg transition-colors ${
-                            usageFilter === usage
-                              ? "text-accent bg-accent/10"
-                              : isDarkTheme
-                                ? "text-gray-400 hover:bg-gray-700"
-                                : "text-slate-500 hover:bg-slate-50"
-                          }`}
-                        >
-                          {usage}
-                        </button>
-                      ))}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-
-              {/* Tabs */}
-              <div
-                className={`flex p-1 rounded-2xl w-full sm:w-auto border ${
-                  isDarkTheme
-                    ? "bg-slate-700/50 border-gray-600"
-                    : "bg-slate-200/50 border-slate-200/50"
-                }`}
-              >
-                {(["ALL", "EVENT", "GAME"] as const).map((tab) => (
-                  <button
-                    key={tab}
-                    onClick={() => setActiveTab(tab)}
-                    className={`flex-1 sm:flex-none px-6 py-2 rounded-xl text-[10px] font-black tracking-widest transition-all ${
-                      activeTab === tab
-                        ? isDarkTheme
-                          ? "bg-[#1a1a1a] text-accent shadow-sm"
-                          : "bg-white text-accent shadow-sm"
-                        : isDarkTheme
-                          ? "text-gray-400"
-                          : "text-slate-500"
-                    }`}
-                  >
-                    {tab}
-                  </button>
-                ))}
-              </div>
+              
             </div>
           </>
         ) : (
@@ -332,7 +260,7 @@ export default function MyBookingsPage() {
                   onClick={() => router.push("/games")}
                   className="px-4 py-2 border border-gray-300 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-gray-50 transition-all"
                 >
-                  Browse Games
+                  <p className={` ${isDarkTheme ? "text-accent" : "text-slate-900" }`}>Browse Games</p>
                 </button>
               </div>
             </div>
@@ -348,7 +276,7 @@ export default function MyBookingsPage() {
         {/* LIST SECTION */}
         <div className="grid grid-cols-1 gap-6">
           <AnimatePresence mode="popLayout">
-            {displayItems?.map((item, index) => {
+            {paginatedItems?.map((item, index) => {
               const { totalQty, totalUsed } = (
                 item.ticket?.passDetails || []
               ).reduce(
@@ -398,9 +326,26 @@ export default function MyBookingsPage() {
                         <Gamepad2 size={28} />
                       )}
                     </div>
-                    <span className="md:mt-3 text-[10px] font-black uppercase tracking-[0.2em] opacity-60">
+                    <span className="md:mt-3 hidden md:block text-[10px] font-black uppercase tracking-[0.2em] opacity-60">
                       {item.type}
                     </span>
+                    <span
+                        className={`self-center md:hidden md:self-auto px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${
+                          isFinished
+                            ? isDarkTheme
+                              ? "bg-gray-700 text-gray-400"
+                              : "bg-slate-100 text-slate-500"
+                            : isDarkTheme
+                              ? "bg-emerald-900/20 text-emerald-400 border border-emerald-700"
+                              : "bg-emerald-50 text-emerald-600 border border-emerald-100"
+                        }`}
+                      >
+                        {isFinished
+                          ? "Used Up"
+                          : totalUsed > 0
+                            ? "In Progress"
+                            : "Available"}
+                      </span>
                   </div>
 
                   {/* CONTENT */}
@@ -413,14 +358,14 @@ export default function MyBookingsPage() {
                           {getDynamicPassName(item.ticket?.passDetails || [])}
                         </h3>
                         <p
-                          className={`text-[10px] font-bold uppercase tracking-widest mt-1 ${isDarkTheme ? "text-gray-400" : "text-slate-400"}`}
+                          className={`hidden md:block text-[10px] font-bold uppercase tracking-widest mt-1 ${isDarkTheme ? "text-gray-400" : "text-slate-400"}`}
                         >
                           Ref: #{item.bookingReference ? item.bookingReference.slice(0, 10) : 'Unknown'}..
                         </p>
                       </div>
 
                       <div
-                        className={`self-center md:self-auto px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${
+                        className={`self-center hidden md:block md:self-auto px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${
                           isFinished
                             ? isDarkTheme
                               ? "bg-gray-700 text-gray-400"
@@ -455,14 +400,14 @@ export default function MyBookingsPage() {
                         </span>
                       </div>
                       <div
-                        className={`md:bg-transparent p-3 md:p-0 rounded-2xl flex flex-col ${isDarkTheme ? "bg-gray-800" : "bg-slate-50"}`}
+                        className={`md:bg-transparent p-3 md:p-0 hidden md:block rounded-2xl flex flex-col ${isDarkTheme ? "bg-gray-800" : "bg-slate-50"}`}
                       >
                         <span
-                          className={`text-[9px] md:text-[10px] font-bold uppercase mb-1 ${isDarkTheme ? "text-gray-400" : "text-slate-400"}`}
+                          className={`text-[9px] md:text-[10px] hidden md:block font-bold uppercase mb-1 ${isDarkTheme ? "text-gray-400" : "text-slate-400"}`}
                         >
                           Ready
                         </span>
-                        <span className="text-sm font-black text-accent">
+                        <span className="text-sm font-black hidden md:block text-accent">
                           {totalQty - totalUsed} Tickets
                         </span>
                       </div>
@@ -529,8 +474,8 @@ export default function MyBookingsPage() {
                       }
                       className={`w-full md:w-auto rounded-2xl md:rounded-xl font-bold py-6 md:py-2 md:px-8 hover:bg-accent2! hover:text-white! ${
                         isDarkTheme
-                          ? "bg-stone-500 text-white"
-                          : "bg-slate-900 text-white"
+                          ? "bg-slate-800 text-white"
+                          : "bg-gray-400 text-white"
                       }`}
                     >
                       VIEW TICKET
@@ -541,6 +486,68 @@ export default function MyBookingsPage() {
             })}
           </AnimatePresence>
         </div>
+
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <div className="flex flex-col items-center gap-4 mt-8">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all ${
+                  currentPage === 1
+                    ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                    : "text-white shadow-lg hover:shadow-xl transform hover:scale-105"
+                }`}
+                style={{
+                  backgroundColor: currentPage === 1 ? undefined : '#ffd84f',
+                  color: currentPage === 1 ? undefined : '#000'
+                }}
+              >
+                <ChevronLeft size={16} />
+                Previous
+              </button>
+
+              <div className="flex items-center gap-1">
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                  <button
+                    key={page}
+                    onClick={() => setCurrentPage(page)}
+                    className={`w-8 h-8 rounded-full transition-all ${
+                      currentPage === page
+                        ? "w-10"
+                        : ""
+                    }`}
+                    style={{
+                      backgroundColor: currentPage === page ? '#ffd84f' : isDarkTheme ? '#374151' : '#d1d5db'
+                    }}
+                  />
+                ))}
+              </div>
+
+              <button
+                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all ${
+                  currentPage === totalPages
+                    ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                    : "text-white shadow-lg hover:shadow-xl transform hover:scale-105"
+                }`}
+                style={{
+                  backgroundColor: currentPage === totalPages ? undefined : '#ffd84f',
+                  color: currentPage === totalPages ? undefined : '#000'
+                }}
+              >
+                Next
+                <ChevronRight size={16} />
+              </button>
+            </div>
+
+            <p className={`text-sm ${isDarkTheme ? 'text-gray-400' : 'text-gray-600'}`}>
+              Showing {startIndex + 1}-{Math.min(endIndex, displayItems.length)} of {displayItems.length} bookings
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );
