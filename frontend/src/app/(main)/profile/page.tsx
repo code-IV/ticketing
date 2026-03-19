@@ -289,9 +289,8 @@ const PasswordField = ({
         <button
           type="button"
           onClick={() => setShow(!show)}
-          className={`absolute right-4 top-1/2 -translate-y-1/2 ${
-            isDarkTheme ? 'text-white/30' : 'text-black/35'
-          } hover:opacity-70 transition-opacity`}
+          className={`absolute right-4 top-1/2 -translate-y-1/2 transition-opacity hover:opacity-70`}
+          style={{ color: ACCENT }}
         >
           <EyeIcon open={show} />
         </button>

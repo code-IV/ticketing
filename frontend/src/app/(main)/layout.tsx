@@ -5,7 +5,6 @@ const nav = [
   { name: "games", href: "/games", iconName: "LayoutDashboard" },
   { name: "buy Tickets", href: "/buy", iconName: "Gamepad2" },
   { name: "my bookings", href: "/my-bookings", iconName: "Calendar" },
-  { name: "profile", href: "/profile", iconName: "User" },
   { name: "admin", href: "/admin", iconName: "Users" },
 ];
 
