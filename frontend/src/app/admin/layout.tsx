@@ -7,9 +7,8 @@ export default function AdminLayout({
 }) {
   const nav = [
     { name: "Home", href: "/", iconName: "Home" },
-    { name: "Dashboard", href: "/admin", iconName: "LayoutDashboard" },
     {
-      name: "analytics",
+      name: "Dashboard",
       href: "/admin/analitics",
       iconName: "LayoutDashboard",
     },
