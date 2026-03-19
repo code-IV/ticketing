@@ -15,10 +15,18 @@ exports.up = async function (knex) {
   await knex.schema.createTable("roles", (table) => {
     table.uuid("id").primary().defaultTo(knex.raw("uuid_generate_v4()"));
     table.string("name").unique().notNullable(); // SUPERADMIN, ADMIN, etc.
-    table.integer("level").notNullable();
+    table.integer("rank").notNullable();
     table.string("description").nullable();
     table.timestamps(true, true);
   });
+
+  // Seed default roles
+  await knex("roles").insert([
+    { name: "SUPERADMIN", rank: 100, description: "System Owner" },
+    { name: "ADMIN", rank: 50, description: "General Administrator" },
+    { name: "STAFF", rank: 20, description: "Park/Staff Manager" },
+    { name: "VISITOR", rank: 0, description: "Standard Customer" },
+  ]);
 
   // 3. Create Users Table
   await knex.schema.createTable("users", (table) => {
@@ -28,67 +36,14 @@ exports.up = async function (knex) {
     table.string("email", 255).unique().notNullable();
     table.string("phone", 20);
     table.string("password_hash", 255).notNullable();
+    table
+      .uuid("role_id")
+      .references("id")
+      .inTable("roles")
+      .onDelete("SET NULL");
     table.boolean("is_active").defaultTo(true);
     table.timestamps(true, true);
   });
-
-  //Join table for users and roles
-  await knex.schema.createTable("users_roles", (table) => {
-    table.uuid("id").primary().defaultTo(knex.raw("uuid_generate_v4()"));
-    table
-      .uuid("user_id")
-      .notNullable()
-      .references("id")
-      .inTable("users")
-      .onDelete("CASCADE");
-    table
-      .uuid("role_id")
-      .notNullable()
-      .references("id")
-      .inTable("roles")
-      .onDelete("CASCADE");
-
-    // Ensure a user can't have the same role twice
-    table.unique(["user_id", "role_id"]);
-  });
-
-  const roles = [
-    {
-      id: "00000000-0000-0000-0000-000000000001",
-      name: "SUPERADMIN",
-      level: 100,
-      description: "System Owner",
-    },
-    {
-      id: "00000000-0000-0000-0000-000000000002",
-      name: "ADMIN",
-      level: 50,
-      description: "General Administrator",
-    },
-    {
-      id: "00000000-0000-0000-0000-000000000003",
-      name: "STAFF",
-      level: 20,
-      description: "Park/Staff Manager",
-    },
-    {
-      id: "00000000-0000-0000-0000-000000000004",
-      name: "VISITOR",
-      level: 0,
-      description: "Standard Customer",
-    },
-  ];
-
-  for (const role of roles) {
-    await knex("roles").insert(role).onConflict("id").ignore();
-  }
-
-  // Enforce Only One Superadmin
-  await knex.raw(`
-    CREATE UNIQUE INDEX single_superadmin_idx 
-    ON users_roles (role_id) 
-    WHERE role_id = '00000000-0000-0000-0000-000000000001'
-  `);
 
   // 4. Create Events Table (Physical Entity)
   await knex.schema.createTable("events", (table) => {
@@ -131,17 +86,25 @@ exports.up = async function (knex) {
       .nullable()
       .references("id")
       .inTable("games")
-      .onDelete("SET NULL");
+      .onDelete("CASCADE");
     table
       .uuid("event_id")
       .nullable()
       .references("id")
       .inTable("events")
-      .onDelete("SET NULL");
+      .onDelete("CASCADE");
     table.integer("valid_days").defaultTo(1);
     table.boolean("is_active").defaultTo(true);
     table.timestamps(true, true);
   });
+
+  await knex.raw(`
+    ALTER TABLE products ADD CONSTRAINT chk_product_type_fk
+    CHECK (
+      (product_type = 'GAME' AND game_id IS NOT NULL AND event_id IS NULL) OR
+      (product_type = 'EVENT' AND event_id IS NOT NULL AND game_id IS NULL)
+    )
+  `);
 
   await knex.schema.createTable("media", (table) => {
     table.uuid("id").primary().defaultTo(knex.raw("uuid_generate_v4()"));
@@ -179,12 +142,14 @@ exports.up = async function (knex) {
 exports.down = async function (knex) {
   await knex.schema.dropTableIfExists("products_media");
   await knex.schema.dropTableIfExists("media");
+  await knex.raw(
+    "ALTER TABLE IF EXISTS products DROP CONSTRAINT IF EXISTS chk_product_type_fk",
+  );
   await knex.schema.dropTableIfExists("products");
   await knex.schema.dropTableIfExists("games");
   await knex.schema.dropTableIfExists("events");
   await knex.schema.dropTableIfExists("users_roles");
   await knex.schema.dropTableIfExists("users");
   await knex.schema.dropTableIfExists("roles");
-
   await knex.raw("DROP TYPE IF EXISTS game_status");
 };

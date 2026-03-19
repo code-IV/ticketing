@@ -32,7 +32,8 @@ const authController = {
       req.session.user = {
         id: user.id,
         email: user.email,
-        roles: user.roles,
+        role: user.role,
+        permissions: user.permissions,
         firstName: user.first_name,
         lastName: user.last_name,
       };
@@ -73,7 +74,8 @@ const authController = {
       req.session.user = {
         id: user.id,
         email: user.email,
-        roles: user.roles,
+        role: user.role,
+        permissions: user.permissions,
         firstName: user.first_name,
         lastName: user.last_name,
       };

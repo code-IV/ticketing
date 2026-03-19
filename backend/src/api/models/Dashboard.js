@@ -6,59 +6,62 @@ const { query } = require("../../config/db");
 
 const Dashboard = {
   async getUserAnalytics(period = "all_time") {
-    // 1. Base date filter logic for "New Users" and "Online Users"
-    const dateFilter =
-      {
-        today: "CURRENT_DATE",
-        this_week: "NOW() - INTERVAL '7 days'",
-        this_month: "DATE_TRUNC('month', CURRENT_DATE)",
-        this_year: "DATE_TRUNC('year', CURRENT_DATE)",
-        all_time: "'1900-01-01'", // Effectively all time
-      }[period] || "'1900-01-01'";
+    // 1. Define the Date Filter using PostgreSQL syntax
+    const periodMap = {
+      today: "CURRENT_DATE",
+      this_week: "NOW() - INTERVAL '7 days'",
+      this_month: "DATE_TRUNC('month', CURRENT_DATE)",
+      this_year: "DATE_TRUNC('year', CURRENT_DATE)",
+      all_time: "'1900-01-01'",
+    };
 
-    // 2. Combined Query for all user stats
-    // We use subqueries so we can get everything in one database round-trip
+    const dateFilter = periodMap[period] || periodMap.all_time;
+
+    // 2. Updated Query
+    // Note: users_roles join table is removed; we now join users.role_id -> roles.id
     const sql = `
-      SELECT 
-        -- Booking Engagement (Users who have at least one 'confirmed' booking)
-        (SELECT COUNT(DISTINCT user_id)::INT FROM bookings WHERE status = 'CONFIRMED') as users_with_bookings,
-        
-        -- Total active users for percentage calculation
-        (SELECT COUNT(*)::INT FROM users WHERE is_active = true) as total_active_users,
+    SELECT 
+      -- Booking Engagement (Assumes a bookings table exists with user_id)
+      (SELECT COUNT(DISTINCT user_id)::INT FROM bookings WHERE status = 'CONFIRMED') as users_with_bookings,
+      
+      -- Total active users
+      (SELECT COUNT(*)::INT FROM users WHERE is_active = true) as total_active_users,
 
-        -- Role Distribution (JSON Aggregation)
-        (
-    SELECT json_agg(role_distribution) 
-    FROM (
-        SELECT 
-            r.name as role, 
-            COUNT(ur.user_id)::INT as count 
-        FROM roles r
-        LEFT JOIN users_roles ur ON r.id = ur.role_id
-        GROUP BY r.name
-    ) role_distribution
-) as role_distribution,
+      -- Role Distribution (Direct Join on users.role_id)
+      (
+        SELECT json_agg(role_distribution) 
+        FROM (
+            SELECT 
+                r.name as role, 
+                COUNT(u.id)::INT as count 
+            FROM roles r
+            LEFT JOIN users u ON r.id = u.role_id
+            GROUP BY r.name
+        ) role_distribution
+      ) as role_distribution,
 
-        -- Status Distribution
-        (SELECT json_agg(stats) FROM (
+      -- Status Distribution
+      (
+        SELECT json_agg(stats) FROM (
             SELECT is_active, COUNT(*)::INT as count FROM users GROUP BY is_active
-        ) stats) as status_distribution,
+        ) stats
+      ) as status_distribution,
 
-        -- New Users in the selected period
-        (SELECT COUNT(*)::INT FROM users WHERE created_at >= ${dateFilter}) as new_users_count,
+      -- New Users in the selected period (Using the new schema's created_at)
+      (SELECT COUNT(*)::INT FROM users WHERE created_at >= $1) as new_users_count,
 
-        -- Total Users ()
-        (SELECT COUNT(*)::INT FROM users) as total_users
-    `;
+      -- Total Users
+      (SELECT COUNT(*)::INT FROM users) as total_users
+  `;
 
-    const result = await query(sql);
+    // Assuming 'knex' is your connection instance
+    const result = await query(sql, [period]);
     const row = result.rows[0];
 
-    // Format the response for the frontend
     return {
       bookingEngagement: {
-        usersWithBookings: row.users_with_bookings,
-        totalActiveUsers: row.total_users,
+        usersWithBookings: row.users_with_bookings || 0,
+        totalActiveUsers: row.total_active_users || 0,
         percentage:
           row.total_users > 0
             ? ((row.users_with_bookings / row.total_users) * 100).toFixed(2)
@@ -67,8 +70,8 @@ const Dashboard = {
       roleDistribution: row.role_distribution || [],
       statusDistribution: row.status_distribution || [],
       periodStats: {
-        newUsers: row.new_users_count,
-        totalUsers: row.total_users,
+        newUsers: row.new_users_count || 0,
+        totalUsers: row.total_users || 0,
         period: period,
       },
     };

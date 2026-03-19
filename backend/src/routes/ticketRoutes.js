@@ -21,7 +21,6 @@ router.get(
 // Admin only - validate ticket at gate
 router.get(
   "/scan",
-  isStaff,
   scanTicketRules,
   handleValidation,
   ticketController.scanTicket,

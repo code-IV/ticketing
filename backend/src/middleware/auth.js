@@ -22,7 +22,7 @@ const isAdmin = (req, res, next) => {
   if (
     req.session &&
     req.session.user &&
-    req.session.user.roles.includes("ADMIN")
+    req.session.user.permissions?.includes("ADMIN")
   ) {
     return next();
   }
@@ -41,7 +41,7 @@ const isStaff = (req, res, next) => {
   if (
     req.session &&
     req.session.user &&
-    req.session.user.roles.includes("STAFF")
+    req.session.user.permissions?.includes("STAFF")
   ) {
     return next();
   }

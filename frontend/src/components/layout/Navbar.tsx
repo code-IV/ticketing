@@ -73,6 +73,15 @@ export function Navbar({ nav }: { nav: Nav[] }) {
       ? "brightness-0 invert"
       : "";
 
+  const filteredNav = nav.filter((item) => {
+    if (item.name === "admin" || item.href === "/admin") {
+      return user?.permissions?.includes("ADMIN");
+    }
+    return true; // Show all other links
+  });
+
+  console.log(user);
+
   return (
     <>
       <motion.nav
@@ -96,7 +105,7 @@ export function Navbar({ nav }: { nav: Nav[] }) {
 
             {/* Desktop Nav Links */}
             <div className="hidden md:flex items-center gap-8">
-              {nav.map((item) => (
+              {filteredNav.map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}
@@ -140,12 +149,12 @@ export function Navbar({ nav }: { nav: Nav[] }) {
                       />
                     </div>
                     {user.first_name}
-                    {(user?.roles && user.roles.includes("SUPERADMIN") && (
+                    {(user?.role === "SUPERADMIN" && (
                       <span className="text-[10px] bg-[#FFD84D] text-black px-2 py-0.5 rounded-full font-black uppercase">
                         Super Admin
                       </span>
                     )) ||
-                      (user?.roles && user.roles.includes("ADMIN") && (
+                      (user?.role === "ADMIN" && (
                         <span className="text-[10px] bg-[#FFD84D] text-black px-2 py-0.5 rounded-full font-black uppercase">
                           Admin
                         </span>
@@ -230,7 +239,7 @@ export function Navbar({ nav }: { nav: Nav[] }) {
               )}
             </button>
 
-            {nav.map((item) => (
+            {filteredNav.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
@@ -252,12 +261,12 @@ export function Navbar({ nav }: { nav: Nav[] }) {
                       <p className="font-bold text-white">
                         {user.first_name} {user.last_name}
                       </p>
-                      {(user?.roles.includes("SUPERADMIN") && (
+                      {(user?.role === "SUPERADMIN" && (
                         <span className="text-[10px] bg-[#FFD84D] text-black px-2 py-0.5 rounded-full font-black uppercase">
                           Super Admin
                         </span>
                       )) ||
-                        (user?.roles.includes("ADMIN") && (
+                        (user?.role === "ADMIN" && (
                           <span className="text-[10px] bg-[#FFD84D] text-black px-2 py-0.5 rounded-full font-black uppercase">
                             Admin
                           </span>

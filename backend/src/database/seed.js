@@ -10,24 +10,21 @@ const seed = async () => {
 
     // 1. Create Users
     const adminPassword = await bcrypt.hash("admin123", 12);
-    const roles = await client.query(`SELECT id FROM roles`);
-
-    const userId = await client.query(
-      `INSERT INTO users (first_name, last_name, email, password_hash)
-       VALUES ($1, $2, $3, $4) ON CONFLICT (email) DO NOTHING RETURNING id`,
-      ["Bora", "Admin", "admin@borapark.com", adminPassword],
+    const roleId = await client.query(
+      `SELECT id FROM roles WHERE name = 'SUPERADMIN'`,
     );
 
-    if (userId.rows.length === 0) {
-      console.log("Admin user already exists, skipping role assignment.");
-    } else {
-      for (const role of roles.rows) {
-        await client.query(
-          `INSERT INTO users_roles (user_id, role_id) VALUES ($1, $2)`,
-          [userId.rows[0].id, role.id],
-        );
-      }
+    if (!roleId.rows[0]) {
+      throw new Error(
+        "SUPERADMIN role not found. Ensure roles are seeded first.",
+      );
     }
+
+    const userId = await client.query(
+      `INSERT INTO users (first_name, last_name, email, password_hash, role_id)
+       VALUES ($1, $2, $3, $4, $5) ON CONFLICT (email) DO NOTHING RETURNING id`,
+      ["Bora", "Admin", "admin@borapark.com", adminPassword, roleId.rows[0].id],
+    );
 
     // 2. Define 8 Events
     const eventsData = [

@@ -13,19 +13,20 @@ const User = {
     email,
     phone,
     password,
-    roleName = "VISITOR", // Now passing the name to look up
+    roleName = "VISITOR",
   }) {
-    const client = await getClient(); // Get a client for the transaction
+    const client = await getClient();
     try {
       await client.query("BEGIN");
 
       const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
 
-      // 1. Insert the User
+      // 1. Insert the User and link the role in one go
+      // We look up the role_id by name inside the INSERT statement
       const userSql = `
-      INSERT INTO users (first_name, last_name, email, phone, password_hash)
-      VALUES ($1, $2, $3, $4, $5)
-      RETURNING id, first_name, last_name, email, phone, is_active, created_at`;
+      INSERT INTO users (first_name, last_name, email, phone, password_hash, role_id)
+      VALUES ($1, $2, $3, $4, $5, (SELECT id FROM roles WHERE name = $6))
+      RETURNING id, first_name, last_name, email, phone, role_id, is_active, created_at`;
 
       const userRes = await client.query(userSql, [
         firstName,
@@ -33,27 +34,35 @@ const User = {
         email,
         phone,
         passwordHash,
+        roleName,
       ]);
+
       const newUser = userRes.rows[0];
 
-      // 2. Assign the Role
-      // This finds the ID of the role by name and inserts into the junction table
-      const roleSql = `
-      WITH inserted_role AS (
-    INSERT INTO users_roles (user_id, role_id)
-    VALUES ($1, (SELECT id FROM roles WHERE name = $2))
-    RETURNING role_id
-)
-SELECT r.name 
-FROM roles r
-JOIN inserted_role ir ON r.id = ir.role_id;`;
+      // 2. Fetch the assigned role name AND all inherited roles (permissions)
+      // We get the rank of the assigned role, then select all roles with rank <= that.
+      const permissionSql = `
+      WITH user_role_info AS (
+        SELECT name, rank FROM roles WHERE id = $1
+      )
+      SELECT name FROM roles 
+      WHERE rank <= (SELECT rank FROM user_role_info)
+      ORDER BY rank DESC;
+    `;
 
-      const roles = await client.query(roleSql, [newUser.id, roleName]);
+      const permRes = await client.query(permissionSql, [newUser.role_id]);
+
+      // The first item in the sorted list (highest rank) is their actual role
+      const permissions = permRes.rows.map((r) => r.name);
+      const assignedRole = permissions[0];
 
       await client.query("COMMIT");
 
-      // Return the user object (you might want to attach the roleName manually here)
-      return { ...newUser, roles: roles.rows };
+      return {
+        ...newUser,
+        role: assignedRole,
+        permissions: permissions,
+      };
     } catch (error) {
       await client.query("ROLLBACK");
       throw error;
@@ -67,12 +76,18 @@ JOIN inserted_role ir ON r.id = ir.role_id;`;
    */
   async findByEmail(email) {
     const sql = `
-      SELECT u.*, COALESCE(json_agg(r.name) FILTER (WHERE r.name IS NOT NULL), '[]') as roles
-        FROM users u
-        LEFT JOIN users_roles ur ON u.id = ur.user_id
-        LEFT JOIN roles r ON ur.role_id = r.id
-      WHERE u.email = $1
-      GROUP BY u.id`;
+      SELECT 
+    u.*, 
+    r.name AS role,
+    COALESCE(
+        (SELECT jsonb_agg(p.name ORDER BY p.rank DESC) 
+         FROM roles p 
+         WHERE p.rank <= r.rank),
+        '[]'
+    ) AS permissions
+FROM users u
+LEFT JOIN roles r ON u.role_id = r.id
+WHERE u.email = $1;`;
     const result = await query(sql, [email]);
     return result.rows[0] || null;
   },
@@ -86,17 +101,19 @@ JOIN inserted_role ir ON r.id = ir.role_id;`;
     u.id, 
     u.first_name, 
     u.last_name, 
-    u.email, 
-    u.phone, 
-    u.is_active, 
-    u.created_at, 
-    u.updated_at, 
-    COALESCE(json_agg(r.name) FILTER (WHERE r.name IS  NOT NULL), '[]') as roles -- This creates the ["ADMIN", "VISITOR"] array
-FROM users u 
-LEFT JOIN users_roles ur ON u.id = ur.user_id
-LEFT JOIN roles r ON ur.role_id = r.id
-WHERE u.id = $1
-GROUP BY u.id;`;
+    u.email,
+    -- The user's actual assigned role name
+    user_role.name AS role,
+    -- All roles with rank <= user's rank
+    COALESCE(
+        (SELECT json_agg(r_sub.name ORDER BY r_sub.rank DESC)
+         FROM roles r_sub
+         WHERE r_sub.rank <= user_role.rank), 
+        '[]'
+    ) AS permissions
+FROM users u
+LEFT JOIN roles user_role ON u.role_id = user_role.id
+WHERE u.id = $1`;
     const result = await query(sql, [id]);
     return result.rows[0] || null;
   },
@@ -116,20 +133,26 @@ GROUP BY u.id;`;
   async update(id, { firstName, lastName, phone }) {
     const sql = `
     WITH updated AS (
-      UPDATE users
-      SET first_name = COALESCE($2, first_name),
-          last_name = COALESCE($3, last_name),
-          phone = COALESCE($4, phone),
-          updated_at = NOW()
-      WHERE id = $1
-      RETURNING id, first_name, last_name, email, phone, is_active, updated_at
-    )
-    SELECT 
-      u.*, 
-      r.name as role 
-    FROM updated u
-    LEFT JOIN users_roles ur ON u.id = ur.user_id
-    LEFT JOIN roles r ON ur.role_id = r.id;
+  UPDATE users
+  SET 
+    first_name = COALESCE($2, first_name),
+    last_name = COALESCE($3, last_name),
+    phone = COALESCE($4, phone),
+    updated_at = NOW()
+  WHERE id = $1
+  RETURNING id, first_name, last_name, email, phone, is_active, role_id, updated_at
+)
+SELECT 
+  u.id,
+  u.first_name,
+  u.last_name,
+  u.email,
+  u.phone,
+  u.is_active,
+  u.updated_at,
+  r.name AS role 
+FROM updated u
+LEFT JOIN roles r ON u.role_id = r.id;
   `;
 
     const result = await query(sql, [id, firstName, lastName, phone]);
@@ -158,52 +181,43 @@ GROUP BY u.id;`;
    */
   async findAll({ page = 1, limit = 20, role = null }) {
     const offset = (page - 1) * limit;
-
-    // 1. Build the Main Query
-    // We use LEFT JOIN so we don't accidentally hide users who might have no roles assigned
-    let sql = `
-    SELECT 
-      u.id, u.first_name, u.last_name, u.email, u.phone, u.is_active, u.created_at, u.updated_at,
-      STRING_AGG(r.name, ', ') as roles
-    FROM users u
-    LEFT JOIN users_roles ur ON u.id = ur.user_id
-    LEFT JOIN roles r ON ur.role_id = r.id
-  `;
-
     const values = [];
     let paramIndex = 1;
 
-    // 2. Filter by Role (if provided)
+    // 1. Build the Main Query
+    // We join directly with the roles table via u.role_id
+    let sql = `
+    SELECT 
+      u.id, u.first_name, u.last_name, u.email, u.phone, u.is_active, 
+      u.created_at, u.updated_at,
+      r.name as role_name,
+      r.rank as role_rank
+    FROM users u
+    LEFT JOIN roles r ON u.role_id = r.id
+  `;
+
+    // 2. Filter by Role Name (if provided)
     if (role) {
-      // We use a WHERE clause that checks if the user has the specific role in the junction table
-      sql += ` WHERE u.id IN (
-      SELECT user_id FROM users_roles ur 
-      JOIN roles r ON ur.role_id = r.id 
-      WHERE r.name = $${paramIndex}
-    )`;
+      sql += ` WHERE r.name = $${paramIndex}`;
       values.push(role);
       paramIndex++;
     }
 
-    // 3. Grouping and Pagination
-    // Must group by user ID because of the STRING_AGG
-    sql += ` GROUP BY u.id 
-           ORDER BY u.created_at DESC 
+    // 3. Ordering and Pagination
+    // No GROUP BY needed anymore because there's only 1 role per user
+    sql += ` ORDER BY u.created_at DESC 
            LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
 
     values.push(limit, offset);
 
     const result = await query(sql, values);
 
-    // 4. Count Total Users (Filtering by role if necessary)
-    let countSql = `SELECT COUNT(DISTINCT u.id) FROM users u`;
+    // 4. Count Total Users
+    let countSql = `SELECT COUNT(*) FROM users u`;
     const countValues = [];
 
     if (role) {
-      countSql += ` 
-      JOIN users_roles ur ON u.id = ur.user_id 
-      JOIN roles r ON ur.role_id = r.id 
-      WHERE r.name = $1`;
+      countSql += ` JOIN roles r ON u.role_id = r.id WHERE r.name = $1`;
       countValues.push(role);
     }
 
@@ -224,13 +238,29 @@ GROUP BY u.id;`;
   /**
    * update user information (admin)
    */
-  async updateUser(id, { firstName, lastName, email, phone, role, isActive }) {
+  async updateUser(
+    id,
+    { firstName, lastName, email, phone, roleName, isActive },
+  ) {
     const client = await getClient();
     try {
       await client.query("BEGIN");
 
-      // 1. Update the Users Table
-      // Note: We removed 'role' from this SQL as it no longer lives here
+      // 1. Resolve Role ID if a role name was provided
+      let roleId = null;
+      if (roleName) {
+        const roleRes = await client.query(
+          "SELECT id FROM roles WHERE name = $1",
+          [roleName],
+        );
+        if (roleRes.rows.length === 0) {
+          throw new Error(`Role '${roleName}' does not exist.`);
+        }
+        roleId = roleRes.rows[0].id;
+      }
+
+      // 2. Update the Users Table
+      // We include role_id directly in the main UPDATE statement
       const userSql = `
       UPDATE users
       SET 
@@ -238,10 +268,11 @@ GROUP BY u.id;`;
         last_name = COALESCE($3, last_name),
         email = COALESCE($4, email),
         phone = COALESCE($5, phone),
-        is_active = COALESCE($6, is_active),
+        role_id = COALESCE($6, role_id),
+        is_active = COALESCE($7, is_active),
         updated_at = CURRENT_TIMESTAMP
       WHERE id = $1
-      RETURNING id, first_name, last_name, email, phone, is_active, updated_at`;
+      RETURNING id, first_name, last_name, email, phone, role_id, is_active, updated_at`;
 
       const userRes = await client.query(userSql, [
         id,
@@ -249,6 +280,7 @@ GROUP BY u.id;`;
         lastName,
         email,
         phone,
+        roleId, // Passing the UUID resolved above
         isActive,
       ]);
 
@@ -257,35 +289,19 @@ GROUP BY u.id;`;
         return null;
       }
 
-      const updatedUser = userRes.rows[0];
-
-      // 2. Update the Role (If provided)
-      if (role) {
-        // First, we clear existing roles for this user (assuming 1 role per user for now)
-        // If you want multiple roles, you'd change the logic here.
-        await client.query("DELETE FROM users_roles WHERE user_id = $1", [id]);
-
-        const roleSql = `
-        INSERT INTO users_roles (user_id, role_id)
-        VALUES ($1, (SELECT id FROM roles WHERE name = $2))`;
-
-        await client.query(roleSql, [id, role]);
-      }
-
       await client.query("COMMIT");
 
-      // Fetch the current role name to return it in the object
-      const finalRoleRes = await query(
-        `SELECT r.name FROM roles r 
-       JOIN users_roles ur ON r.id = ur.role_id 
-       WHERE ur.user_id = $1`,
+      // 3. Fetch the final object including the role name for the response
+      const finalUserRes = await client.query(
+        `SELECT u.id, u.first_name, u.last_name, u.email, u.phone, 
+                u.is_active, u.created_at, u.updated_at, r.name as role_name 
+       FROM users u 
+       LEFT JOIN roles r ON u.role_id = r.id 
+       WHERE u.id = $1`,
         [id],
       );
 
-      return {
-        ...updatedUser,
-        role: finalRoleRes.rows[0]?.name || role,
-      };
+      return finalUserRes.rows[0];
     } catch (error) {
       await client.query("ROLLBACK");
       throw error;

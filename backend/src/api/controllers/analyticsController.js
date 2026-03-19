@@ -207,13 +207,13 @@ const analyticsController = {
    */
   async getUserAnalytics(req, res, next) {
     try {
-      // Disable caching
       res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
 
       const { startDate, endDate } = req.query;
 
-      // Build Dynamic Date Filter
-      let dateFilter = "";
+      // 1. Build Dynamic Date Filter and Params Safely
+      let dateFilter =
+        "WHERE u.created_at >= CURRENT_DATE - INTERVAL '30 days'";
       let queryParams = [];
 
       if (startDate && endDate) {
@@ -225,11 +225,9 @@ const analyticsController = {
       } else if (endDate) {
         dateFilter = "WHERE u.created_at::date <= $1";
         queryParams = [endDate];
-      } else {
-        dateFilter = "WHERE u.created_at >= CURRENT_DATE - INTERVAL '30 day'";
       }
 
-      // 1. User registrations over time
+      // 2. User registrations over time
       const registrationQuery = `
       SELECT u.created_at::date as date, COUNT(*) as new_users
       FROM users u
@@ -238,22 +236,32 @@ const analyticsController = {
       ORDER BY date DESC
     `;
 
-      // 2. User role breakdown (Updated for Junction Table)
+      // 3. User role breakdown (Updated for Direct FK in new schema)
       const roleQuery = `
       SELECT 
         r.name as role,
-        COUNT(ur.user_id) as count,
-        ROUND(COUNT(ur.user_id) * 100.0 / (SELECT COUNT(*) FROM users), 2) as percentage
+        COUNT(u.id) as count,
+        CASE 
+          WHEN (SELECT COUNT(*) FROM users) = 0 THEN 0
+          ELSE ROUND(COUNT(u.id) * 100.0 / (SELECT COUNT(*) FROM users), 2) 
+        END as percentage
       FROM roles r
-      LEFT JOIN users_roles ur ON r.id = ur.role_id
+      LEFT JOIN users u ON r.id = u.role_id
       GROUP BY r.name
       ORDER BY count DESC
     `;
 
-      // 3. Active status
-      const activeQuery = `SELECT is_active, COUNT(*) as count FROM users GROUP BY is_active`;
+      // 4. Active status
+      const activeQuery = `
+      SELECT 
+        CASE WHEN is_active THEN 'Active' ELSE 'Inactive' END as status, 
+        COUNT(*) as count 
+      FROM users 
+      GROUP BY is_active
+    `;
 
-      // 4. Booking participation (Updated Status to Uppercase 'CONFIRMED')
+      // 5. Booking participation
+      // Note: Ensure your 'bookings' table exists and links to 'users'
       const participationQuery = `
       SELECT 
         COUNT(DISTINCT b.user_id) as users_with_bookings,
@@ -285,7 +293,7 @@ const analyticsController = {
       });
     } catch (err) {
       console.error("Analytics Error:", err);
-      return next(err); // Better to let global error handler catch it
+      return next(err);
     }
   },
 
