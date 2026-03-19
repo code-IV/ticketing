@@ -106,8 +106,8 @@ export default function GameDetailPage() {
             dateRange.label === "Custom" ? customPeriod : dateRange.label;
           const response = await gameService.getAnalytics(
             gameId,
-            dateRange.start.toISOString(),
-            dateRange.end.toISOString(),
+            dateRange.start!.toISOString(),
+            dateRange.end!.toISOString(),
             period,
           );
           setAnalytics(response.data);
@@ -121,7 +121,7 @@ export default function GameDetailPage() {
 
       fetchAnalytics();
     }
-  }, [gameId, dateRange, customPeriod]);
+  }, [gameId, dateRange.start, dateRange.end, dateRange.label, customPeriod]);
 
   // Helper to format date for display
   const formatChartDate = (isoString: string) => {
@@ -490,7 +490,7 @@ export default function GameDetailPage() {
                       <td
                         className={`px-4 py-2 ${isDarkTheme ? "text-gray-300" : ""}`}
                       >
-                        ${ticket.revenue.toLocaleString()}
+                        ${ticket.revenue?.toLocaleString() || '0'}
                       </td>
                     </tr>
                   ))}

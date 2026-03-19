@@ -421,7 +421,7 @@ const EventStats = {
       LEFT JOIN booking_items bi ON bi.booking_id = b.id
       LEFT JOIN ticket_types tt ON bi.ticket_type_id = tt.id
       LEFT JOIN products p ON tt.product_id = p.id
-      WHERE p.event_id = $1 OR p.event_id IS NULL
+      WHERE p.event_id = $1
       GROUP BY ds.slot
       ORDER BY ds.slot ASC`;
 

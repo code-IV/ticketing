@@ -266,12 +266,17 @@ export const adminService = {
 };
 
 export const ticketService = {
-  async scanToken(token: string): Promise<ApiResponse<any>> {
+  async scanTicket(token: string): Promise<ApiResponse> {
     const response = await api.get("/tickets/scan", {
       params: {
         token,
       },
     });
+    return response.data;
+  },
+
+  async punchTicket(data: { ticketId: string; productId: string }): Promise<ApiResponse> {
+    const response = await api.post("/tickets/punch", data);
     return response.data;
   },
 };

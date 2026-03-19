@@ -4,8 +4,9 @@ export interface User {
   last_name: string;
   email: string;
   phone?: string;
-  role: "SUPERADMIN" | "ADMIN" | "STAFF" | "VISITOR";
-  permissions: ("SUPERADMIN" | "ADMIN" | "STAFF" | "VISITOR")[];
+  role?: "SUPERADMIN" | "ADMIN" | "STAFF" | "VISITOR";
+  roles?: ("SUPERADMIN" | "ADMIN" | "STAFF" | "VISITOR")[];
+  permissions?: ("SUPERADMIN" | "ADMIN" | "STAFF" | "VISITOR")[];
   is_active: boolean;
   created_at: string;
   updated_at: string;
