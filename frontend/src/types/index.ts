@@ -35,9 +35,11 @@ export interface Event {
   id: string;
   name: string;
   description?: string;
-  event_date: string;
-  start_time: string;
-  end_time: string;
+  schedule: {
+    eventDate: string;
+    startTime: string;
+    endTime: string;
+  };
   capacity: number;
   tickets_sold: number;
   available_tickets?: number;

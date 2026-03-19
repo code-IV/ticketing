@@ -1,13 +1,14 @@
 const express = require("express");
 const router = express.Router();
 const adminController = require("../api/controllers/adminController");
+const { EventController } = require("../api/controllers/eventController");
 const { isAuthenticated, isAdmin } = require("../middleware/auth");
 const {
   createEventRules,
   updateEventRules,
+  createEventWithTicketTypesRules,
   createTicketTypeRules,
   updateTicketTypeRules,
-  createEventWithTicketTypesRules,
   uuidParamRule,
   paginationRules,
   handleValidation,
@@ -24,45 +25,39 @@ router.get(
   "/events",
   paginationRules,
   handleValidation,
-  adminController.getAllEvents,
+  EventController.getAllEvents,
 );
 router.post(
   "/events",
   createEventRules,
   handleValidation,
-  adminController.createEvent,
+  EventController.createEvent,
 );
 router.post(
   "/events-with-tickets",
   createEventWithTicketTypesRules,
   handleValidation,
-  adminController.createEventWithTicketTypes,
+  EventController.createEventWithTicketTypes,
 );
 router.put(
   "/events/:id",
   uuidParamRule("id"),
   updateEventRules,
   handleValidation,
-  adminController.updateEvent,
-);
-router.get(
-  "/events/:id",
-  uuidParamRule("id"),
-  handleValidation,
-  adminController.getEventWithTicketTypes,
+  EventController.updateEvent,
 );
 router.put(
   "/events/:id/ticket-types",
   uuidParamRule("id"),
   createEventWithTicketTypesRules,
   handleValidation,
-  adminController.updateEventWithTicketTypes,
+  EventController.updateEventWithTicketTypes,
 );
 router.delete(
   "/events/:id",
   uuidParamRule("id"),
   handleValidation,
-  adminController.deleteEvent,
+  EventController.deleteEvent,
 );
 
 // Ticket type management

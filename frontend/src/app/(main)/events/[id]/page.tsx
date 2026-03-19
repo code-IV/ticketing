@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import { use, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -9,16 +9,33 @@ import { bookingService } from "@/services/bookingService";
 import { guestCookieUtils } from "@/utils/cookies";
 import { Event, BookingItem } from "@/types";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
-  Clock, MapPin, Calendar, ArrowLeft, 
-  Ticket, Play, Share2, Plus, Minus, ShoppingCart, ArrowRight,
-  Star, X, ChevronLeft, ChevronRight, Users
-} from 'lucide-react';
-import Link from 'next/link';
+import {
+  Clock,
+  MapPin,
+  Calendar,
+  ArrowLeft,
+  Ticket,
+  Play,
+  Share2,
+  Plus,
+  Minus,
+  ShoppingCart,
+  ArrowRight,
+  Star,
+  X,
+  ChevronLeft,
+  ChevronRight,
+  Users,
+} from "lucide-react";
+import Link from "next/link";
 import { format } from "date-fns";
 import SuccessModal from "@/components/ui/SuccessModal";
 
-export default function EventDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default function EventDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   const resolvedParams = use(params);
   const id = resolvedParams.id;
   const router = useRouter();
@@ -27,11 +44,14 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
 
   // ── STATE ──
   const [event, setEvent] = useState<Event | null>(null);
+  const [gallery, setGallery] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [cart, setCart] = useState<{ [key: string]: number }>({});
   const [booking, setBooking] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<"credit_card" | "debit_card" | "telebirr" | "cash">("telebirr");
+  const [paymentMethod, setPaymentMethod] = useState<
+    "credit_card" | "debit_card" | "telebirr" | "cash"
+  >("telebirr");
   const [selectedMediaIndex, setSelectedMediaIndex] = useState(0);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -39,30 +59,23 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
   const [bookingId, setBookingId] = useState<string>("");
   const [showToast, setShowToast] = useState(false);
 
-  // ── MOCK MEDIA ──
-  const MOCK_VID = "https://player.vimeo.com/external/434045526.sd.mp4?s=c27ee37da9897116710497645167f536968d876d&profile_id=164&oauth2_token_id=57447761";
-  const VIDEO_POSTER = "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?q=80&w=2000&auto=format&fit=crop";
-  const MOCK_GALLERY = [
-    "https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?q=80&w=600&auto=format&fit=crop",
-    "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?q=80&w=600&auto=format&fit=crop",
-    "https://images.unsplash.com/photo-1514525253361-bee8a19740c1?q=80&w=600&auto=format&fit=crop",
-    "https://images.unsplash.com/photo-1429962714451-bb934ecdc4ec?q=80&w=600&auto=format&fit=crop"
-  ];
-
-  useEffect(() => { loadEvent(); }, [id]);
+  useEffect(() => {
+    loadEvent();
+  }, [id]);
 
   const loadEvent = async () => {
     try {
       setLoading(true);
       const response = await eventService.getEventById(id);
-      
+      console.log(response.data);
       if (response.success && response.data) {
         setEvent(response.data.event);
+        setGallery(response.data.gallery);
       } else {
         setError(response.message || "Event not found");
       }
     } catch (err: any) {
-      console.error('Failed to load event:', err);
+      console.error("Failed to load event:", err);
       setError(err.response?.data?.message || "Failed to load event");
     } finally {
       setLoading(false);
@@ -86,15 +99,22 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
     }, 0);
   };
 
-  const getTotalTickets = () => Object.values(cart).reduce((sum, qty) => sum + qty, 0);
+  const getTotalTickets = () =>
+    Object.values(cart).reduce((sum, qty) => sum + qty, 0);
 
   const handleBooking = async () => {
-    if (getTotalTickets() === 0) { setError("Please select at least one ticket"); return; }
-    if (!event) { setError("Event not found"); return; }
-    
+    if (getTotalTickets() === 0) {
+      setError("Please select at least one ticket");
+      return;
+    }
+    if (!event) {
+      setError("Event not found");
+      return;
+    }
+
     setBooking(true);
     setError("");
-    
+
     try {
       // Prepare booking items from cart
       const bookingItems: BookingItem[] = Object.entries(cart)
@@ -116,7 +136,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
         setBookingId(response.data.booking.id);
         setShowSuccessModal(true);
         setCart({}); // Clear cart after successful booking
-        
+
         // Save guest booking to cookies if user is not authenticated
         if (!user) {
           // Save the entire API response with all fields
@@ -127,30 +147,39 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
             totalAmount: (response.data.booking as any).total_amount,
             status: (response.data.booking as any).status,
             type: "EVENT" as const,
-            eventDate: (response.data.booking as any).created_at || new Date().toISOString(),
-            bookedAt: (response.data.booking as any).created_at || new Date().toISOString(),
+            eventDate:
+              (response.data.booking as any).created_at ||
+              new Date().toISOString(),
+            bookedAt:
+              (response.data.booking as any).created_at ||
+              new Date().toISOString(),
             // Guest-specific fields
             firstName: "Guest",
             lastName: "User",
-            email: (response.data.booking as any).guest_email || "guest@bora.com",
+            email:
+              (response.data.booking as any).guest_email || "guest@bora.com",
             paymentStatus: "COMPLETED",
             paymentMethod: "TELEBIRR",
             // Save the complete ticket structure from API
             passes: {
               games: [],
-              events: [] // Events API doesn't seem to have passes array in current response
+              events: [], // Events API doesn't seem to have passes array in current response
             },
             ticket: {
               status: (response.data.booking as any).ticket?.status || "ACTIVE",
-              expiresAt: (response.data.booking as any).ticket?.expires_at || new Date(Date.now() + 21 * 24 * 60 * 60 * 1000).toISOString(),
+              expiresAt:
+                (response.data.booking as any).ticket?.expires_at ||
+                new Date(Date.now() + 21 * 24 * 60 * 60 * 1000).toISOString(),
               ticket_code: (response.data.booking as any).ticket?.ticket_code,
               qr_token: (response.data.booking as any).ticket?.qr_token,
               // Create passDetails for list display
-              passDetails: [{
-                productName: "Event Ticket",
-                totalQuantity: 1,
-                usedQuantity: 0,
-              }]
+              passDetails: [
+                {
+                  productName: "Event Ticket",
+                  totalQuantity: 1,
+                  usedQuantity: 0,
+                },
+              ],
             },
             // Save additional API fields
             ticketCode: (response.data.booking as any).ticket?.ticket_code,
@@ -162,104 +191,144 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
         setError(response.message || "Booking failed");
       }
     } catch (err: any) {
-      console.error('Booking error:', err);
-      setError(err.response?.data?.message || "Booking failed. Please try again.");
+      console.error("Booking error:", err);
+      setError(
+        err.response?.data?.message || "Booking failed. Please try again.",
+      );
     } finally {
       setBooking(false);
     }
   };
+
+  // ── MOCK MEDIA ──
+  const MOCK_VID =
+    "https://player.vimeo.com/external/434045526.sd.mp4?s=c27ee37da9897116710497645167f536968d876d&profile_id=164&oauth2_token_id=57447761";
+  const VIDEO_POSTER =
+    "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?q=80&w=2000&auto=format&fit=crop";
+  const MOCK_GALLERY = gallery?.map((m) => m.url);
 
   // Build media items for gallery and lightbox
   const getMediaItems = () => {
     const items = [];
     // Add video first
     items.push({
-      type: 'video',
+      type: "video",
       url: event?.video_url || MOCK_VID,
       thumbnail: VIDEO_POSTER,
-      alt: `${event?.name} trailer`
+      alt: `${event?.name} trailer`,
     });
     // Add gallery images
     MOCK_GALLERY.forEach((img, i) => {
       items.push({
-        type: 'image',
+        type: "image",
         url: img,
         thumbnail: img,
-        alt: `${event?.name} gallery ${i+1}`
+        alt: `${event?.name} gallery ${i + 1}`,
       });
     });
     return items;
   };
 
-  const mediaItems = getMediaItems();
+  const mediaItems = gallery ? gallery : [];
   const currentMedia = mediaItems[selectedMediaIndex];
 
-  const navigateMedia = (direction: 'prev' | 'next') => {
-    if (direction === 'prev') {
-      setSelectedMediaIndex((prev) => prev === 0 ? mediaItems.length - 1 : prev - 1);
+  const navigateMedia = (direction: "prev" | "next") => {
+    if (direction === "prev") {
+      setSelectedMediaIndex((prev) =>
+        prev === 0 ? mediaItems.length - 1 : prev - 1,
+      );
     } else {
-      setSelectedMediaIndex((prev) => prev === mediaItems.length - 1 ? 0 : prev + 1);
+      setSelectedMediaIndex((prev) =>
+        prev === mediaItems.length - 1 ? 0 : prev + 1,
+      );
     }
   };
 
-  if (loading) return (
-    <div className={`min-h-screen ${isDarkTheme ? 'bg-[#0A0A0A]' : 'bg-gray-50'} flex items-center justify-center`}>
-      <div className="flex flex-col items-center gap-4">
-        <div className="w-12 h-12 border-4 border-[#ffd84f] border-t-transparent rounded-full animate-spin" />
-        <span className={`font-black tracking-[0.5em] uppercase italic ${isDarkTheme ? 'text-white' : 'text-gray-800'}`}>Loading Event...</span>
+  if (loading)
+    return (
+      <div
+        className={`min-h-screen ${isDarkTheme ? "bg-[#0A0A0A]" : "bg-gray-50"} flex items-center justify-center`}
+      >
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-[#ffd84f] border-t-transparent rounded-full animate-spin" />
+          <span
+            className={`font-black tracking-[0.5em] uppercase italic ${isDarkTheme ? "text-white" : "text-gray-800"}`}
+          >
+            Loading Event...
+          </span>
+        </div>
       </div>
-    </div>
-  );
+    );
 
-  if (!event) return (
-    <div className={`min-h-screen ${isDarkTheme ? 'bg-[#0A0A0A]' : 'bg-gray-50'} flex items-center justify-center`}>
-      <div className="text-center">
-        <h2 className={`text-3xl font-black mb-4 ${isDarkTheme ? 'text-white' : 'text-gray-800'}`}>Event Not Found</h2>
-        <p className={`mb-8 ${isDarkTheme ? 'text-gray-400' : 'text-gray-500'}`}>The event you're looking for doesn't exist.</p>
-        <button 
-          onClick={() => router.push("/events")}
-          className={`px-8 py-4 backdrop-blur-sm border rounded-2xl font-black text-xs uppercase tracking-widest hover:transition-all flex items-center gap-2 mx-auto shadow-sm ${
-            isDarkTheme 
-              ? 'bg-white/10 border-white/20 text-white hover:bg-white/20'
-              : 'bg-white/80 border-gray-200 text-gray-800 hover:bg-white'
-          }`}
-        >
-          <ArrowLeft size={16} /> Back to Events
-        </button>
+  if (!event)
+    return (
+      <div
+        className={`min-h-screen ${isDarkTheme ? "bg-[#0A0A0A]" : "bg-gray-50"} flex items-center justify-center`}
+      >
+        <div className="text-center">
+          <h2
+            className={`text-3xl font-black mb-4 ${isDarkTheme ? "text-white" : "text-gray-800"}`}
+          >
+            Event Not Found
+          </h2>
+          <p
+            className={`mb-8 ${isDarkTheme ? "text-gray-400" : "text-gray-500"}`}
+          >
+            The event you're looking for doesn't exist.
+          </p>
+          <button
+            onClick={() => router.push("/events")}
+            className={`px-8 py-4 backdrop-blur-sm border rounded-2xl font-black text-xs uppercase tracking-widest hover:transition-all flex items-center gap-2 mx-auto shadow-sm ${
+              isDarkTheme
+                ? "bg-white/10 border-white/20 text-white hover:bg-white/20"
+                : "bg-white/80 border-gray-200 text-gray-800 hover:bg-white"
+            }`}
+          >
+            <ArrowLeft size={16} /> Back to Events
+          </button>
+        </div>
       </div>
-    </div>
-  );
+    );
 
-  const isSoldOut = (event.capacity - event.tickets_sold) <= 0;
-
+  const isSoldOut = event.capacity - event.tickets_sold <= 0;
+  console.log(gallery);
   return (
-    <div className={`min-h-screen ${isDarkTheme ? 'bg-[#0A0A0A]' : 'bg-gray-50'}`}>
+    <div
+      className={`min-h-screen ${isDarkTheme ? "bg-[#0A0A0A]" : "bg-gray-50"}`}
+    >
+      <img
+        src={gallery?.[0].url}
+        className="w-full h-full object-cover"
+        alt={currentMedia?.alt || event.name}
+      />
       {/* Hero Section with Video/Image Background */}
       <section className="relative h-screen overflow-hidden">
         <div className="absolute inset-0">
-          {currentMedia?.type === 'video' ? (
+          {gallery?.[0].type === "video/mp4" ? (
             <video
               className="w-full h-full object-cover"
               autoPlay
               muted
               loop
               playsInline
-              poster={currentMedia.thumbnail}
+              poster={gallery?.[0].url}
             >
-              <source src={currentMedia.url} type="video/mp4" />
+              <source src={gallery?.[0].url} type="video/mp4" />
             </video>
           ) : (
-            <img 
-              src={currentMedia?.url || MOCK_GALLERY[0]} 
-              className="w-full h-full object-cover" 
+            <img
+              src={gallery?.[0].url}
+              className="w-full h-full object-cover"
               alt={currentMedia?.alt || event.name}
             />
           )}
-          <div className={`absolute inset-0 bg-gradient-to-b ${
-            isDarkTheme 
-              ? 'from-[#0A0A0A]/20 via-[#0A0A0A]/10 to-[#0A0A0A]' 
-              : 'from-gray-40/20 via-gray-50/10 to-gray-50'
-          }`} />
+          <div
+            className={`absolute inset-0 bg-gradient-to-b ${
+              isDarkTheme
+                ? "from-[#0A0A0A]/20 via-[#0A0A0A]/10 to-[#0A0A0A]"
+                : "from-gray-40/20 via-gray-50/10 to-gray-50"
+            }`}
+          />
         </div>
 
         {/* Back Button */}
@@ -269,9 +338,9 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
           transition={{ delay: 0.1, type: "spring", stiffness: 150 }}
           onClick={() => router.push("/events")}
           className={`absolute top-8 left-8 z-20 flex items-center gap-2 px-6 py-3 backdrop-blur-md border border-accent rounded-2xl font-black text-[10px] uppercase tracking-widest hover:transition-all shadow-sm ${
-            isDarkTheme 
-              ? 'bg-white/10 text-white hover:bg-white/20'
-              : 'bg-white/70 text-gray-800 hover:bg-white/90'
+            isDarkTheme
+              ? "bg-white/10 text-white hover:bg-white/20"
+              : "bg-white/70 text-gray-800 hover:bg-white/90"
           }`}
         >
           <ArrowLeft size={16} /> Back to Events
@@ -284,22 +353,24 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
           transition={{ delay: 0.2, type: "spring", stiffness: 150 }}
           className="absolute top-8 right-8 z-20"
         >
-          <button 
+          <button
             onClick={() => {
               const url = window.location.href;
               const title = event.name;
-              
+
               if (navigator.share) {
-                navigator.share({
-                  title: title,
-                  text: `Check out this event at Bora Park: ${title}`,
-                  url: url
-                }).catch(() => {
-                  // Fallback to copying URL
-                  navigator.clipboard.writeText(url);
-                  setShowToast(true);
-                  setTimeout(() => setShowToast(false), 3000);
-                });
+                navigator
+                  .share({
+                    title: title,
+                    text: `Check out this event at Bora Park: ${title}`,
+                    url: url,
+                  })
+                  .catch(() => {
+                    // Fallback to copying URL
+                    navigator.clipboard.writeText(url);
+                    setShowToast(true);
+                    setTimeout(() => setShowToast(false), 3000);
+                  });
               } else {
                 // Fallback for desktop browsers
                 navigator.clipboard.writeText(url);
@@ -309,9 +380,10 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
             }}
             className={`w-12 h-12 backdrop-blur-md border rounded-2xl flex items-center justify-center transition-all shadow-sm ${
               isDarkTheme
-                ? 'bg-black/70 border border-accent text-white hover:bg-black/90'
-                : 'bg-white/70 border-white/50 text-gray-700 hover:bg-white/90'
-            }`}>
+                ? "bg-black/70 border border-accent text-white hover:bg-black/90"
+                : "bg-white/70 border-white/50 text-gray-700 hover:bg-white/90"
+            }`}
+          >
             <Share2 size={18} />
           </button>
         </motion.div>
@@ -321,43 +393,73 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
           <motion.div
             initial={{ y: 100, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.1, duration: 1.2, type: "spring", stiffness: 80 }}
+            transition={{
+              delay: 0.1,
+              duration: 1.2,
+              type: "spring",
+              stiffness: 80,
+            }}
             className="max-w-4xl"
           >
             <div className="flex items-center gap-3 mb-6">
               <div className="bg-[#ffd84f] text-gray-900 px-4 py-2 rounded-full shadow-md font-black text-[10px] uppercase tracking-widest">
-                {event.tickets_sold >= event.capacity ? 'SOLD OUT' : 'ON SALE'}
+                {event.tickets_sold >= event.capacity ? "SOLD OUT" : "ON SALE"}
               </div>
               <div className="flex items-center gap-1 text-yellow-500">
                 {[...Array(5)].map((_, i) => (
-                  <Star key={i} size={16} fill={i < 4 ? "currentColor" : "none"} />
+                  <Star
+                    key={i}
+                    size={16}
+                    fill={i < 4 ? "currentColor" : "none"}
+                  />
                 ))}
-                <span className={`text-sm ml-2 ${isDarkTheme ? 'text-gray-300' : 'text-gray-600'}`}>4.8 (120 reviews)</span>
+                <span
+                  className={`text-sm ml-2 ${isDarkTheme ? "text-gray-300" : "text-gray-600"}`}
+                >
+                  4.8 (120 reviews)
+                </span>
               </div>
             </div>
-            
+
             <motion.h1
               initial={{ y: 80, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.3, duration: 1, type: "spring", stiffness: 100 }}
-              className={`text-6xl md:text-8xl font-black ${isDarkTheme ? 'text-white' : 'text-gray-800'} tracking-tighter uppercase italic leading-none mb-6`}
+              transition={{
+                delay: 0.3,
+                duration: 1,
+                type: "spring",
+                stiffness: 100,
+              }}
+              className={`text-6xl md:text-8xl font-black ${isDarkTheme ? "text-white" : "text-gray-800"} tracking-tighter uppercase italic leading-none mb-6`}
             >
               {event.name}
             </motion.h1>
-            
+
             <motion.p
               initial={{ y: 40, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.5, duration: 0.8, type: "spring", stiffness: 120 }}
-              className={`text-xl ${isDarkTheme ? 'text-gray-300' : 'text-gray-600'} font-medium leading-relaxed mb-8 max-w-3xl`}
+              transition={{
+                delay: 0.5,
+                duration: 0.8,
+                type: "spring",
+                stiffness: 120,
+              }}
+              className={`text-xl ${isDarkTheme ? "text-gray-300" : "text-gray-600"} font-medium leading-relaxed mb-8 max-w-3xl`}
             >
-              {event.description || "Experience the future of entertainment with high-definition visuals and world-class performances."}
+              {event.description ||
+                "Experience the future of entertainment with high-definition visuals and world-class performances."}
             </motion.p>
 
-            <div className={`flex flex-wrap gap-6 ${isDarkTheme ? 'text-gray-400' : 'text-gray-500'} text-sm`}>
+            <div
+              className={`flex flex-wrap gap-6 ${isDarkTheme ? "text-gray-400" : "text-gray-500"} text-sm`}
+            >
               <div className="flex items-center gap-2">
                 <Calendar size={18} className="text-[#ffd84f]" />
-                <span>{format(new Date(event.event_date), 'MMM dd, yyyy')}</span>
+                <span>
+                  {event.event_date
+                    ? format(new Date(event.event_date), "MMM dd, yyyy")
+                    : "--"}
+                </span>
               </div>
               <div className="flex items-center gap-2">
                 <Clock size={18} className="text-[#ffd84f]" />
@@ -382,20 +484,19 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
         {/* Media Navigation */}
         <div className="absolute bottom-8 right-8 z-20 flex items-center gap-3">
           <button
-            onClick={() => navigateMedia('prev')}
+            onClick={() => navigateMedia("prev")}
             className="w-12 h-12 bg-white/70 backdrop-blur-md border border-white/50 text-gray-700 rounded-2xl flex items-center justify-center hover:bg-white/90 transition-all shadow-sm"
           >
             <ChevronLeft size={20} />
           </button>
           <button
-            onClick={() => navigateMedia('next')}
+            onClick={() => navigateMedia("next")}
             className="w-12 h-12 bg-white/70 backdrop-blur-md border border-white/50 text-gray-700 rounded-2xl flex items-center justify-center hover:bg-white/90 transition-all shadow-sm"
           >
             <ChevronRight size={20} />
           </button>
         </div>
       </section>
-
       {/* Media Gallery */}
       <section className="py-20 px-6 md:px-12">
         <div className="max-w-7xl mx-auto">
@@ -405,14 +506,20 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
             viewport={{ once: true }}
             className="mb-16 text-center"
           >
-            <h2 className={`text-4xl md:text-6xl font-black ${isDarkTheme ? 'text-white' : 'text-gray-800'} tracking-tighter uppercase italic mb-4`}>
+            <h2
+              className={`text-4xl md:text-6xl font-black ${isDarkTheme ? "text-white" : "text-gray-800"} tracking-tighter uppercase italic mb-4`}
+            >
               Explore <span className="text-[#ffd84f]">Gallery</span>
             </h2>
-            <p className={`text-lg ${isDarkTheme ? 'text-gray-400' : 'text-gray-500'}`}>Get a closer look at the experience</p>
+            <p
+              className={`text-lg ${isDarkTheme ? "text-gray-400" : "text-gray-500"}`}
+            >
+              Get a closer look at the experience
+            </p>
           </motion.div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {mediaItems.map((item, index) => (
+            {gallery?.map((item, index) => (
               <motion.button
                 key={index}
                 initial={{ opacity: 0, scale: 0.8 }}
@@ -424,15 +531,17 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
                   setIsLightboxOpen(true);
                 }}
                 className={`relative aspect-video rounded-2xl overflow-hidden border-2 transition-all shadow-md ${
-                  selectedMediaIndex === index ? 'border-[#ffd84f] shadow-lg shadow-[#ffd84f]/30' : 'border-transparent hover:border-[#ffd84f]/50'
+                  selectedMediaIndex === index
+                    ? "border-[#ffd84f] shadow-lg shadow-[#ffd84f]/30"
+                    : "border-transparent hover:border-[#ffd84f]/50"
                 }`}
               >
-                <img 
-                  src={item.thumbnail} 
+                <img
+                  src={item.url}
                   alt={item.alt}
                   className="w-full h-full object-cover transition-transform duration-300 hover:scale-110"
                 />
-                {item.type === 'video' && (
+                {item.type === "video" && (
                   <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
                     <Play className="w-12 h-12 text-white" fill="white" />
                   </div>
@@ -442,9 +551,10 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
           </div>
         </div>
       </section>
-
       {/* Event Details */}
-      <section className={`py-20 px-6 md:px-12 ${isDarkTheme ? '' : 'bg-gray-100/80'}`}>
+      <section
+        className={`py-20 px-6 md:px-12 ${isDarkTheme ? "" : "bg-gray-100/80"}`}
+      >
         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-12">
           <div className="lg:col-span-2 space-y-12">
             {/* Description */}
@@ -459,15 +569,19 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.4 }}
-                className={`text-3xl font-black tracking-tighter uppercase italic mb-6 ${isDarkTheme ? 'text-white' : 'text-gray-800'}`}
+                className={`text-3xl font-black tracking-tighter uppercase italic mb-6 ${isDarkTheme ? "text-white" : "text-gray-800"}`}
               >
                 About This <span className="text-[#ffd84f]">Event</span>
               </motion.h3>
-              <div className={`prose max-w-none ${isDarkTheme ? 'prose-invert' : 'prose-gray'}`}>
-                <p className={`text-lg leading-relaxed ${isDarkTheme ? 'text-gray-300' : 'text-gray-600'}`}>
-                  {event.description || "Experience a world-class production at Bora Park. Featuring state-of-the-art visuals and performances that redefine entertainment."}
+              <div
+                className={`prose max-w-none ${isDarkTheme ? "prose-invert" : "prose-gray"}`}
+              >
+                <p
+                  className={`text-lg leading-relaxed ${isDarkTheme ? "text-gray-300" : "text-gray-600"}`}
+                >
+                  {event.description ||
+                    "Experience a world-class production at Bora Park. Featuring state-of-the-art visuals and performances that redefine entertainment."}
                 </p>
-
               </div>
             </motion.div>
 
@@ -478,41 +592,77 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
               viewport={{ once: true }}
               transition={{ delay: 0.1, type: "spring", stiffness: 100 }}
             >
-              <h3 className={`text-3xl font-black tracking-tighter uppercase italic mb-6 ${isDarkTheme ? 'text-white' : 'text-gray-800'}`}>
+              <h3
+                className={`text-3xl font-black tracking-tighter uppercase italic mb-6 ${isDarkTheme ? "text-white" : "text-gray-800"}`}
+              >
                 Event <span className="text-[#ffd84f]">Details</span>
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className={`backdrop-blur-sm border rounded-2xl p-6 shadow-sm ${
-                  isDarkTheme 
-                    ? 'bg-[#1a1a1a]/70 border-gray-700' 
-                    : 'bg-white/70 border-gray-200'
-                }`}>
-                  <h4 className="text-[#ffd84f] font-black text-sm uppercase tracking-widest mb-2">Date</h4>
-                  <p className={`text-2xl font-black ${isDarkTheme ? 'text-white' : 'text-gray-800'}`}>{format(new Date(event.event_date), 'MMM dd, yyyy')}</p>
+                <div
+                  className={`backdrop-blur-sm border rounded-2xl p-6 shadow-sm ${
+                    isDarkTheme
+                      ? "bg-[#1a1a1a]/70 border-gray-700"
+                      : "bg-white/70 border-gray-200"
+                  }`}
+                >
+                  <h4 className="text-[#ffd84f] font-black text-sm uppercase tracking-widest mb-2">
+                    Date
+                  </h4>
+                  <p
+                    className={`text-2xl font-black ${isDarkTheme ? "text-white" : "text-gray-800"}`}
+                  >
+                    {event.event_date
+                      ? format(new Date(event.event_date), "MMM dd, yyyy")
+                      : "--"}
+                  </p>
                 </div>
-                <div className={`backdrop-blur-sm border rounded-2xl p-6 shadow-sm ${
-                  isDarkTheme 
-                    ? 'bg-[#1a1a1a]/70 border-gray-700' 
-                    : 'bg-white/70 border-gray-200'
-                }`}>
-                  <h4 className="text-[#ffd84f] font-black text-sm uppercase tracking-widest mb-2">Time</h4>
-                  <p className={`text-2xl font-black ${isDarkTheme ? 'text-white' : 'text-gray-800'}`}>{event.start_time}</p>
+                <div
+                  className={`backdrop-blur-sm border rounded-2xl p-6 shadow-sm ${
+                    isDarkTheme
+                      ? "bg-[#1a1a1a]/70 border-gray-700"
+                      : "bg-white/70 border-gray-200"
+                  }`}
+                >
+                  <h4 className="text-[#ffd84f] font-black text-sm uppercase tracking-widest mb-2">
+                    Time
+                  </h4>
+                  <p
+                    className={`text-2xl font-black ${isDarkTheme ? "text-white" : "text-gray-800"}`}
+                  >
+                    {event.start_time}
+                  </p>
                 </div>
-                <div className={`backdrop-blur-sm border rounded-2xl p-6 shadow-sm ${
-                  isDarkTheme 
-                    ? 'bg-[#1a1a1a]/70 border-gray-700' 
-                    : 'bg-white/70 border-gray-200'
-                }`}>
-                  <h4 className="text-[#ffd84f] font-black text-sm uppercase tracking-widest mb-2">Venue</h4>
-                  <p className={`text-2xl font-black ${isDarkTheme ? 'text-white' : 'text-gray-800'}`}>{event.location || "Main Arena"}</p>
+                <div
+                  className={`backdrop-blur-sm border rounded-2xl p-6 shadow-sm ${
+                    isDarkTheme
+                      ? "bg-[#1a1a1a]/70 border-gray-700"
+                      : "bg-white/70 border-gray-200"
+                  }`}
+                >
+                  <h4 className="text-[#ffd84f] font-black text-sm uppercase tracking-widest mb-2">
+                    Venue
+                  </h4>
+                  <p
+                    className={`text-2xl font-black ${isDarkTheme ? "text-white" : "text-gray-800"}`}
+                  >
+                    {event.location || "Main Arena"}
+                  </p>
                 </div>
-                <div className={`backdrop-blur-sm border rounded-2xl p-6 shadow-sm ${
-                  isDarkTheme 
-                    ? 'bg-[#1a1a1a]/70 border-gray-700' 
-                    : 'bg-white/70 border-gray-200'
-                }`}>
-                  <h4 className="text-[#ffd84f] font-black text-sm uppercase tracking-widest mb-2">Capacity</h4>
-                  <p className={`text-2xl font-black ${isDarkTheme ? 'text-white' : 'text-gray-800'}`}>{event.capacity} people</p>
+                <div
+                  className={`backdrop-blur-sm border rounded-2xl p-6 shadow-sm ${
+                    isDarkTheme
+                      ? "bg-[#1a1a1a]/70 border-gray-700"
+                      : "bg-white/70 border-gray-200"
+                  }`}
+                >
+                  <h4 className="text-[#ffd84f] font-black text-sm uppercase tracking-widest mb-2">
+                    Capacity
+                  </h4>
+                  <p
+                    className={`text-2xl font-black ${isDarkTheme ? "text-white" : "text-gray-800"}`}
+                  >
+                    {event.capacity} people
+                  </p>
                 </div>
               </div>
             </motion.div>
@@ -527,11 +677,13 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
               transition={{ delay: 0.1, type: "spring", stiffness: 100 }}
               className="sticky top-8"
             >
-              <div className={`backdrop-blur-md border rounded-[48px] p-8 shadow-xl ${
-                isDarkTheme 
-                  ? 'bg-[#1a1a1a]/70 border-gray-700' 
-                  : 'bg-white/70 border-white/50'
-              }`}>
+              <div
+                className={`backdrop-blur-md border rounded-[48px] p-8 shadow-xl ${
+                  isDarkTheme
+                    ? "bg-[#1a1a1a]/70 border-gray-700"
+                    : "bg-white/70 border-white/50"
+                }`}
+              >
                 <div className="text-center mb-8">
                   <Ticket className={`w-12 h-12 mx-auto mb-4 text-accent`} />
                   <motion.h3
@@ -539,46 +691,80 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
                     whileInView={{ opacity: 1, x: 0 }}
                     viewport={{ once: true }}
                     transition={{ delay: 0.4 }}
-                    className={`text-2xl font-black tracking-tighter uppercase italic mb-2 ${isDarkTheme ? 'text-white' : 'text-gray-800'}`}
+                    className={`text-2xl font-black tracking-tighter uppercase italic mb-2 ${isDarkTheme ? "text-white" : "text-gray-800"}`}
                   >
                     Secure Your <span className="text-[#ffd84f]">Spot</span>
                   </motion.h3>
-                  <p className={`text-sm ${isDarkTheme ? 'text-gray-400' : 'text-gray-500'}`}>Select passes and check out</p>
+                  <p
+                    className={`text-sm ${isDarkTheme ? "text-gray-400" : "text-gray-500"}`}
+                  >
+                    Select passes and check out
+                  </p>
                 </div>
 
                 {/* Ticket Selection - Unified */}
                 <div className="mb-8">
-                  <h4 className={`text-xs font-black uppercase tracking-widest mb-4 ${isDarkTheme ? 'text-gray-400' : 'text-gray-400'}`}>Select Tickets</h4>
+                  <h4
+                    className={`text-xs font-black uppercase tracking-widest mb-4 ${isDarkTheme ? "text-gray-400" : "text-gray-400"}`}
+                  >
+                    Select Tickets
+                  </h4>
                   <div className="space-y-4">
                     {event.ticket_types?.map((type, index) => (
                       <div key={type.id}>
                         <div className="flex justify-between items-center mb-3">
                           <div>
-                            <p className={`font-black ${isDarkTheme ? 'text-white' : 'text-gray-800'}`}>{type.name}</p>
-                            <p className={`text-xs ${isDarkTheme ? 'text-gray-400' : 'text-gray-500'}`}>{type.description}</p>
+                            <p
+                              className={`font-black ${isDarkTheme ? "text-white" : "text-gray-800"}`}
+                            >
+                              {type.name}
+                            </p>
+                            <p
+                              className={`text-xs ${isDarkTheme ? "text-gray-400" : "text-gray-500"}`}
+                            >
+                              {type.description}
+                            </p>
                           </div>
-                          <p className={`font-black text-xl ${isDarkTheme ? 'text-white' : 'text-gray-800'}`}>{type.price} ETB</p>
+                          <p
+                            className={`font-black text-xl ${isDarkTheme ? "text-white" : "text-gray-800"}`}
+                          >
+                            {type.price} ETB
+                          </p>
                         </div>
-                        <div className={`flex items-center justify-between p-2 rounded-xl ${isDarkTheme ? 'bg-[#1a1a1a]' : 'bg-gray-50'}`}>
-                          <span className={`text-xs font-black uppercase ${isDarkTheme ? 'text-gray-400' : 'text-gray-500'}`}>Quantity</span>
+                        <div
+                          className={`flex items-center justify-between p-2 rounded-xl ${isDarkTheme ? "bg-[#1a1a1a]" : "bg-gray-50"}`}
+                        >
+                          <span
+                            className={`text-xs font-black uppercase ${isDarkTheme ? "text-gray-400" : "text-gray-500"}`}
+                          >
+                            Quantity
+                          </span>
                           <div className="flex items-center gap-3">
-                            <button 
-                              onClick={() => updateCart(type.id, (cart[type.id] || 0) - 1)}
+                            <button
+                              onClick={() =>
+                                updateCart(type.id, (cart[type.id] || 0) - 1)
+                              }
                               className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors shadow-sm ${
                                 isDarkTheme
-                                  ? 'bg-gray-600 text-gray-400 hover:bg-red-900/50 hover:text-red-400 active:bg-gray-500'
-                                  : 'bg-white text-gray-500 hover:bg-red-50 hover:text-red-500 active:bg-gray-100'
+                                  ? "bg-gray-600 text-gray-400 hover:bg-red-900/50 hover:text-red-400 active:bg-gray-500"
+                                  : "bg-white text-gray-500 hover:bg-red-50 hover:text-red-500 active:bg-gray-100"
                               }`}
                             >
                               <Minus size={14} />
                             </button>
-                            <span className={`font-black w-4 text-center ${isDarkTheme ? 'text-white' : 'text-gray-800'}`}>{cart[type.id] || 0}</span>
-                            <button 
-                              onClick={() => updateCart(type.id, (cart[type.id] || 0) + 1)}
+                            <span
+                              className={`font-black w-4 text-center ${isDarkTheme ? "text-white" : "text-gray-800"}`}
+                            >
+                              {cart[type.id] || 0}
+                            </span>
+                            <button
+                              onClick={() =>
+                                updateCart(type.id, (cart[type.id] || 0) + 1)
+                              }
                               className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors shadow-sm ${
                                 isDarkTheme
-                                  ? 'bg-gray-600 text-white hover:bg-[#ffd84f] hover:text-gray-900 active:bg-gray-500'
-                                  : 'bg-white text-gray-800 hover:bg-[#ffd84f] hover:text-gray-900 active:bg-gray-100'
+                                  ? "bg-gray-600 text-white hover:bg-[#ffd84f] hover:text-gray-900 active:bg-gray-500"
+                                  : "bg-white text-gray-800 hover:bg-[#ffd84f] hover:text-gray-900 active:bg-gray-100"
                               }`}
                             >
                               <Plus size={14} />
@@ -586,7 +772,9 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
                           </div>
                         </div>
                         {index < (event.ticket_types?.length || 0) - 1 && (
-                          <div className={`mt-4 border-t ${isDarkTheme ? 'border-gray-700/50' : 'border-gray-200/50'}`}></div>
+                          <div
+                            className={`mt-4 border-t ${isDarkTheme ? "border-gray-700/50" : "border-gray-200/50"}`}
+                          ></div>
                         )}
                       </div>
                     ))}
@@ -596,22 +784,47 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
                 {/* Order Summary - Integrated into main card */}
                 {getTotalTickets() > 0 && (
                   <div className="mb-8">
-                    <h4 className={`text-xs font-black uppercase tracking-widest mb-4 ${isDarkTheme ? 'text-gray-400' : 'text-gray-400'}`}>Order Summary</h4>
+                    <h4
+                      className={`text-xs font-black uppercase tracking-widest mb-4 ${isDarkTheme ? "text-gray-400" : "text-gray-400"}`}
+                    >
+                      Order Summary
+                    </h4>
                     {Object.entries(cart).map(([tid, qty]) => {
-                      const t = event.ticket_types?.find(x => x.id === tid);
+                      const t = event.ticket_types?.find((x) => x.id === tid);
                       return (
-                        <div key={tid} className={`flex justify-between items-center mb-3 pb-3 border-b ${isDarkTheme ? 'border-gray-700/50' : 'border-gray-200/50'}`}>
+                        <div
+                          key={tid}
+                          className={`flex justify-between items-center mb-3 pb-3 border-b ${isDarkTheme ? "border-gray-700/50" : "border-gray-200/50"}`}
+                        >
                           <div>
-                            <p className={`text-sm font-black ${isDarkTheme ? 'text-white' : 'text-gray-800'}`}>{t?.name}</p>
-                            <p className={`text-[10px] ${isDarkTheme ? 'text-gray-400' : 'text-gray-500'}`}>x{qty}</p>
+                            <p
+                              className={`text-sm font-black ${isDarkTheme ? "text-white" : "text-gray-800"}`}
+                            >
+                              {t?.name}
+                            </p>
+                            <p
+                              className={`text-[10px] ${isDarkTheme ? "text-gray-400" : "text-gray-500"}`}
+                            >
+                              x{qty}
+                            </p>
                           </div>
-                          <p className={`font-black ${isDarkTheme ? 'text-white' : 'text-gray-800'}`}>{t ? t.price * qty : 0} ETB</p>
+                          <p
+                            className={`font-black ${isDarkTheme ? "text-white" : "text-gray-800"}`}
+                          >
+                            {t ? t.price * qty : 0} ETB
+                          </p>
                         </div>
                       );
                     })}
                     <div className="flex justify-between items-center pt-2">
-                      <span className={`text-sm font-black ${isDarkTheme ? 'text-white' : 'text-gray-800'}`}>Total</span>
-                      <span className="text-2xl font-black text-[#ffd84f]">{getTotalAmount()} ETB</span>
+                      <span
+                        className={`text-sm font-black ${isDarkTheme ? "text-white" : "text-gray-800"}`}
+                      >
+                        Total
+                      </span>
+                      <span className="text-2xl font-black text-[#ffd84f]">
+                        {getTotalAmount()} ETB
+                      </span>
                     </div>
                   </div>
                 )}
@@ -622,9 +835,9 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
                     value={paymentMethod}
                     onChange={(e) => setPaymentMethod(e.target.value as any)}
                     className={`w-full px-4 py-3 border rounded-xl text-sm font-black uppercase tracking-widest outline-none focus:border-[#ffd84f] ${
-                      isDarkTheme 
-                        ? 'bg-[#1a1a1a] border-gray-700 text-white'
-                        : 'bg-white border-gray-200 text-gray-800'
+                      isDarkTheme
+                        ? "bg-[#1a1a1a] border-gray-700 text-white"
+                        : "bg-white border-gray-200 text-gray-800"
                     }`}
                   >
                     <option value="telebirr">Telebirr</option>
@@ -643,7 +856,8 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
                     disabled={getTotalTickets() === 0 || booking || isSoldOut}
                     className="w-full py-5 bg-[#ffd84f] text-gray-900 rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-[#f0c63f] transition-all flex items-center justify-center gap-2 shadow-lg disabled:opacity-30"
                   >
-                    {booking ? "Processing..." : "Buy Tickets"} <ArrowRight size={18} />
+                    {booking ? "Processing..." : "Buy Tickets"}{" "}
+                    <ArrowRight size={18} />
                   </button>
 
                   <p className="text-gray-400 text-xs text-center">
@@ -655,7 +869,6 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
           </div>
         </div>
       </section>
-
       {/* Lightbox */}
       <AnimatePresence>
         {isLightboxOpen && (
@@ -673,22 +886,25 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
               onClick={() => setIsLightboxOpen(false)}
               className={`absolute top-8 right-8 w-12 h-12 backdrop-blur-md border border-accent rounded-2xl flex items-center justify-center transition-all z-10 shadow-sm ${
                 isDarkTheme
-                  ? 'bg-black/70 text-white hover:bg-black/90'
-                  : 'bg-white/70 text-gray-800 hover:bg-white/90'
+                  ? "bg-black/70 text-white hover:bg-black/90"
+                  : "bg-white/70 text-gray-800 hover:bg-white/90"
               }`}
             >
               <X size={24} />
             </motion.button>
 
             <div className="relative max-w-6xl max-h-[90vh] w-full">
-              {mediaItems[selectedMediaIndex]?.type === 'video' ? (
+              {mediaItems[selectedMediaIndex]?.type === "video" ? (
                 <video
                   className="w-full h-full rounded-3xl"
                   controls
                   autoPlay
                   playsInline
                 >
-                  <source src={mediaItems[selectedMediaIndex]?.url} type="video/mp4" />
+                  <source
+                    src={mediaItems[selectedMediaIndex]?.url}
+                    type="video/mp4"
+                  />
                 </video>
               ) : (
                 <img
@@ -702,12 +918,12 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                navigateMedia('prev');
+                navigateMedia("prev");
               }}
               className={`absolute left-8 top-1/2 -translate-y-1/2 w-12 h-12 backdrop-blur-md border border-accent rounded-2xl flex items-center justify-center transition-all shadow-sm ${
                 isDarkTheme
-                  ? 'bg-black/70 text-white hover:bg-black/90'
-                  : 'bg-white/70 text-gray-800 hover:bg-white/90'
+                  ? "bg-black/70 text-white hover:bg-black/90"
+                  : "bg-white/70 text-gray-800 hover:bg-white/90"
               }`}
             >
               <ChevronLeft size={24} />
@@ -716,12 +932,12 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                navigateMedia('next');
+                navigateMedia("next");
               }}
               className={`absolute right-8 top-1/2 -translate-y-1/2 w-12 h-12 backdrop-blur-md border border-accent rounded-2xl flex items-center justify-center transition-all shadow-sm ${
                 isDarkTheme
-                  ? 'bg-black/70 text-white hover:bg-black/90'
-                  : 'bg-white/70 text-gray-800 hover:bg-white/90'
+                  ? "bg-black/70 text-white hover:bg-black/90"
+                  : "bg-white/70 text-gray-800 hover:bg-white/90"
               }`}
             >
               <ChevronRight size={24} />
@@ -729,7 +945,6 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
           </motion.div>
         )}
       </AnimatePresence>
-      
       {/* Success Modal */}
       <SuccessModal
         isOpen={showSuccessModal}
@@ -741,7 +956,6 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
         showActions={true}
         user={user}
       />
-
       {/* Toast Notification */}
       <AnimatePresence>
         {showToast && (
@@ -751,9 +965,9 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
             exit={{ opacity: 0, y: 50, scale: 0.9 }}
             transition={{ duration: 0.3, ease: "easeOut" }}
             className={`fixed bottom-8 right-8 z-50 px-6 py-4 rounded-2xl shadow-2xl border ${
-              isDarkTheme 
-                ? 'bg-[#1a1a1a] border-[#ffd84f] text-white' 
-                : 'bg-white border-[#ffd84f] text-gray-900'
+              isDarkTheme
+                ? "bg-[#1a1a1a] border-[#ffd84f] text-white"
+                : "bg-white border-[#ffd84f] text-gray-900"
             }`}
           >
             <div className="flex items-center gap-3">
@@ -762,7 +976,9 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
               </div>
               <div>
                 <p className="font-bold text-sm">Link Copied!</p>
-                <p className={`text-xs ${isDarkTheme ? 'text-gray-300' : 'text-gray-600'}`}>
+                <p
+                  className={`text-xs ${isDarkTheme ? "text-gray-300" : "text-gray-600"}`}
+                >
                   Event link copied to clipboard
                 </p>
               </div>

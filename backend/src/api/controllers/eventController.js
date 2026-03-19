@@ -1,9 +1,266 @@
 const { Event } = require("../models/Event");
-const { eventStatsService } = require("../services/eventService");
+const { EventService, EventStatsService } = require("../services/eventService");
 const TicketType = require("../models/TicketType");
 const { apiResponse } = require("../../utils/helpers");
 
-const eventController = {
+const EventController = {
+  /**
+   * GET /api/admin/events - Get all events (including inactive/past)
+   */
+  async getAllEvents(req, res, next) {
+    try {
+      const page = parseInt(req.query.page, 10) || 1;
+      const limit = parseInt(req.query.limit, 10) || 20;
+
+      const result = await EventService.findAll({ page, limit });
+      return apiResponse(res, 200, true, "Events retrieved.", result);
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  /**
+   * POST /api/admin/events - Create a new event
+   */
+  async createEvent(req, res, next) {
+    try {
+      const { name, description, eventDate, startTime, endTime, capacity } =
+        req.body;
+
+      const event = await EventService.createEvent({
+        name,
+        description,
+        eventDate,
+        startTime,
+        endTime,
+        capacity,
+        createdBy: req.session.user.id,
+      });
+      return apiResponse(res, 201, true, "Event created successfully.", event);
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  /**
+   * POST /api/admin/events-with-tickets
+   * Updated for the Product Catalog Model ///////////////////////////////////////////////////////////////////////////////////////////////////
+   */
+  async createEventWithTicketTypes(req, res, next) {
+    try {
+      const {
+        name,
+        eventDate,
+        startTime,
+        endTime,
+        capacity,
+        ticketTypes, // Array of { category, price }
+      } = req.body;
+
+      await query("BEGIN");
+
+      // 1. Create the Physical Event
+      const eventRes = await query(
+        `INSERT INTO events (name, event_date, start_time, end_time, capacity)
+         VALUES ($1, $2, $3, $4, $5) RETURNING id, name`,
+        [name, eventDate, startTime, endTime, capacity],
+      );
+      const event = eventRes.rows[0];
+
+      // 2. Create the Product Wrapper (This makes it "Purchasable")
+      const productRes = await query(
+        `INSERT INTO products (name, product_type, event_id, valid_days)
+         VALUES ($1, 'EVENT', $2, 1) RETURNING id`,
+        [event.name, event.id],
+      );
+      const productId = productRes.rows[0].id;
+
+      // 3. Create Ticket Types (Linked to Product, not Event)
+      const createdTicketTypes = [];
+      for (const tt of ticketTypes) {
+        const ttRes = await query(
+          `INSERT INTO ticket_types (product_id, category, price)
+           VALUES ($1, $2, $3) RETURNING *`,
+          [productId, tt.category.toUpperCase(), tt.price],
+        );
+        createdTicketTypes.push(ttRes.rows[0]);
+      }
+
+      await query("COMMIT");
+
+      return apiResponse(
+        res,
+        201,
+        true,
+        "Event product created successfully.",
+        {
+          event,
+          productId,
+          ticketTypes: createdTicketTypes,
+        },
+      );
+    } catch (err) {
+      await query("ROLLBACK");
+      next(err);
+    }
+  },
+
+  /**
+   * PUT /api/admin/events/:id - Update an event
+   */
+  async updateEvent(req, res, next) {
+    try {
+      const {
+        name,
+        description,
+        eventDate,
+        startTime,
+        endTime,
+        capacity,
+        isActive,
+      } = req.body;
+
+      const existing = await Event.findById(req.params.id);
+      if (!existing) {
+        return apiResponse(res, 404, false, "Event not found.");
+      }
+
+      const event = await EventService.updateEvent(req.params.id, {
+        name,
+        description,
+        eventDate,
+        startTime,
+        endTime,
+        capacity,
+        isActive,
+      });
+
+      return apiResponse(res, 200, true, "Event updated successfully.", {
+        event,
+      });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  /**
+   * PUT /api/admin/events/:id - Update an event with ticket types///////////////////////////////////////////////////////////////////////
+   */
+  async updateEventWithTicketTypes(req, res, next) {
+    const { query } = require("../../config/db");
+
+    try {
+      const {
+        name,
+        event_date,
+        start_time,
+        end_time,
+        capacity,
+        ticketTypes, // Array of { id?, category, price }
+      } = req.body;
+
+      await query("BEGIN");
+
+      // 1. Update the Physical Event
+      const eventResult = await query(
+        `UPDATE events 
+       SET name = $1, event_date = $2, start_time = $3, end_time = $4, capacity = $5, updated_at = NOW()
+       WHERE id = $6 RETURNING *`,
+        [name, event_date, start_time, end_time, capacity, req.params.id],
+      );
+
+      if (eventResult.rowCount === 0) {
+        await query("ROLLBACK");
+        return apiResponse(res, 404, false, "Event not found.");
+      }
+
+      // 2. Sync the Product Wrapper
+      // We ensure a Product exists for this event and update its name to match
+      let productResult = await query(
+        `UPDATE products SET name = $1 WHERE event_id = $2 RETURNING id`,
+        [name, req.params.id],
+      );
+
+      let productId;
+      if (productResult.rowCount === 0) {
+        // Fallback: Create product if it was missing
+        const newProduct = await query(
+          `INSERT INTO products (name, product_type, event_id) VALUES ($1, 'EVENT', $2) RETURNING id`,
+          [name, req.params.id],
+        );
+        productId = newProduct.rows[0].id;
+      } else {
+        productId = productResult.rows[0].id;
+      }
+
+      // 3. Sync Ticket Types (Prices)
+      const existingTicketTypes = await query(
+        `SELECT id FROM ticket_types WHERE product_id = $1`,
+        [productId],
+      );
+      const existingIds = existingTicketTypes.rows.map((t) => t.id);
+
+      const submittedIds = [];
+
+      for (const tt of ticketTypes) {
+        if (tt.id && existingIds.includes(tt.id)) {
+          // UPDATE existing price
+          await query(
+            `UPDATE ticket_types SET category = $1, price = $2, updated_at = NOW() WHERE id = $3`,
+            [tt.category.toUpperCase(), tt.price, tt.id],
+          );
+          submittedIds.push(tt.id);
+        } else {
+          // INSERT new price
+          const newTt = await query(
+            `INSERT INTO ticket_types (product_id, category, price) VALUES ($1, $2, $3) RETURNING id`,
+            [productId, tt.category.toUpperCase(), tt.price],
+          );
+          submittedIds.push(newTt.rows[0].id);
+        }
+      }
+
+      // 4. DELETE (or Deactivate) ticket types not in the new list
+      const idsToDelete = existingIds.filter(
+        (id) => !submittedIds.includes(id),
+      );
+      if (idsToDelete.length > 0) {
+        await query(`DELETE FROM ticket_types WHERE id = ANY($1)`, [
+          idsToDelete,
+        ]);
+      }
+
+      await query("COMMIT");
+
+      return apiResponse(
+        res,
+        200,
+        true,
+        "Event and Pricing updated successfully.",
+      );
+    } catch (err) {
+      await query("ROLLBACK");
+      next(err);
+    }
+  },
+
+  /**
+   * DELETE /api/admin/events/:id - Deactivate an event
+   */
+  async deleteEvent(req, res, next) {
+    try {
+      const event = await EventService.deactivateEvent(req.params.id);
+      if (!event) {
+        return apiResponse(res, 404, false, "Event not found.");
+      }
+      return apiResponse(res, 200, true, "Event deactivated successfully.", {
+        event,
+      });
+    } catch (err) {
+      next(err);
+    }
+  },
+  //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   /**
    * GET /api/events - Get all active upcoming events (public)
    */
@@ -21,7 +278,7 @@ const eventController = {
       const page = parseInt(req.query.page, 10) || 1;
       const limit = parseInt(req.query.limit, 10) || 20;
 
-      const result = await Event.findAllActive({ page, limit });
+      const result = await EventService.findAllActive({ page, limit });
       return apiResponse(res, 200, true, "Events retrieved.", result);
     } catch (err) {
       next(err);
@@ -33,11 +290,11 @@ const eventController = {
    */
   async getEventById(req, res, next) {
     try {
-      const event = await Event.findByIdWithTicketTypes(req.params.id);
+      const event = await EventService.getEventById(req.params.id);
       if (!event) {
         return apiResponse(res, 404, false, "Event not found.");
       }
-      return apiResponse(res, 200, true, "Event retrieved.", { event });
+      return apiResponse(res, 200, true, "Event retrieved.", event);
     } catch (err) {
       next(err);
     }
@@ -49,7 +306,10 @@ const eventController = {
   async checkAvailability(req, res, next) {
     try {
       const quantity = parseInt(req.query.quantity, 10) || 1;
-      const result = await Event.checkAvailability(req.params.id, quantity);
+      const result = await EventService.checkAvailability(
+        req.params.id,
+        quantity,
+      );
       return apiResponse(res, 200, true, "Availability checked.", result);
     } catch (err) {
       next(err);
@@ -76,13 +336,13 @@ const eventController = {
   },
 };
 
-const eventStatsController = {
+const EventStatsController = {
   async getEventDashboard(req, res) {
     try {
       const { eventId } = req.params;
       const { startDate, endDate, period = "1d" } = req.query;
 
-      const stats = await eventStatsService.getEventAnalytics(eventId, {
+      const stats = await EventStatsService.getEventAnalytics(eventId, {
         startDate,
         endDate,
         period,
@@ -107,7 +367,7 @@ const eventStatsController = {
           .json({ error: "startDate and endDate are required." });
       }
 
-      const stats = await eventStatsService.getEventsWithStats(
+      const stats = await EventStatsService.getEventsWithStats(
         startDate,
         endDate,
         period,
@@ -119,4 +379,4 @@ const eventStatsController = {
     }
   },
 };
-module.exports = { eventController, eventStatsController };
+module.exports = { EventController, EventStatsController };

@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/Input";
 import { Card, CardHeader, CardBody } from "@/components/ui/Card";
 import { Plus, Edit, Trash2, Calendar, X, ArrowLeft } from "lucide-react";
 import { format } from "date-fns";
+import { eventService } from "@/services/eventService";
 
 export default function EditEventPage() {
   const router = useRouter();
@@ -25,9 +26,11 @@ export default function EditEventPage() {
   const [formData, setFormData] = useState({
     name: "",
     description: "",
-    eventDate: "",
-    startTime: "",
-    endTime: "",
+    schedule: {
+      eventDate: "",
+      startTime: "",
+      endTime: "",
+    },
     capacity: "",
     isActive: true,
   });
@@ -43,35 +46,27 @@ export default function EditEventPage() {
   ]);
 
   useEffect(() => {
-    if (!authLoading) {
-      if (!user || user.role !== "ADMIN") {
-        router.push("/");
-      } else {
-        loadEvent();
-      }
-    }
+    loadEvent();
   }, [user, authLoading, eventId]);
 
   const loadEvent = async () => {
     try {
       setLoading(true);
-      const response = await adminService.getEventWithTicketTypes(eventId);
+      const response = await eventService.getEventById(eventId);
 
       if (!response.success || !response.data) {
         setError("Failed to load event data");
         return;
       }
-
+      console.log(response.data);
       const eventData = response.data;
 
       setEvent(eventData.event);
       setFormData({
         name: eventData.event.name,
         description: eventData.event.description || "",
-        eventDate: eventData.event.event_date,
-        startTime: eventData.event.start_time,
-        endTime: eventData.event.end_time,
-        capacity: eventData.event.capacity.toString(),
+        schedule: eventData.event?.schedule,
+        capacity: eventData.event.capacity?.toString(),
         isActive: eventData.event.is_active,
       });
 
@@ -87,6 +82,7 @@ export default function EditEventPage() {
         );
       }
     } catch (err: any) {
+      console.log(err);
       setError(err.response?.data?.message || "Failed to load event");
     } finally {
       setLoading(false);
@@ -143,9 +139,9 @@ export default function EditEventPage() {
       await adminService.updateEventWithTicketTypes(eventId, {
         name: formData.name,
         description: formData.description,
-        eventDate: formData.eventDate,
-        startTime: formData.startTime,
-        endTime: formData.endTime,
+        eventDate: formData.schedule.eventDate,
+        startTime: formData.schedule.startTime,
+        endTime: formData.schedule.endTime,
         capacity: parseInt(formData.capacity, 10),
         isActive: formData.isActive,
         ticketTypes: ticketTypes.map((tt) => ({
@@ -259,9 +255,15 @@ export default function EditEventPage() {
                   <Input
                     label="Event Date"
                     type="date"
-                    value={formData.eventDate}
+                    value={formData.schedule?.eventDate}
                     onChange={(e) =>
-                      setFormData({ ...formData, eventDate: e.target.value })
+                      setFormData({
+                        ...formData,
+                        schedule: {
+                          ...formData.schedule,
+                          eventDate: e.target.value,
+                        },
+                      })
                     }
                     required
                   />
@@ -269,9 +271,15 @@ export default function EditEventPage() {
                   <Input
                     label="Start Time"
                     type="time"
-                    value={formData.startTime}
+                    value={formData.schedule?.startTime}
                     onChange={(e) =>
-                      setFormData({ ...formData, startTime: e.target.value })
+                      setFormData({
+                        ...formData,
+                        schedule: {
+                          ...formData.schedule,
+                          startTime: e.target.value,
+                        },
+                      })
                     }
                     required
                   />
@@ -279,9 +287,15 @@ export default function EditEventPage() {
                   <Input
                     label="End Time"
                     type="time"
-                    value={formData.endTime}
+                    value={formData.schedule?.endTime}
                     onChange={(e) =>
-                      setFormData({ ...formData, endTime: e.target.value })
+                      setFormData({
+                        ...formData,
+                        schedule: {
+                          ...formData.schedule,
+                          endTime: e.target.value,
+                        },
+                      })
                     }
                     required
                   />
@@ -305,7 +319,7 @@ export default function EditEventPage() {
                       Status
                     </label>
                     <select
-                      value={formData.isActive.toString()}
+                      value={formData.isActive?.toString()}
                       onChange={(e) =>
                         setFormData({
                           ...formData,

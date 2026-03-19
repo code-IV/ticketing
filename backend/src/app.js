@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
 const morgan = require("morgan");
+const path = require("path");
 const session = require("express-session");
 const sessionConfig = require("./config/session");
 const { errorHandler, notFoundHandler } = require("./middleware/errorHandler");
@@ -13,6 +14,7 @@ const eventRoutes = require("./routes/eventRoutes");
 const bookingRoutes = require("./routes/bookingRoutes");
 const ticketRoutes = require("./routes/ticketRoutes");
 const adminRoutes = require("./routes/adminRoutes");
+const uploadsRoute = require("./routes/uploadsRoute");
 const analyticsRoutes = require("./routes/analyticsRoutes");
 const metricsRoute = require("./routes/metricsRoutes");
 const gameRoutes = require("./routes/gameRoutes");
@@ -50,17 +52,9 @@ app.use(express.urlencoded({ extended: true }));
 app.use(session(sessionConfig));
 
 // ============================================
-// HEALTH CHECK
+// STATIC FILE
 // ============================================
-
-app.get("/api/health", (req, res) => {
-  res.status(200).json({
-    success: true,
-    message: "Bora Ticketing API is running",
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV,
-  });
-});
+app.use("/uploads", express.static(path.join(__dirname, "../public/uploads")));
 
 // ============================================
 // API ROUTES
@@ -74,6 +68,7 @@ app.use("/api/events", eventRoutes);
 app.use("/api/bookings", bookingRoutes);
 app.use("/api/tickets", ticketRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/media", uploadsRoute);
 app.use("/api/analytics", analyticsRoutes);
 app.use("/api/metrics", metricsRoute);
 app.use("/api/admin", gameRoutes);

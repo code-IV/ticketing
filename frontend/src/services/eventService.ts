@@ -1,5 +1,11 @@
 import { api } from "@/lib/api";
-import { Event, TicketType, PaginatedResponse, ApiResponse } from "@/types";
+import {
+  Event,
+  TicketType,
+  PaginatedResponse,
+  ApiResponse,
+  CreateTicketTypeRequest,
+} from "@/types";
 
 export const eventService = {
   async getActiveEvents(
@@ -10,7 +16,13 @@ export const eventService = {
     return response.data;
   },
 
-  async getEventById(id: string): Promise<ApiResponse<{ event: Event }>> {
+  async getEventById(id: string): Promise<
+    ApiResponse<{
+      event: Event;
+      ticketTypes: CreateTicketTypeRequest[];
+      gallery: any[];
+    }>
+  > {
     const response = await api.get(`/events/${id}`);
     return response.data;
   },

@@ -1,8 +1,8 @@
 const express = require("express");
 const router = express.Router();
 const {
-  eventController,
-  eventStatsController,
+  EventController,
+  EventStatsController,
 } = require("../api/controllers/eventController");
 const {
   uuidParamRule,
@@ -15,31 +15,32 @@ router.get(
   "/",
   paginationRules,
   handleValidation,
-  eventController.getActiveEvents,
+  EventController.getActiveEvents,
 );
-router.get("/stats", eventStatsController.getEventStats);
+
+router.get("/stats", EventStatsController.getEventStats);
 router.get(
   "/stats/:eventId",
   uuidParamRule("eventId"),
-  eventStatsController.getEventDashboard,
+  EventStatsController.getEventDashboard,
 );
 router.get(
   "/:id",
   uuidParamRule("id"),
   handleValidation,
-  eventController.getEventById,
+  EventController.getEventById,
 );
 router.get(
   "/:id/availability",
   uuidParamRule("id"),
   handleValidation,
-  eventController.checkAvailability,
+  EventController.checkAvailability,
 );
 router.get(
   "/:id/ticket-types",
   uuidParamRule("id"),
   handleValidation,
-  eventController.getTicketTypes,
+  EventController.getTicketTypes,
 );
 
 module.exports = router;

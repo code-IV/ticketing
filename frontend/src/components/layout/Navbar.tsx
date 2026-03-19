@@ -80,8 +80,6 @@ export function Navbar({ nav }: { nav: Nav[] }) {
     return true; // Show all other links
   });
 
-  console.log(user);
-
   return (
     <>
       <motion.nav

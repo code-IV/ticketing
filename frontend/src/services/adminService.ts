@@ -33,8 +33,25 @@ export const adminService = {
     startTime: string;
     endTime: string;
     capacity: number;
-  }): Promise<ApiResponse<{ event: Event }>> {
+  }): Promise<ApiResponse<{ event: Event; productId: string }>> {
     const response = await api.post("/admin/events", data);
+    return response.data;
+  },
+
+  uploadProductMedia: async (
+    productId: string,
+    files: File[],
+  ): Promise<any> => {
+    const formData = new FormData();
+    files.forEach((file) => {
+      formData.append("mediaFiles", file);
+    });
+
+    const response = await api.post(`/media/uploads/${productId}`, formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
     return response.data;
   },
 
@@ -42,13 +59,6 @@ export const adminService = {
     data: CreateEventWithTicketTypesRequest,
   ): Promise<ApiResponse<{ event: Event; ticketTypes: TicketType[] }>> {
     const response = await api.post("/admin/events-with-tickets", data);
-    return response.data;
-  },
-
-  async getEventWithTicketTypes(
-    id: string,
-  ): Promise<ApiResponse<{ event: Event; ticketTypes: TicketType[] }>> {
-    const response = await api.get(`/admin/events/${id}`);
     return response.data;
   },
 

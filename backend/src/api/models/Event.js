@@ -4,188 +4,212 @@ const Event = {
   /**
    * Create a new event
    */
-  async create({
-    name,
-    description,
-    eventDate,
-    startTime,
-    endTime,
-    capacity,
-    createdBy,
-    validDays = 1, // Default validity for event tickets
-  }) {
-    const client = await getClient();
-    try {
-      await client.query("BEGIN");
-
-      // 1. Insert the physical Event
-      const eventSql = `
+  async createEvent(data, client) {
+    const sql = `
       INSERT INTO events (name, description, event_date, start_time, end_time, capacity, created_by)
       VALUES ($1, $2, $3, $4, $5, $6, $7)
       RETURNING *`;
+    const values = [
+      data.name,
+      data.description,
+      data.eventDate,
+      data.startTime,
+      data.endTime,
+      data.capacity,
+      data.createdBy,
+    ];
+    const { rows } = await client.query(sql, values);
+    return rows[0];
+  },
 
-      const eventValues = [
-        name,
-        description,
-        eventDate,
-        startTime,
-        endTime,
-        capacity,
-        createdBy,
-      ];
-      const eventResult = await client.query(eventSql, eventValues);
-      const newEvent = eventResult.rows[0];
-
-      // 2. Automatically create a Product for this event
-      // This allows ticket_types to be attached to it
-      const productSql = `
+  async createProduct(data, client) {
+    const sql = `
       INSERT INTO products (name, product_type, event_id, valid_days)
       VALUES ($1, 'EVENT', $2, $3)
       RETURNING id`;
+    const { rows } = await client.query(sql, [
+      data.name,
+      data.eventId,
+      data.validDays,
+    ]);
+    return rows[0].id;
+  },
 
-      const productResult = await client.query(productSql, [
-        name,
-        newEvent.id,
-        validDays,
-      ]);
+  async createMedia(mediaData, client) {
+    const sql = `
+      INSERT INTO media (name, url, type, provider)
+      VALUES ($1, $2, $3, $4)
+      RETURNING id`;
+    const { rows } = await client.query(sql, [
+      mediaData.name,
+      mediaData.url,
+      mediaData.type,
+      mediaData.provider,
+    ]);
+    return rows[0].id;
+  },
 
-      // Attach the product_id to the event object returned to the frontend
-      newEvent.product_id = productResult.rows[0].id;
-
-      await client.query("COMMIT");
-      return newEvent;
-    } catch (error) {
-      await client.query("ROLLBACK");
-      console.error("Error creating event and product:", error);
-      throw error;
-    } finally {
-      client.release();
-    }
+  async linkProductMedia(productId, mediaId, client) {
+    const sql = `INSERT INTO products_media (product_id, media_id) VALUES ($1, $2)`;
+    await client.query(sql, [productId, mediaId]);
   },
 
   /**
    * Find event by ID
    */
-  async findById(id) {
-    const sql = `SELECT * FROM events WHERE id = $1`;
-    const result = await query(sql, [id]);
-    return result.rows[0] || null;
-  },
 
   /**
    * Find event by ID with its ticket types
    */
-  async findByIdWithTicketTypes(id) {
-    const eventSql = `SELECT * FROM events WHERE id = $1`;
-    const eventResult = await query(eventSql, [id]);
+  async findEventWithDetails(eventId) {
+    // 1. Get the Event and its Product info in one go
+    const eventSql = `
+    SELECT e.*, p.id as product_id, p.valid_days 
+    FROM events e
+    LEFT JOIN products p ON p.event_id = e.id
+    WHERE e.id = $1;
+  `;
+    const eventResult = await query(eventSql, [eventId]);
     const event = eventResult.rows[0];
+
     if (!event) return null;
 
+    // 2. Get Ticket Types associated with the Product
     const ticketTypesSql = `
-      SELECT tt.*, 
-        p.name as product_name,
-        p.product_type
-      FROM ticket_types tt
-      JOIN products p ON tt.product_id = p.id
-      WHERE p.event_id = $1
-        AND p.is_active = true
-      ORDER BY tt.price ASC;`;
-    const ticketTypesResult = await query(ticketTypesSql, [id]);
+    SELECT tt.* FROM ticket_types tt
+    WHERE tt.product_id = $1
+    ORDER BY tt.price ASC;
+  `;
+
+    // 3. Get Media associated with the Product
+    const mediaSql = `
+    SELECT m.id, m.name, m.url, m.type, pm.sort_order
+    FROM media m
+    JOIN products_media pm ON pm.media_id = m.id
+    WHERE pm.product_id = $1
+    ORDER BY pm.sort_order ASC;
+  `;
+
+    const [tickets, media] = await Promise.all([
+      query(ticketTypesSql, [event.product_id]),
+      query(mediaSql, [event.product_id]),
+    ]);
 
     return {
       ...event,
-      ticket_types: ticketTypesResult.rows,
+      ticket_types: tickets.rows,
+      media: media.rows,
     };
   },
 
   /**
    * Get all active events (public)
    */
-  async findAllActive({ page = 1, limit = 20 }) {
-    const offset = (page - 1) * limit;
+  async findActiveEvents({ limit, offset }) {
     const sql = `
-      SELECT e.*, 
-             (e.capacity - e.tickets_sold) AS available_tickets
+      SELECT 
+        e.*, 
+        (e.capacity - e.tickets_sold) AS available_tickets,
+        COALESCE(
+          JSON_AGG(
+            JSON_BUILD_OBJECT(
+              'id', m.id,
+              'name', m.name,
+              'url', m.url,
+              'type', m.type
+            )
+          ) FILTER (WHERE m.id IS NOT NULL), 
+          '[]'
+        ) AS media
       FROM events e
+      LEFT JOIN products p ON p.event_id = e.id
+      LEFT JOIN products_media pm ON pm.product_id = p.id
+      LEFT JOIN media m ON m.id = pm.media_id
       WHERE e.is_active = true AND e.event_date >= CURRENT_DATE
+      GROUP BY e.id
       ORDER BY e.event_date ASC
       LIMIT $1 OFFSET $2`;
-    const result = await query(sql, [limit, offset]);
 
     const countSql = `
       SELECT COUNT(*) FROM events
       WHERE is_active = true AND event_date >= CURRENT_DATE`;
-    const countResult = await query(countSql);
-    const total = parseInt(countResult.rows[0].count, 10);
+
+    const [result, countResult] = await Promise.all([
+      query(sql, [limit, offset]),
+      query(countSql),
+    ]);
 
     return {
-      events: result.rows,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
-      },
+      rows: result.rows,
+      total: parseInt(countResult.rows[0].count, 10),
     };
   },
 
   /**
    * Get all events (admin - includes inactive and past)
    */
-  async findAll({ page = 1, limit = 20 }) {
-    const offset = (page - 1) * limit;
+  async findAll({ limit, offset }) {
     const sql = `
       SELECT 
-    e.id, e.name, e.description, e.event_date, e.start_time, e.end_time, e.capacity, e.is_active, e.tickets_sold,
-    p.id AS product_id,
-    -- Calculate total tickets sold across all ticket types for this event's product
-    COALESCE(SUM(bi.quantity), 0) AS tickets_sold,
-    -- Calculate remaining capacity
-    (e.capacity - COALESCE(SUM(bi.quantity), 0)) AS available_tickets
-FROM events e
-LEFT JOIN products p ON p.event_id = e.id AND p.product_type = 'EVENT'
-LEFT JOIN ticket_types tt ON tt.product_id = p.id
-LEFT JOIN booking_items bi ON bi.ticket_type_id = tt.id
--- Optional: Only count items from confirmed bookings
-LEFT JOIN bookings b ON bi.booking_id = b.id AND b.status = 'CONFIRMED'
-GROUP BY e.id, p.id
-ORDER BY e.event_date DESC
-LIMIT $1 OFFSET $2;`;
+        e.id, e.name, e.description, e.event_date, e.start_time, e.end_time, 
+        e.capacity, e.is_active,
+        p.id AS product_id,
+        -- Aggregated Media subquery
+        (
+          SELECT COALESCE(json_agg(m.*), '[]')
+          FROM media m
+          JOIN products_media pm ON pm.media_id = m.id
+          WHERE pm.product_id = p.id
+        ) AS media,
+        -- Calculations
+        COALESCE(SUM(bi.quantity), 0) AS total_sold,
+        (e.capacity - COALESCE(SUM(bi.quantity), 0)) AS available_tickets
+      FROM events e
+      LEFT JOIN products p ON p.event_id = e.id AND p.product_type = 'EVENT'
+      LEFT JOIN ticket_types tt ON tt.product_id = p.id
+      LEFT JOIN booking_items bi ON bi.ticket_type_id = tt.id
+      LEFT JOIN bookings b ON bi.booking_id = b.id AND b.status = 'CONFIRMED'
+      GROUP BY e.id, p.id
+      ORDER BY e.event_date DESC
+      LIMIT $1 OFFSET $2;
+    `;
+
     const result = await query(sql, [limit, offset]);
+    return result.rows;
+  },
 
-    const countSql = `SELECT COUNT(*) FROM events`;
-    const countResult = await query(countSql);
-    const total = parseInt(countResult.rows[0].count, 10);
-
-    return {
-      events: result.rows,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
-      },
-    };
+  async countAll() {
+    const sql = `SELECT COUNT(*) FROM events`;
+    const result = await query(sql);
+    return parseInt(result.rows[0].count, 10);
   },
 
   /**
    * Update an event
    */
-  async update(
-    id,
-    { name, description, eventDate, startTime, endTime, capacity, isActive },
-  ) {
+  async updateEvent(id, data) {
+    const {
+      name,
+      description,
+      eventDate,
+      startTime,
+      endTime,
+      capacity,
+      isActive,
+    } = data;
     const sql = `
-      UPDATE events
-      SET name = COALESCE($2, name),
-          description = COALESCE($3, description),
-          event_date = COALESCE($4, event_date),
-          start_time = COALESCE($5, start_time),
-          end_time = COALESCE($6, end_time),
-          capacity = COALESCE($7, capacity),
-          is_active = COALESCE($8, is_active)
-      WHERE id = $1
-      RETURNING *`;
+    UPDATE events
+    SET name = COALESCE($2, name),
+        description = COALESCE($3, description),
+        event_date = COALESCE($4, event_date),
+        start_time = COALESCE($5, start_time),
+        end_time = COALESCE($6, end_time),
+        capacity = COALESCE($7, capacity),
+        is_active = COALESCE($8, is_active),
+        updated_at = NOW()
+    WHERE id = $1
+    RETURNING *`;
+
     const values = [
       id,
       name,
@@ -197,14 +221,63 @@ LIMIT $1 OFFSET $2;`;
       isActive,
     ];
     const result = await query(sql, values);
-    return result.rows[0] || null;
+    return result.rows[0];
+  },
+
+  async syncEventMedia(eventId, mediaIds) {
+    const client = await getClient();
+    try {
+      await client.query("BEGIN");
+      // 1. Find the product linked to this event
+      const productRes = await query(
+        "SELECT id FROM products WHERE event_id = $1",
+        [eventId],
+      );
+      if (productRes.rows.length === 0) return;
+
+      const productId = productRes.rows[0].id;
+
+      // 2. Start a transaction-safe sync (Delete old, Insert new)
+      // Note: In a real app, wrap this in a BEGIN/COMMIT block
+      await query("DELETE FROM products_media WHERE product_id = $1", [
+        productId,
+      ]);
+
+      if (mediaIds && mediaIds.length > 0) {
+        const insertValues = mediaIds
+          .map((mediaId, index) => `('${productId}', '${mediaId}', ${index})`)
+          .join(",");
+
+        await query(`
+      INSERT INTO products_media (product_id, media_id, sort_order) 
+      VALUES ${insertValues}
+    `);
+      }
+      await client.query("COMMIT");
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
+    } finally {
+      client.release();
+    }
   },
 
   /**
    * Delete an event (soft delete by deactivating)
    */
-  async deactivate(id) {
-    const sql = `UPDATE events SET is_active = false WHERE id = $1 RETURNING *`;
+  async updateActiveStatus(id, status) {
+    const sql = `
+      UPDATE events 
+      SET is_active = $2, updated_at = NOW() 
+      WHERE id = $1 
+      RETURNING *
+    `;
+    const result = await query(sql, [id, status]);
+    return result.rows[0] || null;
+  },
+
+  async findById(id) {
+    const sql = `SELECT * FROM events WHERE id = $1`;
     const result = await query(sql, [id]);
     return result.rows[0] || null;
   },
@@ -212,17 +285,25 @@ LIMIT $1 OFFSET $2;`;
   /**
    * Check availability for an event
    */
-  async checkAvailability(id, requestedQuantity) {
+  async getEventCapacityStats(id) {
     const sql = `
-      SELECT capacity, tickets_sold, (capacity - tickets_sold) AS available
-      FROM events WHERE id = $1 AND is_active = true`;
-    const result = await query(sql, [id]);
-    if (!result.rows[0]) return { available: false, remaining: 0 };
+    SELECT 
+      capacity, 
+      tickets_sold, 
+      (capacity - tickets_sold) AS available
+    FROM events 
+    WHERE id = $1 AND is_active = true
+  `;
 
-    const { available } = result.rows[0];
+    const result = await query(sql, [id]);
+
+    // Return null if no active event is found
+    if (result.rows.length === 0) return null;
+
     return {
-      available: available >= requestedQuantity,
-      remaining: parseInt(available, 10),
+      capacity: parseInt(result.rows[0].capacity, 10),
+      ticketsSold: parseInt(result.rows[0].tickets_sold, 10),
+      available: parseInt(result.rows[0].available, 10),
     };
   },
 
