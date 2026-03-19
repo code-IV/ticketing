@@ -18,10 +18,9 @@ router.get(
   handleValidation,
   ticketController.getGameTicketsDetails,
 );
-// Admin only - validate ticket at gate
+// everyone can see but only admin and staff can edit
 router.get(
   "/scan",
-  isStaff,
   scanTicketRules,
   handleValidation,
   ticketController.scanTicket,
