@@ -560,19 +560,19 @@ export default function StaffTransactionPage() {
 
       // Collect all items to be punched
       const punchPromises = [];
+      const usage = [
+        {
+          passId: "",
+          quantity: 2,
+        },
+      ];
 
       for (const item of items) {
         for (const ticketType of item.ticket_types) {
           const qty = draftQty[ticketType.id] || 0;
           if (qty > 0) {
             // Call the punch API for each ticket type
-            punchPromises.push(
-              ticketService.punchTicket({
-                ticketId,
-                productId:
-                  ticketType.id /* send the product ID instead its in */,
-              }),
-            );
+            punchPromises.push(ticketService.punchTicket(usage));
           }
         }
       }

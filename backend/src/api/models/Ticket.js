@@ -221,7 +221,7 @@ const Ticket = {
           p.product_type,
           json_agg(
               json_build_object(
-                  'passId', tt.id,
+                  'passId', tp.id,
                   'category', tt.category,
                   'quantity', tp.total_quantity,
                   'usedQuantity', tp.used_quantity,
@@ -242,33 +242,33 @@ const Ticket = {
   /**
    *
    */
-  async findAndLock(db, ticketId, productId) {
+  async findAndLock(db, id) {
     const sql = `
       SELECT * FROM ticket_products
-      WHERE ticket_id = $1 AND product_id = $2
-      FOR UPDATE
+      WHERE id=$1
     `;
-    const result = await db.query(sql, [ticketId, productId]);
+    const result = await db.query(sql, [id]);
     return result.rows[0] || null;
   },
 
-  async incrementUsage(db, ticketId, productId) {
+  async incrementUsage(db, id, quantity) {
     const sql = `
-      UPDATE ticket_products
-      SET 
-        used_quantity = used_quantity + 1,
-        last_used_at = NOW(),
-        status = CASE 
-                  WHEN (used_quantity + 1) >= total_quantity THEN 'USED'::ticket_product_status 
-                  ELSE 'AVAILABLE'::ticket_product_status 
-                END
-      WHERE ticket_id = $1 
-        AND product_id = $2 
-        AND used_quantity < total_quantity 
-        AND status = 'AVAILABLE'
-      RETURNING *;
-    `;
-    const result = await db.query(sql, [ticketId, productId]);
+    UPDATE ticket_products
+    SET 
+      used_quantity = used_quantity + $2,
+      last_used_at = NOW(),
+      status = CASE 
+                WHEN (used_quantity + $2) >= total_quantity THEN 'USED'::ticket_product_status 
+                ELSE 'AVAILABLE'::ticket_product_status 
+              END
+    WHERE id = $1 
+      AND status = 'AVAILABLE'
+      -- Ensure we don't exceed the total allowed
+      AND (used_quantity + $2) <= total_quantity
+    RETURNING *;
+  `;
+
+    const result = await db.query(sql, [id, quantity]);
     return result.rows[0] || null;
   },
 

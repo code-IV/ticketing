@@ -153,14 +153,13 @@ const TicketController = {
    */
   async punchTicketPass(req, res, next) {
     try {
-      const { ticketId, productId } = req.body;
-      console.log(req.body);
-      if (!productId || !ticketId) {
+      const usage = req.body;
+      if (!usage) {
         return apiResponse(
           res,
           400,
           false,
-          "Product ID and Ticker ID are required.",
+          "the req acceps an array of passId and quantity.",
           {
             success: false,
             reason: "MISSING_FIELDS",
@@ -168,7 +167,7 @@ const TicketController = {
         );
       }
 
-      const result = await TicketService.punchPass(ticketId, productId);
+      const result = await TicketService.punchPass(usage);
 
       if (!result.success) {
         return apiResponse(res, 400, false, "Consumption failed.", {

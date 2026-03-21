@@ -275,8 +275,10 @@ export const ticketService = {
     return response.data;
   },
 
-  async punchTicket(data: { ticketId: string; productId: string }): Promise<ApiResponse> {
-    const response = await api.post("/tickets/punch", data);
+  async punchTicket(
+    usage: { passId: string; quantity: number }[],
+  ): Promise<ApiResponse> {
+    const response = await api.post("/tickets/punch", usage);
     return response.data;
   },
 };

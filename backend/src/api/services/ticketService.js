@@ -24,38 +24,59 @@ const TicketService = {
     };
   },
 
-  async punchPass(ticketId, productId) {
-    const client = await getClient(); // Get a dedicated client for the transaction
+  async punchPass(usageArray) {
+    // Renamed parameter for clarity
+    const client = await getClient();
     try {
       await client.query("BEGIN");
+      const results = [];
 
-      // Pass the 'client' to the model so the LOCK (FOR UPDATE) works!
-      const pass = await Ticket.findAndLock(client, ticketId, productId);
+      for (const item of usageArray) {
+        // 1. Lock the row for this specific passId
+        const pass = await Ticket.findAndLock(client, item.passId);
 
-      if (!pass) {
-        await client.query("ROLLBACK");
-        return { success: false, error: "PASS_NOT_FOUND" };
+        // 2. Existence Check
+        if (!pass) {
+          await client.query("ROLLBACK");
+          return { success: false, error: "PASS_NOT_FOUND", id: item.passId };
+        }
+
+        // 3. Status Check (e.g., must be 'AVAILABLE')
+        if (pass.status !== "AVAILABLE") {
+          await client.query("ROLLBACK");
+          return { success: false, error: "PASS_NOT_ACTIVE", id: item.passId };
+        }
+
+        // 4. Quantity Check
+        const newUsedTotal = pass.used_quantity + item.quantity;
+        if (newUsedTotal > pass.total_quantity) {
+          await client.query("ROLLBACK");
+          return {
+            success: false,
+            error: "INSUFFICIENT_QUANTITY",
+            id: item.passId,
+          };
+        }
+
+        // 5. Increment Usage
+        // Note: If newUsedTotal === total_quantity, you might want to update status to 'USED'
+        const updatedPass = await Ticket.incrementUsage(
+          client,
+          item.passId,
+          item.quantity,
+        );
+
+        results.push(updatedPass);
       }
-
-      if (pass.used_quantity >= pass.total_quantity) {
-        await client.query("ROLLBACK");
-        return { success: false, error: "NO_REMAINING_USES" };
-      }
-
-      const updatedPass = await Ticket.incrementUsage(
-        client,
-        ticketId,
-        productId,
-      );
 
       await client.query("COMMIT");
-      return { success: true, data: updatedPass };
+      return { success: true, data: results };
     } catch (err) {
       await client.query("ROLLBACK");
       console.error("Punch Error:", err);
       return { success: false, error: "SERVER_ERROR" };
     } finally {
-      client.release(); // CRITICAL: Frees the connection back to the pool
+      client.release();
     }
   },
 };
