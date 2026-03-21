@@ -154,8 +154,8 @@ const TicketController = {
   async punchTicketPass(req, res, next) {
     try {
       const { ticketId, productId } = req.body;
-
-      if (!productId || ticketId) {
+      console.log(req.body);
+      if (!productId || !ticketId) {
         return apiResponse(
           res,
           400,
@@ -168,7 +168,7 @@ const TicketController = {
         );
       }
 
-      const result = await ticketService.punchPass(ticketId, productId);
+      const result = await TicketService.punchPass(ticketId, productId);
 
       if (!result.success) {
         return apiResponse(res, 400, false, "Consumption failed.", {

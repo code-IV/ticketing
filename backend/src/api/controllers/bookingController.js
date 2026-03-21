@@ -164,7 +164,6 @@ const bookingController = {
       const limit = Math.min(parseInt(req.query.limit, 10) || 20, 100);
 
       const result = await Booking.findByUserId(userId, { page, limit });
-      console.log(result.bookings[0].ticket);
       const bookings = (result.bookings || []).map((b) => ({
         id: b.id,
         bookingReference: b.booking_reference,

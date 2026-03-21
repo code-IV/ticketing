@@ -12,7 +12,14 @@ const ACCENT = "#FFD84D";
 
 // ── Icons ───────────────────────────────────────────────────────────────────
 const EyeIcon = ({ open }: { open: boolean }) => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+  <svg
+    width="18"
+    height="18"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+  >
     {open ? (
       <>
         <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
@@ -67,6 +74,7 @@ interface TransactionData {
   guest_name: string;
   total_amount: number;
   ticket_id: string;
+  product_id: string;
 }
 
 interface DraftQty {
@@ -86,35 +94,45 @@ const totalPurchased = (item: TicketItem) =>
   item.ticket_types.reduce((s, t) => s + t.purchased, 0);
 const totalUsed = (item: TicketItem) =>
   item.ticket_types.reduce((s, t) => s + t.used, 0);
-const isFullyUsed = (item: TicketItem) => totalUsed(item) >= totalPurchased(item);
+const isFullyUsed = (item: TicketItem) =>
+  totalUsed(item) >= totalPurchased(item);
 
 // ── PERFORATED STRIP ───────────────────────────────────────────────────────
 const Perforation = ({ isDark }: { isDark: boolean }) => (
   <div
     className="flex overflow-hidden"
-    style={{ borderTop: `2px dashed ${isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.1)'}` }}
+    style={{
+      borderTop: `2px dashed ${isDark ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.1)"}`,
+    }}
   >
     {Array.from({ length: 32 }, (_, k) => (
       <div
         key={k}
         className="h-2.5 flex-1"
-        style={{ background: k % 2 === 0 ? (isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)') : "transparent" }}
+        style={{
+          background:
+            k % 2 === 0
+              ? isDark
+                ? "rgba(255,255,255,0.03)"
+                : "rgba(0,0,0,0.02)"
+              : "transparent",
+        }}
       />
     ))}
   </div>
 );
 
 // ── CONFIRM MODAL ──────────────────────────────────────────────────────────
-const ConfirmModal = ({ 
-  punchList, 
-  onConfirm, 
-  onCancel, 
+const ConfirmModal = ({
+  punchList,
+  onConfirm,
+  onCancel,
   punching,
-  isDark 
-}: { 
-  punchList: any[]; 
-  onConfirm: () => void; 
-  onCancel: () => void; 
+  isDark,
+}: {
+  punchList: any[];
+  onConfirm: () => void;
+  onCancel: () => void;
   punching: boolean;
   isDark: boolean;
 }) => (
@@ -123,7 +141,7 @@ const ConfirmModal = ({
     animate={{ opacity: 1 }}
     exit={{ opacity: 0 }}
     className="fixed inset-0 z-50 flex items-end sm:items-center justify-center px-4 pb-4 sm:pb-0"
-    style={{ background: isDark ? 'rgba(0,0,0,0.9)' : 'rgba(0,0,0,0.5)' }}
+    style={{ background: isDark ? "rgba(0,0,0,0.9)" : "rgba(0,0,0,0.5)" }}
     onClick={onCancel}
   >
     <motion.div
@@ -131,11 +149,14 @@ const ConfirmModal = ({
       animate={{ y: 0, opacity: 1 }}
       exit={{ y: 80, opacity: 0 }}
       className={`w-full max-w-sm overflow-hidden rounded-3xl ${
-        isDark ? 'bg-[#111111]' : 'bg-white'
+        isDark ? "bg-[#111111]" : "bg-white"
       }`}
       onClick={(e) => e.stopPropagation()}
     >
-      <div className="px-6 py-5" style={{ background: isDark ? '#0A0A0A' : '#000' }}>
+      <div
+        className="px-6 py-5"
+        style={{ background: isDark ? "#0A0A0A" : "#000" }}
+      >
         <p
           className="font-black text-[9px] uppercase tracking-[0.45em] mb-2"
           style={{ color: isDark ? `${ACCENT}45` : `${ACCENT}80` }}
@@ -146,33 +167,43 @@ const ConfirmModal = ({
           PUNCH
         </h2>
       </div>
-      <div className={`px-5 py-4 space-y-2 ${
-        isDark ? 'bg-[#111111]' : 'bg-white'
-      }`}>
+      <div
+        className={`px-5 py-4 space-y-2 ${
+          isDark ? "bg-[#111111]" : "bg-white"
+        }`}
+      >
         {punchList.map((entry, i) => (
           <div
             key={i}
             className={`flex items-center justify-between px-4 py-2.5 rounded-xl ${
-              isDark ? 'bg-white/5' : 'bg-slate-50'
+              isDark ? "bg-white/5" : "bg-slate-50"
             }`}
           >
             <div className="flex items-center gap-2">
               <span>{entry.emoji}</span>
-              <span className={`font-black text-xs uppercase ${
-                isDark ? 'text-white' : 'text-slate-800'
-              }`}>{entry.game}</span>
+              <span
+                className={`font-black text-xs uppercase ${
+                  isDark ? "text-white" : "text-slate-800"
+                }`}
+              >
+                {entry.game}
+              </span>
             </div>
             <span className="font-black text-red-600">×{entry.count}</span>
           </div>
         ))}
       </div>
-      <div className={`p-4 grid grid-cols-2 gap-3 ${
-        isDark ? 'bg-[#111111] border-t border-white/10' : 'bg-white border-t border-slate-100'
-      }`}>
+      <div
+        className={`p-4 grid grid-cols-2 gap-3 ${
+          isDark
+            ? "bg-[#111111] border-t border-white/10"
+            : "bg-white border-t border-slate-100"
+        }`}
+      >
         <button
           onClick={onCancel}
           className={`py-4 font-black uppercase text-xs tracking-widest ${
-            isDark ? 'text-white/40' : 'text-slate-400'
+            isDark ? "text-white/40" : "text-slate-400"
           }`}
         >
           CANCEL
@@ -184,7 +215,9 @@ const ConfirmModal = ({
         >
           {punching ? (
             <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto" />
-          ) : "CONFIRM"}
+          ) : (
+            "CONFIRM"
+          )}
         </button>
       </div>
     </motion.div>
@@ -224,9 +257,7 @@ const GameCard = ({
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.05 }}
       className={`rounded-3xl border overflow-hidden cursor-pointer shadow-sm flex flex-col ${
-        isDark 
-          ? 'bg-[#111111] border-white/10' 
-          : 'bg-white border-slate-100'
+        isDark ? "bg-[#111111] border-white/10" : "bg-white border-slate-100"
       }`}
       onClick={full ? undefined : onToggle}
       style={{ opacity: full ? 0.7 : 1 }}
@@ -236,18 +267,22 @@ const GameCard = ({
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-center gap-2 min-w-0">
             <span className="text-2xl shrink-0">{item.emoji}</span>
-            <h3 className={`font-black text-xl truncate ${
-              isDark ? 'text-white' : 'text-slate-800'
-            }`}>
+            <h3
+              className={`font-black text-xl truncate ${
+                isDark ? "text-white" : "text-slate-800"
+              }`}
+            >
               {item.game_name}
             </h3>
           </div>
           <div className="flex flex-col items-end gap-1 shrink-0">
             {item.ticket_types.map((tt) => (
               <div key={tt.id} className="flex items-center gap-2">
-                <span className={`text-[10px] font-bold uppercase ${
-                  isDark ? 'text-white/30' : 'text-slate-400'
-                }`}>
+                <span
+                  className={`text-[10px] font-bold uppercase ${
+                    isDark ? "text-white/30" : "text-slate-400"
+                  }`}
+                >
                   {tt.category}
                 </span>
                 <span className="font-black text-sm" style={{ color: ACCENT }}>
@@ -259,9 +294,11 @@ const GameCard = ({
         </div>
 
         {!full && (
-          <p className={`text-[9px] font-black uppercase tracking-[0.2em] mt-4 ${
-            isDark ? 'text-white/20' : 'text-slate-300'
-          }`}>
+          <p
+            className={`text-[9px] font-black uppercase tracking-[0.2em] mt-4 ${
+              isDark ? "text-white/20" : "text-slate-300"
+            }`}
+          >
             {isExpanded ? "Collapse ▲" : "Tap to adjust ▼"}
           </p>
         )}
@@ -274,7 +311,7 @@ const GameCard = ({
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            className={isDark ? 'bg-white/5' : 'bg-slate-50/50'}
+            className={isDark ? "bg-white/5" : "bg-slate-50/50"}
           >
             <div className="px-5 pb-5 space-y-3 pt-2">
               {item.ticket_types.map((tt) => {
@@ -289,9 +326,11 @@ const GameCard = ({
                     className="flex items-center justify-between"
                     onClick={handleControlClick}
                   >
-                    <span className={`font-bold text-xs uppercase ${
-                      isDark ? 'text-white/60' : 'text-slate-600'
-                    }`}>
+                    <span
+                      className={`font-bold text-xs uppercase ${
+                        isDark ? "text-white/60" : "text-slate-600"
+                      }`}
+                    >
                       {tt.category}
                     </span>
                     <div className="flex items-center gap-3">
@@ -299,25 +338,27 @@ const GameCard = ({
                         onClick={() => setQty(qty - 1)}
                         disabled={qty === 0}
                         className={`w-8 h-8 rounded-lg border font-bold disabled:opacity-30 ${
-                          isDark 
-                            ? 'bg-white/10 border-white/20 text-white' 
-                            : 'bg-white border-slate-200 text-slate-800'
+                          isDark
+                            ? "bg-white/10 border-white/20 text-white"
+                            : "bg-white border-slate-200 text-slate-800"
                         }`}
                       >
                         −
                       </button>
-                      <span className={`w-4 text-center font-black text-sm ${
-                        isDark ? 'text-white' : 'text-slate-800'
-                      }`}>
+                      <span
+                        className={`w-4 text-center font-black text-sm ${
+                          isDark ? "text-white" : "text-slate-800"
+                        }`}
+                      >
                         {qty}
                       </span>
                       <button
                         onClick={() => setQty(qty + 1)}
                         disabled={qty >= ttRemaining}
                         className={`w-8 h-8 rounded-lg border font-bold disabled:opacity-30 ${
-                          isDark 
-                            ? 'bg-white/10 border-white/20 text-white' 
-                            : 'bg-white border-slate-200 text-slate-800'
+                          isDark
+                            ? "bg-white/10 border-white/20 text-white"
+                            : "bg-white border-slate-200 text-slate-800"
                         }`}
                       >
                         +
@@ -336,9 +377,11 @@ const GameCard = ({
         <Perforation isDark={isDark} />
         <div className="px-5 pb-4 pt-2">
           <div className="flex justify-between items-center mb-1.5">
-            <span className={`text-[10px] font-bold uppercase tracking-tighter ${
-              isDark ? 'text-white/30' : 'text-slate-400'
-            }`}>
+            <span
+              className={`text-[10px] font-bold uppercase tracking-tighter ${
+                isDark ? "text-white/30" : "text-slate-400"
+              }`}
+            >
               Used: {used} / {purchased}
             </span>
             {full && (
@@ -347,9 +390,11 @@ const GameCard = ({
               </span>
             )}
           </div>
-          <div className={`w-full h-1.5 rounded-full overflow-hidden ${
-            isDark ? 'bg-white/10' : 'bg-slate-100'
-          }`}>
+          <div
+            className={`w-full h-1.5 rounded-full overflow-hidden ${
+              isDark ? "bg-white/10" : "bg-slate-100"
+            }`}
+          >
             <motion.div
               className="h-full"
               style={{ background: full ? "#10B981" : ACCENT }}
@@ -382,14 +427,10 @@ export default function StaffTransactionPage() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   // Check if user has permission to expand cards
-  const canExpandCards = user?.permissions?.some(role => 
-    role === "SUPERADMIN" || role === "ADMIN" || role === "STAFF"
-  ) || false; // Default to false if permissions is undefined
-
-  // Debug: Log user roles and permission
-  console.log("User:", user);
-  console.log("User permissions:", user?.permissions);
-  console.log("Can expand cards:", canExpandCards);
+  const canExpandCards =
+    user?.permissions?.some(
+      (role) => role === "SUPERADMIN" || role === "ADMIN" || role === "STAFF",
+    ) || false; // Default to false if permissions is undefined
 
   useEffect(() => {
     if (token) {
@@ -397,11 +438,24 @@ export default function StaffTransactionPage() {
     }
   }, [token]);
 
-  const transformTicketData = (apiResponse: any): { items: TicketItem[]; transaction: TransactionData } => {
-    if (!apiResponse?.data?.ticket) return { items: [], transaction: { transaction_code: '', guest_name: '', total_amount: 0, ticket_id: '' } };
-    
+  const transformTicketData = (
+    apiResponse: any,
+  ): { items: TicketItem[]; transaction: TransactionData } => {
+    if (!apiResponse?.data?.ticket)
+      return {
+        items: [],
+        transaction: {
+          transaction_code: "",
+          guest_name: "",
+          total_amount: 0,
+          ticket_id: "",
+          product_id: "",
+        },
+      };
+
     const ticket = apiResponse.data.ticket;
-    
+    console.log("ticket", ticket.passes);
+
     const transformedItems: TicketItem[] = ticket.passes.map((pass: any) => ({
       id: pass.productId,
       game_name: pass.productName,
@@ -410,30 +464,31 @@ export default function StaffTransactionPage() {
         id: detail.passId,
         category: detail.category,
         purchased: detail.quantity,
-        used: detail.usedQuantity
-      }))
+        used: detail.usedQuantity,
+      })),
     }));
-    
+
     const transaction: TransactionData = {
       transaction_code: ticket.bookingReference,
       guest_name: ticket.guestName,
       total_amount: 0,
-      ticket_id: ticket.id
+      ticket_id: ticket.id,
+      product_id: "",
     };
-    
+
     return { items: transformedItems, transaction };
   };
-  
+
   const getGameEmoji = (productName: string): string => {
     const name = productName.toLowerCase();
-    if (name.includes('archery')) return '🏹';
-    if (name.includes('maze')) return '🌀';
-    if (name.includes('coaster') || name.includes('ride')) return '🎢';
-    if (name.includes('house') || name.includes('haunted')) return '👻';
-    if (name.includes('wheel') || name.includes('ferris')) return '🎡';
-    if (name.includes('bumper') || name.includes('car')) return '🚗';
-    if (name.includes('water') || name.includes('splash')) return '💦';
-    return '🎮';
+    if (name.includes("archery")) return "🏹";
+    if (name.includes("maze")) return "🌀";
+    if (name.includes("coaster") || name.includes("ride")) return "🎢";
+    if (name.includes("house") || name.includes("haunted")) return "👻";
+    if (name.includes("wheel") || name.includes("ferris")) return "🎡";
+    if (name.includes("bumper") || name.includes("car")) return "🚗";
+    if (name.includes("water") || name.includes("splash")) return "💦";
+    return "🎮";
   };
 
   const getTicket = async (token: string) => {
@@ -441,17 +496,17 @@ export default function StaffTransactionPage() {
       setLoading(true);
       setError(null);
       const response = await ticketService.scanTicket(token);
-      
+
       if (response.success && response.data) {
         const transformedData = transformTicketData(response);
         setItems(transformedData.items);
         setTicketData(transformedData.transaction);
       } else {
-        setError('Invalid or expired ticket');
+        setError("Invalid or expired ticket");
       }
     } catch (err) {
-      console.error('Error scanning ticket:', err);
-      setError('Failed to scan ticket. Please try again.');
+      console.error("Error scanning ticket:", err);
+      setError("Failed to scan ticket. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -459,13 +514,13 @@ export default function StaffTransactionPage() {
 
   const allPunched = items.every(isFullyUsed);
   const anyUsed = items.some((i) => totalUsed(i) > 0);
-  
+
   const getStatusConfig = () => {
     if (allPunched) return { label: "FULLY USED", bg: "#ef4444" };
     if (anyUsed) return { label: "PARTIALLY USED", bg: "#f97316" };
     return { label: "ACTIVE", bg: "#22c55e" };
   };
-  
+
   const statusCfg = getStatusConfig();
 
   const punchList = [];
@@ -497,14 +552,15 @@ export default function StaffTransactionPage() {
 
   const handleConfirm = async () => {
     setPunching(true);
-    
+
     try {
       // Get ticket ID from the current URL or data
-      const ticketId = ticketData?.ticket_id || '';
-      
+      const ticketId = ticketData?.ticket_id || "";
+      console.log("ticketData", ticketData);
+
       // Collect all items to be punched
       const punchPromises = [];
-      
+
       for (const item of items) {
         for (const ticketType of item.ticket_types) {
           const qty = draftQty[ticketType.id] || 0;
@@ -513,16 +569,17 @@ export default function StaffTransactionPage() {
             punchPromises.push(
               ticketService.punchTicket({
                 ticketId,
-                productId: ticketType.id
-              })
+                productId:
+                  ticketType.id /* send the product ID instead its in */,
+              }),
             );
           }
         }
       }
-      
+
       // Execute all punch operations
       await Promise.all(punchPromises);
-      
+
       // Update local state
       const log: PunchLogEntry[] = [];
       setItems((prev) =>
@@ -542,30 +599,37 @@ export default function StaffTransactionPage() {
           }),
         })),
       );
-      
+
       setPunchLog((prev) => [...log, ...prev]);
       setDraftQty({});
       setPunching(false);
       setShowConfirm(false);
-      
     } catch (error) {
-      console.error('Error punching tickets:', error);
+      console.error("Error punching tickets:", error);
       setPunching(false);
       // You might want to show an error message to the user here
     }
   };
 
   return (
-    <div className={`min-h-screen transition-colors duration-300 ${
-      isDarkTheme ? 'bg-[#0A0A0A]' : 'bg-[#F8FAFC]'
-    }`}>
+    <div
+      className={`min-h-screen transition-colors duration-300 ${
+        isDarkTheme ? "bg-[#0A0A0A]" : "bg-[#F8FAFC]"
+      }`}
+    >
       {/* Background decorative elements */}
       <div className="fixed inset-0 flex justify-between items-start pointer-events-none">
-        <div className="w-64 h-64 rounded-full opacity-5 ml-10 mt-20"
-          style={{ background: `radial-gradient(circle, ${ACCENT} 0%, transparent 70%)` }}
+        <div
+          className="w-64 h-64 rounded-full opacity-5 ml-10 mt-20"
+          style={{
+            background: `radial-gradient(circle, ${ACCENT} 0%, transparent 70%)`,
+          }}
         />
-        <div className="w-96 h-96 rounded-full opacity-5 mr-10 mb-20 self-end"
-          style={{ background: `radial-gradient(circle, ${ACCENT} 0%, transparent 70%)` }}
+        <div
+          className="w-96 h-96 rounded-full opacity-5 mr-10 mb-20 self-end"
+          style={{
+            background: `radial-gradient(circle, ${ACCENT} 0%, transparent 70%)`,
+          }}
         />
       </div>
 
@@ -574,7 +638,9 @@ export default function StaffTransactionPage() {
         <button
           onClick={() => router.push("/")}
           className={`flex items-center gap-2 transition-colors mb-8 ${
-            isDarkTheme ? 'text-white/60 hover:text-white' : 'text-slate-600 hover:text-slate-900'
+            isDarkTheme
+              ? "text-white/60 hover:text-white"
+              : "text-slate-600 hover:text-slate-900"
           }`}
         >
           <ArrowLeft size={20} />
@@ -585,24 +651,30 @@ export default function StaffTransactionPage() {
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
           <div className="flex items-center gap-4">
             <div>
-              <h1 className={`text-3xl font-black ${
-                isDarkTheme ? 'text-white' : 'text-slate-900'
-              }`}>
+              <h1
+                className={`text-3xl font-black ${
+                  isDarkTheme ? "text-white" : "text-slate-900"
+                }`}
+              >
                 Transaction <span style={{ color: ACCENT }}>Details</span>
               </h1>
-              <p className={`text-sm mt-1 ${
-                isDarkTheme ? 'text-white/40' : 'text-slate-500'
-              }`}>
+              <p
+                className={`text-sm mt-1 ${
+                  isDarkTheme ? "text-white/40" : "text-slate-500"
+                }`}
+              >
                 Token: <span className="font-mono">{token || "Unknown"}</span>
               </p>
             </div>
           </div>
           <div className="flex gap-2">
-            <div className={`px-4 py-2 rounded-xl border font-black text-[10px] uppercase shadow-sm ${
-              isDarkTheme 
-                ? 'bg-[#111111] border-white/10 text-white' 
-                : 'bg-white border-slate-100 text-slate-900'
-            }`}>
+            <div
+              className={`px-4 py-2 rounded-xl border font-black text-[10px] uppercase shadow-sm ${
+                isDarkTheme
+                  ? "bg-[#111111] border-white/10 text-white"
+                  : "bg-white border-slate-100 text-slate-900"
+              }`}
+            >
               Total: {ticketData?.total_amount || 0} ETB
             </div>
             <div
@@ -617,12 +689,15 @@ export default function StaffTransactionPage() {
         {/* Loading State */}
         {loading && (
           <div className="flex flex-col items-center justify-center py-20">
-            <div className="w-12 h-12 border-4 rounded-full animate-spin mb-4"
+            <div
+              className="w-12 h-12 border-4 rounded-full animate-spin mb-4"
               style={{ borderColor: `${ACCENT}20`, borderTopColor: ACCENT }}
             />
-            <p className={`font-medium ${
-              isDarkTheme ? 'text-white/60' : 'text-slate-500'
-            }`}>
+            <p
+              className={`font-medium ${
+                isDarkTheme ? "text-white/60" : "text-slate-500"
+              }`}
+            >
               Scanning ticket...
             </p>
           </div>
@@ -630,22 +705,32 @@ export default function StaffTransactionPage() {
 
         {/* Error State */}
         {error && (
-          <div className={`rounded-2xl p-8 text-center border ${
-            isDarkTheme 
-              ? 'bg-red-900/20 border-red-500/30' 
-              : 'bg-red-50 border-red-200'
-          }`}>
-            <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${
-              isDarkTheme ? 'bg-red-900/30' : 'bg-red-100'
-            }`}>
+          <div
+            className={`rounded-2xl p-8 text-center border ${
+              isDarkTheme
+                ? "bg-red-900/20 border-red-500/30"
+                : "bg-red-50 border-red-200"
+            }`}
+          >
+            <div
+              className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${
+                isDarkTheme ? "bg-red-900/30" : "bg-red-100"
+              }`}
+            >
               <span className="text-2xl">❌</span>
             </div>
-            <h3 className={`text-lg font-black mb-2 ${
-              isDarkTheme ? 'text-red-400' : 'text-red-900'
-            }`}>
+            <h3
+              className={`text-lg font-black mb-2 ${
+                isDarkTheme ? "text-red-400" : "text-red-900"
+              }`}
+            >
               Ticket Scan Failed
             </h3>
-            <p className={isDarkTheme ? 'text-red-300/70 mb-4' : 'text-red-700 mb-4'}>
+            <p
+              className={
+                isDarkTheme ? "text-red-300/70 mb-4" : "text-red-700 mb-4"
+              }
+            >
               {error}
             </p>
             <button
@@ -661,45 +746,59 @@ export default function StaffTransactionPage() {
         {!loading && !error && items.length > 0 && (
           <>
             {/* Transaction Info */}
-            <div className={`rounded-2xl p-6 border mb-8 ${
-              isDarkTheme 
-                ? 'bg-[#111111] border-white/10' 
-                : 'bg-white border-slate-100'
-            }`}>
+            <div
+              className={`rounded-2xl p-6 border mb-8 ${
+                isDarkTheme
+                  ? "bg-[#111111] border-white/10"
+                  : "bg-white border-slate-100"
+              }`}
+            >
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <p className={`text-[10px] font-black uppercase mb-1 ${
-                    isDarkTheme ? 'text-white/30' : 'text-slate-400'
-                  }`}>
+                  <p
+                    className={`text-[10px] font-black uppercase mb-1 ${
+                      isDarkTheme ? "text-white/30" : "text-slate-400"
+                    }`}
+                  >
                     Booking Reference
                   </p>
-                  <p className={`font-mono text-sm font-bold ${
-                    isDarkTheme ? 'text-white' : 'text-slate-900'
-                  }`}>
-                    {ticketData?.transaction_code || 'N/A'}
+                  <p
+                    className={`font-mono text-sm font-bold ${
+                      isDarkTheme ? "text-white" : "text-slate-900"
+                    }`}
+                  >
+                    {ticketData?.transaction_code || "N/A"}
                   </p>
                 </div>
                 <div>
-                  <p className={`text-[10px] font-black uppercase mb-1 ${
-                    isDarkTheme ? 'text-white/30' : 'text-slate-400'
-                  }`}>
+                  <p
+                    className={`text-[10px] font-black uppercase mb-1 ${
+                      isDarkTheme ? "text-white/30" : "text-slate-400"
+                    }`}
+                  >
                     Guest Name
                   </p>
-                  <p className={`font-mono text-sm font-bold ${
-                    isDarkTheme ? 'text-white' : 'text-slate-900'
-                  }`}>
-                    {ticketData?.guest_name || 'N/A'}
+                  <p
+                    className={`font-mono text-sm font-bold ${
+                      isDarkTheme ? "text-white" : "text-slate-900"
+                    }`}
+                  >
+                    {ticketData?.guest_name || "N/A"}
                   </p>
                 </div>
                 <div>
-                  <p className={`text-[10px] font-black uppercase mb-1 ${
-                    isDarkTheme ? 'text-white/30' : 'text-slate-400'
-                  }`}>
+                  <p
+                    className={`text-[10px] font-black uppercase mb-1 ${
+                      isDarkTheme ? "text-white/30" : "text-slate-400"
+                    }`}
+                  >
                     Total Amount
                   </p>
-                  <p className={`font-mono text-sm font-bold ${
-                    isDarkTheme ? 'text-white' : 'text-slate-900'
-                  }`}>
+                  <p
+                    className={`font-mono text-sm font-bold ${
+                      isDarkTheme ? "text-white" : "text-slate-900"
+                    }`}
+                  >
                     {ticketData?.total_amount || 0} ETB
                   </p>
                 </div>
@@ -715,9 +814,12 @@ export default function StaffTransactionPage() {
                     index={i}
                     draftQty={draftQty}
                     onQtyChange={handleQtyChange}
-                    isExpanded={expandedId === item.id && Boolean(canExpandCards)}
+                    isExpanded={
+                      expandedId === item.id && Boolean(canExpandCards)
+                    }
                     onToggle={() =>
-                      Boolean(canExpandCards) && setExpandedId(expandedId === item.id ? null : item.id)
+                      Boolean(canExpandCards) &&
+                      setExpandedId(expandedId === item.id ? null : item.id)
                     }
                     isDark={isDarkTheme}
                   />
@@ -729,22 +831,28 @@ export default function StaffTransactionPage() {
 
         {/* No Data State */}
         {!loading && !error && items.length === 0 && (
-          <div className={`rounded-2xl p-8 text-center border ${
-            isDarkTheme 
-              ? 'bg-white/5 border-white/10' 
-              : 'bg-slate-50 border-slate-200'
-          }`}>
-            <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${
-              isDarkTheme ? 'bg-white/10' : 'bg-slate-100'
-            }`}>
+          <div
+            className={`rounded-2xl p-8 text-center border ${
+              isDarkTheme
+                ? "bg-white/5 border-white/10"
+                : "bg-slate-50 border-slate-200"
+            }`}
+          >
+            <div
+              className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${
+                isDarkTheme ? "bg-white/10" : "bg-slate-100"
+              }`}
+            >
               <span className="text-2xl">🎫</span>
             </div>
-            <h3 className={`text-lg font-black mb-2 ${
-              isDarkTheme ? 'text-white' : 'text-slate-900'
-            }`}>
+            <h3
+              className={`text-lg font-black mb-2 ${
+                isDarkTheme ? "text-white" : "text-slate-900"
+              }`}
+            >
               No Ticket Data
             </h3>
-            <p className={isDarkTheme ? 'text-white/40' : 'text-slate-600'}>
+            <p className={isDarkTheme ? "text-white/40" : "text-slate-600"}>
               This ticket doesn't contain any redeemable passes.
             </p>
           </div>
@@ -757,14 +865,16 @@ export default function StaffTransactionPage() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               className={`mt-12 rounded-3xl p-6 border ${
-                isDarkTheme 
-                  ? 'bg-[#111111] border-white/10' 
-                  : 'bg-white border-slate-100'
+                isDarkTheme
+                  ? "bg-[#111111] border-white/10"
+                  : "bg-white border-slate-100"
               }`}
             >
-              <p className={`font-black text-xs uppercase mb-4 tracking-widest ${
-                isDarkTheme ? 'text-white/30' : 'text-slate-400'
-              }`}>
+              <p
+                className={`font-black text-xs uppercase mb-4 tracking-widest ${
+                  isDarkTheme ? "text-white/30" : "text-slate-400"
+                }`}
+              >
                 Recent Activity
               </p>
               <div className="space-y-3">
@@ -772,17 +882,19 @@ export default function StaffTransactionPage() {
                   <div
                     key={i}
                     className={`flex justify-between items-center text-sm border-b pb-2 ${
-                      isDarkTheme 
-                        ? 'border-white/5 text-white/70' 
-                        : 'border-slate-50 text-slate-700'
+                      isDarkTheme
+                        ? "border-white/5 text-white/70"
+                        : "border-slate-50 text-slate-700"
                     }`}
                   >
                     <span className="font-bold">
                       {log.emoji} {log.count}× {log.game}
                     </span>
-                    <span className={`text-[10px] font-mono ${
-                      isDarkTheme ? 'text-white/30' : 'text-slate-400'
-                    }`}>
+                    <span
+                      className={`text-[10px] font-mono ${
+                        isDarkTheme ? "text-white/30" : "text-slate-400"
+                      }`}
+                    >
                       {log.time}
                     </span>
                   </div>
@@ -801,19 +913,26 @@ export default function StaffTransactionPage() {
             animate={{ y: 0 }}
             exit={{ y: 100 }}
             className={`fixed bottom-0 left-0 right-0 p-4 backdrop-blur-md border-t z-50 ${
-              isDarkTheme 
-                ? 'bg-[#111111]/80 border-white/10' 
-                : 'bg-white/80 border-t'
+              isDarkTheme
+                ? "bg-[#111111]/80 border-white/10"
+                : "bg-white/80 border-t"
             }`}
           >
             <div className="max-w-6xl mx-auto flex justify-between items-center gap-4">
-              <p className="font-black text-xs uppercase truncate" style={{ color: ACCENT }}>
+              <p
+                className="font-black text-xs uppercase truncate"
+                style={{ color: ACCENT }}
+              >
                 {punchList.length} items selected
               </p>
               <button
                 onClick={() => setShowConfirm(true)}
                 className="px-8 py-4 bg-red-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg active:scale-95 transition-transform"
-                style={{ boxShadow: isDarkTheme ? '0 10px 25px -5px rgba(239,68,68,0.3)' : '0 10px 25px -5px rgba(239,68,68,0.2)' }}
+                style={{
+                  boxShadow: isDarkTheme
+                    ? "0 10px 25px -5px rgba(239,68,68,0.3)"
+                    : "0 10px 25px -5px rgba(239,68,68,0.2)",
+                }}
               >
                 PUNCH TICKETS
               </button>
