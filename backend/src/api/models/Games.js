@@ -1,4 +1,5 @@
 const { query, getClient } = require("../../config/db");
+const BACKEND_URL = require("../../config/settings");
 
 const Game = {
   async createGame(client, { name, description, rules, status }) {
@@ -50,50 +51,78 @@ const Game = {
 
   async findAll() {
     const sql = `
-      SELECT g.id, g.name, g.description, g.rules, g.status,
+    SELECT 
+      g.id, g.name, g.description, g.rules, g.status, g.created_at,
+      -- Aggregate Ticket Types
       COALESCE(
-        JSON_AGG(
-          JSON_BUILD_OBJECT(
-            'id', tt.id,
-            'category', tt.category,
-            'price', tt.price
-          )
-        ) FILTER (WHERE tt.id IS NOT NULL), 
+        (SELECT json_agg(json_build_object(
+          'id', tt.id,
+          'category', tt.category,
+          'price', tt.price
+        )) FROM ticket_types tt WHERE tt.product_id = p.id),
         '[]'
-      ) AS ticket_types
+      ) AS ticket_types,
+      -- Aggregate Media Gallery
+      COALESCE(
+        (SELECT json_agg(json_build_object(
+          'id', m.id,
+          'name', m.name,
+          'url', '${BACKEND_URL}' || m.url,
+          'type', m.type,
+          'sort_order', pm.sort_order
+        ) ORDER BY pm.sort_order ASC) 
+         FROM media m
+         JOIN products_media pm ON pm.media_id = m.id
+         WHERE pm.product_id = p.id),
+        '[]'
+      ) AS gallery
     FROM games g
-    -- 1. Link Game to its Product wrapper
     LEFT JOIN products p ON g.id = p.game_id
-    -- 2. Link Product to its various Price points
-    LEFT JOIN ticket_types tt ON p.id = tt.product_id
-    GROUP BY g.id
-    ORDER BY g.created_at DESC;`;
+    ORDER BY g.created_at DESC;
+  `;
+
     const result = await query(sql);
+
+    // Optional: Map the URL to include the BACKEND_URL prefix if needed
     return result.rows;
   },
 
   async findActive() {
     const sql = `
-      SELECT g.id, g.name, g.description, g.rules, g.status,
+    SELECT 
+      g.id, g.name, g.description, g.rules, g.status,
+      -- Aggregate Ticket Types
       COALESCE(
-        JSON_AGG(
-          JSON_BUILD_OBJECT(
-            'id', tt.id,
-            'category', tt.category,
-            'price', tt.price
-          )
-        ) FILTER (WHERE tt.id IS NOT NULL), 
+        (SELECT JSON_AGG(JSON_BUILD_OBJECT(
+          'id', tt.id,
+          'category', tt.category,
+          'price', tt.price
+        )) FROM ticket_types tt WHERE tt.product_id = p.id), 
         '[]'
-      ) AS ticket_types
+      ) AS ticket_types,
+      -- Aggregate Media Gallery
+      COALESCE(
+        (SELECT JSON_AGG(JSON_BUILD_OBJECT(
+          'id', m.id,
+          'url', '${BACKEND_URL}' || m.url,
+          'type', m.type,
+          'name', m.name,
+          'sort_order', pm.sort_order
+        ) ORDER BY pm.sort_order ASC) 
+         FROM media m 
+         JOIN products_media pm ON pm.media_id = m.id 
+         WHERE pm.product_id = p.id), 
+        '[]'
+      ) AS gallery
     FROM games g
-    -- 1. Link Game to its Product wrapper
     LEFT JOIN products p ON g.id = p.game_id
-    -- 2. Link Product to its various Price points
-    LEFT JOIN ticket_types tt ON p.id = tt.product_id
     WHERE g.status = 'OPEN'
-    GROUP BY g.id
-    ORDER BY g.created_at DESC;`;
+    ORDER BY g.created_at DESC;
+  `;
+
     const result = await query(sql);
+
+    // Optional: If you need to prepend the BACKEND_URL in JS
     return result.rows;
   },
 
@@ -101,25 +130,39 @@ const Game = {
     const sql = `
     SELECT 
       g.*, 
+      -- Aggregate Ticket Types
       COALESCE(
-          JSON_AGG(
-            JSON_BUILD_OBJECT(
+          (SELECT JSON_AGG(DISTINCT JSONB_BUILD_OBJECT(
               'id', tt.id,
-              'product_id', tt.product_id,
               'category', tt.category,
-              'price', tt.price,
-              'created_at', tt.created_at
-            )
-          ) FILTER (WHERE tt.id IS NOT NULL), 
+              'price', tt.price
+          ))
+          FROM products p
+          JOIN ticket_types tt ON p.id = tt.product_id
+          WHERE p.game_id = g.id), 
           '[]'
-      ) AS ticket_types
+      ) AS ticket_types,
+      
+      -- Aggregate Gallery (Media)
+      COALESCE(
+          (SELECT JSON_AGG(JSONB_BUILD_OBJECT(
+              'id', m.id,
+              'name', m.name,
+              'url', '${BACKEND_URL}' || m.url,
+              'type', m.type,
+              'sort_order', pm.sort_order
+          ) ORDER BY pm.sort_order ASC)
+          FROM products p
+          JOIN products_media pm ON p.id = pm.product_id
+          JOIN media m ON pm.media_id = m.id
+          WHERE p.game_id = g.id), 
+          '[]'
+      ) AS gallery
+      
     FROM games g
-    -- Hop through products to get to ticket_types
-    LEFT JOIN products p ON g.id = p.game_id
-    LEFT JOIN ticket_types tt ON p.id = tt.product_id
-    WHERE g.id = $1
-    GROUP BY g.id;
+    WHERE g.id = $1;
   `;
+
     const result = await query(sql, [id]);
     return result.rows[0];
   },

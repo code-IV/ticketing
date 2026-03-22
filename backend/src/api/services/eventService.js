@@ -1,5 +1,4 @@
 const { getClient } = require("../../config/db");
-const BACKEND_URL = require("../../config/settings");
 const { Event, EventStats } = require("../models/Event");
 const TicketType = require("../models/TicketType");
 
@@ -135,26 +134,7 @@ const EventService = {
     }
 
     // Business Logic: Maybe you want to format the media URLs or calculate total capacity
-    return {
-      event: {
-        id: event.id,
-        name: event.name,
-        capacity: event.capacity,
-        description: event.description,
-        isActive: event.is_active,
-        schedule: {
-          eventDate: event.event_date,
-          startTime: event.start_time,
-          endTime: event.end_time,
-        },
-        ticketTypes: event.ticket_types,
-      },
-      gallery: (event.media || []).map((m) => ({
-        url: `${BACKEND_URL}${m.url}`,
-        type: m.type,
-        label: m.name,
-      })),
-    };
+    return event;
   },
 
   async checkAvailability(eventId, requestedQuantity) {

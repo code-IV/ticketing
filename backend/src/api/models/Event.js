@@ -1,4 +1,5 @@
 const { query, getClient } = require("../../config/db");
+const BACKEND_URL = require("../../config/settings");
 
 const Event = {
   /**
@@ -55,51 +56,48 @@ const Event = {
   },
 
   /**
-   * Find event by ID
-   */
-
-  /**
    * Find event by ID with its ticket types
    */
   async findEventWithDetails(eventId) {
-    // 1. Get the Event and its Product info in one go
-    const eventSql = `
-    SELECT e.*, p.id as product_id, p.valid_days 
+    const sql = `
+    SELECT 
+      e.*, 
+      p.id AS product_id, 
+      p.valid_days,
+      -- Subquery for Ticket Types
+      (
+        SELECT COALESCE(JSON_AGG(tt.* ORDER BY tt.price ASC), '[]')
+        FROM ticket_types tt
+        WHERE tt.product_id = p.id
+      ) AS ticket_types,
+      -- Subquery for Media
+      (
+        SELECT COALESCE(
+          JSON_AGG(
+            JSON_BUILD_OBJECT(
+              'id', m.id,
+              'name', m.name,
+              'url', '${BACKEND_URL}' || m.url,
+              'type', m.type,
+              'sort_order', pm.sort_order
+            ) ORDER BY pm.sort_order ASC
+          ), 
+          '[]'
+        )
+        FROM media m
+        JOIN products_media pm ON pm.media_id = m.id
+        WHERE pm.product_id = p.id
+      ) AS gallery
     FROM events e
     LEFT JOIN products p ON p.event_id = e.id
     WHERE e.id = $1;
   `;
-    const eventResult = await query(eventSql, [eventId]);
-    const event = eventResult.rows[0];
 
-    if (!event) return null;
+    const result = await query(sql, [eventId]);
 
-    // 2. Get Ticket Types associated with the Product
-    const ticketTypesSql = `
-    SELECT * FROM ticket_types
-    WHERE product_id = $1
-    ORDER BY price ASC;
-  `;
-
-    // 3. Get Media associated with the Product
-    const mediaSql = `
-    SELECT m.id, m.name, m.url, m.type, pm.sort_order
-    FROM media m
-    JOIN products_media pm ON pm.media_id = m.id
-    WHERE pm.product_id = $1
-    ORDER BY pm.sort_order ASC;
-  `;
-
-    const [tickets, media] = await Promise.all([
-      query(ticketTypesSql, [event.product_id]),
-      query(mediaSql, [event.product_id]),
-    ]);
-
-    return {
-      ...event,
-      ticket_types: tickets.rows,
-      media: media.rows,
-    };
+    // Since we used subqueries, Postgres returns the row with
+    // ticket_types and gallery already as parsed arrays (if using pg driver).
+    return result.rows[0] || null;
   },
 
   /**
@@ -107,32 +105,33 @@ const Event = {
    */
   async findActiveEvents({ limit, offset }) {
     const sql = `
-      SELECT 
-        e.*, 
-        (e.capacity - e.tickets_sold) AS available_tickets,
-        COALESCE(
-          JSON_AGG(
-            JSON_BUILD_OBJECT(
-              'id', m.id,
-              'name', m.name,
-              'url', m.url,
-              'type', m.type
-            )
-          ) FILTER (WHERE m.id IS NOT NULL), 
-          '[]'
-        ) AS media
-      FROM events e
-      LEFT JOIN products p ON p.event_id = e.id
-      LEFT JOIN products_media pm ON pm.product_id = p.id
-      LEFT JOIN media m ON m.id = pm.media_id
-      WHERE e.is_active = true AND e.event_date >= CURRENT_DATE
-      GROUP BY e.id
-      ORDER BY e.event_date ASC
-      LIMIT $1 OFFSET $2`;
+    SELECT 
+      e.*, 
+      p.id AS product_id,
+      (e.capacity - e.tickets_sold) AS available_tickets,
+      -- We use JSON_AGG to build the gallery array directly in Postgres
+      COALESCE(
+        JSON_AGG(
+          JSON_BUILD_OBJECT(
+            'url', '${BACKEND_URL}' || m.url, -- Concatenate URL here
+            'type', m.type,
+            'name', m.name
+          )
+        ) FILTER (WHERE m.id IS NOT NULL), 
+        '[]'
+      ) AS gallery
+    FROM events e
+    LEFT JOIN products p ON p.event_id = e.id
+    LEFT JOIN products_media pm ON pm.product_id = p.id
+    LEFT JOIN media m ON m.id = pm.media_id
+    WHERE e.is_active = true AND e.event_date >= CURRENT_DATE
+    GROUP BY e.id, p.id -- p.id added to group by since it's in SELECT
+    ORDER BY e.event_date ASC
+    LIMIT $1 OFFSET $2`;
 
     const countSql = `
-      SELECT COUNT(*) FROM events
-      WHERE is_active = true AND event_date >= CURRENT_DATE`;
+    SELECT COUNT(*) FROM events
+    WHERE is_active = true AND event_date >= CURRENT_DATE`;
 
     const [result, countResult] = await Promise.all([
       query(sql, [limit, offset]),
@@ -150,29 +149,37 @@ const Event = {
    */
   async findAll({ limit, offset }) {
     const sql = `
-      SELECT 
-        e.id, e.name, e.description, e.event_date, e.start_time, e.end_time, 
-        e.capacity, e.is_active,
-        p.id AS product_id,
-        -- Aggregated Media subquery
-        (
-          SELECT COALESCE(json_agg(m.*), '[]')
-          FROM media m
-          JOIN products_media pm ON pm.media_id = m.id
-          WHERE pm.product_id = p.id
-        ) AS media,
-        -- Calculations
-        COALESCE(SUM(bi.quantity), 0) AS total_sold,
-        (e.capacity - COALESCE(SUM(bi.quantity), 0)) AS available_tickets
-      FROM events e
-      LEFT JOIN products p ON p.event_id = e.id AND p.product_type = 'EVENT'
-      LEFT JOIN ticket_types tt ON tt.product_id = p.id
-      LEFT JOIN booking_items bi ON bi.ticket_type_id = tt.id
-      LEFT JOIN bookings b ON bi.booking_id = b.id AND b.status = 'CONFIRMED'
-      GROUP BY e.id, p.id
-      ORDER BY e.event_date DESC
-      LIMIT $1 OFFSET $2;
-    `;
+    SELECT 
+      e.id, e.name, e.description, e.event_date, e.start_time, e.end_time, 
+      e.capacity, e.is_active,
+      p.id AS product_id,
+      -- Refined Media subquery to build the 'gallery' format
+      (
+        SELECT COALESCE(
+          json_agg(
+            json_build_object(
+              'url', '${BACKEND_URL}' || m.url,
+              'type', m.type,
+              'name', m.name
+            ) ORDER BY pm.sort_order ASC
+          ), '[]'
+        )
+        FROM media m
+        JOIN products_media pm ON pm.media_id = m.id
+        WHERE pm.product_id = p.id
+      ) AS gallery,
+      -- Calculations
+      COALESCE(SUM(bi.quantity), 0) AS total_sold,
+      (e.capacity - COALESCE(SUM(bi.quantity), 0)) AS available_tickets
+    FROM events e
+    LEFT JOIN products p ON p.event_id = e.id AND p.product_type = 'EVENT'
+    LEFT JOIN ticket_types tt ON tt.product_id = p.id
+    LEFT JOIN booking_items bi ON bi.ticket_type_id = tt.id
+    LEFT JOIN bookings b ON bi.booking_id = b.id AND b.status = 'CONFIRMED'
+    GROUP BY e.id, p.id
+    ORDER BY e.event_date DESC
+    LIMIT $1 OFFSET $2;
+  `;
 
     const result = await query(sql, [limit, offset]);
     return result.rows;

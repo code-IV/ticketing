@@ -10,7 +10,7 @@ import {
   Play,
   ArrowDownRight,
 } from "lucide-react";
-import { gameService } from "@/services/gameService";
+import { gameService } from "@/services/adminService";
 import { eventService } from "@/services/eventService";
 import { Event, Game } from "@/types";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -218,9 +218,9 @@ export default function Home() {
                   whileHover={{ scale: 1.02, y: -8 }}
                   transition={{ duration: 0.4 }}
                   className="group relative rounded-3xl overflow-hidden aspect-3/4 cursor-pointer w-[calc(100vw-100px)] max-w-96 sm:w-[385Px] lg:w-96   mx-auto sm:mx-0 shrink-0 hover:border hover:border-accent2"
-             >
+                >
                   <img
-                    src={`https://images.unsplash.com/${i === 0 ? 'photo-1544717297-fa95b6ee9643' : i === 1 ? 'photo-1492688798571-9dddf4574e88' : 'photo-1464207687429-7505649dae38'}?w=600&h=800&fit=crop&auto=format&q=80`}
+                    src={`https://images.unsplash.com/${i === 0 ? "photo-1544717297-fa95b6ee9643" : i === 1 ? "photo-1492688798571-9dddf4574e88" : "photo-1464207687429-7505649dae38"}?w=600&h=800&fit=crop&auto=format&q=80`}
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                     alt={event.name}
                   />
@@ -262,10 +262,12 @@ export default function Home() {
                         ETB
                       </p>
                       <Link href={`/buy?event=${event.id}`}>
-                        <button 
+                        <button
                           disabled={!event.is_active}
                           className={`bg-[#FFD84D] text-black font-black text-xs px-5 py-2.5 rounded-full hover:bg-white transition-colors ${
-                            !event.is_active ? "opacity-50 cursor-not-allowed" : ""
+                            !event.is_active
+                              ? "opacity-50 cursor-not-allowed"
+                              : ""
                           }`}
                         >
                           BOOK
@@ -280,8 +282,8 @@ export default function Home() {
         </div>
       </section>
 
-            {/* ── ATTRACTIONS ──────────────────────────────────────────────────── */}
-            <section
+      {/* ── ATTRACTIONS ──────────────────────────────────────────────────── */}
+      <section
         className={`pb-18 px-2 sm:px-10 lg:px-16 bg-gradient-to-b from-transparent ${
           isDarkTheme ? "to-white/3" : "to-gray-50"
         }`}
@@ -294,7 +296,10 @@ export default function Home() {
             variants={stagger}
           >
             {/* Header */}
-            <motion.div variants={fadeUp} className="flex justify-between items-end mb-16">
+            <motion.div
+              variants={fadeUp}
+              className="flex justify-between items-end mb-16"
+            >
               <div>
                 <p className="text-[#FFD84D] pl-4 font-black text-xs uppercase tracking-[0.3em] mb-3">
                   Top Picks
@@ -311,13 +316,15 @@ export default function Home() {
               <Link
                 href="/games"
                 className={`hidden md:flex items-center gap-2 font-bold text-sm transition-colors ${
-                  isDarkTheme ? "text-white/50 hover:text-[#FFD84D]" : "text-gray-500 hover:text-[#FFD84D]"
+                  isDarkTheme
+                    ? "text-white/50 hover:text-[#FFD84D]"
+                    : "text-gray-500 hover:text-[#FFD84D]"
                 }`}
               >
                 View All <ChevronRight size={16} />
               </Link>
             </motion.div>
-              
+
             {/* Horizontal scroll container */}
             <div className="flex gap-6 overflow-x-auto scrollbar-hide px-2 py-4">
               {featuredGames.map((game) => (
@@ -331,7 +338,7 @@ export default function Home() {
                              mx-auto sm:mx-0 shrink-0 hover:border hover:border-accent2"
                 >
                   <img
-                    src={`https://images.unsplash.com/${featuredGames.indexOf(game) === 0 ? 'photo-1571003123894-1f0594d2b5d9' : featuredGames.indexOf(game) === 1 ? 'photo-1632970471392-b864fa5b0856' : 'photo-1591014617869-55d3b8d9f9c0'}?w=600&h=800&fit=crop&auto=format&q=80`}
+                    src={`https://images.unsplash.com/${featuredGames.indexOf(game) === 0 ? "photo-1571003123894-1f0594d2b5d9" : featuredGames.indexOf(game) === 1 ? "photo-1632970471392-b864fa5b0856" : "photo-1591014617869-55d3b8d9f9c0"}?w=600&h=800&fit=crop&auto=format&q=80`}
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                     alt={game.name}
                   />
@@ -345,17 +352,23 @@ export default function Home() {
                   <div className="absolute top-4 right-4 w-10 h-10 rounded-full bg-[#FFD84D] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 scale-75 group-hover:scale-100">
                     <ArrowDownRight className="w-5 h-5 text-black -rotate-45" />
                   </div>
-                  
+
                   <div className="absolute bottom-0 left-0 right-0 p-7">
                     <span className="text-[#FFD84D] font-black text-[10px] uppercase tracking-[0.3em] block mb-2">
                       Thrill Ride
                     </span>
-                    <h3 className="text-2xl font-black mb-4 leading-tight">{game.name}</h3>
+                    <h3 className="text-2xl font-black mb-4 leading-tight">
+                      {game.name}
+                    </h3>
                     <div className="flex items-center justify-between">
-                      <p className={`text-sm ${isDarkTheme ? "text-gray-300" : "text-gray-600"}`}>
+                      <p
+                        className={`text-sm ${isDarkTheme ? "text-gray-300" : "text-gray-600"}`}
+                      >
                         From{" "}
                         <span className="text-xl font-black text-white">
-                          {game.ticket_types?.find((t) => t.category === "ADULT")?.price ?? "—"}
+                          {game.ticket_types?.find(
+                            (t) => t.category === "ADULT",
+                          )?.price ?? "—"}
                         </span>{" "}
                         ETB
                       </p>
@@ -372,7 +385,7 @@ export default function Home() {
           </motion.div>
         </div>
       </section>
-            
+
       {/* ── STATS ────────────────────────────────────────────────────────── */}
       <section className="py-24 px-6 sm:px-10 lg:px-16">
         <div className="max-w-7xl mx-auto">
