@@ -9,36 +9,20 @@ const { uuidParamRule, handleValidation } = require("../middleware/validate");
 
 router.use(isAuthenticated);
 
-router.post("/games", handleValidation, GameController.createGame);
-router.patch(
-  "/games/:id",
-  uuidParamRule("id"),
-  handleValidation,
-  GameController.updateGame,
-);
-router.get("/games", handleValidation, GameController.getAllGames);
+router.get("/", handleValidation, GameController.getAllGames);
+router.get("/buy", handleValidation, GameController.getActiveGames);
+router.get("/stats", handleValidation, GameStatsController.fetchGameDashboard);
 router.get(
-  "/games/stats",
-  handleValidation,
-  GameStatsController.fetchGameDashboard,
-);
-router.get(
-  "/games/stats/:gameId",
+  "/stats/:gameId",
   uuidParamRule("gameId"),
   handleValidation,
   GameStatsController.getGameStats,
 );
 router.get(
-  "/game/:id",
+  "/:id",
   uuidParamRule("id"),
   handleValidation,
   GameController.getGameWithId,
-);
-router.delete(
-  "/game/:id",
-  uuidParamRule("id"),
-  handleValidation,
-  GameController.deleteGameWithId,
 );
 
 module.exports = router;

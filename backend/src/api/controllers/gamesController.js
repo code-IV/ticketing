@@ -52,11 +52,22 @@ const GameController = {
     }
   },
   /**
+   * GET /api/games/buy - Get all open games with their ticket prices
+   */
+  async getActiveGames(req, res, next) {
+    try {
+      const games = await GameService.getActive();
+      return apiResponse(res, 200, true, "GET game successful", games);
+    } catch (err) {
+      next(err);
+    }
+  },
+  /**
    * GET api/admin/game/:id get game with id?
    */
   async getGameWithId(req, res, next) {
     try {
-      const game = await Game.getById(req.params.id);
+      const game = await GameService.getById(req.params.id);
       if (!game) {
         return apiResponse(res, 404, false, "Game not found");
       }

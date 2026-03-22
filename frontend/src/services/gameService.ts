@@ -2,18 +2,6 @@ import { api } from "@/lib/api";
 import { Game, TicketType, PaginatedResponse, ApiResponse } from "@/types";
 
 export const gameService = {
-  async getActiveGames(): Promise<ApiResponse<Game[]>> {
-    const response = await api.get("/buy/games");
-    return response.data;
-  },
-
-  async getGameById(
-    id: string,
-  ): Promise<ApiResponse<{ game: Game; ticketTypes: TicketType[] }>> {
-    const response = await api.get(`/buy/games/${id}`);
-    return response.data;
-  },
-
   async checkAvailability(
     gameId: string,
     quantity: number,

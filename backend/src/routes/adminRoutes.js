@@ -13,6 +13,7 @@ const {
   paginationRules,
   handleValidation,
 } = require("../middleware/validate");
+const { GameController } = require("../api/controllers/gamesController");
 
 // All admin routes require authentication + admin role
 router.use(isAuthenticated, isAdmin);
@@ -58,6 +59,20 @@ router.delete(
   uuidParamRule("id"),
   handleValidation,
   EventController.deleteEvent,
+);
+// Game management
+router.post("/game", handleValidation, GameController.createGame);
+router.patch(
+  "/game/:id",
+  uuidParamRule("id"),
+  handleValidation,
+  GameController.updateGame,
+);
+router.delete(
+  "/game/:id",
+  uuidParamRule("id"),
+  handleValidation,
+  GameController.deleteGameWithId,
 );
 
 // Ticket type management

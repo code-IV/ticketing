@@ -72,6 +72,31 @@ const Game = {
     return result.rows;
   },
 
+  async findActive() {
+    const sql = `
+      SELECT g.id, g.name, g.description, g.rules, g.status,
+      COALESCE(
+        JSON_AGG(
+          JSON_BUILD_OBJECT(
+            'id', tt.id,
+            'category', tt.category,
+            'price', tt.price
+          )
+        ) FILTER (WHERE tt.id IS NOT NULL), 
+        '[]'
+      ) AS ticket_types
+    FROM games g
+    -- 1. Link Game to its Product wrapper
+    LEFT JOIN products p ON g.id = p.game_id
+    -- 2. Link Product to its various Price points
+    LEFT JOIN ticket_types tt ON p.id = tt.product_id
+    WHERE g.status = 'OPEN'
+    GROUP BY g.id
+    ORDER BY g.created_at DESC;`;
+    const result = await query(sql);
+    return result.rows;
+  },
+
   async findById(id) {
     const sql = `
     SELECT 

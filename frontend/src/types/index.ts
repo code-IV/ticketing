@@ -18,7 +18,7 @@ export interface Game {
   description: string;
   rules: string;
   status: "OPEN" | "ON_MAINTENANCE" | "UPCOMING" | "CLOSED";
-  ticket_types?: TicketType[];
+  ticketTypes?: TicketType[];
   category?: string;
   capacity?: number;
   created_at: string;

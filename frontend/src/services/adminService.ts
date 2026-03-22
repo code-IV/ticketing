@@ -296,11 +296,15 @@ export const gameService = {
     return response.data;
   },
   async getAll(): Promise<ApiResponse<Game[]>> {
-    const response = await api.get("/admin/games");
+    const response = await api.get("/games");
+    return response.data;
+  },
+  async getActiveGames(): Promise<ApiResponse<Game[]>> {
+    const response = await api.get("/games/buy");
     return response.data;
   },
   async getGame(id: string): Promise<ApiResponse<Partial<Game>>> {
-    const response = await api.get(`/admin/game/${id}`);
+    const response = await api.get(`/games/${id}`);
     return response.data;
   },
   async deleteGame(id: string): Promise<ApiResponse> {

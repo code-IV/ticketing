@@ -84,6 +84,16 @@ const GameService = {
       throw new Error("Could not retrieve games catalog.");
     }
   },
+  async getActive() {
+    try {
+      const games = await Game.findActive();
+
+      return games;
+    } catch (error) {
+      console.error("Error in gameService.getActive:", error);
+      throw new Error("Could not retrieve games catalog.");
+    }
+  },
 
   async getById(id) {
     try {
