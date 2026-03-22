@@ -4,27 +4,13 @@ const TicketType = {
   /**
    * Create a new ticket type
    */
-  async create({
-    eventId,
-    name,
-    category,
-    price,
-    description,
-    maxQuantityPerBooking = 10,
-  }) {
+  async create({ productId, category, price, maxQuantityPerBooking = 10 }, db) {
     const sql = `
-      INSERT INTO ticket_types (event_id, name, category, price, description, max_quantity_per_booking)
-      VALUES ($1, $2, $3, $4, $5, $6)
+      INSERT INTO ticket_types (product_id, category, price, max_quantity)
+      VALUES ($1, $2, $3, $4)
       RETURNING *`;
-    const values = [
-      eventId,
-      name,
-      category,
-      price,
-      description,
-      maxQuantityPerBooking,
-    ];
-    const result = await query(sql, values);
+    const values = [productId, category, price, maxQuantityPerBooking];
+    const result = await db.query(sql, values);
     return result.rows[0];
   },
 

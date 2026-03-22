@@ -1,8 +1,8 @@
 const { Games } = require("../models/Games");
-const { gameStatsService } = require("../services/gameService");
+const { GameStatsService } = require("../services/gameService");
 const { apiResponse } = require("../../utils/helpers");
 
-const gameController = {
+const GameController = {
   /**
    * POST api/admin/games  creategames
    */
@@ -78,7 +78,7 @@ const gameController = {
   },
 };
 
-const gameStatsController = {
+const GameStatsController = {
   async fetchGameDashboard(req, res) {
     try {
       const { startDate, endDate, period } = req.query;
@@ -133,4 +133,4 @@ const gameStatsController = {
   },
 };
 
-module.exports = { gameController, gameStatsController };
+module.exports = { GameController, GameStatsController };

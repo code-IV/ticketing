@@ -1,44 +1,44 @@
 const express = require("express");
 const router = express.Router();
 const {
-  gameController,
-  gameStatsController,
+  GameController,
+  GameStatsController,
 } = require("../api/controllers/gamesController");
 const { isAuthenticated } = require("../middleware/auth");
 const { uuidParamRule, handleValidation } = require("../middleware/validate");
 
 router.use(isAuthenticated);
 
-router.post("/games", handleValidation, gameController.createGame);
+router.post("/games", handleValidation, GameController.createGame);
 router.patch(
   "/games/:id",
   uuidParamRule("id"),
   handleValidation,
-  gameController.updateGame,
+  GameController.updateGame,
 );
-router.get("/games", handleValidation, gameController.getAllGames);
+router.get("/games", handleValidation, GameController.getAllGames);
 router.get(
   "/games/stats",
   handleValidation,
-  gameStatsController.fetchGameDashboard,
+  GameStatsController.fetchGameDashboard,
 );
 router.get(
   "/games/stats/:gameId",
   uuidParamRule("gameId"),
   handleValidation,
-  gameStatsController.getGameStats,
+  GameStatsController.getGameStats,
 );
 router.get(
   "/game/:id",
   uuidParamRule("id"),
   handleValidation,
-  gameController.getGameWithId,
+  GameController.getGameWithId,
 );
 router.delete(
   "/game/:id",
   uuidParamRule("id"),
   handleValidation,
-  gameController.deleteGameWithId,
+  GameController.deleteGameWithId,
 );
 
 module.exports = router;

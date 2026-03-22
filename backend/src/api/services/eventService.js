@@ -1,6 +1,7 @@
 const { getClient } = require("../../config/db");
 const BACKEND_URL = require("../../config/settings");
 const { Event, EventStats } = require("../models/Event");
+const TicketType = require("../models/TicketType");
 
 const EventService = {
   async createEvent(eventData) {
@@ -21,6 +22,9 @@ const EventService = {
         client,
       );
 
+      for (const type of eventData.ticketTypes || []) {
+        await TicketType.create({ ...type, productId }, client);
+      }
       await client.query("COMMIT");
       return { event: newEvent, productId: productId };
     } catch (error) {
@@ -143,8 +147,8 @@ const EventService = {
           startTime: event.start_time,
           endTime: event.end_time,
         },
+        ticketTypes: event.ticket_types,
       },
-      ticketTypes: event.ticket_types,
       gallery: (event.media || []).map((m) => ({
         url: `${BACKEND_URL}${m.url}`,
         type: m.type,

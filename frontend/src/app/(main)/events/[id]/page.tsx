@@ -44,7 +44,6 @@ export default function EventDetailPage({
 
   // ── STATE ──
   const [event, setEvent] = useState<Event | null>(null);
-  const [gallery, setGallery] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [cart, setCart] = useState<{ [key: string]: number }>({});
@@ -59,6 +58,18 @@ export default function EventDetailPage({
   const [bookingId, setBookingId] = useState<string>("");
   const [showToast, setShowToast] = useState(false);
 
+  // ── MOCK MEDIA ──
+  const MOCK_VID =
+    "https://player.vimeo.com/external/434045526.sd.mp4?s=c27ee37da9897116710497645167f536968d876d&profile_id=164&oauth2_token_id=57447761";
+  const VIDEO_POSTER =
+    "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?q=80&w=2000&auto=format&fit=crop";
+  const MOCK_GALLERY = [
+    "https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?q=80&w=600&auto=format&fit=crop",
+    "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?q=80&w=600&auto=format&fit=crop",
+    "https://images.unsplash.com/photo-1514525253361-bee8a19740c1?q=80&w=600&auto=format&fit=crop",
+    "https://images.unsplash.com/photo-1429962714451-bb934ecdc4ec?q=80&w=600&auto=format&fit=crop",
+  ];
+
   useEffect(() => {
     loadEvent();
   }, [id]);
@@ -67,10 +78,9 @@ export default function EventDetailPage({
     try {
       setLoading(true);
       const response = await eventService.getEventById(id);
-      console.log(response.data);
+
       if (response.success && response.data) {
         setEvent(response.data.event);
-        setGallery(response.data.gallery);
       } else {
         setError(response.message || "Event not found");
       }
@@ -92,9 +102,9 @@ export default function EventDetailPage({
   };
 
   const getTotalAmount = () => {
-    if (!event?.ticket_types) return 0;
+    if (!event?.ticketTypes) return 0;
     return Object.entries(cart).reduce((total, [ticketTypeId, quantity]) => {
-      const ticketType = event.ticket_types?.find((t) => t.id === ticketTypeId);
+      const ticketType = event.ticketTypes?.find((t) => t.id === ticketTypeId);
       return total + (ticketType ? ticketType.price * quantity : 0);
     }, 0);
   };
@@ -200,13 +210,6 @@ export default function EventDetailPage({
     }
   };
 
-  // ── MOCK MEDIA ──
-  const MOCK_VID =
-    "https://player.vimeo.com/external/434045526.sd.mp4?s=c27ee37da9897116710497645167f536968d876d&profile_id=164&oauth2_token_id=57447761";
-  const VIDEO_POSTER =
-    "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?q=80&w=2000&auto=format&fit=crop";
-  const MOCK_GALLERY = gallery?.map((m) => m.url);
-
   // Build media items for gallery and lightbox
   const getMediaItems = () => {
     const items = [];
@@ -229,7 +232,7 @@ export default function EventDetailPage({
     return items;
   };
 
-  const mediaItems = gallery ? gallery : [];
+  const mediaItems = getMediaItems();
   const currentMedia = mediaItems[selectedMediaIndex];
 
   const navigateMedia = (direction: "prev" | "next") => {
@@ -291,33 +294,28 @@ export default function EventDetailPage({
     );
 
   const isSoldOut = event.capacity - event.tickets_sold <= 0;
-  console.log(gallery);
+
   return (
     <div
       className={`min-h-screen ${isDarkTheme ? "bg-[#0A0A0A]" : "bg-gray-50"}`}
     >
-      <img
-        src={gallery?.[0].url}
-        className="w-full h-full object-cover"
-        alt={currentMedia?.alt || event.name}
-      />
       {/* Hero Section with Video/Image Background */}
       <section className="relative h-screen overflow-hidden">
         <div className="absolute inset-0">
-          {gallery?.[0].type === "video/mp4" ? (
+          {currentMedia?.type === "video" ? (
             <video
               className="w-full h-full object-cover"
               autoPlay
               muted
               loop
               playsInline
-              poster={gallery?.[0].url}
+              poster={currentMedia.thumbnail}
             >
-              <source src={gallery?.[0].url} type="video/mp4" />
+              <source src={currentMedia.url} type="video/mp4" />
             </video>
           ) : (
             <img
-              src={gallery?.[0].url}
+              src={currentMedia?.url || MOCK_GALLERY[0]}
               className="w-full h-full object-cover"
               alt={currentMedia?.alt || event.name}
             />
@@ -456,14 +454,12 @@ export default function EventDetailPage({
               <div className="flex items-center gap-2">
                 <Calendar size={18} className="text-[#ffd84f]" />
                 <span>
-                  {event.event_date
-                    ? format(new Date(event.event_date), "MMM dd, yyyy")
-                    : "--"}
+                  {format(new Date(event.schedule.eventDate), "MMM dd, yyyy")}
                 </span>
               </div>
               <div className="flex items-center gap-2">
                 <Clock size={18} className="text-[#ffd84f]" />
-                <span>{event.start_time}</span>
+                <span>{event.schedule.startTime}</span>
               </div>
               <div className="flex items-center gap-2">
                 <MapPin size={18} className="text-[#ffd84f]" />
@@ -475,7 +471,7 @@ export default function EventDetailPage({
               </div>
               <div className="flex items-center gap-2">
                 <Ticket size={18} className="text-[#ffd84f]" />
-                <span>From {event.ticket_types?.[0]?.price || 0} ETB</span>
+                <span>From {event.ticketTypes?.[0]?.price || 0} ETB</span>
               </div>
             </div>
           </motion.div>
@@ -497,6 +493,7 @@ export default function EventDetailPage({
           </button>
         </div>
       </section>
+
       {/* Media Gallery */}
       <section className="py-20 px-6 md:px-12">
         <div className="max-w-7xl mx-auto">
@@ -519,7 +516,7 @@ export default function EventDetailPage({
           </motion.div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {gallery?.map((item, index) => (
+            {mediaItems.map((item, index) => (
               <motion.button
                 key={index}
                 initial={{ opacity: 0, scale: 0.8 }}
@@ -537,7 +534,7 @@ export default function EventDetailPage({
                 }`}
               >
                 <img
-                  src={item.url}
+                  src={item.thumbnail}
                   alt={item.alt}
                   className="w-full h-full object-cover transition-transform duration-300 hover:scale-110"
                 />
@@ -551,6 +548,7 @@ export default function EventDetailPage({
           </div>
         </div>
       </section>
+
       {/* Event Details */}
       <section
         className={`py-20 px-6 md:px-12 ${isDarkTheme ? "" : "bg-gray-100/80"}`}
@@ -611,9 +609,7 @@ export default function EventDetailPage({
                   <p
                     className={`text-2xl font-black ${isDarkTheme ? "text-white" : "text-gray-800"}`}
                   >
-                    {event.event_date
-                      ? format(new Date(event.event_date), "MMM dd, yyyy")
-                      : "--"}
+                    {format(new Date(event.schedule.eventDate), "MMM dd, yyyy")}
                   </p>
                 </div>
                 <div
@@ -629,7 +625,7 @@ export default function EventDetailPage({
                   <p
                     className={`text-2xl font-black ${isDarkTheme ? "text-white" : "text-gray-800"}`}
                   >
-                    {event.start_time}
+                    {event.schedule.startTime}
                   </p>
                 </div>
                 <div
@@ -710,19 +706,19 @@ export default function EventDetailPage({
                     Select Tickets
                   </h4>
                   <div className="space-y-4">
-                    {event.ticket_types?.map((type, index) => (
+                    {event.ticketTypes?.map((type, index) => (
                       <div key={type.id}>
                         <div className="flex justify-between items-center mb-3">
                           <div>
                             <p
                               className={`font-black ${isDarkTheme ? "text-white" : "text-gray-800"}`}
                             >
-                              {type.name}
+                              {type.category}
                             </p>
                             <p
                               className={`text-xs ${isDarkTheme ? "text-gray-400" : "text-gray-500"}`}
                             >
-                              {type.description}
+                              {/*type.description */ " "}
                             </p>
                           </div>
                           <p
@@ -771,7 +767,7 @@ export default function EventDetailPage({
                             </button>
                           </div>
                         </div>
-                        {index < (event.ticket_types?.length || 0) - 1 && (
+                        {index < (event.ticketTypes?.length || 0) - 1 && (
                           <div
                             className={`mt-4 border-t ${isDarkTheme ? "border-gray-700/50" : "border-gray-200/50"}`}
                           ></div>
@@ -790,7 +786,7 @@ export default function EventDetailPage({
                       Order Summary
                     </h4>
                     {Object.entries(cart).map(([tid, qty]) => {
-                      const t = event.ticket_types?.find((x) => x.id === tid);
+                      const t = event.ticketTypes?.find((x) => x.id === tid);
                       return (
                         <div
                           key={tid}
@@ -800,7 +796,7 @@ export default function EventDetailPage({
                             <p
                               className={`text-sm font-black ${isDarkTheme ? "text-white" : "text-gray-800"}`}
                             >
-                              {t?.name}
+                              {t?.category}
                             </p>
                             <p
                               className={`text-[10px] ${isDarkTheme ? "text-gray-400" : "text-gray-500"}`}
@@ -869,6 +865,7 @@ export default function EventDetailPage({
           </div>
         </div>
       </section>
+
       {/* Lightbox */}
       <AnimatePresence>
         {isLightboxOpen && (
@@ -945,6 +942,7 @@ export default function EventDetailPage({
           </motion.div>
         )}
       </AnimatePresence>
+
       {/* Success Modal */}
       <SuccessModal
         isOpen={showSuccessModal}
@@ -956,6 +954,7 @@ export default function EventDetailPage({
         showActions={true}
         user={user}
       />
+
       {/* Toast Notification */}
       <AnimatePresence>
         {showToast && (

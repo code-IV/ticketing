@@ -24,19 +24,10 @@ const EventController = {
    */
   async createEvent(req, res, next) {
     try {
-      const { name, description, eventDate, startTime, endTime, capacity } =
-        req.body;
+      const event = { ...req.body, createdBy: req.session.user.id };
 
-      const event = await EventService.createEvent({
-        name,
-        description,
-        eventDate,
-        startTime,
-        endTime,
-        capacity,
-        createdBy: req.session.user.id,
-      });
-      return apiResponse(res, 201, true, "Event created successfully.", event);
+      const result = await EventService.createEvent(event);
+      return apiResponse(res, 201, true, "Event created successfully.", result);
     } catch (err) {
       next(err);
     }

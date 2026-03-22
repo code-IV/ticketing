@@ -48,7 +48,7 @@ export interface Event {
   created_by?: string;
   created_at: string;
   updated_at: string;
-  ticket_types?: TicketType[];
+  ticketTypes?: TicketType[];
   location?: string;
   image_url?: string;
   video_url?: string;
@@ -56,13 +56,10 @@ export interface Event {
 
 export interface TicketType {
   id: string;
-  event_id: string;
-  name: string;
+  product_id: string;
   category: "ADULT" | "CHILD" | "SENIOR" | "STUDENT" | "GROUP";
   price: number;
-  description?: string;
-  max_quantity_per_booking: number;
-  is_active: boolean;
+  max_quantity: number;
   created_at: string;
   updated_at: string;
 }

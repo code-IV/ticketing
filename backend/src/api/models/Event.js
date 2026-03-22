@@ -76,9 +76,9 @@ const Event = {
 
     // 2. Get Ticket Types associated with the Product
     const ticketTypesSql = `
-    SELECT tt.* FROM ticket_types tt
-    WHERE tt.product_id = $1
-    ORDER BY tt.price ASC;
+    SELECT * FROM ticket_types
+    WHERE product_id = $1
+    ORDER BY price ASC;
   `;
 
     // 3. Get Media associated with the Product

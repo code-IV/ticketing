@@ -49,6 +49,7 @@ const EventsManagementPage = () => {
       name: string;
       url?: string;
       provider: string;
+      preview: string;
     }[];
   }>({
     name: "",
