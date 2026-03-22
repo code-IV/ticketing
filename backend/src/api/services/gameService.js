@@ -30,11 +30,7 @@ const GameService = {
 
       await client.query("COMMIT");
 
-      return {
-        ...newGame,
-        product_id: productId,
-        ticket_types_count: ticket_types?.length ?? 0,
-      };
+      return { game: newGame, productId: productId };
     } catch (error) {
       await client.query("ROLLBACK");
       throw error;

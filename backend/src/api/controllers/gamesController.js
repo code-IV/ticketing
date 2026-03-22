@@ -16,7 +16,7 @@ const GameController = {
         status,
         ticket_types,
       });
-      return apiResponse(res, 200, true, "Game updated successfully", { game });
+      return apiResponse(res, 200, true, "Game updated successfully", game);
     } catch (err) {
       next(err);
     }

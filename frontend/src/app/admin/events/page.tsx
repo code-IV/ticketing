@@ -148,7 +148,6 @@ const EventsManagementPage = () => {
 
       if (formData.mediaFiles.length > 0 && newProductId) {
         const pureFiles = formData.mediaFiles.map((m) => m.file);
-        console.log(pureFiles);
         await adminService.uploadProductMedia(newProductId, pureFiles);
       }
 
