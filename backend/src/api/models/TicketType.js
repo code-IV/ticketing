@@ -38,30 +38,17 @@ const TicketType = {
   /**
    * Update a ticket type
    */
-  async update(
-    id,
-    { name, category, price, description, maxQuantityPerBooking, isActive },
-  ) {
+  async update({ category, price, maxQuantityPerBooking, isActive, id }, db) {
     const sql = `
       UPDATE ticket_types
-      SET name = COALESCE($2, name),
-          category = COALESCE($3, category),
-          price = COALESCE($4, price),
-          description = COALESCE($5, description),
-          max_quantity_per_booking = COALESCE($6, max_quantity_per_booking),
-          is_active = COALESCE($7, is_active)
+      SET category = COALESCE($2, category),
+          price = COALESCE($3, price),
+          max_quantity = COALESCE($4, max_quantity),
+          is_active = COALESCE($5, is_active)
       WHERE id = $1
       RETURNING *`;
-    const values = [
-      id,
-      name,
-      category,
-      price,
-      description,
-      maxQuantityPerBooking,
-      isActive,
-    ];
-    const result = await query(sql, values);
+    const values = [id, category, price, maxQuantityPerBooking, isActive];
+    const result = await db.query(sql, values);
     return result.rows[0] || null;
   },
 

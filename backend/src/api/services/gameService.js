@@ -1,6 +1,114 @@
-const { GameStats } = require("../models/Games");
+const { getClient } = require("../../config/db");
+const { Game, GameStats } = require("../models/Games");
+const TicketType = require("../models/TicketType");
 
-const gameStatsService = {
+const GameService = {
+  async create(gameData) {
+    const { name, description, rules, status, ticket_types } = gameData;
+    const client = await getClient();
+
+    try {
+      await client.query("BEGIN");
+
+      // 1. Create the base Game
+      const newGame = await Game.createGame(client, {
+        name,
+        description,
+        rules,
+        status,
+      });
+
+      // 2. Create the Product wrapper
+      const productId = await Game.createProduct(client, {
+        name: newGame.name,
+        gameId: newGame.id,
+      });
+
+      for (const type of ticket_types || []) {
+        await TicketType.create({ ...type, productId }, client);
+      }
+
+      await client.query("COMMIT");
+
+      return {
+        ...newGame,
+        product_id: productId,
+        ticket_types_count: ticket_types?.length ?? 0,
+      };
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
+    } finally {
+      client.release();
+    }
+  },
+
+  async update(id, gameData) {
+    const { name, description, rules, status, ticket_types } = gameData;
+    const client = await getClient();
+
+    try {
+      await client.query("BEGIN");
+
+      // Task 1: Update the game itself
+      const updatedGame = await Game.updateGame(client, id, {
+        name,
+        description,
+        rules,
+        status,
+      });
+
+      // Task 2: Update tickets if provided
+      for (const type of ticket_types || []) {
+        await TicketType.update({ ...type, id }, client);
+      }
+
+      await client.query("COMMIT");
+      return updatedGame;
+    } catch (error) {
+      await client.query("ROLLBACK");
+      console.error("Service Error - Update Game failed:", error);
+      throw error;
+    } finally {
+      client.release();
+    }
+  },
+
+  async getAll() {
+    try {
+      const games = await Game.findAll();
+
+      return games;
+    } catch (error) {
+      console.error("Error in gameService.getAllGames:", error);
+      throw new Error("Could not retrieve games catalog.");
+    }
+  },
+
+  async getById(id) {
+    try {
+      const games = await Game.findById(id);
+
+      return games;
+    } catch (error) {
+      console.error("Error in gameService.getAllGames:", error);
+      throw new Error("Could not retrieve games catalog.");
+    }
+  },
+
+  async deleteById(id) {
+    try {
+      const games = await Game.deleteGame(id);
+
+      return games;
+    } catch (error) {
+      console.error("Error in gameService.getAllGames:", error);
+      throw new Error("Could not retrieve games catalog.");
+    }
+  },
+};
+
+const GameStatsService = {
   async getGameAnalytics(startDate, endDate, period) {
     const rawData = await GameStats.getRawGameStats(startDate, endDate);
 
@@ -69,4 +177,4 @@ const gameStatsService = {
   },
 };
 
-module.exports = { gameStatsService };
+module.exports = { GameService, GameStatsService };

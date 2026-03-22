@@ -1,5 +1,5 @@
-const { Games } = require("../models/Games");
-const { GameStatsService } = require("../services/gameService");
+const { Game } = require("../models/Games");
+const { GameService, GameStatsService } = require("../services/gameService");
 const { apiResponse } = require("../../utils/helpers");
 
 const GameController = {
@@ -9,7 +9,7 @@ const GameController = {
   async createGame(req, res, next) {
     try {
       const { name, description, rules, status, ticket_types } = req.body;
-      const game = await Games.create({
+      const game = await GameService.create({
         name,
         description,
         rules,
@@ -28,7 +28,7 @@ const GameController = {
     try {
       const { id } = req.params;
       const { name, description, rules, status, ticket_types } = req.body;
-      const game = await Games.update(id, {
+      const game = await GameService.update(id, {
         name,
         description,
         rules,
@@ -45,7 +45,7 @@ const GameController = {
    */
   async getAllGames(req, res, next) {
     try {
-      const games = await Games.getAll();
+      const games = await GameService.getAll();
       return apiResponse(res, 200, true, "GET game successful", games);
     } catch (err) {
       next(err);
@@ -56,7 +56,7 @@ const GameController = {
    */
   async getGameWithId(req, res, next) {
     try {
-      const game = await Games.getById(req.params.id);
+      const game = await Game.getById(req.params.id);
       if (!game) {
         return apiResponse(res, 404, false, "Game not found");
       }
@@ -70,7 +70,7 @@ const GameController = {
    */
   async deleteGameWithId(req, res, next) {
     try {
-      await Games.deleteById(req.params.id);
+      await GameService.deleteById(req.params.id);
       return apiResponse(res, 200, true, "DELETE successful");
     } catch (err) {
       next(err);
@@ -92,7 +92,7 @@ const GameStatsController = {
       // Default period to daily if not provided
       const granularity = period || "d";
 
-      const data = await gameStatsService.getGameAnalytics(
+      const data = await GameStatsService.getGameAnalytics(
         startDate,
         endDate,
         granularity,
@@ -114,7 +114,7 @@ const GameStatsController = {
       const { gameId } = req.params;
       const { startDate, endDate, period = "1d" } = req.query;
 
-      const stats = await gameStatsService.getGameStats(gameId, {
+      const stats = await GameStatsService.getGameStats(gameId, {
         startDate,
         endDate,
         period,
