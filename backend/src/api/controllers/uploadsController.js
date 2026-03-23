@@ -41,6 +41,32 @@ const UploadsController = {
       next(err);
     }
   },
+  async getById(req, res, next) {
+    try {
+      const id = req.params.id;
+      if (!id) {
+        return apiResponse(
+          res,
+          400,
+          false,
+          "name missing from request param (name)",
+          {
+            valid: false,
+            reason: "MISSING_params",
+          },
+        );
+      }
+      const result = await UploadsService.getById(id);
+
+      if (!result) {
+        return apiResponse(res, 404, false, "Media not found.");
+      }
+
+      return apiResponse(res, 200, true, "Media retrieved.", result);
+    } catch (err) {
+      next(err);
+    }
+  },
 
   async getByName(req, res, next) {
     try {

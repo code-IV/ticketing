@@ -10,6 +10,14 @@ const Media = {
     const media = await query(sql, [BACKEND_URL]);
     return media.rows;
   },
+  async getMediaById(id) {
+    const sql = `
+        SELECT id, name, ($1 || url) AS url, type, provider, metadata FROM media WHERE id=$2;
+        `;
+
+    const media = await query(sql, [BACKEND_URL, id]);
+    return media.rows[0];
+  },
 
   async getMediaByName(name) {
     const sql = `

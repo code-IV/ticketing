@@ -46,6 +46,13 @@ const UploadsService = {
     const media = await Media.getAllMedia();
     return media;
   },
+  async getById(id) {
+    if (!id || typeof id !== "string") {
+      throw new Error("Invalid media name provided");
+    }
+    const media = await Media.getMediaById(id);
+    return media;
+  },
   async getByName(name) {
     if (!name || typeof name !== "string") {
       throw new Error("Invalid media name provided");
