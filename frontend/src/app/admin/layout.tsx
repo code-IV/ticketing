@@ -12,7 +12,7 @@ export default function AdminLayout({
       href: "/admin/analitics",
       iconName: "LayoutDashboard",
     },
-    { name: "Games", href: "/admin/games", iconName: "Gamepad2" },
+    { name: "Games", href: "/admin/games", iconName: "Gamepad2" },  
     { name: "Events", href: "/admin/events", iconName: "Calendar" },
     { name: "Users", href: "/admin/user", iconName: "Users" },
   ];

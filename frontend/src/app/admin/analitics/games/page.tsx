@@ -441,7 +441,12 @@ export default function GamesAnalyticsPage() {
                       <td
                         className={`px-4 py-3 font-medium ${isDarkTheme ? "text-white" : ""}`}
                       >
-                        {game.name}
+                        <span 
+                          className="hover:text-blue-500 transition-colors cursor-pointer underline decoration-2 hover:decoration-4"
+                          onClick={() => router.push(`/admin/analitics/games/${game.id}`)}
+                        >
+                          {game.name}
+                        </span>
                       </td>
                       <td className="px-4 py-3">
                         <span

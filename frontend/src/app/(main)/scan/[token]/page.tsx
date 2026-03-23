@@ -554,60 +554,49 @@ export default function StaffTransactionPage() {
     setPunching(true);
 
     try {
-      // Get ticket ID from the current URL or data
-      const ticketId = ticketData?.ticket_id || "";
-      console.log("ticketData", ticketData);
+      // Transform punchList to required array format
+      const usage = punchList.map((item) => ({
+        passId: item.ttId,
+        quantity: item.count,
+      }));
 
-      // Collect all items to be punched
-      const punchPromises = [];
-      const usage = [
-        {
-          passId: "",
-          quantity: 2,
-        },
-      ];
+      // Call the punch API with the correct format
+      const result = await ticketService.punchTicket(usage);
 
-      for (const item of items) {
-        for (const ticketType of item.ticket_types) {
-          const qty = draftQty[ticketType.id] || 0;
-          if (qty > 0) {
-            // Call the punch API for each ticket type
-            punchPromises.push(ticketService.punchTicket(usage));
-          }
-        }
+      if (result.success) {
+        // Update local state for successful punches
+        const log: PunchLogEntry[] = [];
+        setItems((prev) =>
+          prev.map((item) => ({
+            ...item,
+            ticket_types: item.ticket_types.map((tt) => {
+              const qty = draftQty[tt.id] || 0;
+              if (qty === 0) return tt;
+              log.push({
+                game: item.game_name,
+                emoji: item.emoji,
+                category: tt.category,
+                count: qty,
+                time: new Date().toLocaleTimeString(),
+              });
+              return { ...tt, used: tt.used + qty };
+            }),
+          })),
+        );
+
+        setPunchLog((prev) => [...log, ...prev]);
+        setDraftQty({});
+        setPunching(false);
+        setShowConfirm(false);
+      } else {
+        console.error("Punch failed:", result);
+        setPunching(false);
+        // You might want to show an error message to user here
       }
-
-      // Execute all punch operations
-      await Promise.all(punchPromises);
-
-      // Update local state
-      const log: PunchLogEntry[] = [];
-      setItems((prev) =>
-        prev.map((item) => ({
-          ...item,
-          ticket_types: item.ticket_types.map((tt) => {
-            const qty = draftQty[tt.id] || 0;
-            if (qty === 0) return tt;
-            log.push({
-              game: item.game_name,
-              emoji: item.emoji,
-              category: tt.category,
-              count: qty,
-              time: new Date().toLocaleTimeString(),
-            });
-            return { ...tt, used: tt.used + qty };
-          }),
-        })),
-      );
-
-      setPunchLog((prev) => [...log, ...prev]);
-      setDraftQty({});
-      setPunching(false);
-      setShowConfirm(false);
     } catch (error) {
       console.error("Error punching tickets:", error);
       setPunching(false);
-      // You might want to show an error message to the user here
+      // You might want to show an error message to user here
     }
   };
 

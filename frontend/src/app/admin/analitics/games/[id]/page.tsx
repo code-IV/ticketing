@@ -110,7 +110,17 @@ export default function GameDetailPage() {
             dateRange.end!.toISOString(),
             period,
           );
-          setAnalytics(response.data);
+
+
+          const analyticsData = response.data?.data;
+          
+          // Consider it valid if it's an object with expected structure, even if values are empty/zero
+          if (analyticsData && typeof analyticsData === 'object') {
+            setAnalytics(analyticsData);
+          } else {
+            console.warn("Invalid analytics data received:", analyticsData);
+            setAnalytics(null);
+          }
         } catch (err) {
           console.error("Error fetching game analytics:", err);
           setError("Failed to load game data");
@@ -124,11 +134,16 @@ export default function GameDetailPage() {
   }, [gameId, dateRange.start, dateRange.end, dateRange.label, customPeriod]);
 
   // Helper to format date for display
-  const formatChartDate = (isoString: string) => {
+  const formatChartDate = (dateString: string) => {
     try {
-      return format(parseISO(isoString), "MMM dd");
+      const date = new Date(dateString);
+      // Check if date is valid
+      if (isNaN(date.getTime())) {
+        return dateString; // Return original if invalid
+      }
+      return format(date, "MMM dd");
     } catch {
-      return isoString;
+      return dateString;
     }
   };
 
@@ -168,7 +183,7 @@ export default function GameDetailPage() {
     );
   }
 
-  if (!analytics) {
+  if (!analytics && !error) {
     return (
       <div
         className={`min-h-screen p-6 ${isDarkTheme ? "bg-[#0A0A0A]" : "bg-gray-50"}`}
@@ -177,10 +192,10 @@ export default function GameDetailPage() {
           <h1
             className={`text-2xl font-bold mb-4 ${isDarkTheme ? "text-white" : "text-gray-900"}`}
           >
-            Game Not Found
+            Loading Analytics...
           </h1>
           <p className={`${isDarkTheme ? "text-gray-400" : "text-gray-600"}`}>
-            No analytics data available for this game.
+            Please wait while we load the game analytics data.
           </p>
           <button
             onClick={() => router.push("/admin/analitics/games")}
@@ -193,15 +208,41 @@ export default function GameDetailPage() {
     );
   }
 
-  // Prepare data for charts (sort by date)
-  const revenueData = [...analytics.revenueTrend]
+  // If we get here, analytics should exist. If not, show a proper error.
+  if (!analytics) {
+    return (
+      <div
+        className={`min-h-screen p-6 ${isDarkTheme ? "bg-[#0A0A0A]" : "bg-gray-50"}`}
+      >
+        <div className="max-w-7xl mx-auto text-center">
+          <h1
+            className={`text-2xl font-bold mb-4 ${isDarkTheme ? "text-white" : "text-gray-900"}`}
+          >
+            No Analytics Data
+          </h1>
+          <p className={`${isDarkTheme ? "text-gray-400" : "text-gray-600"}`}>
+            Unable to load analytics for this game. Please try again later.
+          </p>
+          <button
+            onClick={() => router.push("/admin/analitics/games")}
+            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            Back to Games
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Prepare data for charts (sort by date) with fallbacks
+  const revenueData = [...(analytics.revenueTrend || [])]
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
     .map((item) => ({
       ...item,
       displayDate: formatChartDate(item.date),
     }));
 
-  const bookingsData = [...analytics.bookingsTrend]
+  const bookingsData = [...(analytics.bookingsTrend || [])]
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
     .map((item) => ({
       ...item,
@@ -361,13 +402,13 @@ export default function GameDetailPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
           <KpiCard
             title="Total Revenue"
-            value={`$${analytics.totalRevenue.toLocaleString()}`}
+            value={`$${(analytics.totalRevenue || 0).toLocaleString()}`}
             icon={DollarSign}
             isDarkTheme={isDarkTheme}
           />
           <KpiCard
             title="Total Bookings"
-            value={analytics.totalBookings.toLocaleString()}
+            value={(analytics.totalBookings || 0).toLocaleString()}
             icon={Ticket}
             isDarkTheme={isDarkTheme}
           />
