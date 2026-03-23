@@ -30,4 +30,26 @@ export const dashboardService = {
     });
     return response.data;
   },
+  async getUserAnalytics(
+    startDate: string,
+    endDate: string,
+  ): Promise<ApiResponse<any>> {
+    const response = await api.get("/analytics/users", {
+      params: {
+        startDate,
+        endDate,
+      },
+    });
+    return response.data;
+  },
+  async getUserMetrics(
+    period: string = "all_time",
+  ): Promise<ApiResponse<any>> {
+    const response = await api.get("/metrics/users", {
+      params: {
+        period,
+      },
+    });
+    return response.data;
+  },
 };
