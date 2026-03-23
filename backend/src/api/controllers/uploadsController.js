@@ -44,12 +44,18 @@ const UploadsController = {
 
   async getByName(req, res, next) {
     try {
-      const name = req.params.name;
+      const { name } = req.query;
       if (!name) {
-        return apiResponse(res, 400, false, "name missing from request body", {
-          valid: false,
-          reason: "MISSING_BODY",
-        });
+        return apiResponse(
+          res,
+          400,
+          false,
+          "name missing from request query (name)",
+          {
+            valid: false,
+            reason: "MISSING_QUERY",
+          },
+        );
       }
       const result = await UploadsService.getByName(name);
 

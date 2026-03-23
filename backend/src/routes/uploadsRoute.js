@@ -15,13 +15,6 @@ router.post(
 
 router.get("/", isAuthenticated, isAdmin, UploadsController.getAll);
 router.get("/t", isAuthenticated, isAdmin, UploadsController.getByType);
-router.get(
-  "/:name",
-  isAuthenticated,
-  isAdmin,
-  stringParamRule("name"),
-  handleValidation,
-  UploadsController.getByName,
-);
+router.get("/n", UploadsController.getByName);
 
 module.exports = router;
