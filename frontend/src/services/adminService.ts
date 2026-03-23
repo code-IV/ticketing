@@ -40,15 +40,12 @@ export const adminService = {
 
   uploadProductMedia: async (
     productId: string,
-    files: File[],
+    formData: FormData, // Accepts the pre-constructed FormData
   ): Promise<any> => {
-    const formData = new FormData();
-    files.forEach((file) => {
-      formData.append("mediaFiles", file);
-    });
-
     const response = await api.post(`/media/uploads/${productId}`, formData, {
       headers: {
+        // Note: Most modern browsers/Axios versions set this automatically
+        // when they see FormData, including the necessary 'boundary' string.
         "Content-Type": "multipart/form-data",
       },
     });

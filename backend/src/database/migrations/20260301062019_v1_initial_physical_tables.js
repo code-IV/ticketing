@@ -109,9 +109,14 @@ exports.up = async function (knex) {
   await knex.schema.createTable("media", (table) => {
     table.uuid("id").primary().defaultTo(knex.raw("uuid_generate_v4()"));
     table.string("name").notNullable();
-    table.string("url").notNullable();
+    table.string("url").unique().notNullable();
     table.string("type").notNullable(); // e.g., 'image/jpeg', 'video/mp4'
     table.string("provider").defaultTo("LOCAL"); // e.g., 'local', 's3', 'cloudinary'
+    table
+      .enu("label", ["poster", "banner", "gallery", "thumbnail"])
+      .notNullable()
+      .defaultTo("poster");
+    table.string("thumbnail_url").nullable();
     table.jsonb("metadata").nullable(); // Store { size: 1024, width: 1920, etc }
     table.timestamps(true, true);
   });

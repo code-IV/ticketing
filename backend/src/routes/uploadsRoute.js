@@ -9,7 +9,12 @@ router.post(
   "/uploads/:productId",
   isAuthenticated,
   isAdmin,
-  upload.array("mediaFiles"),
+  uuidParamRule("productId"),
+  handleValidation,
+  upload.fields([
+    { name: "mediaFiles", maxCount: 10 },
+    { name: "thumbnail", maxCount: 1 },
+  ]),
   UploadsController.uploadProductMedia,
 );
 

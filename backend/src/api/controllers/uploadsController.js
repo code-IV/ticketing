@@ -8,15 +8,25 @@ const UploadsController = {
       if (!productId) {
         return apiResponse(res, 400, false, "Product ID is required.");
       }
-      const mediaFiles = req.files || [];
+      const { label } = req.body; // This is an array of strings
 
-      if (mediaFiles.length === 0) {
+      // req.files is now an object with keys 'mediaFiles' and 'thumbnail'
+      const files = req.files?.mediaFiles || [];
+      const thumbs = req.files?.thumbnail || [];
+
+      if (files.length === 0) {
         return apiResponse(res, 400, false, "No files uploaded.");
       }
 
+      const media = files.map((file, index) => ({
+        file: file,
+        thumb: thumbs[index] || null, // Pairs 1st thumb with 1st file
+        label: label[index],
+      }));
+
       const mediaResults = await UploadsService.addMediaToProduct(
         productId,
-        mediaFiles,
+        media,
       );
 
       return apiResponse(
@@ -49,10 +59,10 @@ const UploadsController = {
           res,
           400,
           false,
-          "name missing from request param (name)",
+          "id missing from request param (id)",
           {
             valid: false,
-            reason: "MISSING_params",
+            reason: "MISSING_PARAMS",
           },
         );
       }
