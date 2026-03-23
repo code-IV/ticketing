@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const upload = require("../config/file");
 const { isAuthenticated, isAdmin } = require("../middleware/auth");
+const { stringParamRule, handleValidation } = require("../middleware/validate");
 const { UploadsController } = require("../api/controllers/uploadsController");
 
 router.post(
@@ -13,4 +14,13 @@ router.post(
 );
 
 router.get("/", isAuthenticated, isAdmin, UploadsController.getAll);
+router.get(
+  "/:name",
+  isAuthenticated,
+  isAdmin,
+  stringParamRule("name"),
+  handleValidation,
+  UploadsController.getByName,
+);
+
 module.exports = router;

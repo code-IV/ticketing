@@ -41,6 +41,27 @@ const UploadsController = {
       next(err);
     }
   },
+
+  async getByName(req, res, next) {
+    try {
+      const name = req.params.name;
+      if (!name) {
+        return apiResponse(res, 400, false, "name missing from request body", {
+          valid: false,
+          reason: "MISSING_BODY",
+        });
+      }
+      const result = await UploadsService.getByName(name);
+
+      if (!result) {
+        return apiResponse(res, 404, false, "Media not found.");
+      }
+
+      return apiResponse(res, 200, true, "Media retrieved.", result);
+    } catch (err) {
+      next(err);
+    }
+  },
 };
 
 module.exports = { UploadsController };

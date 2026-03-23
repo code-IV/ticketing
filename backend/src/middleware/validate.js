@@ -267,6 +267,15 @@ const uuidParamRule = (paramName = "id") => [
   param(paramName).isUUID().withMessage(`Valid ${paramName} is required`),
 ];
 
+const stringParamRule = (paramName, label = paramName) => [
+  param(paramName)
+    .isString()
+    .withMessage(`${label} must be a string`)
+    .trim()
+    .notEmpty()
+    .withMessage(`${label} is required and cannot be empty`),
+];
+
 const scanTicketRules = [
   queryValidator("token")
     .notEmpty()
@@ -292,4 +301,5 @@ module.exports = {
   paginationRules,
   scanTicketRules,
   uuidParamRule,
+  stringParamRule,
 };
