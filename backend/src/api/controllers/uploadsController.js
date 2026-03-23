@@ -31,6 +31,16 @@ const UploadsController = {
       next(err);
     }
   },
+
+  async getAll(req, res, next) {
+    try {
+      const result = await UploadsService.getAll();
+
+      return apiResponse(res, 200, true, "Media retrieved.", result);
+    } catch (err) {
+      next(err);
+    }
+  },
 };
 
-module.exports = UploadsController;
+module.exports = { UploadsController };

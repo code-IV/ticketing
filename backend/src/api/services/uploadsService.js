@@ -1,6 +1,7 @@
 const { getClient } = require("../../config/db");
 const { uploadToLocal } = require("../../utils/uploads");
 const { Event } = require("../models/Event");
+const { Media } = require("../models/Media");
 
 const UploadsService = {
   // Inside your Service Layer
@@ -39,6 +40,11 @@ const UploadsService = {
     } finally {
       client.release();
     }
+  },
+
+  async getAll() {
+    const media = await Media.getAllMedia();
+    return { gallery: media };
   },
 };
 
