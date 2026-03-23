@@ -213,8 +213,9 @@ const adminController = {
       const page = parseInt(req.query.page, 10) || 1;
       const limit = parseInt(req.query.limit, 10) || 20;
       const role = req.query.role || null;
+      const status = req.query.status || null;
 
-      const result = await User.findAll({ page, limit, role });
+      const result = await User.findAll({ page, limit, role, status });
       return apiResponse(res, 200, true, "Users retrieved.", result);
     } catch (err) {
       next(err);
@@ -256,7 +257,7 @@ const adminController = {
         lastName: last_name,
         email: email,
         phone: phone,
-        role: role,
+        roleName: role,  // Fix: Map role to roleName as expected by the model
         isActive: is_active,
       });
       return apiResponse(res, 200, true, "User type updated successfully.", {

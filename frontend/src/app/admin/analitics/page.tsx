@@ -344,6 +344,12 @@ export default function AnalyticsDashboardPage() {
             >
               Booking Analytics
             </Link>
+            <Link
+              href="/admin/analitics/user"
+              className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+            >
+              User Analytics
+            </Link>
           </div>
         </div>
 

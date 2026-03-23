@@ -209,13 +209,28 @@ export const adminService = {
     return response.data;
   },
 
+  async getRegistrationTrend(): Promise<any> {
+    const response = await api.get("/metrics/users/registration-trend");
+    return response.data;
+  },
+
+  async getRoleBreakdown(): Promise<any> {
+    const response = await api.get("/metrics/users/role-breakdown");
+    return response.data;
+  },
+
   async getAllUsers(
     page = 1,
     limit = 20,
     role?: string,
+    status?: string,
   ): Promise<PaginatedResponse<User>> {
+    const params: any = { page, limit };
+    if (role) params.role = role;
+    if (status) params.status = status;
+    
     const response = await api.get("/admin/users", {
-      params: { page, limit, role },
+      params,
     });
     return response.data;
   },
@@ -227,7 +242,7 @@ export const adminService = {
 
   async updateUser(
     id: string,
-    data: Partial<User>,
+    data: { role?: string; first_name?: string; last_name?: string; email?: string; phone?: string; is_active?: boolean },
   ): Promise<ApiResponse<{ user: User }>> {
     const response = await api.patch(`/admin/users/${id}`, data);
     return response.data;

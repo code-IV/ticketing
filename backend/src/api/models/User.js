@@ -179,7 +179,7 @@ LEFT JOIN roles r ON u.role_id = r.id;
   /**
    * Get all users (admin)
    */
-  async findAll({ page = 1, limit = 20, role = null }) {
+  async findAll({ page = 1, limit = 20, role = null, status = null }) {
     const offset = (page - 1) * limit;
     const values = [];
     let paramIndex = 1;
@@ -196,11 +196,24 @@ LEFT JOIN roles r ON u.role_id = r.id;
     LEFT JOIN roles r ON u.role_id = r.id
   `;
 
-    // 2. Filter by Role Name (if provided)
+    // 2. Build WHERE clause with filters
+    const whereConditions = [];
+    
     if (role) {
-      sql += ` WHERE r.name = $${paramIndex}`;
+      whereConditions.push(`r.name = $${paramIndex}`);
       values.push(role);
       paramIndex++;
+    }
+    
+    if (status) {
+      const isActive = status === 'active';
+      whereConditions.push(`u.is_active = $${paramIndex}`);
+      values.push(isActive);
+      paramIndex++;
+    }
+    
+    if (whereConditions.length > 0) {
+      sql += ` WHERE ${whereConditions.join(' AND ')}`;
     }
 
     // 3. Ordering and Pagination
@@ -215,10 +228,30 @@ LEFT JOIN roles r ON u.role_id = r.id;
     // 4. Count Total Users
     let countSql = `SELECT COUNT(*) FROM users u`;
     const countValues = [];
+    let countParamIndex = 1;
 
-    if (role) {
-      countSql += ` JOIN roles r ON u.role_id = r.id WHERE r.name = $1`;
-      countValues.push(role);
+    if (role || status) {
+      const countConditions = [];
+      
+      if (role) {
+        countSql += ` JOIN roles r ON u.role_id = r.id`;
+        countConditions.push(`r.name = $${countParamIndex}`);
+        countValues.push(role);
+        countParamIndex++;
+      }
+      
+      if (status) {
+        const isActive = status === 'active';
+        if (role) {
+          countConditions.push(`u.is_active = $${countParamIndex}`);
+        } else {
+          countConditions.push(`u.is_active = $${countParamIndex}`);
+        }
+        countValues.push(isActive);
+        countParamIndex++;
+      }
+      
+      countSql += ` WHERE ${countConditions.join(' AND ')}`;
     }
 
     const countResult = await query(countSql, countValues);
