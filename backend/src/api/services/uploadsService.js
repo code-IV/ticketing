@@ -16,6 +16,10 @@ const UploadsService = {
       for (const item of files) {
         const { file, thumb, label } = item; // Using the keys from your controller
 
+        if (!file) {
+          throw new Error("File is required for each upload item");
+        }
+
         // 1. Handle Thumbnail First (to get its URL/ID for the main image)
         let thumbInfo = null;
 
@@ -47,7 +51,7 @@ const UploadsService = {
           name: file.originalname,
           url: fileInfo.url,
           type: file.mimetype,
-          lable: label,
+          label: label,
           thumbnail_url: thumbInfo ? thumbInfo.url : null, // The string URL
           provider: "LOCAL",
           metadata: {
