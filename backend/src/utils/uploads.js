@@ -8,6 +8,7 @@ exports.uploadToLocal = async (file) => {
   return {
     name: file.originalname,
     url: `/uploads/${file.filename}`, // file.filename is now the UUID
+    path: file.path,
     type: file.mimetype,
     provider: "LOCAL",
   };

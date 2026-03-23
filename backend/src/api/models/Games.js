@@ -69,6 +69,11 @@ const Game = {
           'name', m.name,
           'url', '${BACKEND_URL}' || m.url,
           'type', m.type,
+              'label', m.label,
+              'thumbnailUrl', CASE 
+                                WHEN m.thumbnail_url IS NOT NULL THEN '${BACKEND_URL}' || m.thumbnail_url 
+                                ELSE NULL 
+                              END,
           'sort_order', pm.sort_order
         ) ORDER BY pm.sort_order ASC) 
          FROM media m
@@ -106,6 +111,11 @@ const Game = {
           'id', m.id,
           'url', '${BACKEND_URL}' || m.url,
           'type', m.type,
+              'label', m.label,
+              'thumbnailUrl', CASE 
+                                WHEN m.thumbnail_url IS NOT NULL THEN '${BACKEND_URL}' || m.thumbnail_url 
+                                ELSE NULL 
+                              END,
           'name', m.name,
           'sort_order', pm.sort_order
         ) ORDER BY pm.sort_order ASC) 
@@ -150,6 +160,11 @@ const Game = {
               'name', m.name,
               'url', '${BACKEND_URL}' || m.url,
               'type', m.type,
+              'label', m.label,
+              'thumbnailUrl', CASE 
+                                WHEN m.thumbnail_url IS NOT NULL THEN '${BACKEND_URL}' || m.thumbnail_url 
+                                ELSE NULL 
+                              END,
               'sort_order', pm.sort_order
           ) ORDER BY pm.sort_order ASC)
           FROM products p

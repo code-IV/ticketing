@@ -1,24 +1,58 @@
+const fs = require("fs");
 const { getClient } = require("../../config/db");
 const { uploadToLocal } = require("../../utils/uploads");
 const { Event } = require("../models/Event");
 const { Media } = require("../models/Media");
 
 const UploadsService = {
-  // Inside your Service Layer
   async addMediaToProduct(productId, files) {
     const client = await getClient();
+    // Array to keep track of uploaded files for cleanup if the DB fails
+    const uploadedPaths = [];
 
     try {
       await client.query("BEGIN");
-      for (const file of files) {
-        // 1. Physical upload (returns the final path/URL)
-        const fileInfo = await uploadToLocal(file);
 
-        // 2. Map the data for the DB
-        const mediaData = {
-          name: file.originalname, // From multer
-          url: fileInfo.url, // From your upload function
-          type: file.mimetype, // From multer (e.g., 'image/jpeg')
+      for (const item of files) {
+        const { file, thumb, label } = item; // Using the keys from your controller
+
+        if (!file) {
+          throw new Error("File is required for each upload item");
+        }
+
+        // 1. Handle Thumbnail First (to get its URL/ID for the main image)
+        let thumbInfo = null;
+
+        if (thumb) {
+          thumbInfo = await uploadToLocal(thumb);
+          uploadedPaths.push(thumbInfo.path); // Store path for potential cleanup
+
+          const thumbMediaData = {
+            name: thumb.originalname,
+            url: thumbInfo.url,
+            type: thumb.mimetype,
+            label: "thumbnail",
+            provider: "LOCAL",
+            metadata: {
+              size: thumb.size,
+              encoding: thumb.encoding,
+              parent_label: label, // Helpful for context
+            },
+          };
+
+          await Event.createMedia(thumbMediaData, client);
+        }
+
+        // 2. Handle Main File
+        const fileInfo = await uploadToLocal(file);
+        uploadedPaths.push(fileInfo.path);
+
+        const mainMediaData = {
+          name: file.originalname,
+          url: fileInfo.url,
+          type: file.mimetype,
+          label: label,
+          thumbnail_url: thumbInfo ? thumbInfo.url : null, // The string URL
           provider: "LOCAL",
           metadata: {
             size: file.size,
@@ -26,16 +60,24 @@ const UploadsService = {
           },
         };
 
-        // 3. Insert into "public.media"
-        const mediaId = await Event.createMedia(mediaData, client);
-
-        // 4. Link to product_media
-        await Event.linkProductMedia(productId, mediaId, client);
+        // 3. Insert Main Media and Link to Product
+        const mainMediaId = await Event.createMedia(mainMediaData, client);
+        await Event.linkProductMedia(productId, mainMediaId, client);
       }
+
       await client.query("COMMIT");
     } catch (error) {
       await client.query("ROLLBACK");
-      // TODO: Clean up uploadedFiles from disk
+
+      // CLEANUP: Delete files from disk so you don't have "ghost" images
+      for (const path of uploadedPaths) {
+        try {
+          await fs.promises.unlink(path);
+        } catch (e) {
+          /* ignore */
+        }
+      }
+
       throw error;
     } finally {
       client.release();
@@ -48,7 +90,7 @@ const UploadsService = {
   },
   async getById(id) {
     if (!id || typeof id !== "string") {
-      throw new Error("Invalid media name provided");
+      throw new Error("Invalid media id provided");
     }
     const media = await Media.getMediaById(id);
     return media;

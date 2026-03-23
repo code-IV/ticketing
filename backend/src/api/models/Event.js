@@ -38,13 +38,15 @@ const Event = {
 
   async createMedia(mediaData, client) {
     const sql = `
-      INSERT INTO media (name, url, type, provider)
-      VALUES ($1, $2, $3, $4)
+      INSERT INTO media (name, url, type, label, thumbnail_url, provider)
+      VALUES ($1, $2, $3, $4, $5, $6)
       RETURNING id`;
     const { rows } = await client.query(sql, [
       mediaData.name,
       mediaData.url,
       mediaData.type,
+      mediaData.label,
+      mediaData.thumbnail_url,
       mediaData.provider,
     ]);
     return rows[0].id;
@@ -79,6 +81,11 @@ const Event = {
               'name', m.name,
               'url', '${BACKEND_URL}' || m.url,
               'type', m.type,
+              'label', m.label,
+              'thumbnailUrl', CASE 
+                                WHEN m.thumbnail_url IS NOT NULL THEN '${BACKEND_URL}' || m.thumbnail_url 
+                                ELSE NULL 
+                              END,
               'sort_order', pm.sort_order
             ) ORDER BY pm.sort_order ASC
           ), 
@@ -115,6 +122,11 @@ const Event = {
           JSON_BUILD_OBJECT(
             'url', '${BACKEND_URL}' || m.url, -- Concatenate URL here
             'type', m.type,
+              'label', m.label,
+              'thumbnailUrl', CASE 
+                                WHEN m.thumbnail_url IS NOT NULL THEN '${BACKEND_URL}' || m.thumbnail_url 
+                                ELSE NULL 
+                              END,
             'name', m.name
           )
         ) FILTER (WHERE m.id IS NOT NULL), 
@@ -160,6 +172,11 @@ const Event = {
             json_build_object(
               'url', '${BACKEND_URL}' || m.url,
               'type', m.type,
+              'label', m.label,
+              'thumbnailUrl', CASE 
+                                WHEN m.thumbnail_url IS NOT NULL THEN '${BACKEND_URL}' || m.thumbnail_url 
+                                ELSE NULL 
+                              END,
               'name', m.name
             ) ORDER BY pm.sort_order ASC
           ), '[]'
