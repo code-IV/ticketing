@@ -14,6 +14,7 @@ router.post(
 );
 
 router.get("/", isAuthenticated, isAdmin, UploadsController.getAll);
+router.get("/t", isAuthenticated, isAdmin, UploadsController.getByType);
 router.get(
   "/:name",
   isAuthenticated,

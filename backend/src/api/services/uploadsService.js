@@ -44,14 +44,21 @@ const UploadsService = {
 
   async getAll() {
     const media = await Media.getAllMedia();
-    return { gallery: media };
+    return media;
   },
   async getByName(name) {
     if (!name || typeof name !== "string") {
       throw new Error("Invalid media name provided");
     }
     const media = await Media.getMediaByName(name);
-    return { gallery: media };
+    return media;
+  },
+  async getByType(type) {
+    if (!type || typeof type !== "string") {
+      throw new Error("Invalid media type provided");
+    }
+    const media = await Media.getMediaByType(type);
+    return media;
   },
 };
 

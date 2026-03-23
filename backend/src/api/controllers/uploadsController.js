@@ -62,6 +62,21 @@ const UploadsController = {
       next(err);
     }
   },
+  async getByType(req, res, next) {
+    try {
+      const { type } = req.query;
+      if (type !== "image" && type !== "video") {
+        return apiResponse(res, 400, false, "invalid query", {
+          valid: false,
+          reason: "INVALID_QUERY",
+        });
+      }
+      const result = await UploadsService.getByType(type);
+      return apiResponse(res, 200, true, "Media retrieved", result);
+    } catch (err) {
+      next(err);
+    }
+  },
 };
 
 module.exports = { UploadsController };
