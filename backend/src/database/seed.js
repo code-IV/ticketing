@@ -115,6 +115,16 @@ const seed = async () => {
     console.log(
       `Created: ${eventsData.length} Events and ${gamesData.length} Games.`,
     );
+
+    // 5. Add Random Users
+    console.log("Adding random users...");
+    try {
+      process.env.CALLED_FROM_SEED = 'true';
+      const { addRandomUsers } = require("./addRandomUsers.js");
+      await addRandomUsers(client);
+    } catch (error) {
+      console.error("Failed to add random users:", error.message);
+    }
   } catch (err) {
     await client.query("ROLLBACK");
     console.error("Seed Error:", err);

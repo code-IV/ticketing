@@ -1,5 +1,5 @@
 require('dotenv').config();
-const { query } = require('../src/config/db');
+const { query, pool } = require('../config/db');
 
 // Helper function to generate random data
 function getRandomElement(arr) {
@@ -33,15 +33,20 @@ const domains = ['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'exampl
 
 const roles = ['VISITOR', 'STAFF', 'ADMIN'];
 
-async function addRandomUsers() {
+async function addRandomUsers(existingClient = null) {
   console.log('Adding 40 random users to the database...');
   
   try {
-    // Test database connection first
-    console.log('Testing database connection...');
-    const testQuery = 'SELECT NOW()';
-    await query(testQuery);
-    console.log('✅ Database connection successful');
+    // Use existing client if provided (when called from seed), otherwise create new connection
+    const useExistingClient = existingClient !== null;
+    
+    // Test database connection first (only if not using existing client)
+    if (!useExistingClient) {
+      console.log('Testing database connection...');
+      const testQuery = 'SELECT NOW()';
+      await query(testQuery);
+      console.log('✅ Database connection successful');
+    }
     
     // Get role IDs from the database
     console.log('Fetching roles from database...');
@@ -50,7 +55,7 @@ async function addRandomUsers() {
     
     if (roleResult.rows.length === 0) {
       console.error('❌ No roles found in the database. Please ensure roles are seeded first.');
-      console.log('Available roles in database:');
+      console.log('Available roles in the database:');
       const allRolesQuery = 'SELECT name FROM roles';
       const allRolesResult = await query(allRolesQuery);
       console.log(allRolesResult.rows.map(row => row.name));
@@ -85,7 +90,7 @@ async function addRandomUsers() {
       });
     }
     
-    // Insert users into database
+    // Insert users into the database
     console.log('Inserting users...');
     
     for (const user of users) {
@@ -116,7 +121,7 @@ async function addRandomUsers() {
     // Show summary
     const countQuery = 'SELECT COUNT(*) as total FROM users';
     const countResult = await query(countQuery);
-    console.log(`📊 Total users in database: ${countResult.rows[0].total}`);
+    console.log(`📊 Total users in the database: ${countResult.rows[0].total}`);
     
     // Show role distribution
     const roleCountQuery = `
@@ -138,11 +143,5 @@ async function addRandomUsers() {
   }
 }
 
-// Run the script
-addRandomUsers().then(() => {
-  console.log('Script completed.');
-  process.exit(0);
-}).catch(error => {
-  console.error('Script failed:', error);
-  process.exit(1);
-});
+// Export the function to be called from seed
+module.exports = { addRandomUsers };
