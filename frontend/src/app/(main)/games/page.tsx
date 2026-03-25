@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { Game } from "@/types";
@@ -14,12 +14,6 @@ import {
 } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
 
-const gameVisuals = [
-  "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80",
-  "https://images.unsplash.com/photo-1563298723-dcfebaa392e3?w=800&q=80",
-  "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=800&q=80",
-];
-
 export default function GamesListingPage() {
   const { isDarkTheme } = useTheme();
   const router = useRouter();
@@ -30,6 +24,10 @@ export default function GamesListingPage() {
   const [itemsPerPage, setItemsPerPage] = useState(12);
   const [showShareModal, setShowShareModal] = useState(false);
   const [selectedGame, setSelectedGame] = useState<Game | null>(null);
+  
+  // State for banner cycling
+  const [bannerIndexes, setBannerIndexes] = useState<{[key: string]: number}>({});
+  const intervalRefs = useRef<{[key: string]: NodeJS.Timeout}>({});
 
   useEffect(() => {
     const fetchGames = async () => {
@@ -54,6 +52,35 @@ export default function GamesListingPage() {
 
     fetchGames();
   }, []);
+
+  // Banner Cycling Logic
+  useEffect(() => {
+    games.forEach((game) => {
+      const posters = game.gallery?.filter(item => item.label === "poster") || [];
+      if (posters.length > 1) {
+        intervalRefs.current[game.id] = setInterval(() => {
+          setBannerIndexes(prev => ({
+            ...prev,
+            [game.id]: ((prev[game.id] || 0) + 1) % posters.length
+          }));
+        }, 4000); // 4 seconds
+      }
+    });
+
+    return () => {
+      Object.values(intervalRefs.current).forEach(clearInterval);
+    };
+  }, [games]);
+
+  // Helper function to get banner image
+  const getBannerImage = (game: Game) => {
+    const posters = game.gallery?.filter(item => item.label === "poster") || [];
+    if (posters.length === 0) {
+      return "/poster.jpg"; // Fallback to poster placeholder
+    }
+    const index = bannerIndexes[game.id] || 0;
+    return posters[index]?.url || posters[0]?.url || "/poster.jpg";
+  };
 
   // Responsive items per page logic
   useEffect(() => {
@@ -205,7 +232,7 @@ export default function GamesListingPage() {
               {/* Image Background Layer */}
               <div className="absolute inset-0">
                 <img
-                  src={gameVisuals[index % 3]}
+                  src={getBannerImage(game)}
                   className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
                   alt={game.name}
                 />
