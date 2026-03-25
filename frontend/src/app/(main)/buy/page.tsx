@@ -13,7 +13,6 @@ import {
   MapPin,
   ChevronDown,
 } from "lucide-react";
-import { MOCK_IMG } from "@/data/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { Game } from "@/types";
 import { gameService } from "@/services/adminService";
@@ -27,7 +26,7 @@ import SuccessModal from "@/components/ui/SuccessModal";
 const getPosterImage = (game: any) => {
   const posters = game.gallery?.filter((item: any) => item.label === "poster") || [];
   if (posters.length === 0) {
-    return "/poster.jpg"; // Fallback to poster placeholder
+    return "/l.jpg"; // Fallback to poster placeholder
   }
   return posters[0]?.url || "/poster.jpg";
 };
@@ -304,7 +303,9 @@ const BuyTicketsPage = () => {
                           <img
                             src={posterImage}
                             alt={game.name}
-                            className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
+                            className={`h-full w-full object-cover transition-transform duration-700 group-hover:scale-110 ${
+                              posterImage === "/l.jpg" ? "blur-sm" : ""
+                            }`}
                           />
                           <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
                         </div>

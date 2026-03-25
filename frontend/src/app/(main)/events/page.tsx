@@ -100,7 +100,7 @@ export default function EventsPage() {
   const getBannerImage = (event: Event) => {
     const banners = event.gallery?.filter(item => item.label === "banner") || [];
     const index = bannerIndexes[event.id] || 0;
-    return banners[index]?.url || "/img.jpg";
+    return banners[index]?.url || "/l.jpg";
   };
 
   const handlePreviousPage = () => {
@@ -160,7 +160,9 @@ export default function EventsPage() {
               >
                 {/* MEDIA */}
                 <div className="relative h-64 lg:h-auto lg:w-[450px] shrink-0 overflow-hidden bg-[#ffd84f]">
-                  <img src={getBannerImage(event)} alt={event.name} className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                  <img src={getBannerImage(event)} alt={event.name} className={`absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 ${
+                    getBannerImage(event) === "/l.jpg" ? "blur-sm" : ""
+                  }`} />
                   <div className="absolute top-4 left-4">
                     <div className="bg-black/80 backdrop-blur-md p-3 rounded-2xl border border-white/10">
                       <p className="text-[10px] font-black text-[#ffd84f] uppercase tracking-widest leading-none mb-1">Stock</p>

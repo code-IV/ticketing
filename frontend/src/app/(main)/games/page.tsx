@@ -76,7 +76,7 @@ export default function GamesListingPage() {
   const getBannerImage = (game: Game) => {
     const posters = game.gallery?.filter(item => item.label === "poster") || [];
     if (posters.length === 0) {
-      return "/poster.jpg"; // Fallback to poster placeholder
+      return "/l.jpg"; // Fallback to poster placeholder
     }
     const index = bannerIndexes[game.id] || 0;
     return posters[index]?.url || posters[0]?.url || "/poster.jpg";
@@ -233,7 +233,9 @@ export default function GamesListingPage() {
               <div className="absolute inset-0">
                 <img
                   src={getBannerImage(game)}
-                  className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
+                  className={`w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110 ${
+                    getBannerImage(game) === "/l.jpg" ? "blur-sm" : ""
+                  }`}
                   alt={game.name}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/40 to-transparent" />
