@@ -313,14 +313,14 @@ export const gameService = {
     id: string,
     data: Partial<Game>,
   ): Promise<ApiResponse<Partial<Game>>> {
-    const response = await api.patch(`/admin/games/${id}`, data);
+    const response = await api.patch(`/admin/game/${id}`, data);
     return response.data;
   },
   async getAll(): Promise<ApiResponse<{ games: Game[] }>> {
     const response = await api.get("/games");
     return response.data;
   },
-  async getActiveGames(): Promise<ApiResponse<Game[]>> {
+  async getActiveGames(): Promise<ApiResponse<{ games: Game[] }>> {
     const response = await api.get("/games/buy");
     return response.data;
   },
