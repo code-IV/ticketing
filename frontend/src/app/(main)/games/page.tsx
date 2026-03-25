@@ -16,12 +16,8 @@ import {
 import { useTheme } from "@/contexts/ThemeContext";
 import { adminService } from "@/services/adminService";
 
-const gameVisuals = [
-  "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80",
-  "https://images.unsplash.com/photo-1563298723-dcfebaa392e3?w=800&q=80",
-  "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=800&q=80",
-];
-
+const MOCK_IMG =
+  "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80";
 export default function GamesListingPage() {
   const { isDarkTheme } = useTheme();
   const router = useRouter();
@@ -39,7 +35,7 @@ export default function GamesListingPage() {
         const response = await gameService.getAll();
         if (response.success && response.data) {
           // Map database response to match Game interface
-          let mappedGames = response.data.map((game: any) => ({
+          let mappedGames = response.data?.games.map((game: any) => ({
             ...game,
             category: game.category || "Adventure", // Default category if not present
             capacity: game.capacity || 10, // Default capacity if not present
@@ -204,11 +200,35 @@ export default function GamesListingPage() {
             >
               {/* Image Background Layer */}
               <div className="absolute inset-0">
-                <img
-                  src={gameVisuals[index % 3]}
-                  className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
-                  alt={game.name}
-                />
+                {/* Background Image */}
+                {game.gallery && game.gallery.length > 0 ? (
+                  <>
+                    {game.gallery[0].type.startsWith("image") ? (
+                      <img
+                        src={game.gallery[0].url}
+                        alt={game.name}
+                        crossOrigin="anonymous"
+                        className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
+                      />
+                    ) : game.gallery[0].type.startsWith("video") ? (
+                      <video
+                        src={game.gallery[0].url}
+                        crossOrigin="anonymous"
+                        autoPlay
+                        muted
+                        loop
+                        playsInline
+                        className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
+                      />
+                    ) : null}
+                  </>
+                ) : (
+                  <img
+                    src={MOCK_IMG}
+                    alt="Placeholder"
+                    className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
+                  />
+                )}
                 <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/40 to-transparent" />
               </div>
 

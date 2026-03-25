@@ -1,4 +1,5 @@
 const { getClient } = require("../../config/db");
+const { GameRes } = require("../dtos/gameDto");
 const { Game, GameStats } = require("../models/Games");
 const TicketType = require("../models/TicketType");
 
@@ -72,9 +73,9 @@ const GameService = {
 
   async getAll() {
     try {
-      const games = await Game.findAll();
+      const rows = await Game.findAll();
 
-      return games;
+      return { games: rows.map((row) => new GameRes(row)) };
     } catch (error) {
       console.error("Error in gameService.getAllGames:", error);
       throw new Error("Could not retrieve games catalog.");
@@ -82,9 +83,9 @@ const GameService = {
   },
   async getActive() {
     try {
-      const games = await Game.findActive();
+      const rows = await Game.findActive();
 
-      return games;
+      return { games: rows.map((row) => new GameRes(row)) };
     } catch (error) {
       console.error("Error in gameService.getActive:", error);
       throw new Error("Could not retrieve games catalog.");

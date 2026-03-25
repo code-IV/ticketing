@@ -316,7 +316,7 @@ export const gameService = {
     const response = await api.patch(`/admin/games/${id}`, data);
     return response.data;
   },
-  async getAll(): Promise<ApiResponse<Game[]>> {
+  async getAll(): Promise<ApiResponse<{ games: Game[] }>> {
     const response = await api.get("/games");
     return response.data;
   },
