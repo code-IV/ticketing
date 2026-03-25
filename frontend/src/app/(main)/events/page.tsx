@@ -167,7 +167,8 @@ export default function EventsPage() {
                         />
                       ) : event.gallery[0].type.startsWith("video") ? (
                         <video
-                          src={event.gallery[0].url} // Ensure you use the correct URL variable here
+                          src={event.gallery[0].url}
+                          crossOrigin="anonymous"
                           autoPlay
                           muted
                           loop
