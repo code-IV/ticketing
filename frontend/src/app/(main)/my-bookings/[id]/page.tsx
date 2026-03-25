@@ -29,18 +29,34 @@ import {
   Clock,
   ArrowLeft,
   ArrowRight,
-  Link,
 } from "lucide-react";
 import { QRCodeCanvas } from "qrcode.react";
 
 // ── HELPER FUNCTIONS ─────────────────────────────────────────────────────────────
 
-const getDynamicPassName = (items: any[]) => {
+// Helper function to get poster image
+const getPosterImage = (game: any) => {
+  const posters = game.gallery?.filter((item: any) => item.label === "poster") || [];
+  if (posters.length === 0) {
+    return "/poster.jpg"; // Fallback to poster placeholder
+  }
+  return posters[0]?.url || "/poster.jpg";
+};
+
+const getDynamicPassName = (items: any[], isMobile: boolean = false) => {
   if (!items || items.length === 0) return "Custom Pass";
   const uniqueGames = [...new Set(items.map((i) => i.productName))];
-  if (uniqueGames.length === 1) return uniqueGames[0];
-  if (uniqueGames.length === 2) return `${uniqueGames[0]} & ${uniqueGames[1]}`;
-  return `${uniqueGames[0]} & ${uniqueGames[1]}...`;
+  
+  if (isMobile) {
+    // For mobile (under md), show only 1 game name then "..."
+    if (uniqueGames.length === 1) return uniqueGames[0];
+    return `${uniqueGames[0]}...`;
+  } else {
+    // For desktop, show existing logic
+    if (uniqueGames.length === 1) return uniqueGames[0];
+    if (uniqueGames.length === 2) return `${uniqueGames[0]} & ${uniqueGames[1]}`;
+    return `${uniqueGames[0]} & ${uniqueGames[1]}...`;
+  }
 };
 
 // Type detection functions for backward compatibility
@@ -210,7 +226,8 @@ const CollectorTicketCard = ({
     >
       <img
         src={
-          "https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?q=80&w=800&auto=format&fit=crop"
+          item.gameData?.gallery?.filter((g: any) => g.label === "poster")[0]?.url || 
+          "/poster.jpg"
         }
         alt={item.productName}
         className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
@@ -295,6 +312,19 @@ export default function BookingDetailPage({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [isQRModalOpen, setIsQRModalOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Mobile detection
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768); // md breakpoint
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   useEffect(() => {
     if (!authLoading) {
@@ -387,8 +417,9 @@ export default function BookingDetailPage({
     >
       <div className="max-w-6xl mx-auto">
         {/* PREMIUM HEADER */}
-        <header className="mb-14 flex flex-col md:flex-row md:items-center justify-between gap-8">
-          <div className="flex flex-col md:flex-row items-center gap-8">
+        <header className="mb-7 md:mb-14 flex flex-col justify-between gap-8">
+          <div className="flex justify-between ">
+          <div className="flex md:flex-row items-center gap-6">
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
@@ -410,12 +441,7 @@ export default function BookingDetailPage({
             </motion.button>
 
             <div className="text-center md:text-left">
-              <Link
-                href="/my-bookings"
-                className={`flex items-center gap-2 text-[10px] font-black uppercase tracking-widest mb-3 hover:text-accent transition-colors ${isDarkTheme ? "text-gray-400" : "text-slate-400"}`}
-              >
-                <ArrowLeft size={14} /> Back to List
-              </Link>
+
               <div className="space-y-2">
                 <h1
                   className={`text-5xl md:text-6xl font-black tracking-tighter leading-none italic uppercase ${isDarkTheme ? "text-white" : "text-slate-900"}`}
@@ -424,11 +450,13 @@ export default function BookingDetailPage({
                     ? event.name
                     : getDynamicPassName(
                         convertGuestDataToTicketProduct(booking),
+                        isMobile
                       )}
                 </h1>
               </div>
+              <div className=" hidden md:block">
               <p
-                className={`mt-2 text-sm hidden lg:block font-medium ${isDarkTheme ? "text-gray-500" : "text-slate-500"}`}
+                className={`mt-2 text-sm  font-medium ${isDarkTheme ? "text-gray-500" : "text-slate-500"}`}
               >
                 Pass for{" "}
                 <span className="text-accent font-bold uppercase">
@@ -440,7 +468,7 @@ export default function BookingDetailPage({
                 </span>
               </p>
               <div
-                className={`mt-2 flex flex-col sm:flex-row hidden lg:block gap-4 text-xs font-medium ${isDarkTheme ? "text-gray-500" : "text-slate-500"}`}
+                className={`mt-2 flex sm:flex-row  gap-4 text-xs font-medium ${isDarkTheme ? "text-gray-500" : "text-slate-500"}`}
               >
                 <div className="flex items-center gap-2">
                   <Calendar size={14} />
@@ -452,8 +480,6 @@ export default function BookingDetailPage({
                         : "N/A"}
                     </span>
                   </span>
-                </div>
-                <div className="flex items-center gap-2">
                   <Calendar size={14} />
                   <span>
                     Expires:{" "}
@@ -471,11 +497,13 @@ export default function BookingDetailPage({
                   </span>
                 </div>
               </div>
+              </div>
+              </div>
             </div>
-          </div>
 
-          <div
-            className={`hidden sm:flex items-center gap-6 p-6 rounded-[40px] shadow-sm ${isDarkTheme ? "bg-bg3 border-gray-700" : "bg-white border-slate-100"}`}
+
+
+            <div className={`hidden  h-25 lg:flex  items-center gap-6 p-6 rounded-[40px] shadow-sm ${isDarkTheme ? "bg-bg3 border-gray-700" : "bg-white border-slate-100"}`}
           >
             <div className="text-right">
               <p
@@ -498,7 +526,7 @@ export default function BookingDetailPage({
             />
             <div className="text-right">
               <p
-                className={`text-[10px] font-black uppercase tracking-widest mb-1 ${isDarkTheme ? "text-gray-400" : "text-slate-400"}`}
+                className={`text-sm font-black uppercase tracking-widest mb-1 ${isDarkTheme ? "text-gray-400" : "text-slate-400"}`}
               >
                 Amount
               </p>
@@ -510,8 +538,60 @@ export default function BookingDetailPage({
               </p>
             </div>
           </div>
+          
+          </div>
+          
+
+          
         </header>
 
+        {/* date */}
+        <div className="mb-10 md:hidden">
+          <p
+                className={`mt-2 text-sm  font-medium ${isDarkTheme ? "text-gray-500" : "text-slate-500"}`}
+              >
+                Pass for{" "}
+                <span className="text-accent font-bold uppercase">
+                  {user ? `${user.first_name} ${user.last_name}` : "Guest User"}
+                </span>{" "}
+                · REF:{" "}
+                <span className="font-mono text-accent font-bold">
+                  {booking.bookingReference}
+                </span>
+              </p>
+              <div
+                className={`mt-2 flex sm:flex-row  gap-4 text-xs font-medium ${isDarkTheme ? "text-gray-500" : "text-slate-500"}`}
+              >
+                <div className="flex items-center gap-2">
+                  <Calendar size={14} />
+                  <span>
+                    Booked:{" "}
+                    <span className="text-accent font-bold">
+                      {booking.bookedAt
+                        ? format(new Date(booking.bookedAt), "MMM dd, yyyy")
+                        : "N/A"}
+                    </span>
+                  </span>
+                  <Calendar size={14} />
+                  <span>
+                    Expires:{" "}
+                    <span className="text-accent font-bold">
+                      {booking.bookedAt
+                        ? format(
+                            new Date(
+                              new Date(booking.bookedAt).getTime() +
+                                21 * 24 * 60 * 60 * 1000,
+                            ),
+                            "MMM dd, yyyy",
+                          )
+                        : "N/A"}
+                    </span>
+                  </span>
+                </div>
+              </div>
+            </div>
+        
+        
         {/* COLLECTOR GRID */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10">
           <AnimatePresence>
@@ -550,24 +630,12 @@ export default function BookingDetailPage({
                   </div>
                   <div>
                     <p
-                      className={`text-[10px] font-black uppercase ${isDarkTheme ? "text-gray-400" : "text-slate-400"}`}
-                    >
-                      Schedule Date
-                    </p>
-                    <p
                       className={`text-lg font-black ${isDarkTheme ? "text-white" : "text-slate-900"}`}
                     >
                       {event && "eventDate" in event
                         ? format(
-                            new Date(event.eventDate),
-                            "EEEE, MMM dd, yyyy",
-                          )
-                        : booking.bookedAt
-                          ? format(
-                              new Date(booking.bookedAt),
-                              "EEEE, MMM dd, yyyy",
-                            )
-                          : "N/A"}
+                            new Date(event.eventDate),"EEEE, MMM dd, yyyy",)
+                        : booking.bookedAt? format(new Date(booking.bookedAt),"EEEE, MMM dd, yyyy",): "N/A"}
                     </p>
                   </div>
                 </div>
