@@ -96,35 +96,51 @@ export default function UserManagement() {
   };
 
   const handleStatusChange = async (userId: string, newStatus: string) => {
-    try {
-      setUpdatingUsers(prev => new Set(prev).add(userId));
-      await adminService.toggleUserActive(userId);
-      setUsers(prevUsers => prevUsers.map(user => (user.id === userId ? { ...user, is_active: newStatus === 'Active' } : user)));
-      showNotification('success', `User status updated to ${newStatus}`);
-    } catch (err: any) {
-      showNotification('error', `Failed to update status`);
-    } finally {
-      setUpdatingUsers(prev => { const n = new Set(prev); n.delete(userId); return n; });
-    }
+    showConfirmDialog(
+      'Change User Status',
+      `Are you sure you want to change this user's status to ${newStatus}?`,
+      async () => {
+        try {
+          setUpdatingUsers(prev => new Set(prev).add(userId));
+          await adminService.toggleUserActive(userId);
+          setUsers(prevUsers => prevUsers.map(user => (user.id === userId ? { ...user, is_active: newStatus === 'Active' } : user)));
+          showNotification('success', `User status updated to ${newStatus}`);
+        } catch (err: any) {
+          showNotification('error', `Failed to update status`);
+        } finally {
+          setUpdatingUsers(prev => { const n = new Set(prev); n.delete(userId); return n; });
+        }
+      },
+      'warning'
+    );
   };
 
   const handleRoleChange = async (userId: string, newRole: any) => {
-    try {
-      setUpdatingUsers(prev => new Set(prev).add(userId));
-      const response = await adminService.updateUser(userId, { role: newRole });
-      setUsers(prevUsers => prevUsers.map(user => {
-        if (user.id === userId) {
-          const updated = (response.data as any)?.user || (response.data as any) || user;
-          return { ...user, role: updated.role_name || updated.role || newRole, ...updated };
+    showConfirmDialog(
+      'Change User Role',
+      `Are you sure you want to change this user's role to ${newRole}?`,
+      async () => {
+        try {
+          setUpdatingUsers(prev => new Set(prev).add(userId));
+          const response = await adminService.updateUser(userId, { role: newRole });
+          if (response.success) {
+            showNotification('success', 'User role updated successfully');
+            loadUsers();
+          } else {
+            showNotification('error', response.message || 'Failed to update user role');
+          }
+        } catch (err: any) {
+          showNotification('error', `Failed to update user role: ${err.message || 'Unknown error'}`);
+        } finally {
+          setUpdatingUsers(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(userId);
+            return newSet;
+          });
         }
-        return user;
-      }));
-      showNotification('success', `User role updated to ${newRole}`);
-    } catch (err: any) {
-      showNotification('error', `Failed to update role`);
-    } finally {
-      setUpdatingUsers(prev => { const n = new Set(prev); n.delete(userId); return n; });
-    }
+      },
+      'warning'
+    );
   };
 
   const filteredUsers = users.filter(user => user.email?.toLowerCase().includes(searchTerm.toLowerCase()));
@@ -145,12 +161,12 @@ export default function UserManagement() {
       {confirmDialog && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center">
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={hideConfirmDialog} />
-          <div className="relative bg-white dark:bg-zinc-900 rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
-            <h3 className="text-lg font-semibold mb-2">{confirmDialog.title}</h3>
-            <p className="text-gray-600 dark:text-gray-300 mb-6">{confirmDialog.message}</p>
+          <div className={`relative rounded-4xl shadow-xl max-w-md w-full mx-4 p-6 ${isDarkTheme ? 'bg-[#1a1a1a] text-white' : 'bg-white text-gray-900'}`}>
+            <h3 className={`text-xl font-semibold mb-2 ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}>{confirmDialog.title}</h3>
+            <p className={`mb-6 ${isDarkTheme ? 'text-gray-300' : 'text-gray-600'}`}>{confirmDialog.message}</p>
             <div className="flex gap-3 justify-end">
-              <button onClick={hideConfirmDialog} className="px-4 py-2">Cancel</button>
-              <button onClick={() => { confirmDialog.onConfirm(); hideConfirmDialog(); }} className={`px-4 py-2 rounded-lg text-white ${confirmDialog.type === 'danger' ? 'bg-red-600' : 'bg-yellow-600'}`}>Confirm</button>
+              <button onClick={hideConfirmDialog} className={`px-4 py-2 rounded-lg ${isDarkTheme ? 'bg-gray-700 text-white hover:bg-gray-600' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'}`}>Cancel</button>
+              <button onClick={() => { confirmDialog.onConfirm(); hideConfirmDialog(); }} className={`px-4 py-2 rounded-lg text-black  ${confirmDialog.type === 'danger' ? 'bg-red-600 hover:bg-red-700' : 'bg-accent2 hover:bg-accent'}`}>Confirm</button>
             </div>
           </div>
         </div>
@@ -202,7 +218,7 @@ export default function UserManagement() {
       </div>
 
       {/* Users Table - Desktop */}
-      <div className="hidden lg:block overflow-hidden rounded-2xl border shadow-sm bg-white dark:bg-[#0A0A0A] dark:border-gray-700">
+      <div className={`hidden lg:block overflow-hidden rounded-2xl border shadow-sm ${isDarkTheme ? 'bg-[#0A0A0A] border-gray-700' : 'bg-white border-slate-100'}`}>
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className={`text-xs font-black uppercase tracking-wider border-b ${isDarkTheme ? 'bg-[#1a1a1a] border-gray-700 text-gray-400' : 'bg-gray-50/50 border-slate-200 text-slate-500'}`}>
@@ -234,7 +250,6 @@ export default function UserManagement() {
                     <select className={`text-[10px] font-bold uppercase rounded-lg px-2 py-1.5 border ${isDarkTheme ? 'bg-zinc-900 border-gray-800 text-white' : 'bg-white border-slate-200'}`} value={user.is_active ? 'Active' : 'Inactive'} onChange={e => handleStatusChange(user.id, e.target.value)} disabled={updatingUsers.has(user.id)}>
                         <option value="Active">Active</option><option value="Inactive">Inactive</option>
                     </select>
-                    <button onClick={() => handleDeleteUser(user.id, user.email)} className="p-2 text-slate-400 hover:text-red-600 transition-colors"><Trash2 size={16} /></button>
                   </div>
                 </td>
               </tr>
@@ -259,12 +274,12 @@ export default function UserManagement() {
                   </span>
                 </div>
               </div>
-              <button onClick={() => handleDeleteUser(user.id, user.email)} className="p-2 text-slate-300 hover:text-red-500 transition-colors"><Trash2 size={18} /></button>
+              <button onClick={() => handleDeleteUser(user.id, user.email)} className={`p-2 transition-colors ${isDarkTheme ? 'text-gray-400 hover:text-red-400' : 'text-slate-400 hover:text-red-500'}`}><Trash2 size={18} /></button>
             </div>
             
-            <div className="grid grid-cols-2 gap-3 pt-3 border-t dark:border-gray-800">
+            <div className={`grid grid-cols-2 gap-3 pt-3 border-t ${isDarkTheme ? 'border-gray-700' : 'border-slate-100'}`}>
               <div className="space-y-1">
-                <label className="text-[10px] font-black text-gray-500 uppercase ml-1">Role</label>
+                <label className={`text-[10px] font-black uppercase ml-1 ${isDarkTheme ? 'text-gray-500' : 'text-slate-400'}`}>Role</label>
                 <select 
                   className={`w-full text-xs font-bold rounded-lg px-3 py-2 border outline-none ${isDarkTheme ? 'bg-[#1a1a1a] border-gray-700 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'}`} 
                   value={user.role || 'VISITOR'} 
@@ -275,7 +290,7 @@ export default function UserManagement() {
                 </select>
               </div>
               <div className="space-y-1">
-                <label className="text-[10px] font-black text-gray-500 uppercase ml-1">Status</label>
+                <label className={`text-[10px] font-black uppercase ml-1 ${isDarkTheme ? 'text-gray-500' : 'text-slate-400'}`}>Status</label>
                 <select 
                   className={`w-full text-xs font-bold rounded-lg px-3 py-2 border outline-none ${isDarkTheme ? 'bg-[#1a1a1a] border-gray-700 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'}`} 
                   value={user.is_active ? 'Active' : 'Inactive'} 
@@ -294,7 +309,7 @@ export default function UserManagement() {
       {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6">
-          <div className={`text-sm ${isDarkTheme ? 'text-gray-400' : 'text-gray-600'}`}>Showing {((currentPage - 1) * usersPerPage) + 1} to {Math.min(currentPage * usersPerPage, totalUsers)} of {totalUsers} users</div>
+          <div className={`text-sm ${isDarkTheme ? 'text-gray-400' : 'text-slate-600'}`}>Showing {((currentPage - 1) * usersPerPage) + 1} to {Math.min(currentPage * usersPerPage, totalUsers)} of {totalUsers} users</div>
           <div className="flex items-center gap-2">
             <button onClick={goToPreviousPage} disabled={currentPage === 1} className={`px-3 py-2 rounded-lg font-medium ${currentPage === 1 ? 'bg-gray-500 text-gray-200' : isDarkTheme ? 'bg-[#1a1a1a] text-white border border-gray-700' : 'bg-white border border-gray-300'}`}>Previous</button>
             <div className="flex gap-1">
