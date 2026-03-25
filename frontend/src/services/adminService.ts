@@ -225,7 +225,7 @@ export const adminService = {
     const params: any = { page, limit };
     if (role) params.role = role;
     if (status) params.status = status;
-    
+
     const response = await api.get("/admin/users", {
       params,
     });
@@ -239,7 +239,14 @@ export const adminService = {
 
   async updateUser(
     id: string,
-    data: { role?: string; first_name?: string; last_name?: string; email?: string; phone?: string; is_active?: boolean },
+    data: {
+      role?: string;
+      first_name?: string;
+      last_name?: string;
+      email?: string;
+      phone?: string;
+      is_active?: boolean;
+    },
   ): Promise<ApiResponse<{ user: User }>> {
     const response = await api.patch(`/admin/users/${id}`, data);
     return response.data;
@@ -296,8 +303,10 @@ export const ticketService = {
 };
 
 export const gameService = {
-  async createGame(data: CreateGame): Promise<ApiResponse<Game>> {
-    const response = await api.post("/admin/games", data);
+  async createGame(
+    data: CreateGame,
+  ): Promise<ApiResponse<{ game: Game; productId: string }>> {
+    const response = await api.post("/admin/game", data);
     return response.data;
   },
   async updateGame(
