@@ -1,4 +1,5 @@
 const { getClient } = require("../../config/db");
+const { ActiveEvents } = require("../dtos/eventDto");
 const { Event, EventStats } = require("../models/Event");
 const TicketType = require("../models/TicketType");
 
@@ -116,7 +117,7 @@ const EventService = {
 
     // 3. Transformation / Formatting
     return {
-      events: rows,
+      events: rows.map((row) => new ActiveEvents(row)),
       pagination: {
         page: sanitizedPage,
         limit: sanitizedLimit,

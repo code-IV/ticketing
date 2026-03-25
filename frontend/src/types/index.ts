@@ -36,22 +36,15 @@ export interface Event {
   id: string;
   name: string;
   description?: string;
-  schedule: {
-    eventDate: string;
-    startTime: string;
-    endTime: string;
-  };
+  eventDate: string;
+  startTime: string;
+  endTime: string;
   capacity: number;
-  tickets_sold: number;
-  available_tickets?: number;
-  is_active: boolean;
-  created_by?: string;
-  created_at: string;
-  updated_at: string;
+  ticketsSold: number;
+  availableTickets?: number;
+  isActive: boolean;
   ticketTypes?: TicketType[];
-  location?: string;
-  image_url?: string;
-  video_url?: string;
+  gallery: any[];
 }
 
 export interface TicketType {
@@ -134,7 +127,7 @@ export interface GameTicketDetail {
     description: string;
     rules: string;
   };
-  ticket_type: {
+  ticketType: {
     name: string;
     category: string;
     price: number;

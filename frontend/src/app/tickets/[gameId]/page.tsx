@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import { use, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -48,12 +48,14 @@ export default function GameTicketDetailsPage({
     try {
       setLoading(true);
       setError("");
-      
+
       const response = await gameTicketService.getGameTicketsDetails(gameId);
       setGameData(response.game);
       setTickets(response.tickets || []);
     } catch (err: any) {
-      setError(err.response?.data?.message || "Failed to load game ticket details");
+      setError(
+        err.response?.data?.message || "Failed to load game ticket details",
+      );
     } finally {
       setLoading(false);
     }
@@ -125,19 +127,22 @@ export default function GameTicketDetailsPage({
   return (
     <div className="min-h-screen py-12">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        {tickets && tickets.length > 0 && tickets.some(t => t.ticket_game_status === 'ACTIVE') && (
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6 flex items-center">
-            <CheckCircle className="h-6 w-6 text-green-600 mr-3" />
-            <div>
-              <h3 className="font-semibold text-green-900">
-                Game Tickets Ready!
-              </h3>
-              <p className="text-sm text-green-700">
-                Your game tickets are ready. Show the QR codes at the game entrance.
-              </p>
+        {tickets &&
+          tickets.length > 0 &&
+          tickets.some((t) => t.ticket_game_status === "ACTIVE") && (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6 flex items-center">
+              <CheckCircle className="h-6 w-6 text-green-600 mr-3" />
+              <div>
+                <h3 className="font-semibold text-green-900">
+                  Game Tickets Ready!
+                </h3>
+                <p className="text-sm text-green-700">
+                  Your game tickets are ready. Show the QR codes at the game
+                  entrance.
+                </p>
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
@@ -155,15 +160,16 @@ export default function GameTicketDetailsPage({
                 <p className="text-lg text-gray-600 mt-1">
                   Game Tickets:{" "}
                   <span className="font-semibold">
-                    {tickets && tickets.length} Ticket{tickets && tickets.length !== 1 ? 's' : ''}
+                    {tickets && tickets.length} Ticket
+                    {tickets && tickets.length !== 1 ? "s" : ""}
                   </span>
                 </p>
               </div>
               <div className="flex gap-2">
                 <span
-                  className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(tickets[0]?.ticket_game_status || '')}`}
+                  className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(tickets[0]?.ticket_game_status || "")}`}
                 >
-                  {tickets[0]?.ticket_game_status?.toUpperCase() || 'N/A'}
+                  {tickets[0]?.ticket_game_status?.toUpperCase() || "N/A"}
                 </span>
               </div>
             </div>
@@ -174,9 +180,7 @@ export default function GameTicketDetailsPage({
                 <Gamepad2 className="h-5 w-5 style={{ color: 'var(--accent)' }} mt-1" />
                 <div>
                   <p className="font-medium text-gray-900">Game</p>
-                  <p className="text-gray-600">
-                    {gameData?.name || 'N/A'}
-                  </p>
+                  <p className="text-gray-600">{gameData?.name || "N/A"}</p>
                 </div>
               </div>
               <div className="flex items-start space-x-3">
@@ -198,7 +202,17 @@ export default function GameTicketDetailsPage({
                 <div>
                   <p className="font-medium text-gray-900">Total Amount</p>
                   <p className="text-gray-600 font-semibold">
-                    {tickets.reduce((sum, ticket) => sum + (typeof ticket.total_price === 'string' ? parseFloat(ticket.total_price) : ticket.total_price), 0).toFixed(2)} ETB
+                    {tickets
+                      .reduce(
+                        (sum, ticket) =>
+                          sum +
+                          (typeof ticket.total_price === "string"
+                            ? parseFloat(ticket.total_price)
+                            : ticket.total_price),
+                        0,
+                      )
+                      .toFixed(2)}{" "}
+                    ETB
                   </p>
                 </div>
               </div>
@@ -207,7 +221,8 @@ export default function GameTicketDetailsPage({
                 <div>
                   <p className="font-medium text-gray-900">Quantity</p>
                   <p className="text-gray-600">
-                    {tickets && tickets.length} Ticket{tickets && tickets.length !== 1 ? 's' : ''}
+                    {tickets && tickets.length} Ticket
+                    {tickets && tickets.length !== 1 ? "s" : ""}
                   </p>
                 </div>
               </div>
@@ -224,9 +239,7 @@ export default function GameTicketDetailsPage({
 
             {gameData?.rules && (
               <div>
-                <h3 className="font-semibold text-gray-900 mb-3">
-                  Game Rules
-                </h3>
+                <h3 className="font-semibold text-gray-900 mb-3">Game Rules</h3>
                 <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                   <p className="text-yellow-700 text-sm">{gameData.rules}</p>
                 </div>
@@ -236,7 +249,10 @@ export default function GameTicketDetailsPage({
             <div className="text-sm text-gray-600">
               <p>
                 Purchased on:{" "}
-                {format(new Date(tickets[0]?.purchased_at || new Date()), "MMMM dd, yyyy HH:mm")}
+                {format(
+                  new Date(tickets[0]?.purchased_at || new Date()),
+                  "MMMM dd, yyyy HH:mm",
+                )}
               </p>
             </div>
           </CardBody>
@@ -245,7 +261,9 @@ export default function GameTicketDetailsPage({
         {tickets && tickets.length > 0 && (
           <Card>
             <CardHeader>
-              <h2 className="text-2xl font-bold text-gray-900">Your Game Tickets</h2>
+              <h2 className="text-2xl font-bold text-gray-900">
+                Your Game Tickets
+              </h2>
               <p className="text-sm text-gray-600 mt-1">
                 Show these QR codes at the game entrance
               </p>
@@ -261,7 +279,9 @@ export default function GameTicketDetailsPage({
                       Game Ticket #{index + 1}
                     </h3>
                     <p className="text-sm text-gray-600 mb-4">
-                      {ticket.ticket_type?.name || gameData?.name || 'Game Ticket'}
+                      {ticket.ticketType?.name ||
+                        gameData?.name ||
+                        "Game Ticket"}
                     </p>
                     <div className="bg-white p-4 inline-block rounded-lg border-2 border-gray-300">
                       <QRCodeSVG value={ticket.qr_token} size={200} />
@@ -269,21 +289,26 @@ export default function GameTicketDetailsPage({
                     <p className="text-xs text-gray-500 mt-3 font-mono">
                       {ticket.ticket_code}
                     </p>
-                    <div className={`mt-3 inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${getStatusColor(ticket.ticket_game_status)}`}>
+                    <div
+                      className={`mt-3 inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${getStatusColor(ticket.ticket_game_status)}`}
+                    >
                       {getStatusIcon(ticket.ticket_game_status)}
                       <span>{ticket.ticket_game_status}</span>
                     </div>
                     {ticket.used_at && (
                       <p className="text-sm text-green-600 font-medium mt-2">
                         ✓ Used on{" "}
-                        {format(
-                          new Date(ticket.used_at),
-                          "MMM dd, yyyy HH:mm",
-                        )}
+                        {format(new Date(ticket.used_at), "MMM dd, yyyy HH:mm")}
                       </p>
                     )}
                     <div className="mt-3 text-sm text-gray-600">
-                      <p>Expires: {format(new Date(ticket.expires_at), 'MMM dd, yyyy HH:mm')}</p>
+                      <p>
+                        Expires:{" "}
+                        {format(
+                          new Date(ticket.expires_at),
+                          "MMM dd, yyyy HH:mm",
+                        )}
+                      </p>
                     </div>
                   </div>
                 ))}

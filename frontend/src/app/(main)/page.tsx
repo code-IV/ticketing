@@ -234,7 +234,7 @@ export default function Home() {
                   </div>
 
                   {/* Sold out overlay */}
-                  {!event.is_active && (
+                  {!event.isActive && (
                     <div className="absolute inset-0 bg-black/70 flex items-center justify-center backdrop-blur-sm">
                       <span className="px-6 py-2 bg-red-500 text-white font-black text-xs uppercase tracking-widest rounded-full -rotate-3">
                         Sold Out
@@ -263,9 +263,9 @@ export default function Home() {
                       </p>
                       <Link href={`/buy?event=${event.id}`}>
                         <button
-                          disabled={!event.is_active}
+                          disabled={!event.isActive}
                           className={`bg-[#FFD84D] text-black font-black text-xs px-5 py-2.5 rounded-full hover:bg-white transition-colors ${
-                            !event.is_active
+                            !event.isActive
                               ? "opacity-50 cursor-not-allowed"
                               : ""
                           }`}
