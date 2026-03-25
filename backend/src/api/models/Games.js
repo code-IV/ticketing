@@ -78,7 +78,7 @@ const Game = {
         ) ORDER BY pm.sort_order ASC) 
          FROM media m
          JOIN products_media pm ON pm.media_id = m.id
-         WHERE pm.product_id = p.id),
+         WHERE pm.product_id = p.id AND m.label='poster'),
         '[]'
       ) AS gallery
     FROM games g
