@@ -1,5 +1,5 @@
 const { getClient } = require("../../config/db");
-const { ActiveEvents } = require("../dtos/eventDto");
+const { EventRes } = require("../dtos/eventDto");
 const { Event, EventStats } = require("../models/Event");
 const TicketType = require("../models/TicketType");
 
@@ -83,17 +83,19 @@ const EventService = {
 
   async findAll({ page = 1, limit = 20 }) {
     // 1. Business Logic: Calculate Pagination
-    const offset = (page - 1) * limit;
+    const sanitizedPage = Math.max(1, parseInt(page, 10));
+    const sanitizedLimit = Math.max(1, parseInt(limit, 10));
+    const offset = (sanitizedPage - 1) * sanitizedLimit;
 
     // 2. Data Retrieval: Parallel execution for performance
-    const [events, total] = await Promise.all([
+    const [rows, total] = await Promise.all([
       Event.findAll({ limit, offset }),
       Event.countAll(),
     ]);
 
     // 3. Data Transformation: Final response object
     return {
-      events,
+      events: rows.map((row) => new EventRes(row)),
       pagination: {
         page: Number(page),
         limit: Number(limit),
@@ -117,7 +119,7 @@ const EventService = {
 
     // 3. Transformation / Formatting
     return {
-      events: rows.map((row) => new ActiveEvents(row)),
+      events: rows.map((row) => new EventRes(row)),
       pagination: {
         page: sanitizedPage,
         limit: sanitizedLimit,

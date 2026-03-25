@@ -194,7 +194,7 @@ const Event = {
     LEFT JOIN booking_items bi ON bi.ticket_type_id = tt.id
     LEFT JOIN bookings b ON bi.booking_id = b.id AND b.status = 'CONFIRMED'
     GROUP BY e.id, p.id
-    ORDER BY e.event_date DESC
+    ORDER BY e.event_date ASC
     LIMIT $1 OFFSET $2;
   `;
 
