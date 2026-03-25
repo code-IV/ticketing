@@ -10,6 +10,7 @@ import {
   Play,
   ArrowDownRight,
 } from "lucide-react";
+import { MOCK_IMG } from "@/data/image";
 import { gameService } from "@/services/adminService";
 import { eventService } from "@/services/eventService";
 import { Event, Game } from "@/types";
@@ -35,7 +36,6 @@ const fadeUp = {
 };
 
 const ACCENT = "#FFD84D";
-const MOCK_IMG = "https://images.unsplash.com/photo-1464207687429-7505649dae38";
 
 export default function Home() {
   const { isDarkTheme } = useTheme();
@@ -245,7 +245,7 @@ export default function Home() {
                     <img
                       src={MOCK_IMG}
                       alt="Placeholder"
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 blur-md blur-md animate-pulse"
                     />
                   )}
                   <div
@@ -387,7 +387,7 @@ export default function Home() {
                     <img
                       src={MOCK_IMG}
                       alt="Placeholder"
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 blur-md animate-pulse"
                     />
                   )}
                   <div

@@ -16,6 +16,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
+import { MOCK_IMG } from "@/data/image";
 
 export default function EventsPage() {
   const { isDarkTheme } = useTheme();
@@ -85,10 +86,6 @@ export default function EventsPage() {
       setLoading(false);
     }
   };
-
-  // Mock Media (Replace with event.image_url or event.video_url from DB)
-  const MOCK_IMG =
-    "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?q=80&w=1200&auto=format&fit=crop";
 
   if (loading && page === 1) {
     return (
@@ -181,7 +178,7 @@ export default function EventsPage() {
                     <img
                       src={MOCK_IMG}
                       alt="Placeholder"
-                      className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                      className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110 blur-md animate-pulse"
                     />
                   )}
 

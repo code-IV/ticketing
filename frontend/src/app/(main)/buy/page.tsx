@@ -13,6 +13,7 @@ import {
   MapPin,
   ChevronDown,
 } from "lucide-react";
+import { MOCK_IMG } from "@/data/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { Game } from "@/types";
 import { gameService } from "@/services/adminService";
@@ -21,9 +22,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { bookingService } from "@/services/bookingService";
 import { guestCookieUtils } from "@/utils/cookies";
 import SuccessModal from "@/components/ui/SuccessModal";
-
-const MOCK_IMG =
-  "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600&h=800&fit=crop";
 
 const BuyTicketsPage = () => {
   const router = useRouter();
@@ -319,7 +317,7 @@ const BuyTicketsPage = () => {
                             <img
                               src={MOCK_IMG}
                               alt="Placeholder"
-                              className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
+                              className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110 blur-md animate-pulse"
                             />
                           )}
 

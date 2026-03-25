@@ -15,9 +15,8 @@ import {
 } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
 import { adminService } from "@/services/adminService";
+import { MOCK_IMG } from "@/data/image";
 
-const MOCK_IMG =
-  "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80";
 export default function GamesListingPage() {
   const { isDarkTheme } = useTheme();
   const router = useRouter();
@@ -226,7 +225,7 @@ export default function GamesListingPage() {
                   <img
                     src={MOCK_IMG}
                     alt="Placeholder"
-                    className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
+                    className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110 blur-md animate-pulse"
                   />
                 )}
                 <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/40 to-transparent" />
