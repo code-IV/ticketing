@@ -224,6 +224,7 @@ export default function EventsPage() {
                     >
                       <Clock size={14} />{" "}
                       {event.startTime ? event.startTime.substring(0, 5) : "--"}
+                      --{event.endTime ? event.endTime.substring(0, 5) : "--"}
                     </div>
                   </div>
 
