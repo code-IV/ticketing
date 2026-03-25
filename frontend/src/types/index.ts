@@ -21,6 +21,7 @@ export interface Game {
   ticket_types?: TicketType[];
   category?: string;
   capacity?: number;
+  gallery?: MediaItem[];
   created_at: string;
   updated_at: string;
 }

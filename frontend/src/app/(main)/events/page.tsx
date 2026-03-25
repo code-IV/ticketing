@@ -103,9 +103,18 @@ export default function EventsPage() {
     return banners[index]?.url || "/img.jpg";
   };
 
-  const handlePreviousPage = () => setPage(prev => Math.max(1, prev - 1));
-  const handleNextPage = () => setPage(prev => Math.min(totalPages, prev + 1));
-  const handlePageClick = (pageNumber: number) => setPage(pageNumber);
+  const handlePreviousPage = () => {
+    setPage(prev => Math.max(1, prev - 1));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+  const handleNextPage = () => {
+    setPage(prev => Math.min(totalPages, prev + 1));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+  const handlePageClick = (pageNumber: number) => {
+    setPage(pageNumber);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   if (loading && initialLoad) {
     return (

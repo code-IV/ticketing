@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useState, useEffect } from "react";
+import { use, useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useTheme } from "@/contexts/ThemeContext";
 import { gameService } from "@/services/adminService";
@@ -23,46 +23,6 @@ import {
   ArrowUpRight,
 } from "lucide-react";
 
-// Game-specific media for better visual testing
-const gameMedia = {
-  "1": {
-    // Thunder Coaster
-    images: [
-      "https://images.unsplash.com/photo-1563298723-dcfebaa392e3?w=1200&q=80", // Amusement ride
-      "https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=1200&q=80", // Theme park
-      "https://images.unsplash.com/photo-1571003123894-1fbae28f2b73?w=1200&q=80", // Roller coaster
-      "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200&q=80", // Park view
-    ],
-    videos: [
-      "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
-    ],
-  },
-  "2": {
-    // Splash Mountain
-    images: [
-      "https://images.unsplash.com/photo-1580582932707-520aed937b7b?w=1200&q=80", // Water park
-      "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=1200&q=80", // Water slide
-      "https://images.unsplash.com/photo-1509557965875-b88c97052f0e?w=1200&q=80", // Water ride
-      "https://images.unsplash.com/photo-1533560904424-a0c61dc306fc?w=1200&q=80", // Splash
-    ],
-    videos: [
-      "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
-    ],
-  },
-  "3": {
-    // Haunted Mansion
-    images: [
-      "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=1200&q=80", // Haunted house
-      "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=1200&q=80", // Dark ride
-      "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=1200&q=80", // Mansion
-      "https://images.unsplash.com/photo-1476231682828-37e571bc172f?w=1200&q=80", // Spooky
-    ],
-    videos: [
-      "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
-    ],
-  },
-};
-
 export default function GameDetailPage({
   params,
 }: {
@@ -79,6 +39,10 @@ export default function GameDetailPage({
   const [selectedMediaIndex, setSelectedMediaIndex] = useState(0);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [showToast, setShowToast] = useState(false);
+  
+  // State for banner cycling
+  const [bannerIndex, setBannerIndex] = useState(0);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     loadGame();
@@ -106,36 +70,81 @@ export default function GameDetailPage({
     }
   };
 
+  // Banner Cycling Logic
+  useEffect(() => {
+    if (!game || !game.gallery) return;
+    
+    const banners = game.gallery.filter(item => item.label === "banner");
+    if (banners.length <= 1) return;
+    
+    intervalRef.current = setInterval(() => {
+      setBannerIndex(prev => (prev + 1) % banners.length);
+    }, 5000);
+    
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
+  }, [game]);
+
+  const getBannerImage = () => {
+    if (!game || !game.gallery) {
+      return "/banner.jpg"; // Fallback to banner placeholder
+    }
+    
+    const banners = game.gallery.filter(item => item.label === "banner");
+    if (banners.length === 0) {
+      return "/banner.jpg"; // Fallback to banner placeholder
+    }
+    
+    return banners[bannerIndex]?.url || banners[0]?.url || "/banner.jpg";
+  };
+
   const getMediaItems = () => {
     if (!game) return [];
 
     const items = [];
-    const media = gameMedia[gameId as keyof typeof gameMedia] || gameMedia["1"];
-
-    // Add main image
-    items.push({
-      type: "image",
-      url: media.images[0],
-      thumbnail: media.images[0],
-      alt: `${game?.name || "Game"} - Main View`,
-    });
-
-    // Add additional images
-    for (let i = 1; i < media.images.length; i++) {
+    
+    // If game has gallery, use it first
+    if (game.gallery && game.gallery.length > 0) {
+      // Filter out banner items from gallery (they're used in hero section)
+      const galleryItems = game.gallery.filter(item => item.label !== "banner");
+      
+      // Add gallery images first
+      const images = galleryItems.filter(item => item.type === 'image' || !item.type);
+      images.forEach((item, index) => {
+        items.push({
+          type: "image",
+          url: item.url,
+          thumbnail: item.thumbnailUrl || item.url,
+          alt: item.name || `${game?.name || "Game"} - Gallery ${index + 1}`,
+        });
+      });
+      
+      // Add gallery videos
+      const videos = galleryItems.filter(item => item.type === 'video');
+      videos.forEach((item, index) => {
+        items.push({
+          type: "video",
+          url: item.url,
+          thumbnail: item.thumbnailUrl || item.url,
+          alt: item.name || `${game?.name || "Game"} - Video ${index + 1}`,
+        });
+      });
+    } else {
+      // Fallback to placeholder images and videos
       items.push({
         type: "image",
-        url: media.images[i],
-        thumbnail: media.images[i],
-        alt: `${game?.name || "Game"} - View ${i + 1}`,
+        url: "/img.jpg",
+        thumbnail: "/img.jpg",
+        alt: `${game?.name || "Game"} - Gallery Image`,
       });
-    }
-
-    // Add video if available
-    if (media.videos.length > 0) {
+      
       items.push({
         type: "video",
-        url: media.videos[0],
-        thumbnail: media.images[media.images.length - 1],
+        url: "/vid.mp4",
+        thumbnail: "/img.jpg",
         alt: `${game?.name || "Game"} - Video Tour`,
       });
     }
@@ -238,6 +247,9 @@ export default function GameDetailPage({
   const mediaItems = getMediaItems();
   const currentMedia = mediaItems[selectedMediaIndex];
   const gameIndex = parseInt(gameId) || 0;
+  
+  // Get banner image for hero section
+  const bannerImage = getBannerImage();
 
   return (
     <div
@@ -246,24 +258,11 @@ export default function GameDetailPage({
       {/* Hero Section with Video/Image Background */}
       <section className="relative h-screen overflow-hidden">
         <div className="absolute inset-0">
-          {currentMedia?.type === "video" ? (
-            <video
-              className="w-full h-full object-cover"
-              autoPlay
-              muted
-              loop
-              playsInline
-              poster={currentMedia.thumbnail}
-            >
-              <source src={currentMedia.url} type="video/mp4" />
-            </video>
-          ) : (
-            <img
-              src={currentMedia?.url || gameMedia["1"].images[0]}
-              className="w-full h-full object-cover"
-              alt={currentMedia?.alt || game?.name || "Game"}
-            />
-          )}
+          <img
+            src={bannerImage}
+            className="w-full h-full object-cover"
+            alt={game?.name || "Game"}
+          />
           <div
             className={`absolute inset-0 bg-gradient-to-b ${
               isDarkTheme
@@ -398,38 +397,17 @@ export default function GameDetailPage({
                 <MapPin size={18} className="text-[#ffd84f]" />
                 <span>Zone B-0{gameIndex + 1}</span>
               </div>
-              <div className="flex items-center gap-2">
-                <Users size={18} className="text-[#ffd84f]" />
-                <span>{game?.capacity || "Unlimited"} Players</span>
-              </div>
+
               <div className="flex items-center gap-2">
                 <Clock size={18} className="text-[#ffd84f]" />
                 <span>15-20 min</span>
               </div>
-              <div className="flex items-center gap-2">
-                <Ticket size={18} className="text-[#ffd84f]" />
-                <span>From {game?.ticket_types?.[0]?.price || "0"} ETB</span>
-              </div>
+
             </div>
           </motion.div>
         </div>
 
-        {/* Media Navigation */}
-        <div className="absolute bottom-8 right-8 z-20 flex items-center gap-3">
-          <button
-            onClick={() => navigateMedia("prev")}
-            className="w-12 h-12 bg-white/70 backdrop-blur-md border border-white/50 text-gray-700 rounded-2xl flex items-center justify-center hover:bg-white/90 transition-all shadow-sm"
-          >
-            <ChevronLeft size={20} />
-          </button>
-          <button
-            onClick={() => navigateMedia("next")}
-            className="w-12 h-12 bg-white/70 backdrop-blur-md border border-white/50 text-gray-700 rounded-2xl flex items-center justify-center hover:bg-white/90 transition-all shadow-sm"
-          >
-            <ChevronRight size={20} />
-          </button>
-        </div>
-      </section>
+        </section>
 
       {/* Media Gallery */}
       <section className={`py-20 px-6 md:px-12 ${isDarkTheme ? "" : ""}`}>

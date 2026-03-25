@@ -92,10 +92,12 @@ export default function GamesListingPage() {
 
   const handlePreviousPage = () => {
     setCurrentPage((prev) => Math.max(1, prev - 1));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleNextPage = () => {
     setCurrentPage((prev) => Math.min(totalPages, prev + 1));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   if (loading)
@@ -135,7 +137,7 @@ export default function GamesListingPage() {
       </div>
 
       {/* Hero – crisp and minimal */}
-      <section className="relative pt-24 pb-12 px-6 text-center">
+      <section className="relative pt-10 md:p-24 md:pb-12 px-6 text-center">
         <motion.div
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
