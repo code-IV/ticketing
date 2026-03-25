@@ -32,7 +32,9 @@ export default function GameDetailsPage() {
   const fetchGame = async () => {
     try {
       const response = await gameService.getGame(id!);
-      const data = response.data || {};
+      console.log('API Response:', response);
+      const data = response.data?.data || response.data || {};
+      console.log('Game data:', data);
       setFormData(data);
       setSavedData(data);
     } catch (error) {
@@ -74,16 +76,64 @@ export default function GameDetailsPage() {
     setShowModal(true);
   };
 
-  // 2. Handle Update
+  // Helper function to compare objects deeply
+const compareObjects = (obj1: any, obj2: any, path = '') => {
+  const differences: any[] = [];
+  
+  Object.keys(obj1).forEach(key => {
+    const currentPath = path ? `${path}.${key}` : key;
+    const val1 = obj1[key];
+    const val2 = obj2[key];
+    
+    if (val1 === undefined && val2 !== undefined) {
+      differences.push(`Missing in sent: ${currentPath} (received: ${JSON.stringify(val2)})`);
+    } else if (val1 !== undefined && val2 === undefined) {
+      differences.push(`Missing in received: ${currentPath} (sent: ${JSON.stringify(val1)})`);
+    } else if (typeof val1 === 'object' && typeof val2 === 'object' && val1 !== null && val2 !== null) {
+      differences.push(...compareObjects(val1, val2, currentPath));
+    } else if (val1 !== val2) {
+      differences.push(`Different values: ${currentPath} (sent: ${JSON.stringify(val1)}, received: ${JSON.stringify(val2)})`);
+    }
+  });
+  
+  return differences;
+};
+
+// 2. Handle Update
   const handleUpdate = async () => {
     setIsUpdating(true);
     try {
-      console.log(diff);
-      await gameService.updateGame(id!, diff);
+      console.log('=== DATA COMPARISON ===');
+      console.log('Current form data:', formData);
+      console.log('Saved data:', savedData);
+      console.log('Changes to send (diff):', diff);
+      console.log('=======================');
+      
+      const response = await gameService.updateGame(id!, diff);
+      console.log('Update response:', response);
+      
+      // After update, fetch fresh data to compare
+      const freshResponse = await gameService.getGame(id!);
+      const freshData = freshResponse.data?.data || freshResponse.data || {};
+      console.log('Fresh data from server after update:', freshData);
+      
+      // Compare sent data with received data
+      console.log('=== COMPARING SENT vs RECEIVED ===');
+      const differences = compareObjects(formData, freshData);
+      if (differences.length > 0) {
+        console.log('DIFFERENCES FOUND:');
+        differences.forEach(diff => console.log('  -', diff));
+      } else {
+        console.log('✅ Data is identical!');
+      }
+      console.log('===================================');
+      
       setSavedData(formData);
       setShowModal(false);
+      alert("Game updated successfully!");
     } catch (error) {
-      alert("Update failed");
+      console.error("Update failed:", error);
+      alert("Update failed. Please try again.");
     } finally {
       setIsUpdating(false);
     }

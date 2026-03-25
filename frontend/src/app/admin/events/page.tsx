@@ -3,7 +3,6 @@ import React, { useState } from "react";
 import {
   Plus,
   Search,
-  Trash2,
   Activity,
   AlertTriangle,
   BarChart3,
@@ -36,11 +35,13 @@ const EventsManagementPage = () => {
     active: {
       bg: isDark ? "bg-green-900/50" : "bg-green-50",
       text: isDark ? "text-green-400" : "text-green-700",
+      border: "border-accent",
       label: "ACTIVE",
     },
     inactive: {
       bg: isDark ? "bg-red-900/50" : "bg-red-50",
       text: isDark ? "text-red-400" : "text-red-700",
+      border: "border-red-400",
       label: "INACTIVE",
     },
   });
@@ -64,7 +65,7 @@ const EventsManagementPage = () => {
         </div>
         <button
           onClick={() => setIsDrawerOpen(true)}
-          className={`flex items-center justify-center gap-2 ${isDarkTheme ? "bg-indigo-600" : "bg-gray-800"} hover:bg-indigo-700 text-white px-6 py-3 rounded-2xl font-bold transition-all active:scale-95`}
+          className={`flex items-center justify-center gap-2 bg-accent2 hover:bg-accent2/90 text-black px-6 py-3 rounded-2xl font-bold transition-all active:scale-95`}
         >
           <Plus size={20} />
           <span>Add New Event</span>
@@ -113,7 +114,7 @@ const EventsManagementPage = () => {
         <div className="flex items-end">
           <Link
             href="/admin/analitics/events"
-            className={`group flex items-center gap-3 px-6 py-4 rounded-2xl border transition-all ${isDarkTheme ? "bg-gradient-to-r from-indigo-600 to-purple-600" : "bg-gradient-to-r from-blue-500 to-purple-500"} text-white font-bold shadow-lg`}
+            className={`group flex items-center gap-3 px-6 py-4 rounded-2xl border transition-all bg-accent2 hover:bg-accent2/90 text-black font-bold shadow-lg`}
           >
             <BarChart3 className="w-5 h-5" />
             <span>View Analytics</span>
@@ -134,7 +135,7 @@ const EventsManagementPage = () => {
           <input
             type="text"
             placeholder="Search events..."
-            className={`w-full pl-12 pr-4 py-3 border-none rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-medium ${isDarkTheme ? "bg-bg3 text-white" : "bg-slate-50"}`}
+            className={`w-full pl-12 pr-4 py-3 border-none rounded-xl focus:ring-2 focus:ring-accent outline-none font-medium ${isDarkTheme ? "bg-bg3 text-white" : "bg-slate-50 text-slate-900"}`}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -142,7 +143,7 @@ const EventsManagementPage = () => {
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          className={`px-4 py-3 border-none rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-medium min-w-40 ${isDarkTheme ? "bg-bg3 text-white" : "bg-slate-50"}`}
+          className={`px-4 py-3 border-none rounded-xl focus:ring-2 focus:ring-accent outline-none font-medium min-w-40 ${isDarkTheme ? "bg-bg3 text-white" : "bg-slate-50"}`}
         >
           <option value="ALL">All Status</option>
           <option value="ACTIVE">Active</option>
@@ -164,7 +165,7 @@ const EventsManagementPage = () => {
               <div
                 key={event.id}
                 onClick={() => router.push(`/admin/events/${event.id}`)}
-                className={`group relative rounded-3xl border shadow-lg hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 overflow-hidden cursor-pointer ${isDarkTheme ? "bg-gradient-to-br from-[#0A0A0A] to-[#1a1a1a] border-gray-700" : "bg-gradient-to-br from-white to-gray-50 border-slate-200"}`}
+                className={`group relative rounded-3xl border shadow-lg hover:shadow-2xl hover:-translate-y-2 hover:border-accent/50 transition-all duration-500 overflow-hidden cursor-pointer ${isDarkTheme ? "bg-gradient-to-br from-[#0A0A0A] to-[#1a1a1a] border-gray-700" : "bg-gradient-to-br from-white to-gray-50 border-slate-200"}`}
               >
                 <div className="relative p-8">
                   <div className="flex justify-between items-start mb-6">
@@ -178,13 +179,13 @@ const EventsManagementPage = () => {
                       <select
                         value={event.isActive ? "ACTIVE" : "INACTIVE"}
                         onClick={(e) => e.stopPropagation()}
-                        onChange={(e) =>
-                          handleStatusChange(
-                            event.id,
-                            e.target.value === "ACTIVE",
-                          )
-                        }
-                        className="text-[10px] font-bold uppercase px-3 py-1.5 rounded-full bg-gray-800 text-white border-gray-600"
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          const newStatus = e.target.value === "ACTIVE";
+                          console.log('Changing status for event', event.id, 'to', newStatus);
+                          handleStatusChange(event.id, newStatus);
+                        }}
+                        className="text-[10px] font-bold uppercase px-3 py-1.5 rounded-full bg-gray-800 text-white border border-accent"
                       >
                         <option value="ACTIVE">ACTIVE</option>
                         <option value="INACTIVE">INACTIVE</option>
@@ -201,7 +202,7 @@ const EventsManagementPage = () => {
                   >
                     <Link
                       href={`/admin/analitics/events/${event.id}`}
-                      className="px-6 py-3 rounded-2xl font-bold text-sm bg-indigo-500 text-white"
+                      className="px-6 py-3 rounded-2xl font-bold text-sm bg-accent2 hover:bg-accent2/90 text-black"
                       onClick={(e) => e.stopPropagation()}
                     >
                       View Statistics

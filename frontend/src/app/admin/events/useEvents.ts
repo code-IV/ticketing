@@ -43,14 +43,17 @@ export const useEvents = () => {
 
   const handleStatusChange = async (eventId: string, newStatus: boolean) => {
     try {
+      console.log('Updating event status:', eventId, newStatus);
       await adminService.updateEvent(eventId, { isActive: newStatus });
       setEvents((prev) =>
         prev.map((event) =>
           event.id === eventId ? { ...event, isActive: newStatus } : event,
         ),
       );
+      console.log('Event status updated successfully');
     } catch (error) {
       console.error("Failed to update event status:", error);
+      alert('Failed to update event status. Please try again.');
     }
   };
 
