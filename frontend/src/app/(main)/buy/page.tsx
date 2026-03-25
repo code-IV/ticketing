@@ -22,38 +22,8 @@ import { bookingService } from "@/services/bookingService";
 import { guestCookieUtils } from "@/utils/cookies";
 import SuccessModal from "@/components/ui/SuccessModal";
 
-const gameVisuals = [
-  {
-    emoji: "🎢",
-    image:
-      "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600&h=800&fit=crop",
-  },
-  {
-    emoji: "🎡",
-    image:
-      "https://images.unsplash.com/photo-1563298723-dcfebaa392e3?w=600&h=800&fit=crop",
-  },
-  {
-    emoji: "🚗",
-    image:
-      "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=600&h=800&fit=crop",
-  },
-  {
-    emoji: "👻",
-    image:
-      "https://images.unsplash.com/photo-1509557965875-b88c97052f0e?w=600&h=800&fit=crop",
-  },
-  {
-    emoji: "🎠",
-    image:
-      "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=600&h=800&fit=crop",
-  },
-  {
-    emoji: "🎯",
-    image:
-      "https://images.unsplash.com/photo-1533560904424-a0c61dc306fc?w=600&h=800&fit=crop",
-  },
-];
+const MOCK_IMG =
+  "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600&h=800&fit=crop";
 
 const BuyTicketsPage = () => {
   const router = useRouter();
@@ -297,7 +267,6 @@ const BuyTicketsPage = () => {
                   {games?.map((game, index) => {
                     const isOpen = openGameId === game.id;
                     const hasItems = !!cart[game.id];
-                    const visual = gameVisuals[index % gameVisuals.length];
                     const lowestPrice = game.ticketTypes?.length
                       ? Math.min(...game.ticketTypes.map((t) => t.price))
                       : 0;
@@ -324,11 +293,36 @@ const BuyTicketsPage = () => {
                         }}
                       >
                         <div className="absolute inset-0 h-full w-full">
-                          <img
-                            src={visual.image}
-                            alt={game.name}
-                            className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
-                          />
+                          {/* Background Image */}
+                          {game.gallery && game.gallery.length > 0 ? (
+                            <>
+                              {game.gallery[0].type.startsWith("image") ? (
+                                <img
+                                  src={game.gallery[0].url}
+                                  alt={game.name}
+                                  crossOrigin="anonymous"
+                                  className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
+                                />
+                              ) : game.gallery[0].type.startsWith("video") ? (
+                                <video
+                                  src={game.gallery[0].url}
+                                  crossOrigin="anonymous"
+                                  autoPlay
+                                  muted
+                                  loop
+                                  playsInline
+                                  className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
+                                />
+                              ) : null}
+                            </>
+                          ) : (
+                            <img
+                              src={MOCK_IMG}
+                              alt="Placeholder"
+                              className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
+                            />
+                          )}
+
                           <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
                         </div>
 
