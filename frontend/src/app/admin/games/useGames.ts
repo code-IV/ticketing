@@ -16,7 +16,7 @@ export const useGames = () => {
     setError(null);
     try {
       const response = await gameService.getAll();
-      setGames(response.data || []);
+      setGames(response.data?.games || []);
     } catch (error) {
       console.error("Failed to load games:", error);
       setError("Failed to load games. Please try again.");
@@ -25,16 +25,18 @@ export const useGames = () => {
     }
   };
 
-  useEffect(() => { loadGames(); }, []);
+  useEffect(() => {
+    loadGames();
+  }, []);
 
   const filteredGamesMemo = useMemo(() => {
     let filtered = games;
     if (statusFilter !== "ALL") {
-      filtered = filtered.filter(game => game.status === statusFilter);
+      filtered = filtered.filter((game) => game.status === statusFilter);
     }
     if (searchQuery.trim()) {
-      filtered = filtered.filter(game => 
-        game.name.toLowerCase().includes(searchQuery.toLowerCase())
+      filtered = filtered.filter((game) =>
+        game.name.toLowerCase().includes(searchQuery.toLowerCase()),
       );
     }
     return filtered;
@@ -43,26 +45,37 @@ export const useGames = () => {
   const handleStatusChange = async (gameId: string, newStatus: string) => {
     try {
       await gameService.updateGame(gameId, { status: newStatus as any });
-      setGames(prev => prev.map(g => g.id === gameId ? { ...g, status: newStatus as any } : g));
+      setGames((prev) =>
+        prev.map((g) =>
+          g.id === gameId ? { ...g, status: newStatus as any } : g,
+        ),
+      );
     } catch (error) {
       console.error("Failed to update game status:", error);
     }
   };
 
   const handleDelete = async (gameId: string) => {
-    if (!confirm('Are you sure you want to delete this game?')) return;
+    if (!confirm("Are you sure you want to delete this game?")) return;
     try {
       await gameService.deleteGame(gameId);
-      setGames(prevGames => prevGames.filter(game => game.id !== gameId));
+      setGames((prevGames) => prevGames.filter((game) => game.id !== gameId));
     } catch (error) {
       console.error("Failed to delete game:", error);
     }
   };
 
   return {
-    games, filteredGames: filteredGamesMemo, loading, error,
-    searchQuery, setSearchQuery,
-    statusFilter, setStatusFilter,
-    handleStatusChange, handleDelete, refresh: loadGames
+    games,
+    filteredGames: filteredGamesMemo,
+    loading,
+    error,
+    searchQuery,
+    setSearchQuery,
+    statusFilter,
+    setStatusFilter,
+    handleStatusChange,
+    handleDelete,
+    refresh: loadGames,
   };
 };

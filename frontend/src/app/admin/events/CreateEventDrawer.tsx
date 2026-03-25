@@ -195,7 +195,6 @@ const CreateEventDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
           data.append("label", m.label);
           data.append("thumbnail", m.thumbnail || null);
         });
-        console.log(data);
         await adminService.uploadProductMedia(newProductId, data);
       }
 

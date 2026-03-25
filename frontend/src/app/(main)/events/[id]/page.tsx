@@ -354,7 +354,7 @@ export default function EventDetailPage({
       </div>
     );
 
-  const isSoldOut = event.capacity - event.tickets_sold <= 0;
+  const isSoldOut = event.capacity - event.ticketsSold <= 0;
 
   return (
     <div
@@ -468,7 +468,7 @@ export default function EventDetailPage({
           >
             <div className="flex items-center gap-3 mb-6">
               <div className="bg-[#ffd84f] text-gray-900 px-4 py-2 rounded-full shadow-md font-black text-[10px] uppercase tracking-widest">
-                {event.tickets_sold >= event.capacity ? "SOLD OUT" : "ON SALE"}
+                {event.ticketsSold >= event.capacity ? "SOLD OUT" : "ON SALE"}
               </div>
               <div className="flex items-center gap-1 text-yellow-500">
                 {[...Array(5)].map((_, i) => (

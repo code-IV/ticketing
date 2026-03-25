@@ -35,7 +35,7 @@ export default function GamesListingPage() {
         const response = await gameService.getAll();
         if (response.success && response.data) {
           // Map database response to match Game interface
-          let mappedGames = response.data.map((game: any) => ({
+          let mappedGames = response.data?.games.map((game: any) => ({
             ...game,
             category: game.category || "Adventure", // Default category if not present
             capacity: game.capacity || 10, // Default capacity if not present
@@ -305,7 +305,7 @@ export default function GamesListingPage() {
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      router.push(`/buy?id=${game.id}`);
+                      router.push(`/buy#game-visual-${game.id}`);
                     }}
                     className="flex-[1.5] py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-lg flex items-center justify-center gap-2"
                     style={{ backgroundColor: "#ffd84f", color: "#000" }}

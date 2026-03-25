@@ -147,7 +147,7 @@ export default function EventsPage() {
       <main className="max-w-7xl  mx-auto px-4 ">
         <div className="flex flex-col gap-8 md:gap-7">
           {events.map((event, i) => {
-            const soldOut = event.tickets_sold >= event.capacity;
+            const soldOut = event.ticketsSold >= event.capacity;
 
             return (
               <motion.div
@@ -164,7 +164,7 @@ export default function EventsPage() {
                   <div className="absolute top-4 left-4">
                     <div className="bg-black/80 backdrop-blur-md p-3 rounded-2xl border border-white/10">
                       <p className="text-[10px] font-black text-[#ffd84f] uppercase tracking-widest leading-none mb-1">Stock</p>
-                      <p className="text-xl font-black text-white">{Math.max(0, event.capacity - event.tickets_sold)}</p>
+                      <p className="text-xl font-black text-white">{Math.max(0, event.capacity - event.ticketsSold)}</p>
                     </div>
                   </div>
                 </div>
@@ -178,12 +178,12 @@ export default function EventsPage() {
                     <div className="flex items-center gap-2">
                       <div className="flex flex-col">
                         <span className="text-[10px] font-black text-[#ffd84f] uppercase tracking-widest">Date</span>
-                        <span className="text-xl font-black uppercase tracking-tighter">{format(new Date(event.event_date), 'MMM dd')}</span>
+                        <span className="text-xl font-black uppercase tracking-tighter">{format(new Date(event.eventDate), 'MMM dd')}</span>
                       </div>
                       <div className={`w-px h-8 ${isDarkTheme ? 'bg-gray-700' : 'bg-gray-200'}`} />
                       <div className="flex flex-col">
                         <span className="text-[10px] font-black text-[#ffd84f] uppercase tracking-widest">Starts</span>
-                        <span className="text-xl font-black tracking-tighter">{event.start_time.replace(':00', '')}</span>
+                        <span className="text-xl font-black tracking-tighter">{event.startTime.replace(':00', '')}</span>
                       </div>
                     </div>
                     <Link href={`/events/${event.id}`}>

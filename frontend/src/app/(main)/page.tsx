@@ -10,6 +10,7 @@ import {
   Play,
   ArrowDownRight,
 } from "lucide-react";
+import { MOCK_IMG } from "@/data/image";
 import { gameService } from "@/services/adminService";
 import { eventService } from "@/services/eventService";
 import { Event, Game } from "@/types";
@@ -51,7 +52,7 @@ export default function Home() {
       eventService.getActiveEvents(1, 6),
     ])
       .then(([gamesRes, eventsRes]) => {
-        setFeaturedGames(gamesRes.data?.slice(0, 3) || []);
+        setFeaturedGames(gamesRes.data?.games.slice(0, 3) || []);
         setEvents(eventsRes.data.events || []);
       })
       .catch(console.log);
@@ -219,11 +220,34 @@ export default function Home() {
                   transition={{ duration: 0.4 }}
                   className="group relative rounded-3xl overflow-hidden aspect-3/4 cursor-pointer w-[calc(100vw-100px)] max-w-96 sm:w-[385Px] lg:w-96   mx-auto sm:mx-0 shrink-0 hover:border hover:border-accent2"
                 >
-                  <img
-                    src={`https://images.unsplash.com/${i === 0 ? "photo-1544717297-fa95b6ee9643" : i === 1 ? "photo-1492688798571-9dddf4574e88" : "photo-1464207687429-7505649dae38"}?w=600&h=800&fit=crop&auto=format&q=80`}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                    alt={event.name}
-                  />
+                  {event.gallery && event.gallery.length > 0 ? (
+                    <>
+                      {event.gallery[0].type.startsWith("image") ? (
+                        <img
+                          src={event.gallery[0].url}
+                          alt={event.name}
+                          crossOrigin="anonymous"
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                        />
+                      ) : event.gallery[0].type.startsWith("video") ? (
+                        <video
+                          src={event.gallery[0].url}
+                          crossOrigin="anonymous"
+                          autoPlay
+                          muted
+                          loop
+                          playsInline
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                        />
+                      ) : null}
+                    </>
+                  ) : (
+                    <img
+                      src={MOCK_IMG}
+                      alt="Placeholder"
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 blur-md blur-md animate-pulse"
+                    />
+                  )}
                   <div
                     className={`absolute inset-0 bg-gradient-to-t ${isDarkTheme ? "from-black" : "from-gray-800"} via-transparent to-transparent`}
                   />
@@ -234,7 +258,7 @@ export default function Home() {
                   </div>
 
                   {/* Sold out overlay */}
-                  {!event.is_active && (
+                  {!event.isActive && (
                     <div className="absolute inset-0 bg-black/70 flex items-center justify-center backdrop-blur-sm">
                       <span className="px-6 py-2 bg-red-500 text-white font-black text-xs uppercase tracking-widest rounded-full -rotate-3">
                         Sold Out
@@ -255,7 +279,7 @@ export default function Home() {
                       >
                         From{" "}
                         <span className="text-xl font-black text-white">
-                          {event.ticket_types?.find(
+                          {event.ticketTypes?.find(
                             (t) => t.category === "ADULT",
                           )?.price ?? 0}
                         </span>{" "}
@@ -263,9 +287,9 @@ export default function Home() {
                       </p>
                       <Link href={`/buy?event=${event.id}`}>
                         <button
-                          disabled={!event.is_active}
+                          disabled={!event.isActive}
                           className={`bg-[#FFD84D] text-black font-black text-xs px-5 py-2.5 rounded-full hover:bg-white transition-colors ${
-                            !event.is_active
+                            !event.isActive
                               ? "opacity-50 cursor-not-allowed"
                               : ""
                           }`}
@@ -337,11 +361,35 @@ export default function Home() {
                              w-[calc(100vw-70px)] max-w-96  lg:w-96 
                              mx-auto sm:mx-0 shrink-0 hover:border hover:border-accent2"
                 >
-                  <img
-                    src={`https://images.unsplash.com/${featuredGames.indexOf(game) === 0 ? "photo-1571003123894-1f0594d2b5d9" : featuredGames.indexOf(game) === 1 ? "photo-1632970471392-b864fa5b0856" : "photo-1591014617869-55d3b8d9f9c0"}?w=600&h=800&fit=crop&auto=format&q=80`}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                    alt={game.name}
-                  />
+                  {/* Background Image */}
+                  {game.gallery && game.gallery.length > 0 ? (
+                    <>
+                      {game.gallery[0].type.startsWith("image") ? (
+                        <img
+                          src={game.gallery[0].url}
+                          alt={game.name}
+                          crossOrigin="anonymous"
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                        />
+                      ) : game.gallery[0].type.startsWith("video") ? (
+                        <video
+                          src={game.gallery[0].url}
+                          crossOrigin="anonymous"
+                          autoPlay
+                          muted
+                          loop
+                          playsInline
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                        />
+                      ) : null}
+                    </>
+                  ) : (
+                    <img
+                      src={MOCK_IMG}
+                      alt="Placeholder"
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 blur-md animate-pulse"
+                    />
+                  )}
                   <div
                     className={`absolute inset-0 bg-gradient-to-t ${
                       isDarkTheme ? "from-black" : "from-gray-800"
@@ -366,9 +414,8 @@ export default function Home() {
                       >
                         From{" "}
                         <span className="text-xl font-black text-white">
-                          {game.ticket_types?.find(
-                            (t) => t.category === "ADULT",
-                          )?.price ?? "—"}
+                          {game.ticketTypes?.find((t) => t.category === "ADULT")
+                            ?.price ?? "—"}
                         </span>{" "}
                         ETB
                       </p>

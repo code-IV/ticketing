@@ -129,7 +129,7 @@ const Event = {
                               END,
             'name', m.name
           )
-        ) FILTER (WHERE m.id IS NOT NULL), 
+        ) FILTER (WHERE m.id IS NOT NULL AND m.label = 'poster'), 
         '[]'
       ) AS gallery
     FROM events e
@@ -183,7 +183,7 @@ const Event = {
         )
         FROM media m
         JOIN products_media pm ON pm.media_id = m.id
-        WHERE pm.product_id = p.id
+        WHERE pm.product_id = p.id and m.label = 'poster'
       ) AS gallery,
       -- Calculations
       COALESCE(SUM(bi.quantity), 0) AS total_sold,
@@ -194,7 +194,7 @@ const Event = {
     LEFT JOIN booking_items bi ON bi.ticket_type_id = tt.id
     LEFT JOIN bookings b ON bi.booking_id = b.id AND b.status = 'CONFIRMED'
     GROUP BY e.id, p.id
-    ORDER BY e.event_date DESC
+    ORDER BY e.event_date ASC
     LIMIT $1 OFFSET $2;
   `;
 

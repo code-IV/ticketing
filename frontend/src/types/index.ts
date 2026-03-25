@@ -22,8 +22,8 @@ export interface Game {
   category?: string;
   capacity?: number;
   gallery?: MediaItem[];
-  created_at: string;
-  updated_at: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface MediaItem {
@@ -47,19 +47,15 @@ export interface Event {
   id: string;
   name: string;
   description?: string;
-  event_date: string; // API uses snake_case
-  start_time: string; // API uses snake_case  
-  end_time: string; // API uses snake_case
+  eventDate: string;
+  startTime: string;
+  endTime: string;
   capacity: number;
-  tickets_sold: number;
-  is_active: boolean;
-  created_by?: string;
-  created_at: string;
-  updated_at: string;
-  ticket_types?: TicketType[];
+  ticketsSold: number;
+  availableTickets?: number;
+  isActive: boolean;
+  ticketTypes?: TicketType[];
   gallery?: MediaItem[];
-  valid_days?: number;
-  product_id?: string;
 }
 
 export interface TicketType {
@@ -142,7 +138,7 @@ export interface GameTicketDetail {
     description: string;
     rules: string;
   };
-  ticket_type: {
+  ticketType: {
     name: string;
     category: string;
     price: number;

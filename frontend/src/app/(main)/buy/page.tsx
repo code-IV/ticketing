@@ -13,6 +13,7 @@ import {
   MapPin,
   ChevronDown,
 } from "lucide-react";
+import { MOCK_IMG } from "@/data/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { Game } from "@/types";
 import { gameService } from "@/services/adminService";
@@ -70,13 +71,25 @@ const BuyTicketsPage = () => {
     setLoading(true);
     try {
       const response = await gameService.getActiveGames();
-      setGames(response.data || []);
+      setGames(response.data?.games || []);
     } catch (error) {
       setError("Failed to load Games.");
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (games.length > 0 && window.location.hash) {
+      const id = window.location.hash.replace("#", "");
+      const element = document.getElementById(id);
+      if (element) {
+        setTimeout(() => {
+          element.scrollIntoView({ behavior: "smooth" });
+        }, 100); // Small delay to let Framer Motion settle
+      }
+    }
+  }, [games]);
 
   const updateQuantity = (gameId: string, category: string, delta: number) => {
     setCart((prev) => {
@@ -258,7 +271,7 @@ const BuyTicketsPage = () => {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <AnimatePresence>
-                  {games.map((game, index) => {
+                  {games?.map((game, index) => {
                     const isOpen = openGameId === game.id;
                     const hasItems = !!cart[game.id];
                     const posterImage = getPosterImage(game);
@@ -271,6 +284,7 @@ const BuyTicketsPage = () => {
                         key={game.id}
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
+                        id={`game-visual-${game.id}`}
                         className={`group relative min-h-[400px] rounded-[40px] overflow-hidden border-2 transition-all cursor-pointer ${
                           hasItems
                             ? " ring-4 ring-indigo-50"

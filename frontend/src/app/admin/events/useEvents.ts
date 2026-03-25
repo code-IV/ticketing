@@ -22,18 +22,20 @@ export const useEvents = () => {
     }
   };
 
-  useEffect(() => { loadEvents(); }, []);
+  useEffect(() => {
+    loadEvents();
+  }, []);
 
   const filteredEvents = useMemo(() => {
     let filtered = events;
     if (statusFilter !== "ALL") {
-      filtered = filtered.filter((event) => 
-        statusFilter === "ACTIVE" ? event.is_active : !event.is_active
+      filtered = filtered.filter((event) =>
+        statusFilter === "ACTIVE" ? event.isActive : !event.isActive,
       );
     }
     if (searchQuery.trim()) {
       filtered = filtered.filter((event) =>
-        event.name.toLowerCase().includes(searchQuery.toLowerCase())
+        event.name.toLowerCase().includes(searchQuery.toLowerCase()),
       );
     }
     return filtered;
@@ -43,7 +45,9 @@ export const useEvents = () => {
     try {
       await adminService.updateEvent(eventId, { isActive: newStatus });
       setEvents((prev) =>
-        prev.map((event) => (event.id === eventId ? { ...event, is_active: newStatus } : event))
+        prev.map((event) =>
+          event.id === eventId ? { ...event, isActive: newStatus } : event,
+        ),
       );
     } catch (error) {
       console.error("Failed to update event status:", error);

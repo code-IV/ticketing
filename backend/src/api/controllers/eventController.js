@@ -270,6 +270,7 @@ const EventController = {
       const limit = parseInt(req.query.limit, 10) || 20;
 
       const result = await EventService.findAllActive({ page, limit });
+
       return apiResponse(res, 200, true, "Events retrieved.", result);
     } catch (err) {
       next(err);

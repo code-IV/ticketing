@@ -67,7 +67,7 @@ export default function EditEventPage() {
         description: eventData.event.description || "",
         schedule: eventData.event?.schedule,
         capacity: eventData.event.capacity?.toString(),
-        isActive: eventData.event.is_active,
+        isActive: eventData.event.isActive,
       });
 
       if (eventData.ticketTypes && eventData.ticketTypes.length > 0) {
