@@ -5,7 +5,6 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Game } from "@/types";
 import { gameService } from "@/services/adminService";
 import {
-  MapPin,
   ArrowUpRight,
   Zap,
   ChevronLeft,
@@ -14,7 +13,6 @@ import {
   X,
 } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
-import { adminService } from "@/services/adminService";
 
 const gameVisuals = [
   "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80",
@@ -230,7 +228,7 @@ export default function GamesListingPage() {
                   From
                 </span>
                 <span className="text-sm font-black italic text-black">
-                  {game.ticketTypes?.[0]?.price ?? "0"}
+                  {game.ticket_types?.[0]?.price ?? "0"}
                 </span>
               </div>
 

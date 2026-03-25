@@ -18,11 +18,21 @@ export interface Game {
   description: string;
   rules: string;
   status: "OPEN" | "ON_MAINTENANCE" | "UPCOMING" | "CLOSED";
-  ticketTypes?: TicketType[];
+  ticket_types?: TicketType[];
   category?: string;
   capacity?: number;
   created_at: string;
   updated_at: string;
+}
+
+export interface MediaItem {
+  id: string;
+  name: string;
+  url: string;
+  type: string;
+  label: string;
+  thumbnailUrl?: string;
+  sort_order?: number; // Keep as sort_order to match backend
 }
 
 export interface CreateGame {
@@ -36,22 +46,19 @@ export interface Event {
   id: string;
   name: string;
   description?: string;
-  schedule: {
-    eventDate: string;
-    startTime: string;
-    endTime: string;
-  };
+  event_date: string; // API uses snake_case
+  start_time: string; // API uses snake_case  
+  end_time: string; // API uses snake_case
   capacity: number;
   tickets_sold: number;
-  available_tickets?: number;
   is_active: boolean;
   created_by?: string;
   created_at: string;
   updated_at: string;
-  ticketTypes?: TicketType[];
-  location?: string;
-  image_url?: string;
-  video_url?: string;
+  ticket_types?: TicketType[];
+  gallery?: MediaItem[];
+  valid_days?: number;
+  product_id?: string;
 }
 
 export interface TicketType {

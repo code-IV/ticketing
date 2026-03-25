@@ -4,10 +4,8 @@ const {
   GameController,
   GameStatsController,
 } = require("../api/controllers/gamesController");
-const { isAuthenticated } = require("../middleware/auth");
 const { uuidParamRule, handleValidation } = require("../middleware/validate");
 
-router.use(isAuthenticated);
 
 router.get("/", handleValidation, GameController.getAllGames);
 router.get("/buy", handleValidation, GameController.getActiveGames);

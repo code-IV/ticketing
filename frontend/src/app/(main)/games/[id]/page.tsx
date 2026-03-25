@@ -78,7 +78,6 @@ export default function GameDetailPage({
   const [error, setError] = useState("");
   const [selectedMediaIndex, setSelectedMediaIndex] = useState(0);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
-  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
   const [showToast, setShowToast] = useState(false);
 
   useEffect(() => {
@@ -409,7 +408,7 @@ export default function GameDetailPage({
               </div>
               <div className="flex items-center gap-2">
                 <Ticket size={18} className="text-[#ffd84f]" />
-                <span>From {game?.ticketTypes?.[0]?.price || "0"} ETB</span>
+                <span>From {game?.ticket_types?.[0]?.price || "0"} ETB</span>
               </div>
             </div>
           </motion.div>
@@ -671,7 +670,7 @@ export default function GameDetailPage({
                 </div>
 
                 <div className="space-y-4 mb-8">
-                  {game?.ticketTypes?.map((ticket) => (
+                  {game?.ticket_types?.map((ticket) => (
                     <div
                       key={ticket.id}
                       className={`backdrop-blur-sm border rounded-2xl p-4 ${
