@@ -1,6 +1,6 @@
 "use client";
 import React, { useState } from "react";
-import { X, Plus, ImageIcon, Video } from "lucide-react";
+import { X, Plus, ImageIcon, Video, Calendar, Clock, Users, Tag, ChevronRight, Trash2 } from "lucide-react";
 import { adminService } from "@/services/adminService";
 import { CreateTicketTypeRequest } from "@/types";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -29,9 +29,17 @@ interface Props {
   onSuccess: () => void;
 }
 
+const CATEGORY_COLORS: Record<string, string> = {
+  ADULT:   "bg-accent/10 text-accent ring-1 ring-accent/20",
+  CHILD:   "bg-accent/10 text-accent ring-1 ring-accent/20",
+  SENIOR:  "bg-accent/10 text-accent ring-1 ring-accent/20",
+  STUDENT: "bg-accent/10 text-accent ring-1 ring-accent/20",
+  GROUP:   "bg-accent/10 text-accent ring-1 ring-accent/20",
+};
+
 const CreateEventDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
   const { isDarkTheme } = useTheme();
-  const [loading, setLoading] = useState(false); // FIXED: Added loading state
+  const [loading, setLoading] = useState(false);
   const [labelModalOpen, setLabelModalOpen] = useState(false);
   const [pendingFile, setPendingFile] = useState<any>(null);
 
@@ -54,20 +62,13 @@ const CreateEventDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
     maxQuantityPerBooking: 10,
   });
 
-  const getPosterCount = () =>
-    formData.mediaFiles.filter(
-      (m) => m.type === "IMAGE" && m.label === "poster",
-    ).length;
-  const getBannerCount = () =>
-    formData.mediaFiles.filter(
-      (m) => m.type === "IMAGE" && m.label === "banner",
-    ).length;
-  const getVideoCount = () =>
-    formData.mediaFiles.filter((m) => m.type === "VIDEO").length;
-  const hasPosterSlot = () => getPosterCount() < 3;
-  const hasBannerSlot = () => getBannerCount() < 3;
-  const hasVideoSlot = () => getVideoCount() < 3;
-  const isGalleryOnly = () => !hasPosterSlot() && !hasBannerSlot();
+  const getPosterCount = () => formData.mediaFiles.filter((m) => m.type === "IMAGE" && m.label === "poster").length;
+  const getBannerCount = () => formData.mediaFiles.filter((m) => m.type === "IMAGE" && m.label === "banner").length;
+  const getVideoCount  = () => formData.mediaFiles.filter((m) => m.type === "VIDEO").length;
+  const hasPosterSlot  = () => getPosterCount() < 3;
+  const hasBannerSlot  = () => getBannerCount() < 3;
+  const hasVideoSlot   = () => getVideoCount()  < 3;
+  const isGalleryOnly  = () => !hasPosterSlot() && !hasBannerSlot();
 
   const getAvailableImageLabels = (): ("banner" | "poster" | "gallery")[] => {
     const labels: ("banner" | "poster" | "gallery")[] = [];
@@ -77,22 +78,13 @@ const CreateEventDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
     return labels;
   };
 
-  const handleMediaUpload = async (
-    e: React.ChangeEvent<HTMLInputElement>,
-    type: "IMAGE" | "VIDEO",
-  ) => {
+  const handleMediaUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: "IMAGE" | "VIDEO") => {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    const preview =
-      type === "IMAGE" ? await getTinyPreview(file) : URL.createObjectURL(file);
+    const preview = type === "IMAGE" ? await getTinyPreview(file) : URL.createObjectURL(file);
     const newMedia = { file, type, name: "", url: "", provider: "", preview };
-
     if (isGalleryOnly()) {
-      setFormData((p) => ({
-        ...p,
-        mediaFiles: [...p.mediaFiles, { ...newMedia, label: "gallery" }],
-      }));
+      setFormData((p) => ({ ...p, mediaFiles: [...p.mediaFiles, { ...newMedia, label: "gallery" }] }));
     } else {
       setPendingFile(newMedia);
       setLabelModalOpen(true);
@@ -101,34 +93,25 @@ const CreateEventDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
 
   const handleLabelSelect = (label: "banner" | "poster" | "gallery") => {
     if (pendingFile) {
-      setFormData((p) => ({
-        ...p,
-        mediaFiles: [...p.mediaFiles, { ...pendingFile, label }],
-      }));
+      setFormData((p) => ({ ...p, mediaFiles: [...p.mediaFiles, { ...pendingFile, label }] }));
       setPendingFile(null);
       setLabelModalOpen(false);
     }
   };
 
   const handleLabelCancel = () => {
-    if (pendingFile?.preview && pendingFile.type === "VIDEO")
-      URL.revokeObjectURL(pendingFile.preview);
+    if (pendingFile?.preview && pendingFile.type === "VIDEO") URL.revokeObjectURL(pendingFile.preview);
     setPendingFile(null);
     setLabelModalOpen(false);
   };
 
-  // FIXED: Now async to prevent thumbnail memory leaks
-  const handleVideoThumbnailUpload = async (
-    videoIndex: number,
-    e: React.ChangeEvent<HTMLInputElement>,
-  ) => {
+  const handleVideoThumbnailUpload = async (videoIndex: number, e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const tinyThumb = await getTinyPreview(file); // Use helper for thumbnail too
+    const tinyThumb = await getTinyPreview(file);
     setFormData((prev) => {
       const updatedMedia = [...prev.mediaFiles];
-      if (updatedMedia[videoIndex])
-        updatedMedia[videoIndex].thumbnailPreview = tinyThumb;
+      if (updatedMedia[videoIndex]) updatedMedia[videoIndex].thumbnailPreview = tinyThumb;
       return { ...prev, mediaFiles: updatedMedia };
     });
   };
@@ -136,36 +119,22 @@ const CreateEventDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
   const removeMedia = (index: number) => {
     setFormData((prev) => {
       const updatedMedia = [...prev.mediaFiles];
-      if (updatedMedia[index].type === "VIDEO") {
-        URL.revokeObjectURL(updatedMedia[index].preview);
-      }
+      if (updatedMedia[index].type === "VIDEO") URL.revokeObjectURL(updatedMedia[index].preview);
       updatedMedia.splice(index, 1);
       return { ...prev, mediaFiles: updatedMedia };
     });
   };
 
   const addCategory = () => {
-    if (!newTicket.name || isNaN(newTicket.price))
-      return alert("Please provide at least a name and price");
-    if (formData.ticket_types.some((tt) => tt.category === newTicket.category))
-      return alert("Category already exists.");
-    setFormData((p) => ({
-      ...p,
-      ticket_types: [...p.ticket_types, { ...newTicket }],
-    }));
-    setNewTicket({
-      name: "",
-      category: "ADULT",
-      price: 0,
-      description: "",
-      maxQuantityPerBooking: 10,
-    });
+    if (!newTicket.name || isNaN(newTicket.price)) return alert("Please provide at least a name and price");
+    if (formData.ticket_types.some((tt) => tt.category === newTicket.category)) return alert("Category already exists.");
+    setFormData((p) => ({ ...p, ticket_types: [...p.ticket_types, { ...newTicket }] }));
+    setNewTicket({ name: "", category: "ADULT", price: 0, description: "", maxQuantityPerBooking: 10 });
   };
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (loading) return; // FIXED: Prevent double submissions
-
+    if (loading) return;
     setLoading(true);
     const payload = {
       name: formData.name,
@@ -174,41 +143,21 @@ const CreateEventDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
       startTime: formData.startTime,
       endTime: formData.endTime,
       capacity: parseInt(formData.capacity, 10),
-      ticketTypes: formData.ticket_types.map((tt) => ({
-        ...tt,
-        price: parseFloat(tt.price.toString()),
-      })),
+      ticketTypes: formData.ticket_types.map((tt) => ({ ...tt, price: parseFloat(tt.price.toString()) })),
     };
-
     try {
       const response = await adminService.createEvent(payload);
       const newProductId = response.data?.productId;
       if (formData.mediaFiles.length > 0 && newProductId) {
         const data = new FormData();
-
         formData.mediaFiles.forEach((m: any) => {
-          // 1. Append the actual binary file
           data.append("mediaFiles", m.file);
-
-          // 2. Append the associated data (labels/thumbnails)
-          // We send these as separate fields. The backend will match them by index.
           data.append("label", m.label);
           data.append("thumbnail", m.thumbnail || null);
         });
-        await adminService.uploadProductMedia(newProductId, data);
+        await adminService.uploadEventMedia(newProductId, data);
       }
-
-      // FIXED: Clear data on success
-      setFormData({
-        name: "",
-        description: "",
-        eventDate: "",
-        startTime: "",
-        endTime: "",
-        capacity: "",
-        ticket_types: [],
-        mediaFiles: [],
-      });
+      setFormData({ name: "", description: "", eventDate: "", startTime: "", endTime: "", capacity: "", ticket_types: [], mediaFiles: [] });
       onSuccess();
       onClose();
     } catch (error) {
@@ -220,352 +169,383 @@ const CreateEventDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
 
   if (!isOpen) return null;
 
+  /* ── Derived theme tokens ── */
+  const d = isDarkTheme;
+  const surface   = d ? "bg-[#0d0d0f]"    : "bg-[#f8f8fa]";
+  const card      = d ? "bg-[#141416]"    : "bg-white";
+  const border    = d ? "border-white/[0.06]" : "border-black/[0.06]";
+  const inputBg   = d ? "bg-[#1c1c1f]"    : "bg-[#f0f0f3]";
+  const text      = d ? "text-white"       : "text-[#0d0d0f]";
+  const muted     = d ? "text-white/40"    : "text-black/40";
+  const labelCls  = `text-[10px] font-semibold uppercase tracking-[0.12em] ${muted}`;
+
   return (
     <>
+      {/* ── Backdrop ── */}
       <div
-        className={`fixed inset-0 backdrop-blur-sm z-40 ${isDarkTheme ? "bg-black/50" : "bg-slate-900/40"}`}
+        className={`fixed inset-0 z-40 transition-opacity duration-300 ${d ? "bg-black/70" : "bg-black/40"} backdrop-blur-md`}
         onClick={onClose}
       />
-      <div
-        className={`fixed right-0 top-0 h-full w-full max-w-lg z-50 shadow-2xl animate-in slide-in-from-right duration-300 ${isDarkTheme ? "bg-[#0A0A0A]" : "bg-white"}`}
-      >
-        <div className="p-8 h-full flex flex-col">
-          <div className="flex justify-between items-center mb-6">
-            <button
-              disabled={loading} // FIXED: Disable button while loading
-              onClick={handleCreate}
-              className={`w-full text-white font-black py-4 rounded-2xl hover:bg-indigo-700 shadow-xl transition-all active:scale-[0.98] ${loading ? "opacity-50 cursor-not-allowed" : ""} ${isDarkTheme ? "bg-indigo-600" : "bg-slate-900"}`}
-            >
-              {loading ? "Creating..." : "Create Event"}
-            </button>
+
+      {/* ── Modal shell ── */}
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+        <div
+          className={`
+            relative w-full max-w-5xl max-h-[92vh] flex flex-col
+            rounded-[28px] overflow-hidden shadow-2xl
+            border ${border}
+            ${surface}
+            animate-in fade-in zoom-in-95 duration-200
+          `}
+        >
+          {/* ── Decorative top accent bar ── */}
+          <div className="h-[3px] w-full bg-gradient-to-r from-accent to-accent/80 flex-shrink-0" />
+
+          {/* ── Header ── */}
+          <div className={`flex items-center justify-between px-8 py-5 border-b ${border} flex-shrink-0`}>
+            <div className="flex items-center gap-4">
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center bg-gradient-to-br from-accent2/ to-accent/80`}>
+                <Calendar size={18} className="text-white" />
+              </div>
+              <div>
+                <h2 className={`text-[17px] font-bold tracking-tight ${text}`}>Create New Event</h2>
+                <p className={`text-[12px] ${muted} mt-0.5`}>Fill in the details below to publish</p>
+              </div>
+            </div>
             <button
               onClick={onClose}
-              className="p-2 ml-4 text-slate-400 hover:bg-gray-800 rounded-full"
+              className={`w-9 h-9 flex items-center justify-center rounded-xl transition-all ${d ? "hover:bg-white/8 text-white/50 hover:text-white" : "hover:bg-black/5 text-black/40 hover:text-black"}`}
             >
-              <X size={24} />
+              <X size={18} />
             </button>
           </div>
 
-          <div className="space-y-6 overflow-y-auto flex-1 px-2 pb-4 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <label
-                  className={`text-[10px] font-black uppercase tracking-widest ${isDarkTheme ? "text-gray-500" : "text-slate-400"}`}
-                >
-                  Event Name
-                </label>
-                <input
-                  type="text"
-                  className={`w-full p-4 border-2 border-transparent rounded-2xl outline-none focus:border-indigo-500 transition-all font-bold ${isDarkTheme ? "bg-bg3 text-white focus:bg-gray-700" : "bg-slate-50 focus:bg-white"}`}
-                  placeholder="e.g. Summer Festival"
-                  value={formData.name}
-                  onChange={(e) =>
-                    setFormData({ ...formData, name: e.target.value })
-                  }
-                />
-              </div>
-              <div className="space-y-2">
-                <label
-                  className={`text-[10px] font-black uppercase tracking-widest ${isDarkTheme ? "text-gray-500" : "text-slate-400"}`}
-                >
-                  Description
-                </label>
-                <textarea
-                  className={`w-full p-4 border-2 border-transparent rounded-2xl outline-none focus:border-indigo-500 transition-all font-medium min-h-[80px] ${isDarkTheme ? "bg-bg3 text-white focus:bg-gray-700" : "bg-slate-50 focus:bg-white"}`}
-                  placeholder="Event description..."
-                  value={formData.description}
-                  onChange={(e) =>
-                    setFormData({ ...formData, description: e.target.value })
-                  }
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase text-gray-500">
-                    Event Date
-                  </label>
-                  <input
-                    type="date"
-                    className={`w-full p-4 rounded-2xl ${isDarkTheme ? "bg-bg3 text-white" : "bg-slate-50"}`}
-                    value={formData.eventDate}
-                    onChange={(e) =>
-                      setFormData({ ...formData, eventDate: e.target.value })
-                    }
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase text-gray-500">
-                    Capacity
-                  </label>
-                  <input
-                    type="number"
-                    className={`w-full p-4 rounded-2xl ${isDarkTheme ? "bg-bg3 text-white" : "bg-slate-50"}`}
-                    placeholder="500"
-                    value={formData.capacity}
-                    onChange={(e) =>
-                      setFormData({ ...formData, capacity: e.target.value })
-                    }
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <input
-                  type="time"
-                  className={`p-4 rounded-2xl ${isDarkTheme ? "bg-bg3 text-white" : "bg-slate-50"}`}
-                  value={formData.startTime}
-                  onChange={(e) =>
-                    setFormData({ ...formData, startTime: e.target.value })
-                  }
-                />
-                <input
-                  type="time"
-                  className={`p-4 rounded-2xl ${isDarkTheme ? "bg-bg3 text-white" : "bg-slate-50"}`}
-                  value={formData.endTime}
-                  onChange={(e) =>
-                    setFormData({ ...formData, endTime: e.target.value })
-                  }
-                />
-              </div>
-            </div>
+          {/* ── Scrollable body ── */}
+          <div className="overflow-y-auto flex-1 px-8 py-7">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-10 gap-y-8">
 
-            <div className="space-y-6">
-              {formData.ticket_types.map((tt, index) => (
-                <div
-                  key={index}
-                  className={`flex items-center justify-between p-4 rounded-2xl shadow-sm ${isDarkTheme ? "bg-[#0A0A0A] border-gray-700" : "bg-white border-indigo-100"}`}
-                >
-                  <div>
-                    <span className="px-2 py-0.5 text-[10px] font-black uppercase rounded-md bg-indigo-50 text-indigo-600">
-                      {tt.category}
-                    </span>
-                    <h4
-                      className={`text-sm font-bold ${isDarkTheme ? "text-gray-300" : "text-slate-800"}`}
-                    >
-                      {tt.name}
-                    </h4>
-                    <p className="text-xs font-medium text-gray-500">
-                      {tt.price} ETB
-                    </p>
-                  </div>
-                  <button
-                    onClick={() =>
-                      setFormData((p) => ({
-                        ...p,
-                        ticket_types: p.ticket_types.filter(
-                          (_, i) => i !== index,
-                        ),
-                      }))
-                    }
-                    className="p-2 text-red-500"
-                  >
-                    <X size={18} />
-                  </button>
-                </div>
-              ))}
+              {/* ══════════ LEFT COLUMN ══════════ */}
+              <div className="space-y-7">
 
-              <div
-                className={`p-6 rounded-[32px] border-2 border-dashed ${isDarkTheme ? "bg-bg3 border-gray-600" : "bg-slate-50 border-slate-200"}`}
-              >
-                <div className="grid grid-cols-2 gap-4">
-                  <input
-                    placeholder="Ticket Name"
-                    className={`p-3 rounded-xl border ${isDarkTheme ? "bg-bg3 text-white border-gray-600" : "bg-white border-slate-200"}`}
-                    value={newTicket.name}
-                    onChange={(e) =>
-                      setNewTicket({ ...newTicket, name: e.target.value })
-                    }
-                  />
-                  <select
-                    className={`p-3 rounded-xl border ${isDarkTheme ? "bg-bg3 text-white border-gray-600" : "bg-white border-slate-200"}`}
-                    value={newTicket.category}
-                    onChange={(e) =>
-                      setNewTicket({
-                        ...newTicket,
-                        category: e.target.value as any,
-                      })
-                    }
-                  >
-                    {["adult", "child", "senior", "student", "group"].map(
-                      (cat) => (
-                        <option
-                          key={cat}
-                          value={cat.toUpperCase()}
-                          disabled={formData.ticket_types.some(
-                            (tt) => tt.category === cat.toUpperCase(),
-                          )}
-                        >
-                          {cat.toUpperCase()}
-                        </option>
-                      ),
-                    )}
-                  </select>
-                  <input
-                    type="number"
-                    placeholder="Price"
-                    className={`p-3 rounded-xl border ${isDarkTheme ? "bg-bg3 text-white border-gray-600" : "bg-white border-slate-200"}`}
-                    value={newTicket.price || ""}
-                    onChange={(e) =>
-                      setNewTicket({
-                        ...newTicket,
-                        price: parseFloat(e.target.value) || 0,
-                      })
-                    }
-                  />
-                  <input
-                    type="number"
-                    className={`p-3 rounded-xl border ${isDarkTheme ? "bg-bg3 text-white border-gray-600" : "bg-white border-slate-200"}`}
-                    value={newTicket.maxQuantityPerBooking}
-                    onChange={(e) =>
-                      setNewTicket({
-                        ...newTicket,
-                        maxQuantityPerBooking: parseInt(e.target.value),
-                      })
-                    }
-                  />
-                </div>
-                <textarea
-                  placeholder="Description"
-                  rows={2}
-                  className={`w-full mt-4 p-3 rounded-xl border ${isDarkTheme ? "bg-bg3 text-white border-gray-600" : "bg-white"}`}
-                  value={newTicket.description}
-                  onChange={(e) =>
-                    setNewTicket({ ...newTicket, description: e.target.value })
-                  }
-                />
-                <button
-                  type="button"
-                  onClick={addCategory}
-                  className="w-full mt-4 py-4 bg-indigo-600 text-white rounded-2xl font-black text-xs uppercase"
-                >
-                  Add Category to List
-                </button>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <label className="text-[10px] font-black uppercase text-gray-500">
-                Event Media (Images & Video)
-              </label>
-              <div
-                className={`p-3 rounded-xl grid grid-cols-3 text-center text-xs font-bold ${isDarkTheme ? "bg-gray-800 text-gray-400" : "bg-gray-100 text-gray-600"}`}
-              >
-                <div className={getPosterCount() >= 3 ? "text-green-500" : ""}>
-                  Poster ({getPosterCount()}/3)
-                </div>
-                <div className={getBannerCount() >= 3 ? "text-green-500" : ""}>
-                  Banner ({getBannerCount()}/3)
-                </div>
-                <div className={getVideoCount() >= 3 ? "text-green-500" : ""}>
-                  Video ({getVideoCount()}/3)
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <label
-                  className={`flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-[24px] cursor-pointer ${isDarkTheme ? "bg-bg3 border-gray-700" : "bg-slate-50"}`}
-                >
-                  <ImageIcon size={20} className="text-accent2 mb-2" />
-                  <span className="text-[10px] font-black text-accent2">
-                    Add Image
-                  </span>
-                  <input
-                    type="file"
-                    hidden
-                    accept="image/*"
-                    onChange={(e) => handleMediaUpload(e, "IMAGE")}
-                  />
-                </label>
-                {hasVideoSlot() && (
-                  <label
-                    className={`flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-[24px] cursor-pointer ${isDarkTheme ? "bg-bg3 border-gray-700" : "bg-slate-50"}`}
-                  >
-                    <Video size={20} className="text-indigo-500 mb-2" />
-                    <span className="text-[10px] font-black text-indigo-500">
-                      Add Video
-                    </span>
+                {/* — Event Info — */}
+                <Section label="Event Details" icon={<Calendar size={14} />} isDark={d}>
+                  <Field label="Event Name" labelCls={labelCls}>
                     <input
-                      type="file"
-                      hidden
-                      accept="video/*"
-                      onChange={(e) => handleMediaUpload(e, "VIDEO")}
+                      type="text"
+                      placeholder="e.g. Summer Festival 2025"
+                      className={`w-full px-4 py-3 rounded-2xl text-sm font-medium outline-none border-2 border-transparent transition-all focus:border-accent/50 placeholder:${muted} ${inputBg} ${text}`}
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     />
-                  </label>
-                )}
+                  </Field>
+
+                  <Field label="Description" labelCls={labelCls}>
+                    <textarea
+                      placeholder="Describe what attendees can expect…"
+                      rows={3}
+                      className={`w-full px-4 py-3 rounded-2xl text-sm font-medium outline-none border-2 border-transparent transition-all focus:border-accent/50 resize-none placeholder:${muted} ${inputBg} ${text}`}
+                      value={formData.description}
+                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    />
+                  </Field>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <Field label="Date" labelCls={labelCls} icon={<Calendar size={12} className={muted} />}>
+                      <input
+                        type="date"
+                        className={`w-full px-4 py-3 rounded-2xl text-sm font-medium outline-none border-2 border-transparent transition-all focus:border-accent/50 ${inputBg} ${text}`}
+                        value={formData.eventDate}
+                        onChange={(e) => setFormData({ ...formData, eventDate: e.target.value })}
+                      />
+                    </Field>
+                    <Field label="Capacity" labelCls={labelCls} icon={<Users size={12} className={muted} />}>
+                      <input
+                        type="number"
+                        placeholder="500"
+                        className={`w-full px-4 py-3 rounded-2xl text-sm font-medium outline-none border-2 border-transparent transition-all focus:border-accent/50 ${inputBg} ${text}`}
+                        value={formData.capacity}
+                        onChange={(e) => setFormData({ ...formData, capacity: e.target.value })}
+                      />
+                    </Field>
+                    <Field label="Start Time" labelCls={labelCls} icon={<Clock size={12} className={muted} />}>
+                      <input
+                        type="time"
+                        className={`w-full px-4 py-3 rounded-2xl text-sm font-medium outline-none border-2 border-transparent transition-all focus:border-accent/50 ${inputBg} ${text}`}
+                        value={formData.startTime}
+                        onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
+                      />
+                    </Field>
+                    <Field label="End Time" labelCls={labelCls} icon={<Clock size={12} className={muted} />}>
+                      <input
+                        type="time"
+                        className={`w-full px-4 py-3 rounded-2xl text-sm font-medium outline-none border-2 border-transparent transition-all focus:border-accent/50 ${inputBg} ${text}`}
+                        value={formData.endTime}
+                        onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
+                      />
+                    </Field>
+                  </div>
+                </Section>
+
+                {/* — Ticket Types — */}
+                <Section label="Ticket Types" icon={<Tag size={14} />} isDark={d}>
+                  {/* Existing tickets */}
+                  {formData.ticket_types.length > 0 && (
+                    <div className="space-y-2 mb-4">
+                      {formData.ticket_types.map((tt, index) => (
+                        <div
+                          key={index}
+                          className={`flex items-center justify-between px-4 py-3 rounded-2xl border ${border} ${card}`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <span className={`text-[10px] font-bold px-2.5 py-1 rounded-lg uppercase tracking-wider ${CATEGORY_COLORS[tt.category] ?? "bg-gray-500/10 text-gray-400"}`}>
+                              {tt.category}
+                            </span>
+                            <div>
+                              <p className={`text-sm font-semibold ${text}`}>{tt.name}</p>
+                              <p className={`text-xs ${muted}`}>{tt.price} ETB · max {tt.maxQuantityPerBooking}/booking</p>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => setFormData((p) => ({ ...p, ticket_types: p.ticket_types.filter((_, i) => i !== index) }))}
+                            className="w-7 h-7 flex items-center justify-center rounded-lg text-red-400 hover:bg-red-500/10 transition-colors"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Add new ticket */}
+                  <div className={`p-5 rounded-2xl border border-dashed ${d ? "border-white/10 bg-white/[0.02]" : "border-black/10 bg-black/[0.02]"}`}>
+                    <p className={`text-[11px] font-semibold uppercase tracking-widest mb-4 ${muted}`}>Add a ticket type</p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <input
+                        placeholder="Ticket name"
+                        className={`px-3 py-2.5 rounded-xl text-sm font-medium outline-none border border-transparent focus:border-accent2/50 transition-all ${inputBg} ${text}`}
+                        value={newTicket.name}
+                        onChange={(e) => setNewTicket({ ...newTicket, name: e.target.value })}
+                      />
+                      <select
+                        className={`px-3 py-2.5 rounded-xl text-sm font-medium outline-none border border-transparent focus:border-accent2/50 transition-all ${inputBg} ${text}`}
+                        value={newTicket.category}
+                        onChange={(e) => setNewTicket({ ...newTicket, category: e.target.value as any })}
+                      >
+                        {["adult", "child", "senior", "student", "group"].map((cat) => (
+                          <option
+                            key={cat}
+                            value={cat.toUpperCase()}
+                            disabled={formData.ticket_types.some((tt) => tt.category === cat.toUpperCase())}
+                          >
+                            {cat.charAt(0).toUpperCase() + cat.slice(1)}
+                          </option>
+                        ))}
+                      </select>
+                      <div className="relative">
+                        <input
+                          type="number"
+                          placeholder="Price"
+                          className={`w-full pl-3 pr-10 py-2.5 rounded-xl text-sm font-medium outline-none border border-transparent focus:border-accent/50 transition-all ${inputBg} ${text}`}
+                          value={newTicket.price || ""}
+                          onChange={(e) => setNewTicket({ ...newTicket, price: parseFloat(e.target.value) || 0 })}
+                        />
+                        <span className={`absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold ${muted}`}>ETB</span>
+                      </div>
+                      <div className="relative">
+                        <input
+                          type="number"
+                          className={`w-full pl-3 pr-3 py-2.5 rounded-xl text-sm font-medium outline-none border border-transparent focus:border-accent/50 transition-all ${inputBg} ${text}`}
+                          value={newTicket.maxQuantityPerBooking}
+                          onChange={(e) => setNewTicket({ ...newTicket, maxQuantityPerBooking: parseInt(e.target.value) })}
+                        />
+                        <span className={`absolute -top-2 left-3 text-[9px] font-bold uppercase tracking-wider ${muted} pointer-events-none`}>Max qty</span>
+                      </div>
+                    </div>
+                    <textarea
+                      placeholder="Optional description for this ticket type…"
+                      rows={2}
+                      className={`w-full mt-3 px-3 py-2.5 rounded-xl text-sm font-medium outline-none border border-transparent focus:border-accent/50 resize-none transition-all placeholder:${muted} ${inputBg} ${text}`}
+                      value={newTicket.description}
+                      onChange={(e) => setNewTicket({ ...newTicket, description: e.target.value })}
+                    />
+                    <button
+                      type="button"
+                      onClick={addCategory}
+                      className="mt-3 w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-accent2/90 hover:bg-accent/90 text-black text-xs font-bold uppercase tracking-widest transition-all active:scale-[0.98]"
+                    >
+                      <Plus size={14} />
+                      Add to list
+                    </button>
+                  </div>
+                </Section>
               </div>
 
-              <div className="flex gap-3 overflow-x-auto pb-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-                {formData.mediaFiles.map((media, idx) => (
-                  <div
-                    key={idx}
-                    className="relative min-w-[120px] h-32 rounded-2xl overflow-hidden group shadow-md"
-                  >
-                    {media.type === "IMAGE" ? (
-                      <img
-                        src={media.preview}
-                        className="w-full h-full object-cover"
-                        alt="preview"
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-slate-800 flex items-center justify-center relative">
-                        <Video size={24} className="text-white/50" />
-                        <label className="absolute bottom-2 right-2 p-1 bg-green-500 rounded-full cursor-pointer">
-                          <ImageIcon size={10} className="text-white" />
-                          <input
-                            type="file"
-                            hidden
-                            accept="image/*"
-                            onChange={(e) => handleVideoThumbnailUpload(idx, e)}
-                          />
-                        </label>
-                        {/* FIXED: Using thumbnailPreview string instead of creating Object URL here */}
-                        {media.thumbnailPreview && (
-                          <div className="absolute top-2 left-2 w-8 h-8 rounded border-2 border-green-400 overflow-hidden">
-                            <img
-                              src={media.thumbnailPreview}
-                              className="object-cover"
-                              alt="thumb"
-                            />
-                          </div>
-                        )}
+              {/* ══════════ RIGHT COLUMN ══════════ */}
+              <div className="space-y-7">
+                <Section label="Event Media" icon={<ImageIcon size={14} />} isDark={d}>
+
+                  {/* Quota strip */}
+                  <div className={`flex items-center justify-between px-4 py-2.5 rounded-xl text-xs font-semibold ${d ? "bg-white/[0.04]" : "bg-black/[0.03]"}`}>
+                    {[
+                      { label: "Posters", count: getPosterCount() },
+                      { label: "Banners", count: getBannerCount() },
+                      { label: "Videos",  count: getVideoCount()  },
+                    ].map(({ label, count }) => (
+                      <div key={label} className="flex items-center gap-1.5">
+                        <span className={muted}>{label}</span>
+                        <span className={`${count >= 3 ? "text-emerald-400" : text}`}>{count}/3</span>
                       </div>
-                    )}
-                    <button
-                      onClick={() => removeMedia(idx)}
-                      className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full"
-                    >
-                      <X size={14} />
-                    </button>
-                    <div className="absolute bottom-2 left-2 bg-black/40 backdrop-blur-md px-2 py-0.5 rounded text-[8px] text-green-600 font-bold">
-                      {media.type} {media.label && `• ${media.label}`}
-                    </div>
+                    ))}
                   </div>
-                ))}
+
+                  {/* Upload targets */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <label className={`group flex flex-col items-center justify-center gap-2 h-24 rounded-2xl border-2 border-dashed cursor-pointer transition-all ${d ? "border-white/10 hover:border-accent/50 hover:bg-accent/5" : "border-black/10 hover:border-accent/50 hover:bg-accent/5"}`}>
+                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center transition-colors ${d ? "bg-white/5 group-hover:bg-accent/20" : "bg-black/5 group-hover:bg-accent/20"}`}>
+                        <ImageIcon size={16} className="text-accent" />
+                      </div>
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-accent">Image</span>
+                      <input type="file" hidden accept="image/*" onChange={(e) => handleMediaUpload(e, "IMAGE")} />
+                    </label>
+
+                    {hasVideoSlot() && (
+                      <label className={`group flex flex-col items-center justify-center gap-2 h-24 rounded-2xl border-2 border-dashed cursor-pointer transition-all ${d ? "border-white/10 hover:border-accent/50 hover:bg-accent/5" : "border-black/10 hover:border-accent/50 hover:bg-accent/5"}`}>
+                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center transition-colors ${d ? "bg-white/5 group-hover:bg-accent/20" : "bg-black/5 group-hover:bg-accent/20"}`}>
+                          <Video size={16} className="text-accent" />
+                        </div>
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-accent">Video</span>
+                        <input type="file" hidden accept="video/*" onChange={(e) => handleMediaUpload(e, "VIDEO")} />
+                      </label>
+                    )}
+                  </div>
+
+                  {/* Media grid */}
+                  {formData.mediaFiles.length > 0 && (
+                    <div className="grid grid-cols-3 gap-2.5">
+                      {formData.mediaFiles.map((media, idx) => (
+                        <div key={idx} className="relative aspect-square rounded-xl overflow-hidden group shadow-sm">
+                          {media.type === "IMAGE" ? (
+                            <img src={media.preview} className="w-full h-full object-cover" alt="preview" />
+                          ) : (
+                            <div className={`w-full h-full flex items-center justify-center relative ${d ? "bg-[#1c1c1f]" : "bg-slate-100"}`}>
+                              <Video size={20} className={muted} />
+                              <label className="absolute bottom-1.5 right-1.5 w-6 h-6 bg-emerald-500 rounded-lg flex items-center justify-center cursor-pointer hover:bg-emerald-400 transition-colors">
+                                <ImageIcon size={10} className="text-white" />
+                                <input type="file" hidden accept="image/*" onChange={(e) => handleVideoThumbnailUpload(idx, e)} />
+                              </label>
+                              {media.thumbnailPreview && (
+                                <div className="absolute top-1.5 left-1.5 w-7 h-7 rounded-md ring-2 ring-emerald-400 overflow-hidden">
+                                  <img src={media.thumbnailPreview} className="w-full h-full object-cover" alt="thumb" />
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Hover overlay */}
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all" />
+
+                          {/* Remove btn */}
+                          <button
+                            onClick={() => removeMedia(idx)}
+                            className="absolute top-1.5 right-1.5 w-6 h-6 flex items-center justify-center bg-red-500 hover:bg-red-400 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-all scale-75 group-hover:scale-100"
+                          >
+                            <X size={11} />
+                          </button>
+
+                          {/* Label badge */}
+                          <div className="absolute bottom-1.5 left-1.5 opacity-0 group-hover:opacity-100 transition-all">
+                            <span className="bg-black/70 backdrop-blur-sm text-white/80 text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md">
+                              {media.label ?? media.type.toLowerCase()}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {formData.mediaFiles.length === 0 && (
+                    <div className={`flex flex-col items-center justify-center py-8 rounded-2xl ${d ? "bg-white/[0.02]" : "bg-black/[0.02]"}`}>
+                      <ImageIcon size={28} className={`${muted} mb-2`} />
+                      <p className={`text-xs font-medium ${muted}`}>No media added yet</p>
+                    </div>
+                  )}
+                </Section>
               </div>
+            </div>
+          </div>
+
+          {/* ── Footer ── */}
+          <div className={`flex items-center justify-between px-8 py-5 border-t ${border} flex-shrink-0 ${card}`}>
+            <button
+              onClick={onClose}
+              className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition-all ${d ? "bg-white/[0.06] hover:bg-white/10 text-white/70" : "bg-black/[0.05] hover:bg-black/10 text-black/60"}`}
+            >
+              Cancel
+            </button>
+
+            <div className="flex items-center gap-3">
+              <span className={`text-xs ${muted}`}>
+                {formData.ticket_types.length} ticket type{formData.ticket_types.length !== 1 ? "s" : ""} · {formData.mediaFiles.length} file{formData.mediaFiles.length !== 1 ? "s" : ""}
+              </span>
+              <button
+                disabled={loading}
+                onClick={handleCreate}
+                className={`
+                  flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold text-black
+                  bg-gradient-to-r from-accent to-accent2/80
+                  hover:from-accent2/90 hover:to-accent2/70
+                  shadow-lg shadow-accent/30
+                  transition-all active:scale-[0.98]
+                  ${loading ? "opacity-50 cursor-not-allowed" : ""}
+                `}
+              >
+                {loading ? (
+                  <>
+                    <span className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                    Creating…
+                  </>
+                ) : (
+                  <>Create Event <ChevronRight size={15} /></>
+                )}
+              </button>
             </div>
           </div>
         </div>
       </div>
 
+      {/* ── Label picker modal ── */}
       {labelModalOpen && pendingFile && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[60]">
-          <div
-            className={`w-full max-w-md p-6 rounded-2xl ${isDarkTheme ? "bg-[#1a1a1a]" : "bg-white"}`}
-          >
-            <h3 className="text-lg font-bold mb-4">Select Image Label</h3>
-            <img
-              src={pendingFile.preview}
-              className="w-full h-32 object-cover rounded-lg mb-4"
-              alt="pending"
-            />
-            <div className="grid grid-cols-2 gap-3">
-              {getAvailableImageLabels().map((label) => (
-                <button
-                  key={label}
-                  onClick={() => handleLabelSelect(label)}
-                  className="p-3 border-2 rounded-xl text-accent font-bold uppercase text-xs hover:border-accent2 transition-all"
-                >
-                  {label}
-                </button>
-              ))}
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-[60]">
+          <div className={`w-full max-w-sm mx-4 rounded-3xl shadow-2xl overflow-hidden border ${border} ${d ? "bg-[#141416]" : "bg-white"}`}>
+            <div className={`px-6 pt-6 pb-4 border-b ${border}`}>
+              <h3 className={`text-base font-bold ${text}`}>Tag this image</h3>
+              <p className={`text-xs mt-0.5 ${muted}`}>Choose how this image will be used</p>
+            </div>
+            <div className="p-4">
+              <img src={pendingFile.preview} className="w-full h-36 object-cover rounded-2xl mb-4" alt="pending" />
+              <div className="grid grid-cols-3 gap-2">
+                {getAvailableImageLabels().map((label) => (
+                  <button
+                    key={label}
+                    onClick={() => handleLabelSelect(label)}
+                    className={`
+                      py-3 rounded-xl text-xs font-bold uppercase tracking-widest
+                      border-2 transition-all hover:border-accent hover:text-accent
+                      ${d ? "border-white/10 text-white/50" : "border-black/10 text-black/50"}
+                    `}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className={`px-4 pb-4 border-t ${border} pt-3`}>
+              <button
+                onClick={handleLabelCancel}
+                className={`w-full py-2.5 rounded-xl text-sm font-semibold transition-all ${d ? "bg-white/[0.06] hover:bg-white/10 text-white/50" : "bg-black/[0.05] hover:bg-black/10 text-black/50"}`}
+              >
+                Cancel
+              </button>
             </div>
           </div>
         </div>
@@ -573,5 +553,35 @@ const CreateEventDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
     </>
   );
 };
+
+/* ── Tiny layout helpers ── */
+const Section = ({
+  label, icon, isDark, children
+}: {
+  label: string; icon: React.ReactNode; isDark: boolean; children: React.ReactNode;
+}) => (
+  <div className="space-y-4">
+    <div className="flex items-center gap-2">
+      <span className={`${isDark ? "text-white/30" : "text-black/30"}`}>{icon}</span>
+      <span className={`text-[11px] font-bold uppercase tracking-[0.14em] ${isDark ? "text-white/40" : "text-black/40"}`}>{label}</span>
+      <div className={`flex-1 h-px ${isDark ? "bg-white/[0.06]" : "bg-black/[0.06]"}`} />
+    </div>
+    {children}
+  </div>
+);
+
+const Field = ({
+  label, labelCls, icon, children
+}: {
+  label: string; labelCls: string; icon?: React.ReactNode; children: React.ReactNode;
+}) => (
+  <div className="space-y-1.5">
+    <div className="flex items-center gap-1.5">
+      {icon}
+      <label className={labelCls}>{label}</label>
+    </div>
+    {children}
+  </div>
+);
 
 export default CreateEventDrawer;

@@ -52,6 +52,20 @@ export const adminService = {
     return response.data;
   },
 
+  uploadEventMedia: async (
+    eventId: string,
+    formData: FormData, // Accepts the pre-constructed FormData
+  ): Promise<any> => {
+    const response = await api.post(`/media/uploads/events/${eventId}`, formData, {
+      headers: {
+        // Note: Most modern browsers/Axios versions set this automatically
+        // when they see FormData, including the necessary 'boundary' string.
+        "Content-Type": "multipart/form-data",
+      },
+    });
+    return response.data;
+  },
+
   async createEventWithTicketTypes(
     data: CreateEventWithTicketTypesRequest,
   ): Promise<ApiResponse<{ event: Event; ticketTypes: TicketType[] }>> {
