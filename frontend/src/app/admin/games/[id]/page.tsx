@@ -5,6 +5,9 @@ import { gameService } from "@/services/adminService";
 import { Game } from "@/types";
 import { Trash2, Save, ArrowLeft, Plus, X } from "lucide-react";
 import { useTheme } from '@/contexts/ThemeContext';
+import GalleryManager from '@/components/admin/GalleryManager';
+import ValidationModal from '@/components/ui/ValidationModal';
+import ConfirmationModal from '@/components/ui/ConfirmationModal';
 
 export default function GameDetailsPage() {
   const { id } = useParams<{ id: string }>();
@@ -19,10 +22,14 @@ export default function GameDetailsPage() {
     rules: "",
     status: "OPEN",
     ticket_types: [],
+    gallery: [],
   });
   const [savedData, setSavedData] = useState<Partial<Game>>({});
   const [diff, setDiff] = useState<Partial<Game>>({});
   const [showModal, setShowModal] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  const [showValidationModal, setShowValidationModal] = useState(false);
+  const [showConfirmationModal, setShowConfirmationModal] = useState(false);
 
   // 1. Fetch Game Data
   useEffect(() => {
@@ -101,6 +108,46 @@ const compareObjects = (obj1: any, obj2: any, path = '') => {
 
 // 2. Handle Update
   const handleUpdate = async () => {
+    // Form validation
+    const validationErrors: string[] = [];
+    
+    // Check required fields
+    if (!formData.name || formData.name.trim() === '') {
+      validationErrors.push('Game name is required');
+    }
+    
+    if (!formData.ticket_types || formData.ticket_types.length === 0) {
+      validationErrors.push('At least one ticket type is required');
+    }
+    
+    // Validate ticket types
+    formData.ticket_types?.forEach((ticket, index) => {
+      if (!ticket.category) {
+        validationErrors.push(`Ticket type ${index + 1}: Category is required`);
+      }
+      
+      if (!ticket.price || ticket.price < 10) {
+        validationErrors.push(`Ticket type ${index + 1}: Price must be at least 10 ETB`);
+      }
+      
+      if (ticket.price > 5000) {
+        validationErrors.push(`Ticket type ${index + 1}: Price cannot exceed 5000 ETB`);
+      }
+    });
+    
+    // Show validation errors if any
+    if (validationErrors.length > 0) {
+      setValidationErrors(validationErrors);
+      setShowValidationModal(true);
+      return;
+    }
+    
+    // Show confirmation dialog
+    setShowConfirmationModal(true);
+  };
+
+  const confirmUpdate = async () => {
+    setShowConfirmationModal(false);
     setIsUpdating(true);
     try {
       console.log('=== DATA COMPARISON ===');
@@ -216,6 +263,18 @@ const compareObjects = (obj1: any, obj2: any, path = '') => {
               </div>
             </section>
 
+            {/* Gallery Management Section */}
+            <section className={`p-6 rounded-3xl border shadow-sm space-y-4 ${isDarkTheme ? 'bg-[#0A0A0A] border-gray-700' : 'bg-white border-slate-100'}`}>
+              <h2 className={`text-lg font-black ${isDarkTheme ? 'text-white' : 'text-slate-800'}`}>
+                Media Gallery
+              </h2>
+              <GalleryManager
+                gallery={formData.gallery || []}
+                onChange={(gallery) => setFormData({ ...formData, gallery })}
+                isDarkTheme={isDarkTheme}
+              />
+            </section>
+
             <section className={`p-6 rounded-3xl border shadow-sm ${isDarkTheme ? 'bg-[#0A0A0A] border-gray-700' : 'bg-white border-slate-100'}`}>
               <h2 className={`text-lg font-black mb-4 ${isDarkTheme ? 'text-white' : 'text-slate-800'}`}>
                 Pricing Matrix
@@ -231,7 +290,7 @@ const compareObjects = (obj1: any, obj2: any, path = '') => {
                         {tt.category}
                       </span>
                       <p className={`text-sm font-bold ${isDarkTheme ? 'text-gray-300' : 'text-slate-700'}`}>
-                        {tt.name}
+                        {tt.category} Ticket
                       </p>
                     </div>
                     <div className={`flex items-center rounded-xl px-3 border ${isDarkTheme ? 'bg-bg3 border-gray-600' : 'bg-white border-slate-200'}`}>
@@ -256,8 +315,64 @@ const compareObjects = (obj1: any, obj2: any, path = '') => {
                         }}
                       />
                     </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newTypes = (formData.ticket_types ?? []).filter((_, i) => i !== index);
+                        setFormData({ ...formData, ticket_types: newTypes });
+                      }}
+                      className={`p-2 rounded-lg transition-colors ${
+                        isDarkTheme 
+                          ? 'bg-red-600 text-white hover:bg-red-700' 
+                          : 'bg-red-500 text-white hover:bg-red-600'
+                      }`}
+                    >
+                      <Trash2 size={16} />
+                    </button>
                   </div>
                 ))}
+                
+                {/* Add New Ticket Type Button */}
+                <div className="pt-4">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const existingCategories = (formData.ticket_types ?? []).map(tt => tt.category);
+                      const availableCategories = ["ADULT", "CHILD", "SENIOR", "STUDENT", "GROUP"].filter(
+                        cat => !existingCategories.includes(cat as any)
+                      );
+                      
+                      if (availableCategories.length === 0) {
+                        alert("All ticket categories are already added!");
+                        return;
+                      }
+                      
+                      const newTicket = {
+                        category: availableCategories[0] as any,
+                        price: 100,
+                        max_quantity: 100,
+                        status: "ACTIVE" as const,
+                        id: `temp-${Date.now()}`,
+                        product_id: "",
+                        created_at: new Date().toISOString(),
+                        updated_at: new Date().toISOString(),
+                      };
+                      
+                      setFormData({ 
+                        ...formData, 
+                        ticket_types: [...(formData.ticket_types ?? []), newTicket] 
+                      });
+                    }}
+                    className={`w-full py-3 px-4 rounded-xl font-bold transition-colors flex items-center justify-center gap-2 ${
+                      isDarkTheme
+                        ? 'bg-green-600 text-white hover:bg-green-700'
+                        : 'bg-green-500 text-white hover:bg-green-600'
+                    }`}
+                  >
+                    <Plus size={20} />
+                    Add New Ticket Type
+                  </button>
+                </div>
               </div>
             </section>
           </div>
@@ -348,6 +463,27 @@ const compareObjects = (obj1: any, obj2: any, path = '') => {
           </div>
         </div>
       )}
+
+      {/* Validation Modal */}
+      <ValidationModal
+        isOpen={showValidationModal}
+        onClose={() => setShowValidationModal(false)}
+        errors={validationErrors}
+        isDarkTheme={isDarkTheme}
+      />
+
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showConfirmationModal}
+        onClose={() => setShowConfirmationModal(false)}
+        onConfirm={confirmUpdate}
+        title="Confirm Changes"
+        message="Are you sure you want to save these changes to the game?"
+        confirmText="Save Changes"
+        cancelText="Cancel"
+        isDarkTheme={isDarkTheme}
+        isLoading={isUpdating}
+      />
     </>
   );
 }

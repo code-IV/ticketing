@@ -55,7 +55,6 @@ const CreateEventDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
   });
 
   const [newTicket, setNewTicket] = useState<CreateTicketTypeRequest>({
-    name: "",
     category: "ADULT",
     price: 0,
     description: "",
@@ -126,10 +125,10 @@ const CreateEventDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
   };
 
   const addCategory = () => {
-    if (!newTicket.name || isNaN(newTicket.price)) return alert("Please provide at least a name and price");
+    if (!newTicket.category || isNaN(newTicket.price)) return alert("Please provide at least a category and price");
     if (formData.ticket_types.some((tt) => tt.category === newTicket.category)) return alert("Category already exists.");
     setFormData((p) => ({ ...p, ticket_types: [...p.ticket_types, { ...newTicket }] }));
-    setNewTicket({ name: "", category: "ADULT", price: 0, description: "", maxQuantityPerBooking: 10 });
+    setNewTicket({ category: "ADULT", price: 0, description: "", maxQuantityPerBooking: 10 });
   };
 
   const handleCreate = async (e: React.FormEvent) => {

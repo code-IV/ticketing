@@ -19,8 +19,6 @@ export interface Game {
   rules: string;
   status: "OPEN" | "ON_MAINTENANCE" | "UPCOMING" | "CLOSED";
   ticket_types?: TicketType[];
-  category?: string;
-  capacity?: number;
   gallery?: MediaItem[];
   createdAt: string;
   updatedAt: string;
@@ -64,12 +62,12 @@ export interface TicketType {
   category: "ADULT" | "CHILD" | "SENIOR" | "STUDENT" | "GROUP";
   price: number;
   max_quantity: number;
+  status?: "ACTIVE" | "INACTIVE";
   created_at: string;
   updated_at: string;
 }
 
 export interface CreateTicketTypeRequest {
-  name: string;
   category: "ADULT" | "CHILD" | "SENIOR" | "STUDENT" | "GROUP";
   price: number;
   description?: string;

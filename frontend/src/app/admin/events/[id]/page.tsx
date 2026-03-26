@@ -37,7 +37,6 @@ export default function EditEventPage() {
 
   const [ticketTypes, setTicketTypes] = useState<CreateTicketTypeRequest[]>([
     {
-      name: "",
       category: "ADULT",
       price: 0,
       description: "",

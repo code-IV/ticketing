@@ -110,7 +110,7 @@ const BuyTicketsPage = () => {
       const game = games?.find((g) => g.id === gameId);
       const gameTotal = Object.entries(selections).reduce((sum, [cat, qty]) => {
         const price =
-          game?.ticket_types?.find((t) => t.category === cat)?.price || 0;
+          game?.ticketTypes?.find((t) => t.category === cat)?.price || 0;
         return sum + price * qty;
       }, 0);
       return grandTotal + gameTotal;
@@ -131,7 +131,7 @@ const BuyTicketsPage = () => {
         const gameData = games?.find((g) => g.id === gameId);
         if (!gameData) continue;
         for (const [category, quantity] of Object.entries(selections)) {
-          const ticketType = gameData.ticket_types?.find(
+          const ticketType = gameData.ticketTypes?.find(
             (t) => t.category === category,
           );
           if (ticketType) {
@@ -193,7 +193,7 @@ const BuyTicketsPage = () => {
               passDetails:
                 ((booking as any).passes as any[])?.flatMap(
                   (pass: any) =>
-                    pass.ticket_types?.map((tt: any) => ({
+                    pass.ticketTypes?.map((tt: any) => ({
                       productName: pass.gameName || "Game Pass",
                       totalQuantity: tt.quantity,
                       usedQuantity: 0,
@@ -274,8 +274,8 @@ const BuyTicketsPage = () => {
                     const isOpen = openGameId === game.id;
                     const hasItems = !!cart[game.id];
                     const posterImage = getPosterImage(game);
-                    const lowestPrice = game.ticket_types?.length
-                      ? Math.min(...game.ticket_types.map((t) => t.price))
+                    const lowestPrice = game.ticketTypes?.length
+                      ? Math.min(...game.ticketTypes.map((t) => t.price))
                       : 0;
 
                     return (
@@ -347,7 +347,7 @@ const BuyTicketsPage = () => {
                                 className="overflow-hidden bg-white/10 backdrop-blur-xl mt-2 rounded-3xl border border-white/20 p-4 space-y-3"
                                 onClick={(e) => e.stopPropagation()}
                               >
-                                {game.ticket_types?.map((tt) => {
+                                {game.ticketTypes?.map((tt) => {
                                   const qty = cart[game.id]?.[tt.category] || 0;
                                   return (
                                     <div
@@ -485,7 +485,7 @@ const BuyTicketsPage = () => {
                               <div className="pl-5 space-y-2">
                                 {Object.entries(selections).map(
                                   ([category, qty]) => {
-                                    const ticketInfo = game?.ticket_types?.find(
+                                    const ticketInfo = game?.ticketTypes?.find(
                                       (t) => t.category === category,
                                     );
                                     return (
