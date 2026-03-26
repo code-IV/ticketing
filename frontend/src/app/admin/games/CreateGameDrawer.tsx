@@ -175,6 +175,9 @@ const CreateGameDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
         await adminService.uploadProductMedia(newProductId, data);
       }
       setFormData({ name: "", description: "", rules: "", status: "OPEN", ticket_types: [], mediaFiles: [] });
+      onSuccess();
+      onClose();
+    } catch (error) {
       console.error("Failed to create attraction:", error);
     } finally {
       setLoading(false);
@@ -320,9 +323,7 @@ const CreateGameDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
                               {tt.category}
                             </span>
                             <div>
-                              <p className={`text-sm font-semibold ${text}`}>
-                                {tt.name}
-                              </p>
+
                               <p className={`text-xs ${muted}`}>
                                 {tt.price} ETB · max {tt.maxQuantityPerBooking}
                                 /booking
@@ -357,14 +358,7 @@ const CreateGameDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
                       Add a ticket type
                     </p>
                     <div className="grid grid-cols-2 gap-3">
-                      <input
-                        placeholder="Ticket name"
-                        className={`px-3 py-2.5 rounded-xl text-sm font-medium outline-none border border-transparent focus:border-accent2/50 transition-all ${inputBg} ${text}`}
-                        value={newTicket.name}
-                        onChange={(e) =>
-                          setNewTicket({ ...newTicket, name: e.target.value })
-                        }
-                      />
+
                       <select
                         className={`px-3 py-2.5 rounded-xl text-sm font-medium outline-none border border-transparent focus:border-accent2/50 transition-all ${inputBg} ${text}`}
                         value={newTicket.category}
