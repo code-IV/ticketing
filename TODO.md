@@ -23,6 +23,7 @@
 - [ ] **Media Handling:**
   - [ ] Task: Generate Low-Res Image Placeholders (LQIP) on upload.
   - [ ] Task: Implement WebP conversion for performance.
+  - [ ] Task: Duplicate media is possible we need to fix that also.
 
 ---
 
