@@ -54,6 +54,12 @@ router.put(
   handleValidation,
   EventController.updateEventWithTicketTypes,
 );
+router.patch(
+  "/events/status/:id",
+  uuidParamRule("id"),
+  handleValidation,
+  EventController.deactivateEvent,
+);
 router.delete(
   "/events/:id",
   uuidParamRule("id"),

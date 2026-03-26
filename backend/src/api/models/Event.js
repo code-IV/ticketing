@@ -287,7 +287,7 @@ const Event = {
   },
 
   /**
-   * Delete an event (soft delete by deactivating)
+   * Deactivate an event (soft delete by deactivating)
    */
   async updateActiveStatus(id, status) {
     const sql = `
@@ -297,6 +297,19 @@ const Event = {
       RETURNING *
     `;
     const result = await query(sql, [id, status]);
+    return result.rows[0] || null;
+  },
+
+  /**
+   * Delete an event
+   */
+  async delete(id) {
+    const sql = `
+      DELETE FROM events 
+      WHERE id = $1
+      RETURNING *
+    `;
+    const result = await query(sql, [id]);
     return result.rows[0] || null;
   },
 

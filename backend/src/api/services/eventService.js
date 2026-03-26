@@ -159,6 +159,16 @@ const EventService = {
       remaining: eventStats.available,
     };
   },
+
+  async deleteById(id) {
+    try {
+      const rows = await Event.delete(id);
+      return rows;
+    } catch (error) {
+      console.error("delete Event error: ", error);
+      throw new Error("Could not retrieve event catalog.");
+    }
+  },
 };
 
 const EventStatsService = {

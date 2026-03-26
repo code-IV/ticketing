@@ -186,11 +186,11 @@ const Game = {
     const sql = `
     DELETE FROM games 
     WHERE id = $1
-    RETURNING *;
+    RETURNING *
   `;
     const result = await query(sql, [id]);
     // result.rows[0] contains the deleted game data
-    return result.rows[0];
+    return result.rows[0] || null;
   },
 };
 
