@@ -523,7 +523,7 @@ export default function StaffTransactionPage() {
 
   const statusCfg = getStatusConfig();
 
-  const punchList = [];
+  const punchList: any[] = [];
   for (const item of items) {
     for (const tt of item.ticket_types) {
       const qty = draftQty[tt.id] || 0;

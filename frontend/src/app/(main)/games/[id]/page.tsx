@@ -650,7 +650,7 @@ export default function GameDetailPage({
                 </div>
 
                 <div className="space-y-4 mb-8">
-                  {game?.ticket_types?.map((ticket) => (
+                  {game?.ticketTypes?.map((ticket) => (
                     <div
                       key={ticket.id}
                       className={`backdrop-blur-sm border rounded-2xl p-4 ${

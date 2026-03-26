@@ -231,6 +231,7 @@ export interface Ticket {
 }
 
 export interface Ticket_Product {
+  gameData: any;
   id: string;
   productName: string;
   productType: "EVENT" | "GAME";

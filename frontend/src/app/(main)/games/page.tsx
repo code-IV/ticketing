@@ -264,7 +264,7 @@ export default function GamesListingPage() {
                   From
                 </span>
                 <span className="text-sm font-black italic text-black">
-                  {game.ticket_types?.[0]?.price ?? "0"}
+                  {game.ticketTypes?.[0]?.price ?? "0"}
                 </span>
               </div>
 

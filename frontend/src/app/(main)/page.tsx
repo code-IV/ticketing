@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { motion, useScroll, useTransform } from "framer-motion";
+import { motion, useScroll, useTransform ,Variants} from "framer-motion";
 import { Button } from "@/components/ui/Button";
 import {
   Ticket,
@@ -16,11 +16,11 @@ import { eventService } from "@/services/eventService";
 import { Event, Game } from "@/types";
 import { useTheme } from "@/contexts/ThemeContext";
 
-const stagger = {
+const stagger: Variants = {
   visible: { transition: { staggerChildren: 0.2 } },
 };
 
-const fadeUp = {
+const fadeUp: Variants = {
   hidden: { opacity: 0, y: 60, scale: 0.9 },
   visible: {
     opacity: 1,
@@ -81,14 +81,14 @@ export default function Home() {
             alt="Bora Park"
           />
           <div
-            className={`absolute inset-0 bg-gradient-to-t ${isDarkTheme ? "from-[#0A0A0A] via-[#0A0A0A]/20" : "from-white via-white/15"} to-transparent`}
+            className={`absolute inset-0 bg-linear-to-t ${isDarkTheme ? "from-[#0A0A0A] via-[#0A0A0A]/20" : "from-white via-white/15"} to-transparent`}
           />
           <div
-            className={`absolute inset-0 bg-gradient-to-r ${isDarkTheme ? "from-[#0A0A0A]/30" : "from-white/30"} to-transparent`}
+            className={`absolute inset-0 bg-linear-to-r ${isDarkTheme ? "from-[#0A0A0A]/30" : "from-white/30"} to-transparent`}
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/30 via-black/20 via-black/10 via-black/5 via-transparent to-transparent" />
+          <div className="absolute inset-0 bg-linear-to-b from-black/50 via-black/30 to-transparent" />
           <div
-            className={`absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t ${isDarkTheme ? "from-[#0A0A0A]" : "from-white"} to-transparent`}
+            className={`absolute bottom-0 left-0 right-0 h-32 bg-linear-to-t ${isDarkTheme ? "from-[#0A0A0A]" : "from-white"} to-transparent`}
           />
         </motion.div>
 
@@ -164,7 +164,7 @@ export default function Home() {
           style={{ opacity: heroOpacity }}
           className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2"
         >
-          <div className="w-px h-16 bg-gradient-to-b from-gray-300/0 via-gray-400/40 to-gray-300/0 animate-pulse" />
+          <div className="w-px h-16 bg-linear-to-b from-gray-300/0 via-gray-400/40 to-gray-300/0 animate-pulse" />
           <span
             className={`text-[10px] font-bold uppercase tracking-widest ${isDarkTheme ? "text-gray-400" : "text-gray-400"}`}
           >
@@ -245,11 +245,11 @@ export default function Home() {
                     <img
                       src={MOCK_IMG}
                       alt="Placeholder"
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 blur-md blur-md animate-pulse"
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 blur-md group-hover:blur-none animate-pulse"
                     />
                   )}
                   <div
-                    className={`absolute inset-0 bg-gradient-to-t ${isDarkTheme ? "from-black" : "from-gray-800"} via-transparent to-transparent`}
+                    className={`absolute inset-0 bg-linear-to-t ${isDarkTheme ? "from-black" : "from-gray-800"} via-transparent to-transparent`}
                   />
 
                   {/* Corner accent */}
@@ -308,7 +308,7 @@ export default function Home() {
 
       {/* ── ATTRACTIONS ──────────────────────────────────────────────────── */}
       <section
-        className={`pb-18 px-2 sm:px-10 lg:px-16 bg-gradient-to-b from-transparent ${
+        className={`pb-18 px-2 sm:px-10 lg:px-16 bg-linear-to-b from-transparent ${
           isDarkTheme ? "to-white/3" : "to-gray-50"
         }`}
       >
@@ -391,7 +391,7 @@ export default function Home() {
                     />
                   )}
                   <div
-                    className={`absolute inset-0 bg-gradient-to-t ${
+                    className={`absolute inset-0 bg-linear-to-t ${
                       isDarkTheme ? "from-black" : "from-gray-800"
                     } via-transparent to-transparent`}
                   />
