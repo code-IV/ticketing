@@ -2,11 +2,9 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion, useScroll, useTransform ,Variants} from "framer-motion";
-import { Button } from "@/components/ui/Button";
 import {
   Ticket,
   ChevronRight,
-  Clock,
   Play,
   ArrowDownRight,
 } from "lucide-react";

@@ -2,7 +2,7 @@ import axios from "axios";
 import { logger } from "@/utils/logger";
 
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+  process.env.BACKEND_URL ;
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
