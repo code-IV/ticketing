@@ -400,7 +400,7 @@ export default function MyBookingsPage() {
                         </span>
                       </div>
                       <div
-                        className={`md:bg-transparent p-3 md:p-0 hidden md:block rounded-2xl flex flex-col ${isDarkTheme ? "bg-gray-800" : "bg-slate-50"}`}
+                        className={`md:bg-transparent p-3 md:p-0 hidden md:block rounded-2xl flex-col ${isDarkTheme ? "bg-gray-800" : "bg-slate-50"}`}
                       >
                         <span
                           className={`text-[9px] md:text-[10px] hidden md:block font-bold uppercase mb-1 ${isDarkTheme ? "text-gray-400" : "text-slate-400"}`}

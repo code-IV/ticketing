@@ -243,7 +243,7 @@ export default function GamesListingPage() {
                   }`}
                   alt={game.name}
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/40 to-transparent" />
+                <div className="absolute inset-0 bg-linear-to-t from-slate-950 via-slate-900/40 to-transparent" />
               </div>
 
               {/* Status Badge */}

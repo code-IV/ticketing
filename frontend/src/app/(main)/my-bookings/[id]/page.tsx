@@ -120,7 +120,7 @@ const QRModal = ({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md"
+        className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md"
         onClick={onClose}
       >
         <motion.div
@@ -232,7 +232,7 @@ const CollectorTicketCard = ({
         alt={item.productName}
         className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
       />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
+      <div className="absolute inset-0 bg-linear-to-t from-black/90 via-black/20 to-transparent" />
 
       <div className="absolute top-0 left-0 right-0 p-8 flex justify-between items-start z-10">
         <div className="max-w-[60%]">
@@ -426,7 +426,7 @@ export default function BookingDetailPage({
               onClick={() => setIsQRModalOpen(true)}
               className="relative group shrink-0"
             >
-              <div className="absolute -inset-2 bg-gradient-to-tr from-accent to-purple-600 rounded-[32px] blur opacity-20 group-hover:opacity-40 animate-pulse transition duration-1000"></div>
+              <div className="absolute -inset-2 bg-linear-to-tr from-accent to-purple-600 rounded-[32px] blur opacity-20 group-hover:opacity-40 animate-pulse transition duration-1000"></div>
               <div
                 className={`relative bg-bg1 p-5 rounded-[32px] border border-slate-100 shadow-sm flex flex-col items-center justify-center gap-1.5 min-w-[100px] ${isDarkTheme ? "bg-[#1a1a1a] border-gray-700 text-white" : "bg-white border-slate-100 text-slate-900"}`}
               >

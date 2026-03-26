@@ -307,7 +307,7 @@ const BuyTicketsPage = () => {
                               posterImage === "/l.jpg" ? "blur-sm" : ""
                             }`}
                           />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
+                          <div className="absolute inset-0 bg-linear-to-t from-black/90 via-black/20 to-transparent" />
                         </div>
 
                         <div className="absolute top-6 left-6 right-6 flex justify-between items-start z-10">

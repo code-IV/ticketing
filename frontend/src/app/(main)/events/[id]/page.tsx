@@ -394,7 +394,7 @@ export default function EventDetailPage({
             />
           )}
           <div
-            className={`absolute inset-0 bg-gradient-to-b ${
+            className={`absolute inset-0 bg-linear-to-b ${
               isDarkTheme
                 ? "from-[#0A0A0A]/20 via-[#0A0A0A]/10 to-[#0A0A0A]"
                 : "from-gray-40/20 via-gray-50/10 to-gray-50"
