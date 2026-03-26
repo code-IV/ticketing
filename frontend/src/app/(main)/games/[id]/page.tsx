@@ -39,7 +39,7 @@ export default function GameDetailPage({
   const [selectedMediaIndex, setSelectedMediaIndex] = useState(0);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [showToast, setShowToast] = useState(false);
-  
+
   // State for banner cycling
   const [bannerIndex, setBannerIndex] = useState(0);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -56,7 +56,7 @@ export default function GameDetailPage({
       const response = await gameService.getGame(gameId);
 
       if (response.success && response.data) {
-        setGame(response.data);
+        setGame(response.data?.game);
       } else {
         setError("Game not found");
         setGame(null);
@@ -73,14 +73,14 @@ export default function GameDetailPage({
   // Banner Cycling Logic
   useEffect(() => {
     if (!game || !game.gallery) return;
-    
-    const banners = game.gallery.filter(item => item.label === "banner");
+
+    const banners = game.gallery.filter((item) => item.label === "banner");
     if (banners.length <= 1) return;
-    
+
     intervalRef.current = setInterval(() => {
-      setBannerIndex(prev => (prev + 1) % banners.length);
+      setBannerIndex((prev) => (prev + 1) % banners.length);
     }, 5000);
-    
+
     return () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
@@ -92,12 +92,12 @@ export default function GameDetailPage({
     if (!game || !game.gallery) {
       return "/banner.jpg"; // Fallback to banner placeholder
     }
-    
-    const banners = game.gallery.filter(item => item.label === "banner");
+
+    const banners = game.gallery.filter((item) => item.label === "banner");
     if (banners.length === 0) {
       return "/banner.jpg"; // Fallback to banner placeholder
     }
-    
+
     return banners[bannerIndex]?.url || banners[0]?.url || "/banner.jpg";
   };
 
@@ -105,14 +105,18 @@ export default function GameDetailPage({
     if (!game) return [];
 
     const items = [];
-    
+
     // If game has gallery, use it first
     if (game.gallery && game.gallery.length > 0) {
       // Filter out banner items from gallery (they're used in hero section)
-      const galleryItems = game.gallery.filter(item => item.label !== "banner");
-      
+      const galleryItems = game.gallery.filter(
+        (item) => item.label !== "banner",
+      );
+
       // Add gallery images first
-      const images = galleryItems.filter(item => item.type === 'image' || !item.type);
+      const images = galleryItems.filter(
+        (item) => item.type === "image" || !item.type,
+      );
       images.forEach((item, index) => {
         items.push({
           type: "image",
@@ -121,9 +125,9 @@ export default function GameDetailPage({
           alt: item.name || `${game?.name || "Game"} - Gallery ${index + 1}`,
         });
       });
-      
+
       // Add gallery videos
-      const videos = galleryItems.filter(item => item.type === 'video');
+      const videos = galleryItems.filter((item) => item.type === "video");
       videos.forEach((item, index) => {
         items.push({
           type: "video",
@@ -140,7 +144,7 @@ export default function GameDetailPage({
         thumbnail: "/img.jpg",
         alt: `${game?.name || "Game"} - Gallery Image`,
       });
-      
+
       items.push({
         type: "video",
         url: "/vid.mp4",
@@ -247,7 +251,7 @@ export default function GameDetailPage({
   const mediaItems = getMediaItems();
   const currentMedia = mediaItems[selectedMediaIndex];
   const gameIndex = parseInt(gameId) || 0;
-  
+
   // Get banner image for hero section
   const bannerImage = getBannerImage();
 
@@ -402,12 +406,10 @@ export default function GameDetailPage({
                 <Clock size={18} className="text-[#ffd84f]" />
                 <span>15-20 min</span>
               </div>
-
             </div>
           </motion.div>
         </div>
-
-        </section>
+      </section>
 
       {/* Media Gallery */}
       <section className={`py-20 px-6 md:px-12 ${isDarkTheme ? "" : ""}`}>
