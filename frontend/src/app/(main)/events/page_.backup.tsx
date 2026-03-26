@@ -180,8 +180,8 @@ export default function EventsPage() {
       <main className="max-w-7xl mx-auto px-4">
         <div className="flex flex-col gap-8 md:gap-12">
           {events.map((event, i) => {
-            const soldOut = event.tickets_sold >= event.capacity;
-            const price = event.ticket_types?.find(t => t.category === 'ADULT')?.price ?? 0;
+            const soldOut = event.ticketsSold >= event.capacity;
+            const price = event.ticketTypes?.find(t => t.category === 'ADULT')?.price ?? 0;
 
             return (
               <motion.div
@@ -199,7 +199,7 @@ export default function EventsPage() {
                   <div className="absolute top-4 left-4">
                     <div className={`${isDarkTheme ? 'bg-black/90' : 'bg-white/90'} p-3 rounded-2xl border border-white/10`}>
                       <p className="text-[10px] font-black text-[#ffd84f] uppercase tracking-widest">Tickets Left</p>
-                      <p className={`text-xl font-black ${isDarkTheme ? 'text-white' : 'text-slate-900'}`}>{Math.max(0, event.capacity - event.tickets_sold)}</p>
+                      <p className={`text-xl font-black ${isDarkTheme ? 'text-white' : 'text-slate-900'}`}>{Math.max(0, event.capacity - event.ticketsSold)}</p>
                     </div>
                   </div>
                 </div>
@@ -209,11 +209,11 @@ export default function EventsPage() {
                    <div className="flex items-center gap-6 mb-6">
                     <div className="flex flex-col">
                       <span className="text-[10px] font-black text-[#ffd84f] uppercase tracking-widest">Date</span>
-                      <span className="text-xl font-black uppercase">{format(new Date(event.event_date), 'MMM dd')}</span>
+                      <span className="text-xl font-black uppercase">{format(new Date(event.eventDate), 'MMM dd')}</span>
                     </div>
                     <div className="flex flex-col">
                       <span className="text-[10px] font-black text-[#ffd84f] uppercase tracking-widest">Time</span>
-                      <span className="text-xl font-black">{event.start_time}</span>
+                      <span className="text-xl font-black">{event.startTime}</span>
                     </div>
                   </div>
 

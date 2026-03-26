@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   Ticket,
@@ -7,10 +7,8 @@ import {
   Zap,
   Plus,
   Minus,
-  Info,
   Sparkles,
   ArrowRight,
-  MapPin,
   ChevronDown,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";

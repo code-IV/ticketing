@@ -18,7 +18,7 @@ export interface Game {
   description: string;
   rules: string;
   status: "OPEN" | "ON_MAINTENANCE" | "UPCOMING" | "CLOSED";
-  ticket_types?: TicketType[];
+  ticketTypes?: TicketType[];
   gallery?: MediaItem[];
   createdAt: string;
   updatedAt: string;
@@ -33,6 +33,13 @@ export interface MediaItem {
   thumbnailUrl?: string;
   sort_order?: number; // Keep as sort_order to match backend
   file?: File;
+}
+
+export interface MediaDisplayItem {
+  type: "image" | "video";
+  url: string;
+  thumbnail: string;
+  alt: string;
 }
 
 export interface CreateGame {
