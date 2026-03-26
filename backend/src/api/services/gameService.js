@@ -94,9 +94,9 @@ const GameService = {
 
   async getById(id) {
     try {
-      const games = await Game.findById(id);
+      const game = await Game.findById(id);
 
-      return games;
+      return { game: new GameRes(game) };
     } catch (error) {
       console.error("Error in gameService.getAllGames:", error);
       throw new Error("Could not retrieve games catalog.");

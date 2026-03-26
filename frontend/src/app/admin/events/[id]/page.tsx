@@ -54,32 +54,34 @@ export default function EditEventPage() {
       setLoading(true);
       const response = await eventService.getEventById(eventId);
 
-      if (!response.success || !response.data) {
-        setError("Failed to load event data");
-        return;
+      if (response.data) {
+        setEvent(response.data?.event);
       }
-      console.log(response.data);
-      const eventData = response.data;
 
-      setEvent(eventData.event);
-      setFormData({
-        name: eventData.event.name,
-        description: eventData.event.description || "",
-        schedule: eventData.event?.schedule,
-        capacity: eventData.event.capacity?.toString(),
-        isActive: eventData.event.isActive,
-      });
+      if (event) {
+        setFormData({
+          name: event.name,
+          description: event.description || "",
+          schedule: {
+            eventDate: event.eventDate,
+            startTime: event.startTime,
+            endTime: event.endTime,
+          },
+          capacity: event.capacity?.toString(),
+          isActive: event.isActive,
+        });
 
-      if (eventData.ticketTypes && eventData.ticketTypes.length > 0) {
-        setTicketTypes(
-          eventData.ticketTypes.map((tt: any) => ({
-            name: tt.name,
-            category: tt.category,
-            price: parseFloat(tt.price),
-            description: tt.description || "",
-            maxQuantityPerBooking: tt.max_quantity_per_booking || 10,
-          })),
-        );
+        if (event.ticketTypes && event.ticketTypes.length > 0) {
+          setTicketTypes(
+            event.ticketTypes.map((tt: any) => ({
+              name: tt.name,
+              category: tt.category,
+              price: parseFloat(tt.price),
+              description: tt.description || "",
+              maxQuantityPerBooking: tt.max_quantity_per_booking || 10,
+            })),
+          );
+        }
       }
     } catch (err: any) {
       console.log(err);

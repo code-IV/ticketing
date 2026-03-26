@@ -137,7 +137,7 @@ const EventService = {
     }
 
     // Business Logic: Maybe you want to format the media URLs or calculate total capacity
-    return event;
+    return { event: new EventRes(event) };
   },
 
   async checkAvailability(eventId, requestedQuantity) {
