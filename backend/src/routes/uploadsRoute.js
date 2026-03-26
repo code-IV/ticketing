@@ -15,6 +15,17 @@ router.post(
     { name: "mediaFiles", maxCount: 10 },
     { name: "thumbnail", maxCount: 1 },
   ]),
+  (req, res, next) => {
+    if (req.body.label) {
+      req.body.label = Array.isArray(req.body.label)
+        ? req.body.label
+        : [req.body.label];
+    } else {
+      req.body.label = [];
+    }
+    next();
+  },
+  //
   UploadsController.uploadProductMedia,
 );
 
