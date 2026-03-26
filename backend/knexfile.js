@@ -55,7 +55,7 @@ module.exports = {
       user: process.env.DB_USER,
       password: process.env.DB_PASSWORD,
       port: process.env.DB_PORT || 5432,
-      ssl: { rejectUnauthorized: true },
+      ssl: { rejectUnauthorized: false },
     },
     pool: {
       min: 2,
