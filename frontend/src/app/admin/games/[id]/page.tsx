@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { gameService } from "@/services/adminService";
+import { gameService, adminService } from "@/services/adminService";
 import { Game } from "@/types";
 import { Trash2, Save, ArrowLeft, Plus, X } from "lucide-react";
 import { useTheme } from '@/contexts/ThemeContext';
@@ -40,7 +40,7 @@ export default function GameDetailsPage() {
     try {
       const response = await gameService.getGame(id!);
       console.log('API Response:', response);
-      const data = response.data?.data || response.data || {};
+      const data = (response.data as any)?.data || response.data || {};
       console.log('Game data:', data);
       setFormData(data);
       setSavedData(data);
@@ -156,7 +156,43 @@ const compareObjects = (obj1: any, obj2: any, path = '') => {
       console.log('Changes to send (diff):', diff);
       console.log('=======================');
       
-      const response = await gameService.updateGame(id!, diff);
+      let finalDiff = { ...diff };
+      
+      // Upload new files first
+      if (finalDiff.gallery) {
+        // filter items that have a local file attached
+        const newMediaItems = finalDiff.gallery.filter((item: any) => item.file);
+        
+        if (newMediaItems.length > 0) {
+          const uploadsObj = new FormData();
+          newMediaItems.forEach((item: any) => {
+            uploadsObj.append('mediaFiles', item.file);
+            uploadsObj.append('label', item.label);
+          });
+          
+          try {
+            const uploadResponse = await adminService.uploadGameMedia(id!, uploadsObj);
+            const uploadedItems = uploadResponse.data || [];
+            
+            // Swap temp ids with actual backend URLs and IDs
+            finalDiff.gallery = finalDiff.gallery.map((item: any) => {
+              if (item.file) {
+                const uploadedMatch = uploadedItems.find((u: any) => u.name === item.name);
+                if (uploadedMatch) {
+                  return { ...item, id: uploadedMatch.id, url: uploadedMatch.url, file: undefined };
+                }
+              }
+              return item;
+            });
+          } catch (uploadError) {
+             console.error("Upload media failed:", uploadError);
+             alert("Media upload failed! Gallery won't be saved.");
+             delete finalDiff.gallery;
+          }
+        }
+      }
+
+      const response = await gameService.updateGame(id!, finalDiff);
       console.log('Update response:', response);
       
       // After update, fetch fresh data to compare
@@ -441,7 +477,7 @@ const compareObjects = (obj1: any, obj2: any, path = '') => {
                       {key === "ticket_types" ? (
                         `${(value as any[]).length} categories updated`
                       ) : (
-                        <span className="break-words line-clamp-2">
+                        <span className="wrap-break-word line-clamp-2">
                           {String(value)}
                         </span>
                       )}

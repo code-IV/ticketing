@@ -66,6 +66,18 @@ export const adminService = {
     return response.data;
   },
 
+  uploadGameMedia: async (
+    gameId: string,
+    formData: FormData,
+  ): Promise<any> => {
+    const response = await api.post(`/media/uploads/game/${gameId}`, formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+    return response.data;
+  },
+
   async createEventWithTicketTypes(
     data: CreateEventWithTicketTypesRequest,
   ): Promise<ApiResponse<{ event: Event; ticketTypes: TicketType[] }>> {

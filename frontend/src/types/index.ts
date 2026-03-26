@@ -32,6 +32,7 @@ export interface MediaItem {
   label: string;
   thumbnailUrl?: string;
   sort_order?: number; // Keep as sort_order to match backend
+  file?: File;
 }
 
 export interface CreateGame {

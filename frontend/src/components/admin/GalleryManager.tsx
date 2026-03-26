@@ -40,6 +40,7 @@ const GalleryManager: React.FC<GalleryManagerProps> = ({
         type: file.type,
         label: label as 'poster' | 'banner' | 'gallery' | 'thumbnail',
         sort_order: gallery.length + index,
+        file: file,
       };
       newMediaItems.push(mediaItem);
     });
