@@ -295,7 +295,7 @@ export default function MyBookingsPage() {
                   key={item.id}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  className={`rounded-[32px] md:rounded-[24px] overflow-hidden flex flex-col md:flex-row shadow-sm transition-all ${isFinished ? "opacity-60 grayscale-[0.4]" : ""} ${
+                  className={`rounded-4xl md:rounded-3xl overflow-hidden flex flex-col md:flex-row shadow-sm transition-all ${isFinished ? "opacity-60 grayscale-[0.4]" : ""} ${
                     isDarkTheme
                       ? "bg-[#1a1a1a] border-gray-700"
                       : "bg-white border-slate-100"

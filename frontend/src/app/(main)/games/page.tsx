@@ -227,7 +227,7 @@ export default function GamesListingPage() {
                   router.push(`/games/${game.id}`);
                 }
               }}
-              className={`group relative h-[520px] rounded-[48px] overflow-hidden border-2 border-transparent transition-all duration-500 shadow-xl hover:border-[#ffd84f]/30 ${
+              className={`group relative h-130 rounded-[48px] overflow-hidden border-2 border-transparent transition-all duration-500 shadow-xl hover:border-[#ffd84f]/30 ${
                 game.id.startsWith("mock-")
                   ? "cursor-not-allowed opacity-75"
                   : "cursor-pointer"

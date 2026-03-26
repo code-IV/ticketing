@@ -283,7 +283,7 @@ const BuyTicketsPage = () => {
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         id={`game-visual-${game.id}`}
-                        className={`group relative min-h-[400px] rounded-[40px] overflow-hidden border-2 transition-all cursor-pointer ${
+                        className={`group relative min-h-100 rounded-[40px] overflow-hidden border-2 transition-all cursor-pointer ${
                           hasItems
                             ? " ring-4 ring-indigo-50"
                             : `border-transparent shadow-sm hover:shadow-xl ${isDarkTheme ? "bg-gray-800" : "bg-white"}`
@@ -521,7 +521,7 @@ const BuyTicketsPage = () => {
                   </div>
 
                   <div
-                    className={`rounded-[32px] p-8 border ${isDarkTheme ? "bg-bg3 border-gray-600" : "bg-slate-50 border-slate-100"}`}
+                    className={`rounded-4xl p-8 border ${isDarkTheme ? "bg-bg3 border-gray-600" : "bg-slate-50 border-slate-100"}`}
                   >
                     <p
                       className={`text-[10px] font-black uppercase tracking-widest mb-1 ${isDarkTheme ? "text-accent" : "text-accent2"}`}
@@ -547,7 +547,7 @@ const BuyTicketsPage = () => {
                     whileTap={{ scale: 0.98 }}
                     disabled={total === 0 || bookingLoading}
                     onClick={handleCheckout}
-                    className="w-full mt-8 py-6 bg-accent text-white rounded-[24px] font-black uppercase text-xs tracking-[0.3em] flex items-center justify-center gap-4 hover:bg-yellow-400 transition-all shadow-xl disabled:opacity-20 disabled:grayscale"
+                    className="w-full mt-8 py-6 bg-accent text-white rounded-3xl font-black uppercase text-xs tracking-[0.3em] flex items-center justify-center gap-4 hover:bg-yellow-400 transition-all shadow-xl disabled:opacity-20 disabled:grayscale"
                   >
                     {bookingLoading ? (
                       <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -576,7 +576,7 @@ const BuyTicketsPage = () => {
           >
             <button
               onClick={scrollToSummary}
-              className="w-full relative py-6 rounded-[32px] shadow-[0_25px_50px_rgba(0,0,0,0.15)] flex items-center justify-between px-8 overflow-hidden group border border-accent"
+              className="w-full relative py-6 rounded-4xl shadow-[0_25px_50px_rgba(0,0,0,0.15)] flex items-center justify-between px-8 overflow-hidden group border border-accent"
             >
               {/* Cinematic Frosted Glass Background */}
               <div

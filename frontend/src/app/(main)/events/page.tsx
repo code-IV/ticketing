@@ -153,7 +153,7 @@ export default function EventsPage() {
       </div>
 
       <header
-        className={`${isDarkTheme ? "bg-[#1a1a1a]" : "bg-white"} pt-16 pb-24 px-4 md:px-6 mb-[-40px]`}
+        className={`${isDarkTheme ? "bg-[#1a1a1a]" : "bg-white"} pt-16 pb-24 px-4 md:px-6 -mb-10`}
       >
         <div className="max-w-7xl mx-auto">
           <motion.h1
@@ -178,10 +178,10 @@ export default function EventsPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.1, type: "spring", stiffness: 100 }}
-                className={`group relative ${isDarkTheme ? "bg-[#1a1a1a]" : "bg-white"} rounded-[40px] border border-[#ffd84f] shadow-sm hover:shadow-2xl hover:scale-[1.02] transition-all duration-700 flex flex-col lg:flex-row overflow-hidden min-h-[400px]`}
+                className={`group relative ${isDarkTheme ? "bg-[#1a1a1a]" : "bg-white"} rounded-[40px] border border-[#ffd84f] shadow-sm hover:shadow-2xl hover:scale-[1.02] transition-all duration-700 flex flex-col lg:flex-row overflow-hidden min-h-100`}
               >
                 {/* MEDIA */}
-                <div className="relative h-64 lg:h-auto lg:w-[450px] shrink-0 overflow-hidden bg-[#ffd84f]">
+                <div className="relative h-64 lg:h-auto lg:w-112.5 shrink-0 overflow-hidden bg-[#ffd84f]">
                   <img
                     src={getBannerImage(event)}
                     crossOrigin="anonymous"
