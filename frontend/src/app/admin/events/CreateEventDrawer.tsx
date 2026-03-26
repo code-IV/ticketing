@@ -193,9 +193,8 @@ const CreateEventDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
         price: parseFloat(tt.price.toString()),
       })),
     };
-    let response: any;
     try {
-      response = await adminService.createEvent(payload);
+      const response = await adminService.createEvent(payload);
       const newProductId = response.data?.productId;
       if (formData.mediaFiles.length > 0 && newProductId) {
         const data = new FormData();
@@ -220,7 +219,6 @@ const CreateEventDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
       onClose();
     } catch (error) {
       console.error("Failed to create event:", error);
-      await adminService.deleteEvent(response.data.event.id);
     } finally {
       setLoading(false);
     }

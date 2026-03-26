@@ -174,9 +174,8 @@ const CreateGameDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
     e.preventDefault();
     if (loading) return;
     setLoading(true);
-    let response: any;
     try {
-      response = await gameService.createGame(formData);
+      const response = await gameService.createGame(formData);
       const newProductId = response.data?.productId;
       if (formData.mediaFiles.length > 0 && newProductId) {
         const data = new FormData();
@@ -199,7 +198,6 @@ const CreateGameDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
       onClose();
     } catch (error) {
       console.error("Failed to create attraction:", error);
-      await gameService.deleteGame(response.data.game.id);
     } finally {
       setLoading(false);
     }
