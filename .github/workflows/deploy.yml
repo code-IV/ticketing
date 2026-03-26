@@ -4,7 +4,7 @@ on:
   push:
     branches: [production]
     paths:
-      - "backend/**" # Path to your backend folder
+      - "backend/**"
 
 jobs:
   ci-checks:
@@ -22,19 +22,39 @@ jobs:
       - name: Install dependencies
         working-directory: ./backend
         run: npm ci
-      - name: Validate Knex Config
-        # Ensure we are running this inside the backend directory
-        working-directory: ./backend
-        run: npx knex migrate:status
-        env:
-          NODE_ENV: production
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
   deploy:
     needs: ci-checks
     if: github.ref == 'refs/heads/production'
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        working-directory: ./backend
+        run: npm ci
+
+      - name: Run migrations (PRODUCTION DB)
+        working-directory: ./backend
+        run: npm run db:migrate
+        env:
+          NODE_ENV: production
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+      - name: Run seeds (optional)
+        if: contains(github.event.head_commit.message, '[seed]')
+        working-directory: ./backend
+        run: npm run db:seed
+        env:
+          NODE_ENV: production
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          RUN_SEED: "true"
+
       - name: Trigger Render Deployment
         run: |
           curl -X POST ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
