@@ -216,15 +216,15 @@ const CreateGameDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
           `}
         >
           {/* ── Decorative top accent bar ── */}
-          <div className="h-[3px] w-full bg-gradient-to-r from-accent to-accent/80 flex-shrink-0" />
+          <div className="h-0.75 w-full bg-linear-to-r from-accent to-accent/80 shrink-0" />
 
           {/* ── Header ── */}
           <div
-            className={`flex items-center justify-between px-8 py-5 border-b ${border} flex-shrink-0`}
+            className={`flex items-center justify-between px-8 py-5 border-b ${border} shrink-0`}
           >
             <div className="flex items-center gap-4">
               <div
-                className={`w-10 h-10 rounded-xl flex items-center justify-center bg-gradient-to-br from-accent2/80 to-accent/80`}
+                className={`w-10 h-10 rounded-xl flex items-center justify-center bg-linear-to-br from-accent2/80 to-accent/80`}
               >
                 <Gamepad2 size={18} className="text-white" />
               </div>
@@ -350,7 +350,7 @@ const CreateGameDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
 
                   {/* Add new ticket */}
                   <div
-                    className={`p-5 rounded-2xl border border-dashed ${d ? "border-white/10 bg-white/[0.02]" : "border-black/10 bg-black/[0.02]"}`}
+                    className={`p-5 rounded-2xl border border-dashed ${d ? "border-white/10 bg-white/2" : "border-black/10 bg-black/2"}`}
                   >
                     <p
                       className={`text-[11px] font-semibold uppercase tracking-widest mb-4 ${muted}`}
@@ -473,7 +473,7 @@ const CreateGameDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
                 >
                   {/* Quota strip */}
                   <div
-                    className={`flex items-center justify-between px-4 py-2.5 rounded-xl text-xs font-semibold ${d ? "bg-white/[0.04]" : "bg-black/[0.03]"}`}
+                    className={`flex items-center justify-between px-4 py-2.5 rounded-xl text-xs font-semibold ${d ? "bg-white/4" : "bg-black/3"}`}
                   >
                     {[
                       { label: "Posters", count: getPosterCount() },
@@ -600,7 +600,7 @@ const CreateGameDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
 
                   {formData.mediaFiles.length === 0 && (
                     <div
-                      className={`flex flex-col items-center justify-center py-8 rounded-2xl ${d ? "bg-white/[0.02]" : "bg-black/[0.02]"}`}
+                      className={`flex flex-col items-center justify-center py-8 rounded-2xl ${d ? "bg-white/2" : "bg-black/2"}`}
                     >
                       <ImageIcon size={28} className={`${muted} mb-2`} />
                       <p className={`text-xs font-medium ${muted}`}>
@@ -615,11 +615,11 @@ const CreateGameDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
 
           {/* ── Footer ── */}
           <div
-            className={`flex items-center justify-between px-8 py-5 border-t ${border} flex-shrink-0 ${card}`}
+            className={`flex items-center justify-between px-8 py-5 border-t ${border} shrink-0 ${card}`}
           >
             <button
               onClick={onClose}
-              className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition-all ${d ? "bg-white/[0.06] hover:bg-white/10 text-white/70" : "bg-black/[0.05] hover:bg-black/10 text-black/60"}`}
+              className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition-all ${d ? "bg-white/6 hover:bg-white/10 text-white/70" : "bg-black/5 hover:bg-black/10 text-black/60"}`}
             >
               Cancel
             </button>
@@ -636,7 +636,7 @@ const CreateGameDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
                 onClick={handleCreate}
                 className={`
                   flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold text-black
-                  bg-gradient-to-r from-accent to-accent2/80
+                  bg-linear-to-r from-accent to-accent2/80
                   hover:from-accent2/90 hover:to-accent2/70
                   shadow-lg shadow-accent/30
                   transition-all active:scale-[0.98]
@@ -661,7 +661,7 @@ const CreateGameDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
 
       {/* ── Label picker modal ── */}
       {labelModalOpen && pendingFile && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-[60]">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-60">
           <div
             className={`w-full max-w-sm mx-4 rounded-3xl shadow-2xl overflow-hidden border ${border} ${d ? "bg-[#141416]" : "bg-white"}`}
           >
@@ -701,7 +701,7 @@ const CreateGameDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
                   setPendingFile(null);
                   setLabelModalOpen(false);
                 }}
-                className={`w-full py-2.5 rounded-xl text-sm font-semibold transition-all ${d ? "bg-white/[0.06] hover:bg-white/10 text-white/50" : "bg-black/[0.05] hover:bg-black/10 text-black/50"}`}
+                className={`w-full py-2.5 rounded-xl text-sm font-semibold transition-all ${d ? "bg-white/6 hover:bg-white/10 text-white/50" : "bg-black/5 hover:bg-black/10 text-black/50"}`}
               >
                 Cancel
               </button>
@@ -736,7 +736,7 @@ const Section = ({
         {label}
       </span>
       <div
-        className={`flex-1 h-px ${isDark ? "bg-white/[0.06]" : "bg-black/[0.06]"}`}
+        className={`flex-1 h-px ${isDark ? "bg-white/6" : "bg-black/6"}`}
       />
     </div>
     {children}

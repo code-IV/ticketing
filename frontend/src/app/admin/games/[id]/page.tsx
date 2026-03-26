@@ -21,7 +21,7 @@ export default function GameDetailsPage() {
     description: "",
     rules: "",
     status: "OPEN",
-    ticket_types: [],
+    ticketTypes: [],
     gallery: [],
   });
   const [savedData, setSavedData] = useState<Partial<Game>>({});
@@ -57,17 +57,17 @@ export default function GameDetailsPage() {
 
     // Check simple fields
     (Object.keys(formData) as Array<keyof Game>).forEach((key) => {
-      if (key !== "ticket_types" && formData[key] !== savedData[key]) {
+      if (key !== "ticketTypes" && formData[key] !== savedData[key]) {
         changes[key] = formData[key];
       }
     });
 
-    // Check ticket_types (deep comparison)
+    // Check ticketTypes (deep comparison)
     if (
-      JSON.stringify(formData.ticket_types) !==
-      JSON.stringify(savedData.ticket_types)
+      JSON.stringify(formData.ticketTypes) !==
+      JSON.stringify(savedData.ticketTypes)
     ) {
-      changes.ticket_types = formData.ticket_types;
+      changes.ticketTypes = formData.ticketTypes;
     }
 
     return changes;
@@ -127,12 +127,12 @@ export default function GameDetailsPage() {
       validationErrors.push('Game name is required');
     }
     
-    if (!formData.ticket_types || formData.ticket_types.length === 0) {
+    if (!formData.ticketTypes || formData.ticketTypes.length === 0) {
       validationErrors.push('At least one ticket type is required');
     }
     
     // Validate ticket types
-    formData.ticket_types?.forEach((ticket, index) => {
+    formData.ticketTypes?.forEach((ticket, index) => {
       if (!ticket.category) {
         validationErrors.push(`Ticket type ${index + 1}: Category is required`);
       }
@@ -308,7 +308,7 @@ export default function GameDetailsPage() {
                   placeholder="Game Name"
                 />
                 <textarea
-                  className={`w-full p-4 border-none rounded-2xl min-h-[120px] ${isDarkTheme ? "bg-bg3 text-white" : "bg-slate-50"}`}
+                  className={`w-full p-4 border-none rounded-2xl min-h-30 ${isDarkTheme ? "bg-bg3 text-white" : "bg-slate-50"}`}
                   value={formData.description}
                   onChange={(e) =>
                     setFormData({ ...formData, description: e.target.value })
@@ -335,7 +335,7 @@ export default function GameDetailsPage() {
                 Pricing Matrix
               </h2>
               <div className="space-y-3">
-                {formData?.ticket_types?.map((tt, index) => (
+                {formData?.ticketTypes?.map((tt, index) => (
                   <div
                     key={index}
                     className={`flex items-center gap-3 p-3 rounded-2xl ${isDarkTheme ? "bg-bg3" : "bg-slate-50"}`}
@@ -363,7 +363,7 @@ export default function GameDetailsPage() {
                         className={`w-20 p-2 font-black text-right outline-none ${isDarkTheme ? "text-white" : ""}`}
                         value={tt.price}
                         onChange={(e) => {
-                          const newTypes = (formData.ticket_types ?? []).map(
+                          const newTypes = (formData.ticketTypes ?? []).map(
                             (t, i) =>
                               i === index
                                 ? {
@@ -372,15 +372,15 @@ export default function GameDetailsPage() {
                                   }
                                 : t,
                           );
-                          setFormData({ ...formData, ticket_types: newTypes });
+                          setFormData({ ...formData, ticketTypes: newTypes });
                         }}
                       />
                     </div>
                     <button
                       type="button"
                       onClick={() => {
-                        const newTypes = (formData.ticket_types ?? []).filter((_, i) => i !== index);
-                        setFormData({ ...formData, ticket_types: newTypes });
+                        const newTypes = (formData.ticketTypes ?? []).filter((_, i) => i !== index);
+                        setFormData({ ...formData, ticketTypes: newTypes });
                       }}
                       className={`p-2 rounded-lg transition-colors ${
                         isDarkTheme 
@@ -398,7 +398,7 @@ export default function GameDetailsPage() {
                   <button
                     type="button"
                     onClick={() => {
-                      const existingCategories = (formData.ticket_types ?? []).map(tt => tt.category);
+                      const existingCategories = (formData.ticketTypes ?? []).map(tt => tt.category);
                       const availableCategories = ["ADULT", "CHILD", "SENIOR", "STUDENT", "GROUP"].filter(
                         cat => !existingCategories.includes(cat as any)
                       );
@@ -421,7 +421,7 @@ export default function GameDetailsPage() {
                       
                       setFormData({ 
                         ...formData, 
-                        ticket_types: [...(formData.ticket_types ?? []), newTicket] 
+                        ticketTypes: [...(formData.ticketTypes ?? []), newTicket] 
                       });
                     }}
                     className={`w-full py-3 px-4 rounded-xl font-bold transition-colors flex items-center justify-center gap-2 ${
@@ -474,7 +474,7 @@ export default function GameDetailsPage() {
             >
               <h3 className="font-bold mb-2">Internal Rules</h3>
               <textarea
-                className={`w-full border-none rounded-xl p-3 text-sm min-h-[150px] ${isDarkTheme ? "bg-bg3 text-gray-300" : "bg-slate-800 text-slate-300"}`}
+                className={`w-full border-none rounded-xl p-3 text-sm min-h-37.5 ${isDarkTheme ? "bg-bg3 text-gray-300" : "bg-slate-800 text-slate-300"}`}
                 value={formData.rules}
                 onChange={(e) =>
                   setFormData({ ...formData, rules: e.target.value })
@@ -489,7 +489,7 @@ export default function GameDetailsPage() {
           className={`fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm p-4 ${isDarkTheme ? "bg-black/60" : "bg-slate-900/60"}`}
         >
           <div
-            className={`w-full max-w-md rounded-[32px] shadow-2xl overflow-hidden animate-in zoom-in-95 ${isDarkTheme ? "bg-[#0A0A0A]" : "bg-white"}`}
+            className={`w-full max-w-md rounded-4xl shadow-2xl overflow-hidden animate-in zoom-in-95 ${isDarkTheme ? "bg-[#0A0A0A]" : "bg-white"}`}
           >
             <div className="p-8">
               <h3
@@ -517,7 +517,7 @@ export default function GameDetailsPage() {
                     <div
                       className={`text-sm font-bold ${isDarkTheme ? "text-gray-300" : "text-slate-700"}`}
                     >
-                      {key === "ticket_types" ? (
+                      {key === "ticketTypes" ? (
                         `${(value as any[]).length} categories updated`
                       ) : (
                         <span className="wrap-break-word line-clamp-2">

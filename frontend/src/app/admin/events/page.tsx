@@ -165,7 +165,7 @@ const EventsManagementPage = () => {
               <div
                 key={event.id}
                 onClick={() => router.push(`/admin/events/${event.id}`)}
-                className={`group relative rounded-3xl border shadow-lg hover:shadow-2xl hover:-translate-y-2 hover:border-accent/50 transition-all duration-500 overflow-hidden cursor-pointer ${isDarkTheme ? "bg-gradient-to-br from-[#0A0A0A] to-[#1a1a1a] border-gray-700" : "bg-gradient-to-br from-white to-gray-50 border-slate-200"}`}
+                className={`group relative rounded-3xl border shadow-lg hover:shadow-2xl hover:-translate-y-2 hover:border-accent/50 transition-all duration-500 overflow-hidden cursor-pointer ${isDarkTheme ? "bg-gradient-to-br from-[#0A0A0A] to-[#1a1a1a] border-gray-700" : "bg-linear-to-br from-white to-gray-50 border-slate-200"}`}
               >
                 <div className="relative p-8">
                   <div className="flex justify-between items-start mb-6">

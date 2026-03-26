@@ -257,6 +257,10 @@ export interface Payment {
 }
 
 export interface ApiResponse<T = any> {
+  topPerformers: any;
+  revenueByTicketType: never[];
+  timeSeries: never[];
+  summary: any;
   success: boolean;
   message: string;
   data?: T;
@@ -266,9 +270,9 @@ export interface PaginatedResponse<T> {
   success: boolean;
   message: string;
   data: {
+    users?: T[];
     events?: T[];
     bookings?: T[];
-    users?: T[];
     payments?: T[];
     games?: T[];
     pagination: {
