@@ -39,9 +39,6 @@ export default function GameDetailsPage() {
   const fetchGame = async () => {
     try {
       const response = await gameService.getGame(id!);
-      console.log("API Response:", response);
-      const data = response.data?.game || {};
-      console.log("Game data:", data);
       console.log('API Response:', response);
       const data = (response.data as any)?.data || response.data || {};
       console.log('Game data:', data);
