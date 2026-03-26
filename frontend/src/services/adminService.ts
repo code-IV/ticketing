@@ -350,7 +350,7 @@ export const gameService = {
     const response = await api.get("/games/buy");
     return response.data;
   },
-  async getGame(id: string): Promise<ApiResponse<Partial<Game>>> {
+  async getGame(id: string): Promise<ApiResponse<{ game: Partial<Game> }>> {
     const response = await api.get(`/games/${id}`);
     return response.data;
   },

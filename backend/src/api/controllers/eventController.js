@@ -236,11 +236,27 @@ const EventController = {
   },
 
   /**
+   * POST /api/admin/events/:id - Deactivate an event
+   */
+  async deactivateEvent(req, res, next) {
+    try {
+      const event = await EventService.deactivateEvent(req.params.id);
+      if (!event) {
+        return apiResponse(res, 404, false, "Event not found.");
+      }
+      return apiResponse(res, 200, true, "Event deactivated successfully.", {
+        event,
+      });
+    } catch (err) {
+      next(err);
+    }
+  },
+  /**
    * DELETE /api/admin/events/:id - Deactivate an event
    */
   async deleteEvent(req, res, next) {
     try {
-      const event = await EventService.deactivateEvent(req.params.id);
+      const event = await EventService.deleteById(req.params.id);
       if (!event) {
         return apiResponse(res, 404, false, "Event not found.");
       }

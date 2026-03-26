@@ -37,3 +37,6 @@ Thumbs.db
 # Temporary folders
 .temp/
 .tmp/
+
+#Ai helper
+.windsurf/

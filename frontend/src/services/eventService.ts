@@ -16,7 +16,7 @@ export const eventService = {
     return response.data;
   },
 
-  async getEventById(id: string): Promise<ApiResponse<Event>> {
+  async getEventById(id: string): Promise<ApiResponse<{ event: Event }>> {
     const response = await api.get(`/events/${id}`);
     return response.data;
   },

@@ -24,10 +24,12 @@ export default function GamesListingPage() {
   const [itemsPerPage, setItemsPerPage] = useState(12);
   const [showShareModal, setShowShareModal] = useState(false);
   const [selectedGame, setSelectedGame] = useState<Game | null>(null);
-  
+
   // State for banner cycling
-  const [bannerIndexes, setBannerIndexes] = useState<{[key: string]: number}>({});
-  const intervalRefs = useRef<{[key: string]: NodeJS.Timeout}>({});
+  const [bannerIndexes, setBannerIndexes] = useState<{ [key: string]: number }>(
+    {},
+  );
+  const intervalRefs = useRef<{ [key: string]: NodeJS.Timeout }>({});
 
   useEffect(() => {
     const fetchGames = async () => {
@@ -56,12 +58,13 @@ export default function GamesListingPage() {
   // Banner Cycling Logic
   useEffect(() => {
     games.forEach((game) => {
-      const posters = game.gallery?.filter(item => item.label === "poster") || [];
+      const posters =
+        game.gallery?.filter((item) => item.label === "poster") || [];
       if (posters.length > 1) {
         intervalRefs.current[game.id] = setInterval(() => {
-          setBannerIndexes(prev => ({
+          setBannerIndexes((prev) => ({
             ...prev,
-            [game.id]: ((prev[game.id] || 0) + 1) % posters.length
+            [game.id]: ((prev[game.id] || 0) + 1) % posters.length,
           }));
         }, 4000); // 4 seconds
       }
@@ -74,7 +77,8 @@ export default function GamesListingPage() {
 
   // Helper function to get banner image
   const getBannerImage = (game: Game) => {
-    const posters = game.gallery?.filter(item => item.label === "poster") || [];
+    const posters =
+      game.gallery?.filter((item) => item.label === "poster") || [];
     if (posters.length === 0) {
       return "/l.jpg"; // Fallback to poster placeholder
     }
@@ -119,12 +123,12 @@ export default function GamesListingPage() {
 
   const handlePreviousPage = () => {
     setCurrentPage((prev) => Math.max(1, prev - 1));
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const handleNextPage = () => {
     setCurrentPage((prev) => Math.min(totalPages, prev + 1));
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   if (loading)
@@ -233,6 +237,7 @@ export default function GamesListingPage() {
               <div className="absolute inset-0">
                 <img
                   src={getBannerImage(game)}
+                  crossOrigin="anonymous"
                   className={`w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110 ${
                     getBannerImage(game) === "/l.jpg" ? "blur-sm" : ""
                   }`}

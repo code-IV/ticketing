@@ -53,7 +53,9 @@ export default function EventDetailPage({
   >("telebirr");
   const [selectedMediaIndex, setSelectedMediaIndex] = useState(0);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
-  const [lightboxSource, setLightboxSource] = useState<'hero' | 'gallery'>('hero');
+  const [lightboxSource, setLightboxSource] = useState<"hero" | "gallery">(
+    "hero",
+  );
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [bookingReference, setBookingReference] = useState<string>("");
   const [bookingId, setBookingId] = useState<string>("");
@@ -72,7 +74,7 @@ export default function EventDetailPage({
 
       if (response.success && response.data) {
         // Event data is directly in response.data
-        const eventData = response.data;
+        const eventData = response.data?.event;
         setEvent(eventData);
       } else {
         setError(response.message || "Event not found");
@@ -95,9 +97,9 @@ export default function EventDetailPage({
   };
 
   const getTotalAmount = () => {
-    if (!event?.ticket_types) return 0;
+    if (!event?.ticketTypes) return 0;
     return Object.entries(cart).reduce((total, [ticketTypeId, quantity]) => {
-      const ticketType = event.ticket_types?.find((t) => t.id === ticketTypeId);
+      const ticketType = event.ticketTypes?.find((t) => t.id === ticketTypeId);
       return total + (ticketType ? ticketType.price * quantity : 0);
     }, 0);
   };
@@ -206,22 +208,24 @@ export default function EventDetailPage({
   // Media handling functions with useMemo to prevent race conditions
   const mediaItems = useMemo(() => {
     if (!event) return [];
-    
+
     // Filter for banner-labeled images from gallery
-    const bannerImages = (event.gallery || []).filter((item) => 
-      item.label && item.label.toLowerCase().includes('banner')
-    ).map((item, index) => ({
-      type: "image" as const,
-      url: item.url,
-      thumbnail: item.thumbnailUrl || item.url,
-      alt: item.label || `${event.name} banner ${index + 1}`,
-    }));
-    
+    const bannerImages = (event.gallery || [])
+      .filter(
+        (item) => item.label && item.label.toLowerCase().includes("banner"),
+      )
+      .map((item, index) => ({
+        type: "image" as const,
+        url: item.url,
+        thumbnail: item.thumbnailUrl || item.url,
+        alt: item.label || `${event.name} banner ${index + 1}`,
+      }));
+
     // If banner images exist, use them
     if (bannerImages.length > 0) {
       return bannerImages;
     }
-    
+
     // Use fallback banner when no banner-labeled images exist
     return [
       {
@@ -237,38 +241,38 @@ export default function EventDetailPage({
 
   // Get current lightbox media based on source
   const getLightboxMedia = () => {
-    const items = lightboxSource === 'hero' ? mediaItems : galleryItems;
+    const items = lightboxSource === "hero" ? mediaItems : galleryItems;
     return items[selectedMediaIndex] || null;
   };
 
   // Gallery items with different fallbacks (img.jpg and vid.mp4)
   const galleryItems = useMemo(() => {
     if (!event) return [];
-    
+
     // If event has gallery items, separate images first, then videos
     if (event.gallery && event.gallery.length > 0) {
       const images = event.gallery
-        .filter(item => item.type === 'image' || !item.type) // assume image if no type
+        .filter((item) => item.type === "image" || !item.type) // assume image if no type
         .map((item, index) => ({
           type: "image" as const,
           url: item.url,
           thumbnail: item.thumbnailUrl || item.url,
           alt: item.label || `${event.name} gallery image ${index + 1}`,
         }));
-      
+
       const videos = event.gallery
-        .filter(item => item.type === 'video')
+        .filter((item) => item.type === "video")
         .map((item, index) => ({
           type: "video" as const,
           url: item.url,
           thumbnail: item.thumbnailUrl || item.url,
           alt: item.label || `${event.name} gallery video ${index + 1}`,
         }));
-      
+
       // Return images first, then videos
       return [...images, ...videos];
     }
-    
+
     // Use fallback gallery media when no gallery exists
     return [
       {
@@ -385,7 +389,9 @@ export default function EventDetailPage({
               )}
             </>
           ) : (
-            <div className={`w-full h-full ${isDarkTheme ? "bg-linear-to-br from-[#1a1a1a] to-[#2a2a2a]" : "bg-linear-to-br from-gray-200 to-gray-300"}`} />
+            <div
+              className={`w-full h-full ${isDarkTheme ? "bg-linear-to-br from-[#1a1a1a] to-[#2a2a2a]" : "bg-linear-to-br from-gray-200 to-gray-300"}`}
+            />
           )}
           <div
             className={`absolute inset-0 bg-gradient-to-b ${
@@ -511,7 +517,7 @@ export default function EventDetailPage({
               }}
               className={`text-xl ${isDarkTheme ? "text-gray-300" : "text-gray-600"} font-medium leading-relaxed mb-8 max-w-3xl`}
             >
-              {event.description }
+              {event.description}
             </motion.p>
 
             <div
@@ -519,20 +525,17 @@ export default function EventDetailPage({
             >
               <div className="flex items-center gap-2">
                 <Calendar size={18} className="text-[#ffd84f]" />
-                <span>
-                  {format(new Date(event.event_date), "MMM dd, yyyy")}
-                </span>
+                <span>{format(new Date(event.eventDate), "MMM dd, yyyy")}</span>
               </div>
               <div className="flex items-center gap-2">
                 <Clock size={18} className="text-[#ffd84f]" />
-                <span>{event.start_time}</span>
+                <span>{event.startTime}</span>
               </div>
 
               <div className="flex items-center gap-2">
                 <Users size={18} className="text-[#ffd84f]" />
                 <span>Capacity: {event.capacity}</span>
               </div>
-
             </div>
           </motion.div>
         </div>
@@ -588,7 +591,7 @@ export default function EventDetailPage({
                   transition={{ delay: index * 0.1 }}
                   onClick={() => {
                     setSelectedMediaIndex(index);
-                    setLightboxSource('gallery');
+                    setLightboxSource("gallery");
                     setIsLightboxOpen(true);
                   }}
                   className={`relative aspect-video rounded-2xl overflow-hidden border-2 transition-all shadow-md ${
@@ -610,7 +613,9 @@ export default function EventDetailPage({
                 </motion.button>
               ))
             ) : (
-              <div className={`col-span-full text-center py-12 ${isDarkTheme ? "text-gray-400" : "text-gray-500"}`}>
+              <div
+                className={`col-span-full text-center py-12 ${isDarkTheme ? "text-gray-400" : "text-gray-500"}`}
+              >
                 <p>No media available for this event</p>
               </div>
             )}
@@ -678,7 +683,7 @@ export default function EventDetailPage({
                   <p
                     className={`text-2xl font-black ${isDarkTheme ? "text-white" : "text-gray-800"}`}
                   >
-                    {format(new Date(event.event_date), "MMM dd, yyyy")}
+                    {format(new Date(event.eventDate), "MMM dd, yyyy")}
                   </p>
                 </div>
                 <div
@@ -694,7 +699,7 @@ export default function EventDetailPage({
                   <p
                     className={`text-2xl font-black ${isDarkTheme ? "text-white" : "text-gray-800"}`}
                   >
-                    {event.start_time}
+                    {event.startTime}
                   </p>
                 </div>
 
@@ -760,7 +765,7 @@ export default function EventDetailPage({
                     Select Tickets
                   </h4>
                   <div className="space-y-4">
-                    {event.ticket_types?.map((type, index) => (
+                    {event.ticketTypes?.map((type, index) => (
                       <div key={type.id}>
                         <div className="flex justify-between items-center mb-3">
                           <div>
@@ -823,7 +828,7 @@ export default function EventDetailPage({
                             </button>
                           </div>
                         </div>
-                        {index < (event.ticket_types?.length || 0) - 1 && (
+                        {index < (event.ticketTypes?.length || 0) - 1 && (
                           <div
                             className={`mt-4 border-t ${isDarkTheme ? "border-gray-700/50" : "border-gray-200/50"}`}
                           ></div>
@@ -842,7 +847,7 @@ export default function EventDetailPage({
                       Order Summary
                     </h4>
                     {Object.entries(cart).map(([tid, qty]) => {
-                      const t = event.ticket_types?.find((x) => x.id === tid);
+                      const t = event.ticketTypes?.find((x) => x.id === tid);
                       return (
                         <div
                           key={tid}
@@ -907,12 +912,16 @@ export default function EventDetailPage({
                     onClick={handleBooking}
                     disabled={getTotalTickets() === 0 || booking || isSoldOut}
                     className={`w-full py-5 rounded-2xl font-black text-sm uppercase tracking-widest transition-all flex items-center justify-center gap-2 shadow-lg ${
-                      isSoldOut 
-                        ? 'bg-gray-200 text-gray-400 cursor-not-allowed' 
-                        : 'bg-[#ffd84f] text-gray-900 hover:bg-[#f0c63f]'
+                      isSoldOut
+                        ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                        : "bg-[#ffd84f] text-gray-900 hover:bg-[#f0c63f]"
                     } disabled:opacity-30`}
                   >
-                    {booking ? "Processing..." : isSoldOut ? "Sold Out" : "Buy Tickets"}{" "}
+                    {booking
+                      ? "Processing..."
+                      : isSoldOut
+                        ? "Sold Out"
+                        : "Buy Tickets"}{" "}
                     <ArrowRight size={18} />
                   </button>
 
@@ -928,93 +937,96 @@ export default function EventDetailPage({
 
       {/* Lightbox */}
       <AnimatePresence>
-        {isLightboxOpen && (() => {
-            const items = lightboxSource === 'hero' ? mediaItems : galleryItems;
+        {isLightboxOpen &&
+          (() => {
+            const items = lightboxSource === "hero" ? mediaItems : galleryItems;
             return items.length > 0;
           })() && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-gray-900/90 backdrop-blur-sm flex items-center justify-center p-4"
-            onClick={() => setIsLightboxOpen(false)}
-          >
-            <motion.button
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.8 }}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 bg-gray-900/90 backdrop-blur-sm flex items-center justify-center p-4"
               onClick={() => setIsLightboxOpen(false)}
-              className={`absolute top-8 right-8 w-12 h-12 backdrop-blur-md border border-accent rounded-2xl flex items-center justify-center transition-all z-10 shadow-sm ${
-                isDarkTheme
-                  ? "bg-black/70 text-white hover:bg-black/90"
-                  : "bg-white/70 text-gray-800 hover:bg-white/90"
-              }`}
             >
-              <X size={24} />
-            </motion.button>
+              <motion.button
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                onClick={() => setIsLightboxOpen(false)}
+                className={`absolute top-8 right-8 w-12 h-12 backdrop-blur-md border border-accent rounded-2xl flex items-center justify-center transition-all z-10 shadow-sm ${
+                  isDarkTheme
+                    ? "bg-black/70 text-white hover:bg-black/90"
+                    : "bg-white/70 text-gray-800 hover:bg-white/90"
+                }`}
+              >
+                <X size={24} />
+              </motion.button>
 
-            <div className="relative max-w-6xl max-h-[90vh] w-full">
-              {(() => {
-                const items = lightboxSource === 'hero' ? mediaItems : galleryItems;
-                const currentLightboxMedia = items[selectedMediaIndex];
-                return currentLightboxMedia?.type === "video" ? (
-                  <video
-                    className="w-full h-full rounded-3xl"
-                    controls
-                    autoPlay
-                    playsInline
-                  >
-                    <source
+              <div className="relative max-w-6xl max-h-[90vh] w-full">
+                {(() => {
+                  const items =
+                    lightboxSource === "hero" ? mediaItems : galleryItems;
+                  const currentLightboxMedia = items[selectedMediaIndex];
+                  return currentLightboxMedia?.type === "video" ? (
+                    <video
+                      className="w-full h-full rounded-3xl"
+                      controls
+                      autoPlay
+                      playsInline
+                    >
+                      <source
+                        src={currentLightboxMedia?.url}
+                        type="video/mp4"
+                      />
+                    </video>
+                  ) : (
+                    <img
                       src={currentLightboxMedia?.url}
-                      type="video/mp4"
+                      alt={currentLightboxMedia?.alt}
+                      className="w-full h-full object-contain rounded-3xl"
                     />
-                  </video>
-                ) : (
-                  <img
-                    src={currentLightboxMedia?.url}
-                    alt={currentLightboxMedia?.alt}
-                    className="w-full h-full object-contain rounded-3xl"
-                  />
-                );
-              })()}
-            </div>
+                  );
+                })()}
+              </div>
 
-            {(() => {
-                const items = lightboxSource === 'hero' ? mediaItems : galleryItems;
+              {(() => {
+                const items =
+                  lightboxSource === "hero" ? mediaItems : galleryItems;
                 return items.length > 1;
               })() && (
-              <>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    navigateMedia("prev");
-                  }}
-                  className={`absolute left-8 top-1/2 -translate-y-1/2 w-12 h-12 backdrop-blur-md border border-accent rounded-2xl flex items-center justify-center transition-all shadow-sm ${
-                    isDarkTheme
-                      ? "bg-black/70 text-white hover:bg-black/90"
-                      : "bg-white/70 text-gray-800 hover:bg-white/90"
-                  }`}
-                >
-                  <ChevronLeft size={24} />
-                </button>
+                <>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigateMedia("prev");
+                    }}
+                    className={`absolute left-8 top-1/2 -translate-y-1/2 w-12 h-12 backdrop-blur-md border border-accent rounded-2xl flex items-center justify-center transition-all shadow-sm ${
+                      isDarkTheme
+                        ? "bg-black/70 text-white hover:bg-black/90"
+                        : "bg-white/70 text-gray-800 hover:bg-white/90"
+                    }`}
+                  >
+                    <ChevronLeft size={24} />
+                  </button>
 
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    navigateMedia("next");
-                  }}
-                  className={`absolute right-8 top-1/2 -translate-y-1/2 w-12 h-12 backdrop-blur-md border border-accent rounded-2xl flex items-center justify-center transition-all shadow-sm ${
-                    isDarkTheme
-                      ? "bg-black/70 text-white hover:bg-black/90"
-                      : "bg-white/70 text-gray-800 hover:bg-white/90"
-                  }`}
-                >
-                  <ChevronRight size={24} />
-                </button>
-              </>
-            )}
-          </motion.div>
-        )}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigateMedia("next");
+                    }}
+                    className={`absolute right-8 top-1/2 -translate-y-1/2 w-12 h-12 backdrop-blur-md border border-accent rounded-2xl flex items-center justify-center transition-all shadow-sm ${
+                      isDarkTheme
+                        ? "bg-black/70 text-white hover:bg-black/90"
+                        : "bg-white/70 text-gray-800 hover:bg-white/90"
+                    }`}
+                  >
+                    <ChevronRight size={24} />
+                  </button>
+                </>
+              )}
+            </motion.div>
+          )}
       </AnimatePresence>
 
       {/* Success Modal */}

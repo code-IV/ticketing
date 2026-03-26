@@ -3,6 +3,7 @@ const { getClient } = require("../../config/db");
 const { uploadToLocal } = require("../../utils/uploads");
 const { Event } = require("../models/Event");
 const { Media } = require("../models/Media");
+const { Product } = require("../models/Product");
 
 const UploadsService = {
   async addMediaToProduct(productId, files) {
@@ -67,15 +68,27 @@ const UploadsService = {
 
       await client.query("COMMIT");
     } catch (error) {
+      // 1. Rollback DB transaction first
       await client.query("ROLLBACK");
 
-      // CLEANUP: Delete files from disk so you don't have "ghost" images
+      // 2. CLEANUP FILES FIRST (Files are harder to track than DB rows)
       for (const path of uploadedPaths) {
         try {
           await fs.promises.unlink(path);
         } catch (e) {
-          /* ignore */
+          /* Log this, don't ignore it! */
         }
+      }
+
+      // 3. Delete the product
+      try {
+        await Product.deleteProduct(productId);
+        console.error("PRODUCT HAS BEEN ROLLED BACK");
+      } catch (dbError) {
+        console.error(
+          "CRITICAL: Failed to delete orphaned product:",
+          productId,
+        );
       }
 
       throw error;
