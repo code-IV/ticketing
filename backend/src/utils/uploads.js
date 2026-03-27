@@ -1,10 +1,15 @@
 const { createClient } = require("@supabase/supabase-js");
 const fs = require("fs").promises;
 
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_ANON_KEY,
-);
+// Only initialize Supabase if credentials are provided
+let supabase = null;
+if (process.env.SUPABASE_URL && process.env.SUPABASE_ANON_KEY && 
+    process.env.SUPABASE_URL !== 'anything' && process.env.SUPABASE_ANON_KEY !== 'anything') {
+  supabase = createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_ANON_KEY,
+  );
+}
 
 exports.uploadToLocal = async (file) => {
   // Multer has already saved the file to /public/uploads/UUID.ext
