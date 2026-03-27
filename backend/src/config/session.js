@@ -11,8 +11,9 @@ const sessionConfig = {
   secret: process.env.SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
+  proxy: process.env.NODE_ENV === "production",
   cookie: {
-    secure: process.env.NODE_ENV === "production" || true,
+    secure: process.env.NODE_ENV === "production",
     httpOnly: true,
     maxAge: 24 * 60 * 60 * 1000, // 24 hours
     sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
