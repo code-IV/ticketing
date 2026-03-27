@@ -206,6 +206,7 @@ export default function EventsPage() {
                       return (
                         <img
                           src="/l.jpg"
+                          crossOrigin="anonymous"
                           alt={event.name}
                           className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 blur-sm"
                         />
@@ -220,6 +221,8 @@ export default function EventsPage() {
                         <video
                           src={posterUrl}
                           autoPlay
+                          crossOrigin="anonymous"
+
                           muted
                           loop
                           playsInline
