@@ -2,10 +2,12 @@ const { getClient } = require("../../config/db");
 const { GameRes } = require("../dtos/gameDto");
 const { Game, GameStats } = require("../models/Games");
 const TicketType = require("../models/TicketType");
+const UploadsService = require("./uploadsService");
 
 const GameService = {
   async create(gameData) {
-    const { name, description, rules, status, ticket_types } = gameData;
+    const { name, description, rules, status, ticket_types, mediaIds } =
+      gameData;
     const client = await getClient();
 
     try {
@@ -27,6 +29,10 @@ const GameService = {
 
       for (const type of ticket_types || []) {
         await TicketType.create({ ...type, productId }, client);
+      }
+      console.log("gameService", mediaIds);
+      if (mediaIds?.length) {
+        await UploadsService.addMediaToProduct(productId, mediaIds, client);
       }
 
       await client.query("COMMIT");

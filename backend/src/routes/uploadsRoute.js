@@ -6,11 +6,9 @@ const { uuidParamRule, handleValidation } = require("../middleware/validate");
 const { UploadsController } = require("../api/controllers/uploadsController");
 
 router.post(
-  "/uploads/:productId",
+  "/upload",
   isAuthenticated,
   isAdmin,
-  uuidParamRule("productId"),
-  handleValidation,
   upload.fields([
     { name: "mediaFiles", maxCount: 10 },
     { name: "thumbnail", maxCount: 1 },

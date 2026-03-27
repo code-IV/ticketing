@@ -33,45 +33,19 @@ export const adminService = {
     startTime: string;
     endTime: string;
     capacity: number;
+    mediaIds: any[];
   }): Promise<ApiResponse<{ event: Event; productId: string }>> {
     const response = await api.post("/admin/events", data);
     return response.data;
   },
 
   uploadProductMedia: async (
-    productId: string,
     formData: FormData, // Accepts the pre-constructed FormData
   ): Promise<any> => {
-    const response = await api.post(`/media/uploads/${productId}`, formData, {
+    const response = await api.post(`/media/upload`, formData, {
       headers: {
         // Note: Most modern browsers/Axios versions set this automatically
         // when they see FormData, including the necessary 'boundary' string.
-        "Content-Type": "multipart/form-data",
-      },
-    });
-    return response.data;
-  },
-
-  uploadEventMedia: async (
-    eventId: string,
-    formData: FormData, // Accepts the pre-constructed FormData
-  ): Promise<any> => {
-    const response = await api.post(`/media/uploads/events/${eventId}`, formData, {
-      headers: {
-        // Note: Most modern browsers/Axios versions set this automatically
-        // when they see FormData, including the necessary 'boundary' string.
-        "Content-Type": "multipart/form-data",
-      },
-    });
-    return response.data;
-  },
-
-  uploadGameMedia: async (
-    gameId: string,
-    formData: FormData,
-  ): Promise<any> => {
-    const response = await api.post(`/media/uploads/game/${gameId}`, formData, {
-      headers: {
         "Content-Type": "multipart/form-data",
       },
     });

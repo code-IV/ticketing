@@ -18,6 +18,21 @@ const Media = {
     ]);
     return rows[0].id;
   },
+  async updateMedia(id, mediaData, client) {
+    const sql = `
+      UPDATE media 
+      SET 
+          url = $2, 
+          path = $3
+      WHERE id = $1
+      RETURNING *;`;
+    const { rows } = await client.query(sql, [
+      id,
+      mediaData.url,
+      mediaData.path,
+    ]);
+    return rows[0].id;
+  },
 
   async linkProductMedia(productId, mediaId, client) {
     const sql = `INSERT INTO products_media (product_id, media_id) VALUES ($1, $2)`;

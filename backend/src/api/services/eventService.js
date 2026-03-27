@@ -2,6 +2,7 @@ const { getClient } = require("../../config/db");
 const { EventRes } = require("../dtos/eventDto");
 const { Event, EventStats } = require("../models/Event");
 const TicketType = require("../models/TicketType");
+const UploadsService = require("./uploadsService");
 
 const EventService = {
   async createEvent(eventData) {
@@ -24,6 +25,13 @@ const EventService = {
 
       for (const type of eventData.ticketTypes || []) {
         await TicketType.create({ ...type, productId }, client);
+      }
+      if (eventData.mediaIds?.length) {
+        await UploadsService.addMediaToProduct(
+          productId,
+          eventData.mediaIds,
+          client,
+        );
       }
       await client.query("COMMIT");
       return { event: newEvent, productId: productId };

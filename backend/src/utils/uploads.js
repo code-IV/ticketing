@@ -1,13 +1,13 @@
 const { createClient } = require("@supabase/supabase-js");
-const fs = require("fs").promises;
+const path = require("path");
+const fs = require("fs");
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_ANON_KEY,
 );
 
-exports.uploadToLocal = async (file) => {
-  // Multer has already saved the file to /public/uploads/UUID.ext
+exports.uploadToTemp = async (file) => {
   if (!file.filename) {
     throw new Error(
       "File was not saved to disk. Check Multer storage configuration.",
@@ -15,10 +15,34 @@ exports.uploadToLocal = async (file) => {
   }
   return {
     name: file.originalname,
-    url: `/uploads/${file.filename}`, // file.filename is now the UUID
+    url: `/tmp/uploads/${file.filename}`,
     path: file.path,
     type: file.mimetype,
     provider: "LOCAL",
+  };
+};
+
+exports.promoteFile = async (tempPath, productId, filename) => {
+  // Resolve target directory from project root
+  console.log("tempPath", tempPath);
+  const targetDir = path.join(
+    process.cwd(), // project root
+    "public",
+    "media",
+    "uploads",
+    String(productId),
+  );
+
+  await fs.promises.mkdir(targetDir, { recursive: true });
+
+  const newPath = path.join(targetDir, filename);
+
+  // Atomic move (works on same disk)
+  await fs.promises.rename(tempPath, newPath);
+
+  return {
+    path: newPath,
+    url: `/media/uploads/${productId}/${filename}`, // URL relative to server
   };
 };
 
@@ -26,10 +50,10 @@ exports.deleteFromLocal = async (filePath) => {
   try {
     console.log("path  ", filePath);
     // Check if file exists before trying to delete
-    await fs.access(filePath);
+    await fs.promises.access(filePath);
 
     // Delete the file
-    await fs.unlink(filePath);
+    await fs.promises.unlink(filePath);
 
     return { success: true, message: "File deleted successfully" };
   } catch (error) {

@@ -135,10 +135,7 @@ const CreateEventDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
     setLabelModalOpen(false);
   };
 
-  const handleVideoThumbnailUpload = async (
-    videoIndex: number,
-    file: File,
-  ) => {
+  const handleVideoThumbnailUpload = async (videoIndex: number, file: File) => {
     const tinyThumb = await getTinyPreview(file);
     setFormData((prev) => {
       const updatedMedia = [...prev.mediaFiles];
@@ -161,10 +158,20 @@ const CreateEventDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
   };
 
   const addCategory = () => {
-    if (!newTicket.category || isNaN(newTicket.price)) return alert("Please provide at least a category and price");
-    if (formData.ticket_types.some((tt) => tt.category === newTicket.category)) return alert("Category already exists.");
-    setFormData((p) => ({ ...p, ticket_types: [...p.ticket_types, { ...newTicket }] }));
-    setNewTicket({ category: "ADULT", price: 0, description: "", maxQuantityPerBooking: 10 });
+    if (!newTicket.category || isNaN(newTicket.price))
+      return alert("Please provide at least a category and price");
+    if (formData.ticket_types.some((tt) => tt.category === newTicket.category))
+      return alert("Category already exists.");
+    setFormData((p) => ({
+      ...p,
+      ticket_types: [...p.ticket_types, { ...newTicket }],
+    }));
+    setNewTicket({
+      category: "ADULT",
+      price: 0,
+      description: "",
+      maxQuantityPerBooking: 10,
+    });
   };
 
   const handleCreate = async (e: React.FormEvent) => {
@@ -184,17 +191,20 @@ const CreateEventDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
       })),
     };
     try {
-      const response = await adminService.createEvent(payload);
-      const newProductId = response.data?.productId;
-      if (formData.mediaFiles.length > 0 && newProductId) {
+      let media;
+      if (formData.mediaFiles.length > 0) {
         const data = new FormData();
         formData.mediaFiles.forEach((m: any) => {
           data.append("mediaFiles", m.file);
           data.append("label", m.label);
           data.append("thumbnail", m.thumbnail || null);
         });
-        await adminService.uploadProductMedia(newProductId, data);
+        media = await adminService.uploadProductMedia(data);
       }
+      const response = await adminService.createEvent({
+        ...payload,
+        mediaIds: media.data?.mediaIds,
+      });
       setFormData({
         name: "",
         description: "",
@@ -457,7 +467,6 @@ const CreateEventDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
                       Add a ticket type
                     </p>
                     <div className="grid grid-cols-2 gap-3">
-
                       <select
                         className={`px-3 py-2.5 rounded-xl text-sm font-medium outline-none border border-transparent focus:border-accent2/50 transition-all ${inputBg} ${text}`}
                         value={newTicket.category}
@@ -617,7 +626,7 @@ const CreateEventDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
                   {/* Media grid */}
                   {formData.mediaFiles.length > 0 && (
                     <div className="grid grid-cols-3 gap-2.5">
-                      {formData.mediaFiles.map((media, idx) => (
+                      {formData.mediaFiles.map((media, idx) =>
                         media.type === "IMAGE" ? (
                           <div
                             key={idx}
@@ -655,7 +664,8 @@ const CreateEventDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
                               setFormData((prev) => {
                                 const updatedMedia = [...prev.mediaFiles];
                                 if (updatedMedia[index]) {
-                                  updatedMedia[index].thumbnailPreview = preview;
+                                  updatedMedia[index].thumbnailPreview =
+                                    preview;
                                   updatedMedia[index].thumbnail = file;
                                   updatedMedia[index].preview = preview;
                                 }
@@ -666,7 +676,8 @@ const CreateEventDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
                               setFormData((prev) => {
                                 const updatedMedia = [...prev.mediaFiles];
                                 if (updatedMedia[index]) {
-                                  updatedMedia[index].thumbnailPreview = undefined;
+                                  updatedMedia[index].thumbnailPreview =
+                                    undefined;
                                   updatedMedia[index].thumbnail = undefined;
                                 }
                                 return { ...prev, mediaFiles: updatedMedia };
@@ -674,8 +685,8 @@ const CreateEventDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
                             }}
                             onRemoveMedia={(index) => removeMedia(index)}
                           />
-                        )
-                      ))}
+                        ),
+                      )}
                     </div>
                   )}
 
@@ -811,9 +822,7 @@ const Section = ({
       >
         {label}
       </span>
-      <div
-        className={`flex-1 h-px ${isDark ? "bg-white/6" : "bg-black/6"}`}
-      />
+      <div className={`flex-1 h-px ${isDark ? "bg-white/6" : "bg-black/6"}`} />
     </div>
     {children}
   </div>

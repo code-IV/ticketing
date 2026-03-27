@@ -54,7 +54,14 @@ app.use(session(sessionConfig));
 // ============================================
 // STATIC FILE
 // ============================================
-app.use("/uploads", express.static(path.join(__dirname, "../public/uploads")));
+app.use(
+  "/tmp/uploads",
+  express.static(path.join(__dirname, "../public/tmp/uploads")),
+);
+app.use(
+  "/media/uploads",
+  express.static(path.join(__dirname, "../public/media/uploads")),
+);
 
 // ============================================
 // API ROUTES
