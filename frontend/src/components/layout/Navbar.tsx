@@ -75,7 +75,7 @@ export function Navbar({ nav }: { nav: Nav[] }) {
 
   const filteredNav = nav.filter((item) => {
     if (item.name === "admin" || item.href === "/admin") {
-      return user?.permissions?.includes("ADMIN");
+      return user?.roles?.includes("ADMIN") || user?.roles?.includes("SUPERADMIN") || user?.role === "ADMIN" || user?.role === "SUPERADMIN";
     }
     return true; // Show all other links
   });
