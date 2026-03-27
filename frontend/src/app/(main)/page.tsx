@@ -172,6 +172,7 @@ export default function Home() {
       </section>
 
       {/* ── EVENTS ───────────────────────────────────────────────────────── */}
+      {events.length > 0 && (
       <section className="py-25 px-6 sm:px-10 lg:px-16">
         <div className="max-w-7xl mx-auto">
           <motion.div
@@ -303,6 +304,7 @@ export default function Home() {
           </motion.div>
         </div>
       </section>
+      )}
 
       {/* ── ATTRACTIONS ──────────────────────────────────────────────────── */}
       <section
