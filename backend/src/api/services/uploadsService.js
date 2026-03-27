@@ -42,7 +42,7 @@ const UploadsService = {
             },
           };
 
-          await Event.createMedia(thumbMediaData, client);
+          await Media.createMedia(thumbMediaData, client);
         }
 
         // 2. Handle Main File
@@ -64,8 +64,8 @@ const UploadsService = {
         };
 
         // 3. Insert Main Media and Link to Product
-        const mainMediaId = await Event.createMedia(mainMediaData, client);
-        await Event.linkProductMedia(productId, mainMediaId, client);
+        const mainMediaId = await Media.createMedia(mainMediaData, client);
+        await Media.linkProductMedia(productId, mainMediaId, client);
       }
 
       await client.query("COMMIT");
