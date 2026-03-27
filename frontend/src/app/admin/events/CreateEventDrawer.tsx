@@ -15,6 +15,7 @@ import {
 import { adminService } from "@/services/adminService";
 import { CreateTicketTypeRequest } from "@/types";
 import { useTheme } from "@/contexts/ThemeContext";
+import VideoThumbnailCard from "@/components/VideoThumbnailCard";
 
 const getTinyPreview = (file: File): Promise<string> =>
   new Promise((res) => {
@@ -61,6 +62,7 @@ const CreateEventDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
     startTime: "",
     endTime: "",
     capacity: "",
+    status: "ACTIVE" as "ACTIVE" | "CANCELLED" | "COMPLETED" | "UPCOMING",
     ticket_types: [] as CreateTicketTypeRequest[],
     mediaFiles: [] as any[],
   });
@@ -135,15 +137,15 @@ const CreateEventDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
 
   const handleVideoThumbnailUpload = async (
     videoIndex: number,
-    e: React.ChangeEvent<HTMLInputElement>,
+    file: File,
   ) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
     const tinyThumb = await getTinyPreview(file);
     setFormData((prev) => {
       const updatedMedia = [...prev.mediaFiles];
-      if (updatedMedia[videoIndex])
+      if (updatedMedia[videoIndex]) {
         updatedMedia[videoIndex].thumbnailPreview = tinyThumb;
+        updatedMedia[videoIndex].thumbnail = file;
+      }
       return { ...prev, mediaFiles: updatedMedia };
     });
   };
@@ -200,6 +202,7 @@ const CreateEventDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
         startTime: "",
         endTime: "",
         capacity: "",
+        status: "ACTIVE",
         ticket_types: [],
         mediaFiles: [],
       });
@@ -374,6 +377,27 @@ const CreateEventDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
                           setFormData({ ...formData, endTime: e.target.value })
                         }
                       />
+                    </Field>
+                    <Field
+                      label="Status"
+                      labelCls={labelCls}
+                      icon={<Tag size={12} className={muted} />}
+                    >
+                      <select
+                        className={`w-full px-4 py-3 rounded-2xl text-sm font-medium outline-none border-2 border-transparent transition-all focus:border-accent/50 ${inputBg} ${text}`}
+                        value={formData.status}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            status: e.target.value as any,
+                          })
+                        }
+                      >
+                        <option value="ACTIVE">ACTIVE</option>
+                        <option value="CANCELLED">CANCELLED</option>
+                        <option value="COMPLETED">COMPLETED</option>
+                        <option value="UPCOMING">UPCOMING</option>
+                      </select>
                     </Field>
                   </div>
                 </Section>
@@ -594,62 +618,63 @@ const CreateEventDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
                   {formData.mediaFiles.length > 0 && (
                     <div className="grid grid-cols-3 gap-2.5">
                       {formData.mediaFiles.map((media, idx) => (
-                        <div
-                          key={idx}
-                          className="relative aspect-square rounded-xl overflow-hidden group shadow-sm"
-                        >
-                          {media.type === "IMAGE" ? (
+                        media.type === "IMAGE" ? (
+                          <div
+                            key={idx}
+                            className="relative aspect-square rounded-xl overflow-hidden group shadow-sm"
+                          >
                             <img
                               src={media.preview}
                               className="w-full h-full object-cover"
                               alt="preview"
                             />
-                          ) : (
-                            <div
-                              className={`w-full h-full flex items-center justify-center relative ${d ? "bg-[#1c1c1f]" : "bg-slate-100"}`}
+                            {/* Hover overlay */}
+                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all" />
+                            {/* Remove btn */}
+                            <button
+                              onClick={() => removeMedia(idx)}
+                              className="absolute top-1.5 right-1.5 w-6 h-6 flex items-center justify-center bg-red-500 hover:bg-red-400 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-all scale-75 group-hover:scale-100"
                             >
-                              <Video size={20} className={muted} />
-                              <label className="absolute bottom-1.5 right-1.5 w-6 h-6 bg-emerald-500 rounded-lg flex items-center justify-center cursor-pointer hover:bg-emerald-400 transition-colors">
-                                <ImageIcon size={10} className="text-white" />
-                                <input
-                                  type="file"
-                                  hidden
-                                  accept="image/*"
-                                  onChange={(e) =>
-                                    handleVideoThumbnailUpload(idx, e)
-                                  }
-                                />
-                              </label>
-                              {media.thumbnailPreview && (
-                                <div className="absolute top-1.5 left-1.5 w-7 h-7 rounded-md ring-2 ring-emerald-400 overflow-hidden">
-                                  <img
-                                    src={media.thumbnailPreview}
-                                    className="w-full h-full object-cover"
-                                    alt="thumb"
-                                  />
-                                </div>
-                              )}
+                              <X size={11} />
+                            </button>
+                            {/* Label badge */}
+                            <div className="absolute bottom-1.5 left-1.5 opacity-0 group-hover:opacity-100 transition-all">
+                              <span className="bg-black/70 backdrop-blur-sm text-white/80 text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md">
+                                {media.label ?? media.type.toLowerCase()}
+                              </span>
                             </div>
-                          )}
-
-                          {/* Hover overlay */}
-                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all" />
-
-                          {/* Remove btn */}
-                          <button
-                            onClick={() => removeMedia(idx)}
-                            className="absolute top-1.5 right-1.5 w-6 h-6 flex items-center justify-center bg-red-500 hover:bg-red-400 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-all scale-75 group-hover:scale-100"
-                          >
-                            <X size={11} />
-                          </button>
-
-                          {/* Label badge */}
-                          <div className="absolute bottom-1.5 left-1.5 opacity-0 group-hover:opacity-100 transition-all">
-                            <span className="bg-black/70 backdrop-blur-sm text-white/80 text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md">
-                              {media.label ?? media.type.toLowerCase()}
-                            </span>
                           </div>
-                        </div>
+                        ) : (
+                          <VideoThumbnailCard
+                            key={idx}
+                            media={media}
+                            index={idx}
+                            isDarkTheme={d}
+                            muted={muted}
+                            onThumbnailUpload={(index, file, preview) => {
+                              setFormData((prev) => {
+                                const updatedMedia = [...prev.mediaFiles];
+                                if (updatedMedia[index]) {
+                                  updatedMedia[index].thumbnailPreview = preview;
+                                  updatedMedia[index].thumbnail = file;
+                                  updatedMedia[index].preview = preview;
+                                }
+                                return { ...prev, mediaFiles: updatedMedia };
+                              });
+                            }}
+                            onThumbnailDelete={(index) => {
+                              setFormData((prev) => {
+                                const updatedMedia = [...prev.mediaFiles];
+                                if (updatedMedia[index]) {
+                                  updatedMedia[index].thumbnailPreview = undefined;
+                                  updatedMedia[index].thumbnail = undefined;
+                                }
+                                return { ...prev, mediaFiles: updatedMedia };
+                              });
+                            }}
+                            onRemoveMedia={(index) => removeMedia(index)}
+                          />
+                        )
                       ))}
                     </div>
                   )}

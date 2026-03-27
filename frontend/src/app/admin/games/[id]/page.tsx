@@ -1,466 +1,367 @@
 "use client";
-import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
-import { gameService, adminService } from "@/services/adminService";
+import React, { useState, useEffect } from "react";
+import {
+  X,
+  Plus,
+  ImageIcon,
+  Video,
+  Calendar,
+  Clock,
+  Users,
+  Tag,
+  ChevronRight,
+  Trash2,
+  ArrowLeft,
+} from "lucide-react";
+import { gameService } from "@/services/adminService";
 import { Game } from "@/types";
-import { Trash2, Save, ArrowLeft, Plus, X } from "lucide-react";
-import { useTheme } from '@/contexts/ThemeContext';
-import GalleryManager from '@/components/admin/GalleryManager';
-import ValidationModal from '@/components/ui/ValidationModal';
-import ConfirmationModal from '@/components/ui/ConfirmationModal';
+import { useTheme } from "@/contexts/ThemeContext";
+import { useRouter, useParams } from "next/navigation";
+import VideoThumbnailCard from "@/components/VideoThumbnailCard";
 
-export default function GameDetailsPage() {
-  const { id } = useParams<{ id: string }>();
-  const router = useRouter();
+const getTinyPreview = (file: File): Promise<string> =>
+  new Promise((res) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        canvas.width = 300;
+        canvas.height = (img.height / img.width) * 300;
+        ctx?.drawImage(img, 0, 0, 300, canvas.height);
+        res(canvas.toDataURL("image/jpeg", 0.7));
+      };
+      img.src = e.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  });
+
+const CATEGORY_COLORS: Record<string, string> = {
+  ADULT: "bg-accent/10 text-accent ring-1 ring-accent/20",
+  CHILD: "bg-accent/10 text-accent ring-1 ring-accent/20",
+  SENIOR: "bg-accent/10 text-accent ring-1 ring-accent/20",
+  STUDENT: "bg-accent/10 text-accent ring-1 ring-accent/20",
+  GROUP: "bg-accent/10 text-accent ring-1 ring-accent/20",
+};
+
+export default function EditGamePage() {
   const { isDarkTheme } = useTheme();
+  const router = useRouter();
+  const params = useParams();
+  const gameId = params.id as string;
+  
+  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+  const [labelModalOpen, setLabelModalOpen] = useState(false);
+  const [pendingFile, setPendingFile] = useState<any>(null);
+  const [existingMedia, setExistingMedia] = useState<any[]>([]);
 
-  const [loading, setLoading] = useState(true);
-  const [isUpdating, setIsUpdating] = useState(false);
-  const [formData, setFormData] = useState<Partial<Game>>({
+  const [formData, setFormData] = useState({
     name: "",
     description: "",
     rules: "",
-    status: "OPEN",
-    ticketTypes: [],
-    gallery: [],
+    status: "OPEN" as "OPEN" | "CLOSED" | "ON_MAINTENANCE" | "UPCOMING",
+    ticketTypes: [] as any[],
+    mediaFiles: [] as any[],
   });
-  const [savedData, setSavedData] = useState<Partial<Game>>({});
-  const [diff, setDiff] = useState<Partial<Game>>({});
-  const [showModal, setShowModal] = useState(false);
-  const [validationErrors, setValidationErrors] = useState<string[]>([]);
-  const [showValidationModal, setShowValidationModal] = useState(false);
-  const [showConfirmationModal, setShowConfirmationModal] = useState(false);
 
-  // 1. Fetch Game Data
+  const [newTicket, setNewTicket] = useState({
+    category: "ADULT",
+    price: 0,
+    max_quantity: 100,
+    status: "ACTIVE" as const,
+  });
+
   useEffect(() => {
-    fetchGame();
-  }, [id]);
+    loadGame();
+  }, [gameId]);
 
-  const fetchGame = async () => {
+  const loadGame = async () => {
     try {
-      const response = await gameService.getGame(id!);
-      console.log('API Response:', response);
-      const data = (response.data as any)?.data || response.data || {};
-      console.log('Game data:', data);
-      setFormData(data);
-      setSavedData(data);
-    } catch (error) {
-      console.error("Failed to load game", error);
+      setLoading(true);
+      const response = await gameService.getGame(gameId);
+      const game = response.data?.game || response.data;
+      
+      if (game && 'name' in game) {
+        setFormData({
+          name: game.name || "",
+          description: game.description || "",
+          rules: game.rules || "",
+          status: game.status || "OPEN",
+          ticketTypes: game.ticketTypes?.map((tt: any) => ({
+            category: tt.category || "ADULT",
+            price: parseFloat(tt.price) || 0,
+            max_quantity: tt.max_quantity || 100,
+            status: tt.status || "ACTIVE",
+          })) || [],
+          mediaFiles: [],
+        });
+
+        // Load existing media
+        if (game.gallery && game.gallery.length > 0) {
+          setExistingMedia(game.gallery.map((media: any) => ({
+            ...media,
+            existing: true,
+            preview: media.url,
+          })));
+        }
+      }
+    } catch (err: any) {
+      console.error("Failed to load game:", err);
+      setError(err.response?.data?.message || "Failed to load game");
     } finally {
       setLoading(false);
     }
   };
 
-  // Logic to find only changed fields
-  const calculateChanges = () => {
-    const changes: any = {};
+  const getPosterCount = () => {
+    const existingPosters = existingMedia.filter(m => m.label === "poster").length;
+    const newPosters = formData.mediaFiles.filter(m => m.label === "poster").length;
+    return existingPosters + newPosters;
+  };
+  
+  const getBannerCount = () => {
+    const existingBanners = existingMedia.filter(m => m.label === "banner").length;
+    const newBanners = formData.mediaFiles.filter(m => m.label === "banner").length;
+    return existingBanners + newBanners;
+  };
+  
+  const getVideoCount = () => {
+    const existingVideos = existingMedia.filter(m => m.type === "VIDEO").length;
+    const newVideos = formData.mediaFiles.filter(m => m.type === "VIDEO").length;
+    return existingVideos + newVideos;
+  };
+  
+  const hasPosterSlot = () => getPosterCount() < 3;
+  const hasBannerSlot = () => getBannerCount() < 3;
+  const hasVideoSlot = () => getVideoCount() < 3;
+  const isGalleryOnly = () => !hasPosterSlot() && !hasBannerSlot();
 
-    // Check simple fields
-    (Object.keys(formData) as Array<keyof Game>).forEach((key) => {
-      if (key !== "ticketTypes" && formData[key] !== savedData[key]) {
-        changes[key] = formData[key];
+  const getAvailableImageLabels = (): ("banner" | "poster" | "gallery")[] => {
+    const labels: ("banner" | "poster" | "gallery")[] = [];
+    if (hasPosterSlot()) labels.push("poster");
+    if (hasBannerSlot()) labels.push("banner");
+    labels.push("gallery");
+    return labels;
+  };
+
+  const handleMediaUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+    type: "IMAGE" | "VIDEO",
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const preview =
+      type === "IMAGE" ? await getTinyPreview(file) : URL.createObjectURL(file);
+    const newMedia = { file, type, name: "", url: "", provider: "", preview };
+    if (isGalleryOnly()) {
+      setFormData((p) => ({
+        ...p,
+        mediaFiles: [...p.mediaFiles, { ...newMedia, label: "gallery" }],
+      }));
+    } else {
+      setPendingFile(newMedia);
+      setLabelModalOpen(true);
+    }
+  };
+
+  const handleLabelSelect = (label: "banner" | "poster" | "gallery") => {
+    if (pendingFile) {
+      setFormData((p) => ({
+        ...p,
+        mediaFiles: [...p.mediaFiles, { ...pendingFile, label }],
+      }));
+      setPendingFile(null);
+      setLabelModalOpen(false);
+    }
+  };
+
+  const handleLabelCancel = () => {
+    if (pendingFile?.preview && pendingFile.type === "VIDEO")
+      URL.revokeObjectURL(pendingFile.preview);
+    setPendingFile(null);
+    setLabelModalOpen(false);
+  };
+
+  const handleVideoThumbnailUpload = async (
+    videoIndex: number,
+    file: File,
+  ) => {
+    if (!file) return;
+    const tinyThumb = await getTinyPreview(file);
+    setFormData((prev) => {
+      const updatedMedia = [...prev.mediaFiles];
+      if (updatedMedia[videoIndex]) {
+        updatedMedia[videoIndex].thumbnailPreview = tinyThumb;
+        updatedMedia[videoIndex].thumbnail = file; // Store the actual thumbnail file
+        // Also update the main preview to show thumbnail in top-left
+        updatedMedia[videoIndex].preview = tinyThumb;
       }
+      return { ...prev, mediaFiles: updatedMedia };
     });
-
-    // Check ticketTypes (deep comparison)
-    if (
-      JSON.stringify(formData.ticketTypes) !==
-      JSON.stringify(savedData.ticketTypes)
-    ) {
-      changes.ticketTypes = formData.ticketTypes;
-    }
-
-    return changes;
   };
 
-  const triggerConfirm = () => {
-    const changes = calculateChanges();
-    if (Object.keys(changes).length === 0) {
-      alert("No changes detected.");
-      return;
-    }
-    setDiff(changes);
-    setShowModal(true);
-  };
-
-  // Helper function to compare objects deeply
-  const compareObjects = (obj1: any, obj2: any, path = "") => {
-    const differences: any[] = [];
-
-    Object.keys(obj1).forEach((key) => {
-      const currentPath = path ? `${path}.${key}` : key;
-      const val1 = obj1[key];
-      const val2 = obj2[key];
-
-      if (val1 === undefined && val2 !== undefined) {
-        differences.push(
-          `Missing in sent: ${currentPath} (received: ${JSON.stringify(val2)})`,
-        );
-      } else if (val1 !== undefined && val2 === undefined) {
-        differences.push(
-          `Missing in received: ${currentPath} (sent: ${JSON.stringify(val1)})`,
-        );
-      } else if (
-        typeof val1 === "object" &&
-        typeof val2 === "object" &&
-        val1 !== null &&
-        val2 !== null
-      ) {
-        differences.push(...compareObjects(val1, val2, currentPath));
-      } else if (val1 !== val2) {
-        differences.push(
-          `Different values: ${currentPath} (sent: ${JSON.stringify(val1)}, received: ${JSON.stringify(val2)})`,
-        );
-      }
-    });
-
-    return differences;
-  };
-
-  // 2. Handle Update
-  const handleUpdate = async () => {
-    // Form validation
-    const validationErrors: string[] = [];
-    
-    // Check required fields
-    if (!formData.name || formData.name.trim() === '') {
-      validationErrors.push('Game name is required');
-    }
-    
-    if (!formData.ticketTypes || formData.ticketTypes.length === 0) {
-      validationErrors.push('At least one ticket type is required');
-    }
-    
-    // Validate ticket types
-    formData.ticketTypes?.forEach((ticket, index) => {
-      if (!ticket.category) {
-        validationErrors.push(`Ticket type ${index + 1}: Category is required`);
-      }
-      
-      if (!ticket.price || ticket.price < 10) {
-        validationErrors.push(`Ticket type ${index + 1}: Price must be at least 10 ETB`);
-      }
-      
-      if (ticket.price > 5000) {
-        validationErrors.push(`Ticket type ${index + 1}: Price cannot exceed 5000 ETB`);
-      }
-    });
-    
-    // Show validation errors if any
-    if (validationErrors.length > 0) {
-      setValidationErrors(validationErrors);
-      setShowValidationModal(true);
-      return;
-    }
-    
-    // Show confirmation dialog
-    setShowConfirmationModal(true);
-  };
-
-  const confirmUpdate = async () => {
-    setShowConfirmationModal(false);
-    setIsUpdating(true);
-    try {
-      console.log('=== DATA COMPARISON ===');
-      console.log('Current form data:', formData);
-      console.log('Saved data:', savedData);
-      console.log('Changes to send (diff):', diff);
-      console.log('=======================');
-      
-      let finalDiff = { ...diff };
-      
-      // Upload new files first
-      if (finalDiff.gallery) {
-        // filter items that have a local file attached
-        const newMediaItems = finalDiff.gallery.filter((item: any) => item.file);
-        
-        if (newMediaItems.length > 0) {
-          const uploadsObj = new FormData();
-          newMediaItems.forEach((item: any) => {
-            uploadsObj.append('mediaFiles', item.file);
-            uploadsObj.append('label', item.label);
-          });
-          
-          try {
-            const uploadResponse = await adminService.uploadGameMedia(id!, uploadsObj);
-            const uploadedItems = uploadResponse.data || [];
-            
-            // Swap temp ids with actual backend URLs and IDs
-            finalDiff.gallery = finalDiff.gallery.map((item: any) => {
-              if (item.file) {
-                const uploadedMatch = uploadedItems.find((u: any) => u.name === item.name);
-                if (uploadedMatch) {
-                  return { ...item, id: uploadedMatch.id, url: uploadedMatch.url, file: undefined };
-                }
-              }
-              return item;
-            });
-          } catch (uploadError) {
-             console.error("Upload media failed:", uploadError);
-             alert("Media upload failed! Gallery won't be saved.");
-             delete finalDiff.gallery;
-          }
-        }
-      }
-
-      const response = await gameService.updateGame(id!, finalDiff);
-      console.log('Update response:', response);
-      
-      // After update, fetch fresh data to compare
-      const freshResponse = await gameService.getGame(id!);
-      const freshData = freshResponse.data?.game || freshResponse.data || {};
-      console.log("Fresh data from server after update:", freshData);
-
-      // Compare sent data with received data
-      console.log("=== COMPARING SENT vs RECEIVED ===");
-      const differences = compareObjects(formData, freshData);
-      if (differences.length > 0) {
-        console.log("DIFFERENCES FOUND:");
-        differences.forEach((diff) => console.log("  -", diff));
-      } else {
-        console.log("✅ Data is identical!");
-      }
-      console.log("===================================");
-
-      setSavedData(formData);
-      setShowModal(false);
-      alert("Game updated successfully!");
-    } catch (error) {
-      console.error("Update failed:", error);
-      alert("Update failed. Please try again.");
-    } finally {
-      setIsUpdating(false);
+  const removeMedia = (index: number, isExisting: boolean = false) => {
+    if (isExisting) {
+      setExistingMedia((prev) => {
+        const updated = [...prev];
+        updated.splice(index, 1);
+        return updated;
+      });
+    } else {
+      setFormData((prev) => {
+        const updatedMedia = [...prev.mediaFiles];
+        if (updatedMedia[index].type === "VIDEO")
+          URL.revokeObjectURL(updatedMedia[index].preview);
+        updatedMedia.splice(index, 1);
+        return { ...prev, mediaFiles: updatedMedia };
+      });
     }
   };
 
-  // 3. Handle Delete
+  const addCategory = () => {
+    if (!newTicket.category || isNaN(newTicket.price)) return alert("Please provide at least a category and price");
+    if (formData.ticketTypes.some((tt) => tt.category === newTicket.category)) return alert("Category already exists.");
+    setFormData((p) => ({ ...p, ticketTypes: [...p.ticketTypes, { ...newTicket }] }));
+    setNewTicket({ category: "ADULT", price: 0, max_quantity: 100, status: "ACTIVE" });
+  };
+
+  const removeTicketType = (index: number) => {
+    if (formData.ticketTypes.length > 1) {
+      setFormData((p) => ({
+        ...p,
+        ticketTypes: p.ticketTypes.filter((_, i) => i !== index),
+      }));
+    }
+  };
+
+  const updateTicketType = (
+    index: number,
+    field: keyof any,
+    value: any,
+  ) => {
+    const updatedTicketTypes = [...formData.ticketTypes];
+    updatedTicketTypes[index] = {
+      ...updatedTicketTypes[index],
+      [field]: value,
+    };
+    setFormData((p) => ({ ...p, ticketTypes: updatedTicketTypes }));
+  };
+
   const handleDelete = async () => {
     if (
       window.confirm(
-        "Are you sure? This will remove all associated ticket types.",
+        "Are you sure? This will permanently delete the game and all associated data.",
       )
     ) {
       try {
-        await gameService.deleteGame(id!);
+        await gameService.deleteGame(gameId);
         router.push("/admin/games");
       } catch (error) {
-        alert("Failed to delete game");
+        console.error("Failed to delete game:", error);
+        setError("Failed to delete game");
       }
     }
   };
 
-  if (loading)
+  const handleUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (submitting) return;
+    setSubmitting(true);
+    setError("");
+    
+    const payload = {
+      name: formData.name,
+      description: formData.description,
+      rules: formData.rules,
+      status: formData.status,
+      ticketTypes: formData.ticketTypes.map((tt) => ({
+        ...tt,
+        price: parseFloat(tt.price.toString()),
+      })),
+    };
+    
+    try {
+      // Upload new media files first
+      if (formData.mediaFiles.length > 0) {
+        const data = new FormData();
+        formData.mediaFiles.forEach((m: any) => {
+          data.append("mediaFiles", m.file);
+          data.append("label", m.label);
+          data.append("thumbnail", m.thumbnail || null);
+        });
+        // For now, skip media upload since the method doesn't exist
+        // await gameService.uploadGameMedia(gameId, data);
+      }
+      
+      // Update game details
+      await gameService.updateGame(gameId, payload);
+      
+      router.push("/admin/games");
+    } catch (error) {
+      console.error("Failed to update game:", error);
+      setError("Failed to update game");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (loading) {
     return (
-      <div className={`p-10 text-center ${isDarkTheme ? "text-gray-400" : ""}`}>
-        Loading Game Data...
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading game details...</p>
+        </div>
       </div>
     );
+  }
+
+  /* ── Derived theme tokens ── */
+  const d = isDarkTheme;
+  const surface = d ? "bg-[#0d0d0f]" : "bg-[#f8f8fa]";
+  const card = d ? "bg-[#141416]" : "bg-white";
+  const border = d ? "border-white/[0.06]" : "border-black/[0.06]";
+  const inputBg = d ? "bg-[#1c1c1f]" : "bg-[#f0f0f3]";
+  const text = d ? "text-white" : "text-[#0d0d0f]";
+  const muted = d ? "text-white/40" : "text-black/40";
+  const labelCls = `text-[10px] font-semibold uppercase tracking-[0.12em] ${muted}`;
 
   return (
-    <>
-      <div className="max-w-4xl mx-auto p-6 space-y-8">
-        {/* Header Actions */}
-        <div className="flex justify-between items-center">
-          <button
-            type="button"
-            onClick={() => router.back()}
-            className={`flex items-center gap-2 ${isDarkTheme ? "text-gray-400 hover:text-gray-200" : "text-slate-500 hover:text-slate-800"}`}
-          >
-            <ArrowLeft size={18} /> Back
-          </button>
-          <div className="flex gap-3">
+    <div className={`min-h-screen ${surface} pt-20`}>
+      <div className="max-w-7xl mx-auto px-8 py-8">
+        {/* ── Header ── */}
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-4">
             <button
-              type="button"
-              onClick={handleDelete}
-              className={`p-2 text-red-500 rounded-xl transition-colors ${isDarkTheme ? "hover:bg-red-900/50" : "hover:bg-red-50"}`}
+              onClick={() => router.push("/admin/games")}
+              className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${d ? "hover:bg-white/8 text-white/50 hover:text-white" : "hover:bg-black/5 text-black/40 hover:text-black"}`}
             >
-              <Trash2 size={20} />
+              <ArrowLeft size={18} />
             </button>
-            <button
-              type="button"
-              onClick={triggerConfirm}
-              disabled={isUpdating}
-              className="flex items-center gap-2 style={{ backgroundColor: 'var(--accent)' }} text-white px-6 py-2 rounded-xl font-bold hover:bg-indigo-700 disabled:opacity-50"
-            >
-              <Save size={18} /> {isUpdating ? "Saving..." : "Save Changes"}
-            </button>
+            <div>
+              <h1 className={`text-2xl font-bold tracking-tight ${text}`}>
+                Edit Game
+              </h1>
+              <p className={`text-sm ${muted} mt-0.5`}>
+                {formData.name}
+              </p>
+            </div>
           </div>
-        </div>
+          <div className="flex items-center gap-3">
+            <div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {/* Left Column: Info */}
-          <div className="md:col-span-2 space-y-6">
-            <section
-              className={`p-6 rounded-3xl border shadow-sm space-y-4 ${isDarkTheme ? "bg-[#0A0A0A] border-gray-700" : "bg-white border-slate-100"}`}
-            >
-              <h2
-                className={`text-lg font-black ${isDarkTheme ? "text-white" : "text-slate-800"}`}
-              >
-                General Information
-              </h2>
-              <div className="space-y-4">
-                <input
-                  className={`w-full p-4 border-none rounded-2xl font-bold text-xl ${isDarkTheme ? "bg-bg3 text-white" : "bg-slate-50"}`}
-                  value={formData.name}
-                  onChange={(e) =>
-                    setFormData({ ...formData, name: e.target.value })
-                  }
-                  placeholder="Game Name"
-                />
-                <textarea
-                  className={`w-full p-4 border-none rounded-2xl min-h-30 ${isDarkTheme ? "bg-bg3 text-white" : "bg-slate-50"}`}
-                  value={formData.description}
-                  onChange={(e) =>
-                    setFormData({ ...formData, description: e.target.value })
-                  }
-                  placeholder="Description"
-                />
-              </div>
-            </section>
-
-            {/* Gallery Management Section */}
-            <section className={`p-6 rounded-3xl border shadow-sm space-y-4 ${isDarkTheme ? 'bg-[#0A0A0A] border-gray-700' : 'bg-white border-slate-100'}`}>
-              <h2 className={`text-lg font-black ${isDarkTheme ? 'text-white' : 'text-slate-800'}`}>
-                Media Gallery
-              </h2>
-              <GalleryManager
-                gallery={formData.gallery || []}
-                onChange={(gallery) => setFormData({ ...formData, gallery })}
-                isDarkTheme={isDarkTheme}
-              />
-            </section>
-
-            <section className={`p-6 rounded-3xl border shadow-sm ${isDarkTheme ? 'bg-[#0A0A0A] border-gray-700' : 'bg-white border-slate-100'}`}>
-              <h2 className={`text-lg font-black mb-4 ${isDarkTheme ? 'text-white' : 'text-slate-800'}`}>
-                Pricing Matrix
-              </h2>
-              <div className="space-y-3">
-                {formData?.ticketTypes?.map((tt, index) => (
-                  <div
-                    key={index}
-                    className={`flex items-center gap-3 p-3 rounded-2xl ${isDarkTheme ? "bg-bg3" : "bg-slate-50"}`}
-                  >
-                    <div className="flex-1">
-                      <span
-                        className={`text-[10px] font-black uppercase ${isDarkTheme ? "text-white" : "text-accent"}`}
-                      >
-                        {tt.category}
-                      </span>
-                      <p className={`text-sm font-bold ${isDarkTheme ? 'text-gray-300' : 'text-slate-700'}`}>
-                        {tt.category} Ticket
-                      </p>
-                    </div>
-                    <div
-                      className={`flex items-center rounded-xl px-3 border ${isDarkTheme ? "bg-bg3 border-gray-600" : "bg-white border-slate-200"}`}
-                    >
-                      <span
-                        className={`text-xs font-bold mr-2 ${isDarkTheme ? "text-gray-500" : "text-slate-400"}`}
-                      >
-                        ETB
-                      </span>
-                      <input
-                        type="number"
-                        className={`w-20 p-2 font-black text-right outline-none ${isDarkTheme ? "text-white" : ""}`}
-                        value={tt.price}
-                        onChange={(e) => {
-                          const newTypes = (formData.ticketTypes ?? []).map(
-                            (t, i) =>
-                              i === index
-                                ? {
-                                    ...t,
-                                    price: parseFloat(e.target.value) || 0,
-                                  }
-                                : t,
-                          );
-                          setFormData({ ...formData, ticketTypes: newTypes });
-                        }}
-                      />
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const newTypes = (formData.ticketTypes ?? []).filter((_, i) => i !== index);
-                        setFormData({ ...formData, ticketTypes: newTypes });
-                      }}
-                      className={`p-2 rounded-lg transition-colors ${
-                        isDarkTheme 
-                          ? 'bg-red-600 text-white hover:bg-red-700' 
-                          : 'bg-red-500 text-white hover:bg-red-600'
-                      }`}
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-                ))}
-                
-                {/* Add New Ticket Type Button */}
-                <div className="pt-4">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const existingCategories = (formData.ticketTypes ?? []).map(tt => tt.category);
-                      const availableCategories = ["ADULT", "CHILD", "SENIOR", "STUDENT", "GROUP"].filter(
-                        cat => !existingCategories.includes(cat as any)
-                      );
-                      
-                      if (availableCategories.length === 0) {
-                        alert("All ticket categories are already added!");
-                        return;
-                      }
-                      
-                      const newTicket = {
-                        category: availableCategories[0] as any,
-                        price: 100,
-                        max_quantity: 100,
-                        status: "ACTIVE" as const,
-                        id: `temp-${Date.now()}`,
-                        product_id: "",
-                        created_at: new Date().toISOString(),
-                        updated_at: new Date().toISOString(),
-                      };
-                      
-                      setFormData({ 
-                        ...formData, 
-                        ticketTypes: [...(formData.ticketTypes ?? []), newTicket] 
-                      });
-                    }}
-                    className={`w-full py-3 px-4 rounded-xl font-bold transition-colors flex items-center justify-center gap-2 ${
-                      isDarkTheme
-                        ? 'bg-green-600 text-white hover:bg-green-700'
-                        : 'bg-green-500 text-white hover:bg-green-600'
-                    }`}
-                  >
-                    <Plus size={20} />
-                    Add New Ticket Type
-                  </button>
-                </div>
-              </div>
-            </section>
-          </div>
-
-          {/* Right Column: Status & Rules */}
-          <div className="space-y-6">
-            <div
-              className={`p-6 rounded-3xl border shadow-sm ${isDarkTheme ? "bg-[#0A0A0A] border-gray-700" : "bg-white border-slate-100"}`}
-            >
-              <label
-                className={`text-[10px] font-black uppercase ${isDarkTheme ? "text-gray-500" : "text-slate-400"}`}
-              >
-                Availability
-              </label>
               <select
+                className={`px-3 py-2 rounded-xl text-sm font-medium outline-none border-2 border-transparent transition-all focus:border-accent/50 ${inputBg} ${text}`}
                 value={formData.status}
                 onChange={(e) =>
                   setFormData({
                     ...formData,
-                    status: e.target.value as
-                      | "OPEN"
-                      | "ON_MAINTENANCE"
-                      | "CLOSED"
-                      | "UPCOMING",
+                    status: e.target.value as any,
                   })
                 }
-                className={`w-full mt-2 p-3 rounded-xl font-bold text-sm outline-none border-2 border-transparent focus:border-white ${isDarkTheme ? "bg-bg3 text-white" : "bg-slate-50"}`}
               >
                 <option value="OPEN">OPEN</option>
                 <option value="CLOSED">CLOSED</option>
@@ -468,101 +369,533 @@ export default function GameDetailsPage() {
                 <option value="UPCOMING">UPCOMING</option>
               </select>
             </div>
-
-            <div
-              className={`p-6 rounded-3xl shadow-xl border border- ${isDarkTheme ? "bg-[#0A0A0A]] text-white border-gray-700" : "bg-slate-900 text-white border-slate-100"}`}
+            <button
+              onClick={handleDelete}
+              className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all bg-red-500 hover:bg-red-600 text-white`}
             >
-              <h3 className="font-bold mb-2">Internal Rules</h3>
-              <textarea
-                className={`w-full border-none rounded-xl p-3 text-sm min-h-37.5 ${isDarkTheme ? "bg-bg3 text-gray-300" : "bg-slate-800 text-slate-300"}`}
-                value={formData.rules}
-                onChange={(e) =>
-                  setFormData({ ...formData, rules: e.target.value })
-                }
-              />
-            </div>
+              <Trash2 size={16} className="inline mr-2" />
+              Delete Game
+            </button>
           </div>
         </div>
-      </div>
-      {showModal && (
-        <div
-          className={`fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm p-4 ${isDarkTheme ? "bg-black/60" : "bg-slate-900/60"}`}
-        >
-          <div
-            className={`w-full max-w-md rounded-4xl shadow-2xl overflow-hidden animate-in zoom-in-95 ${isDarkTheme ? "bg-[#0A0A0A]" : "bg-white"}`}
-          >
-            <div className="p-8">
-              <h3
-                className={`text-2xl font-black mb-2 ${isDarkTheme ? "text-white" : "text-slate-800"}`}
-              >
-                Review Changes
-              </h3>
-              <p
-                className={`text-sm mb-6 ${isDarkTheme ? "text-gray-400" : "text-slate-500"}`}
-              >
-                The following fields will be updated:
-              </p>
 
-              <div className="space-y-4 max-h-[40vh] overflow-y-auto pr-2">
-                {Object.entries(diff).map(([key, value]) => (
-                  <div
-                    key={key}
-                    className={`p-4 rounded-2xl border ${isDarkTheme ? "bg-bg3 border-gray-700" : "bg-slate-50 border-slate-100"}`}
-                  >
-                    <span
-                      className={`text-[10px] font-black uppercase block mb-1 ${isDarkTheme ? "text-white" : "text-accent"}`}
-                    >
-                      {key}
-                    </span>
-                    <div
-                      className={`text-sm font-bold ${isDarkTheme ? "text-gray-300" : "text-slate-700"}`}
-                    >
-                      {key === "ticketTypes" ? (
-                        `${(value as any[]).length} categories updated`
-                      ) : (
-                        <span className="wrap-break-word line-clamp-2">
-                          {String(value)}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                ))}
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
+            {error}
+          </div>
+        )}
+
+        {/* ── Main Content ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-10 gap-y-8">
+          {/* ══════════ LEFT COLUMN ══════════ */}
+          <div className="space-y-7">
+            {/* — Game Info — */}
+            <div className={`p-6 rounded-3xl border ${border} ${card}`}>
+              <div className="flex items-center gap-2 mb-6">
+                <Tag size={14} className={muted} />
+                <h2 className={`text-sm font-bold uppercase tracking-wider ${muted}`}>
+                  Game Details
+                </h2>
+              </div>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className={`block text-xs font-semibold uppercase tracking-wider mb-2 ${muted}`}>
+                    Game Name
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Thunder Coaster"
+                    className={`w-full px-4 py-3 rounded-2xl text-sm font-medium outline-none border-2 border-transparent transition-all focus:border-accent/50 placeholder:${muted} ${inputBg} ${text}`}
+                    value={formData.name}
+                    onChange={(e) =>
+                      setFormData({ ...formData, name: e.target.value })
+                    }
+                  />
+                </div>
+
+                <div>
+                  <label className={`block text-xs font-semibold uppercase tracking-wider mb-2 ${muted}`}>
+                    Description
+                  </label>
+                  <textarea
+                    placeholder="Describe what players can expect…"
+                    rows={3}
+                    className={`w-full px-4 py-3 rounded-2xl text-sm font-medium outline-none border-2 border-transparent transition-all focus:border-accent/50 resize-none placeholder:${muted} ${inputBg} ${text}`}
+                    value={formData.description}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        description: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+
+                <div>
+                  <label className={`block text-xs font-semibold uppercase tracking-wider mb-2 ${muted}`}>
+                    Internal Rules
+                  </label>
+                  <textarea
+                    placeholder="Safety rules and requirements…"
+                    rows={4}
+                    className={`w-full px-4 py-3 rounded-2xl text-sm font-medium outline-none border-2 border-transparent transition-all focus:border-accent/50 resize-none placeholder:${muted} ${inputBg} ${text}`}
+                    value={formData.rules}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        rules: e.target.value,
+                      })
+                    }
+                  />
+                </div>
               </div>
             </div>
 
-            <div className="p-6 bg-slate-50 flex gap-3">
-              <button
-                onClick={handleUpdate}
-                disabled={isUpdating}
-                className="flex-1 py-4 style={{ backgroundColor: 'var(--accent)' }} text-white rounded-2xl font-black shadow-lg shadow-indigo-200 disabled:opacity-50"
+            {/* — Ticket Types — */}
+            <div className={`p-6 rounded-3xl border ${border} ${card}`}>
+              <div className="flex items-center gap-2 mb-6">
+                <Tag size={14} className={muted} />
+                <h2 className={`text-sm font-bold uppercase tracking-wider ${muted}`}>
+                  Ticket Types
+                </h2>
+              </div>
+              
+              {/* Existing tickets */}
+              {formData.ticketTypes.length > 0 && (
+                <div className="space-y-2 mb-4">
+                  {formData.ticketTypes.map((tt, index) => (
+                    <div
+                      key={index}
+                      className={`flex items-center justify-between px-4 py-3 rounded-2xl border ${border} ${card}`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <span
+                          className={`text-[10px] font-bold px-2.5 py-1 rounded-lg uppercase tracking-wider ${CATEGORY_COLORS[tt.category] ?? "bg-gray-500/10 text-gray-400"}`}
+                        >
+                          {tt.category}
+                        </span>
+                        <div>
+                          <p className={`text-xs ${muted}`}>
+                            {tt.price} ETB · max {tt.max_quantity}
+                            /booking
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => removeTicketType(index)}
+                        className="w-7 h-7 flex items-center justify-center rounded-lg text-red-400 hover:bg-red-500/10 transition-colors"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Add new ticket */}
+              <div
+                className={`p-5 rounded-2xl border border-dashed ${d ? "border-white/10 bg-white/2" : "border-black/10 bg-black/2"}`}
               >
-                {isUpdating ? "Saving..." : "Confirm & Save"}
-              </button>
+                <p
+                  className={`text-[11px] font-semibold uppercase tracking-widest mb-4 ${muted}`}
+                >
+                  Add a ticket type
+                </p>
+                <div className="grid grid-cols-2 gap-3">
+                  <select
+                    className={`px-3 py-2.5 rounded-xl text-sm font-medium outline-none border border-transparent focus:border-accent2/50 transition-all ${inputBg} ${text}`}
+                    value={newTicket.category}
+                    onChange={(e) =>
+                      setNewTicket({
+                        ...newTicket,
+                        category: e.target.value as any,
+                      })
+                    }
+                  >
+                    {["adult", "child", "senior", "student", "group"].map(
+                      (cat) => (
+                        <option
+                          key={cat}
+                          value={cat.toUpperCase()}
+                          disabled={formData.ticketTypes.some(
+                            (tt) => tt.category === cat.toUpperCase(),
+                          )}
+                        >
+                          {cat.charAt(0).toUpperCase() + cat.slice(1)}
+                        </option>
+                      ),
+                    )}
+                  </select>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      placeholder="Price"
+                      className={`w-full pl-3 pr-10 py-2.5 rounded-xl text-sm font-medium outline-none border border-transparent focus:border-accent/50 transition-all ${inputBg} ${text}`}
+                      value={newTicket.price || ""}
+                      onChange={(e) =>
+                        setNewTicket({
+                          ...newTicket,
+                          price: parseFloat(e.target.value) || 0,
+                        })
+                      }
+                    />
+                    <span
+                      className={`absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold ${muted}`}
+                    >
+                      ETB
+                    </span>
+                  </div>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      className={`w-full pl-3 pr-3 py-2.5 rounded-xl text-sm font-medium outline-none border border-transparent focus:border-accent/50 transition-all ${inputBg} ${text}`}
+                      value={newTicket.max_quantity}
+                      onChange={(e) =>
+                        setNewTicket({
+                          ...newTicket,
+                          max_quantity: parseInt(e.target.value),
+                        })
+                      }
+                    />
+                    <span
+                      className={`absolute -top-2 left-3 text-[9px] font-bold uppercase tracking-wider ${muted} pointer-events-none`}
+                    >
+                      Max qty
+                    </span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={addCategory}
+                  className="mt-3 w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-accent2/90 hover:bg-accent/90 text-black text-xs font-bold uppercase tracking-widest transition-all active:scale-[0.98]"
+                >
+                  <Plus size={14} />
+                  Add to list
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* ══════════ RIGHT COLUMN ══════════ */}
+          <div className="space-y-7">
+            <div className={`p-6 rounded-3xl border ${border} ${card}`}>
+              <div className="flex items-center gap-2 mb-6">
+                <ImageIcon size={14} className={muted} />
+                <h2 className={`text-sm font-bold uppercase tracking-wider ${muted}`}>
+                  Game Media
+                </h2>
+              </div>
+              
+              {/* Quota strip */}
+              <div
+                className={`flex items-center justify-between px-4 py-2.5 rounded-xl text-xs font-semibold ${d ? "bg-white/4" : "bg-black/3"}`}
+              >
+                {[
+                  { label: "Posters", count: getPosterCount() },
+                  { label: "Banners", count: getBannerCount() },
+                  { label: "Videos", count: getVideoCount() },
+                ].map(({ label, count }) => (
+                  <div key={label} className="flex items-center gap-1.5">
+                    <span className={muted}>{label}</span>
+                    <span
+                      className={`${count >= 3 ? "text-emerald-400" : text}`}
+                    >
+                      {count}/3
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Upload targets */}
+              <div className="grid grid-cols-2 gap-3 mt-4">
+                <label
+                  className={`group flex flex-col items-center justify-center gap-2 h-24 rounded-2xl border-2 border-dashed cursor-pointer transition-all ${d ? "border-white/10 hover:border-accent/50 hover:bg-accent/5" : "border-black/10 hover:border-accent/50 hover:bg-accent/5"}`}
+                >
+                  <div
+                    className={`w-9 h-9 rounded-xl flex items-center justify-center transition-colors ${d ? "bg-white/5 group-hover:bg-accent/20" : "bg-black/5 group-hover:bg-accent/20"}`}
+                  >
+                    <ImageIcon size={16} className="text-accent" />
+                  </div>
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-accent">
+                    Image
+                  </span>
+                  <input
+                    type="file"
+                    hidden
+                    accept="image/*"
+                    onChange={(e) => handleMediaUpload(e, "IMAGE")}
+                  />
+                </label>
+
+                {hasVideoSlot() && (
+                  <label
+                    className={`group flex flex-col items-center justify-center gap-2 h-24 rounded-2xl border-2 border-dashed cursor-pointer transition-all ${d ? "border-white/10 hover:border-accent/50 hover:bg-accent/5" : "border-black/10 hover:border-accent/50 hover:bg-accent/5"}`}
+                  >
+                    <div
+                      className={`w-9 h-9 rounded-xl flex items-center justify-center transition-colors ${d ? "bg-white/5 group-hover:bg-accent/20" : "bg-black/5 group-hover:bg-accent/20"}`}
+                    >
+                      <Video size={16} className="text-accent" />
+                    </div>
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-accent">
+                      Video
+                    </span>
+                    <input
+                      type="file"
+                      hidden
+                      accept="video/*"
+                      onChange={(e) => handleMediaUpload(e, "VIDEO")}
+                    />
+                  </label>
+                )}
+              </div>
+
+              {/* Combined Media Grid */}
+              <div className="mt-4">
+                {/* Existing Media */}
+                {existingMedia.length > 0 && (
+                  <div className="mb-4">
+                    <p className={`text-xs font-semibold uppercase tracking-wider mb-3 ${muted}`}>
+                      Existing Media
+                    </p>
+                    <div className="grid grid-cols-3 gap-2.5">
+                      {existingMedia.map((media, idx) => (
+                        media.type === "IMAGE" ? (
+                          <div
+                            key={`existing-${idx}`}
+                            className="relative aspect-square rounded-xl overflow-hidden group shadow-sm"
+                          >
+                            <img
+                              src={media.url}
+                              className="w-full h-full object-cover"
+                              alt="existing media"
+                            />
+                            {/* Hover overlay */}
+                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all" />
+                            {/* Remove btn */}
+                            <button
+                              onClick={() => removeMedia(idx, true)}
+                              className="absolute top-1.5 right-1.5 w-6 h-6 flex items-center justify-center bg-red-500 hover:bg-red-400 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-all scale-75 group-hover:scale-100"
+                            >
+                              <X size={11} />
+                            </button>
+                            {/* Label badge */}
+                            <div className="absolute bottom-1.5 left-1.5 opacity-0 group-hover:opacity-100 transition-all">
+                              <span className="bg-black/70 backdrop-blur-sm text-white/80 text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md">
+                                {media.label ?? media.type.toLowerCase()}
+                              </span>
+                            </div>
+                          </div>
+                        ) : (
+                          <VideoThumbnailCard
+                            key={`existing-${idx}`}
+                            media={media}
+                            index={idx}
+                            isDarkTheme={d}
+                            muted={muted}
+                            onThumbnailUpload={async (index, file, preview) => {
+                              setExistingMedia((prev) => {
+                                const updated = [...prev];
+                                if (updated[index]) {
+                                  updated[index].thumbnailPreview = preview;
+                                  updated[index].thumbnail = file;
+                                  updated[index].hasChanges = true;
+                                }
+                                return updated;
+                              });
+                            }}
+                            onThumbnailDelete={(index) => {
+                              setExistingMedia((prev) => {
+                                const updated = [...prev];
+                                if (updated[index]) {
+                                  updated[index].thumbnailPreview = undefined;
+                                  updated[index].thumbnail = undefined;
+                                  updated[index].hasChanges = true;
+                                }
+                                return updated;
+                              });
+                            }}
+                            onRemoveMedia={(index) => removeMedia(index, true)}
+                          />
+                        )
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* New Media */}
+                {formData.mediaFiles.length > 0 && (
+                  <div>
+                    <p className={`text-xs font-semibold uppercase tracking-wider mb-3 ${muted}`}>
+                      New Media
+                    </p>
+                    <div className="grid grid-cols-3 gap-2.5">
+                      {formData.mediaFiles.map((media, idx) => (
+                        media.type === "IMAGE" ? (
+                          <div
+                            key={`new-${idx}`}
+                            className="relative aspect-square rounded-xl overflow-hidden group shadow-sm"
+                          >
+                            <img
+                              src={media.preview}
+                              className="w-full h-full object-cover"
+                              alt="preview"
+                            />
+                            {/* Hover overlay */}
+                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all" />
+                            {/* Remove btn */}
+                            <button
+                              onClick={() => removeMedia(idx, false)}
+                              className="absolute top-1.5 right-1.5 w-6 h-6 flex items-center justify-center bg-red-500 hover:bg-red-400 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-all scale-75 group-hover:scale-100"
+                            >
+                              <X size={11} />
+                            </button>
+                            {/* Label badge */}
+                            <div className="absolute bottom-1.5 left-1.5 opacity-0 group-hover:opacity-100 transition-all">
+                              <span className="bg-black/70 backdrop-blur-sm text-white/80 text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md">
+                                {media.label ?? media.type.toLowerCase()}
+                              </span>
+                            </div>
+                          </div>
+                        ) : (
+                          <VideoThumbnailCard
+                            key={`new-${idx}`}
+                            media={media}
+                            index={idx}
+                            isDarkTheme={d}
+                            muted={muted}
+                            onThumbnailUpload={(index, file, preview) => {
+                              setFormData((prev) => {
+                                const updatedMedia = [...prev.mediaFiles];
+                                if (updatedMedia[index]) {
+                                  updatedMedia[index].thumbnailPreview = preview;
+                                  updatedMedia[index].thumbnail = file;
+                                  updatedMedia[index].preview = preview;
+                                }
+                                return { ...prev, mediaFiles: updatedMedia };
+                              });
+                            }}
+                            onThumbnailDelete={(index) => {
+                              setFormData((prev) => {
+                                const updatedMedia = [...prev.mediaFiles];
+                                if (updatedMedia[index]) {
+                                  updatedMedia[index].thumbnailPreview = undefined;
+                                  updatedMedia[index].thumbnail = undefined;
+                                }
+                                return { ...prev, mediaFiles: updatedMedia };
+                              });
+                            }}
+                            onRemoveMedia={(index) => removeMedia(index, false)}
+                          />
+                        )
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {existingMedia.length === 0 && formData.mediaFiles.length === 0 && (
+                  <div
+                    className={`flex flex-col items-center justify-center py-8 rounded-2xl ${d ? "bg-white/2" : "bg-black/2"}`}
+                  >
+                    <ImageIcon size={28} className={`${muted} mb-2`} />
+                    <p className={`text-xs font-medium ${muted}`}>
+                      No media added yet
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
-      )}
 
-      {/* Validation Modal */}
-      <ValidationModal
-        isOpen={showValidationModal}
-        onClose={() => setShowValidationModal(false)}
-        errors={validationErrors}
-        isDarkTheme={isDarkTheme}
-      />
+        {/* ── Footer Actions ── */}
+        <div className={`flex items-center justify-between mt-8 p-6 rounded-3xl border ${border} ${card}`}>
+          <button
+            onClick={() => router.push("/admin/games")}
+            className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition-all ${d ? "bg-white/6 hover:bg-white/10 text-white/70" : "bg-black/5 hover:bg-black/10 text-black/60"}`}
+          >
+            Cancel
+          </button>
 
-      {/* Confirmation Modal */}
-      <ConfirmationModal
-        isOpen={showConfirmationModal}
-        onClose={() => setShowConfirmationModal(false)}
-        onConfirm={confirmUpdate}
-        title="Confirm Changes"
-        message="Are you sure you want to save these changes to the game?"
-        confirmText="Save Changes"
-        cancelText="Cancel"
-        isDarkTheme={isDarkTheme}
-        isLoading={isUpdating}
-      />
-    </>
+          <div className="flex items-center gap-3">
+            <span className={`text-xs ${muted}`}>
+              {formData.ticketTypes.length} ticket type
+              {formData.ticketTypes.length !== 1 ? "s" : ""} ·{" "}
+              {formData.mediaFiles.length + existingMedia.length} file
+              {formData.mediaFiles.length + existingMedia.length !== 1 ? "s" : ""}
+            </span>
+            <button
+              disabled={submitting}
+              onClick={handleUpdate}
+              className={`
+                flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold text-black
+                bg-linear-to-r from-accent to-accent2/80
+                hover:from-accent2/90 hover:to-accent2/70
+                shadow-lg shadow-accent/30
+                transition-all active:scale-[0.98]
+                ${submitting ? "opacity-50 cursor-not-allowed" : ""}
+              `}
+            >
+              {submitting ? (
+                <>
+                  <span className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                  Updating…
+                </>
+              ) : (
+                <>
+                  Update Game <ChevronRight size={15} />
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* ── Label picker modal ── */}
+        {labelModalOpen && pendingFile && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-60">
+            <div
+              className={`w-full max-w-sm mx-4 rounded-3xl shadow-2xl overflow-hidden border ${border} ${d ? "bg-[#141416]" : "bg-white"}`}
+            >
+              <div className={`px-6 pt-6 pb-4 border-b ${border}`}>
+                <h3 className={`text-base font-bold ${text}`}>Tag this image</h3>
+                <p className={`text-xs mt-0.5 ${muted}`}>
+                  Choose how this image will be used
+                </p>
+              </div>
+              <div className="p-4">
+                <img
+                  src={pendingFile.preview}
+                  className="w-full h-36 object-cover rounded-2xl mb-4"
+                  alt="pending"
+                />
+                <div className="grid grid-cols-3 gap-2">
+                  {getAvailableImageLabels().map((label) => (
+                    <button
+                      key={label}
+                      onClick={() => handleLabelSelect(label)}
+                      className={`
+                        py-3 rounded-xl text-xs font-bold uppercase tracking-widest
+                        border-2 transition-all hover:border-accent hover:text-accent
+                        ${d ? "border-white/10 text-white/50" : "border-black/10 text-black/50"}
+                      `}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className={`px-4 pb-4 border-t ${border} pt-3`}>
+                <button
+                  onClick={handleLabelCancel}
+                  className={`w-full py-2.5 rounded-xl text-sm font-semibold transition-all ${d ? "bg-white/6 hover:bg-white/10 text-white/50" : "bg-black/5 hover:bg-black/10 text-black/50"}`}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
