@@ -295,7 +295,7 @@ export default function MyBookingsPage() {
                   key={item.id}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  className={`rounded-[32px] md:rounded-[24px] overflow-hidden flex flex-col md:flex-row shadow-sm transition-all ${isFinished ? "opacity-60 grayscale-[0.4]" : ""} ${
+                  className={`rounded-4xl md:rounded-3xl overflow-hidden flex flex-col md:flex-row shadow-sm transition-all ${isFinished ? "opacity-60 grayscale-[0.4]" : ""} ${
                     isDarkTheme
                       ? "bg-[#1a1a1a] border-gray-700"
                       : "bg-white border-slate-100"
@@ -400,7 +400,7 @@ export default function MyBookingsPage() {
                         </span>
                       </div>
                       <div
-                        className={`md:bg-transparent p-3 md:p-0 hidden md:block rounded-2xl flex flex-col ${isDarkTheme ? "bg-gray-800" : "bg-slate-50"}`}
+                        className={`md:bg-transparent p-3 md:p-0 hidden md:block rounded-2xl flex-col ${isDarkTheme ? "bg-gray-800" : "bg-slate-50"}`}
                       >
                         <span
                           className={`text-[9px] md:text-[10px] hidden md:block font-bold uppercase mb-1 ${isDarkTheme ? "text-gray-400" : "text-slate-400"}`}

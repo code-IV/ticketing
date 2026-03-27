@@ -18,9 +18,7 @@ export interface Game {
   description: string;
   rules: string;
   status: "OPEN" | "ON_MAINTENANCE" | "UPCOMING" | "CLOSED";
-  ticket_types?: TicketType[];
-  category?: string;
-  capacity?: number;
+  ticketTypes?: TicketType[];
   gallery?: MediaItem[];
   createdAt: string;
   updatedAt: string;
@@ -34,6 +32,14 @@ export interface MediaItem {
   label: string;
   thumbnailUrl?: string;
   sort_order?: number; // Keep as sort_order to match backend
+  file?: File;
+}
+
+export interface MediaDisplayItem {
+  type: "image" | "video";
+  url: string;
+  thumbnail: string;
+  alt: string;
 }
 
 export interface CreateGame {
@@ -64,12 +70,12 @@ export interface TicketType {
   category: "ADULT" | "CHILD" | "SENIOR" | "STUDENT" | "GROUP";
   price: number;
   max_quantity: number;
+  status?: "ACTIVE" | "INACTIVE";
   created_at: string;
   updated_at: string;
 }
 
 export interface CreateTicketTypeRequest {
-  name: string;
   category: "ADULT" | "CHILD" | "SENIOR" | "STUDENT" | "GROUP";
   price: number;
   description?: string;
@@ -225,6 +231,7 @@ export interface Ticket {
 }
 
 export interface Ticket_Product {
+  gameData: any;
   id: string;
   productName: string;
   productType: "EVENT" | "GAME";
@@ -250,6 +257,10 @@ export interface Payment {
 }
 
 export interface ApiResponse<T = any> {
+  topPerformers: any;
+  revenueByTicketType: never[];
+  timeSeries: never[];
+  summary: any;
   success: boolean;
   message: string;
   data?: T;
@@ -259,9 +270,9 @@ export interface PaginatedResponse<T> {
   success: boolean;
   message: string;
   data: {
+    users?: T[];
     events?: T[];
     bookings?: T[];
-    users?: T[];
     payments?: T[];
     games?: T[];
     pagination: {

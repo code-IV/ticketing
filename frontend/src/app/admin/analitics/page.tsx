@@ -266,13 +266,13 @@ export default function AnalyticsDashboardPage() {
 
   // Filter data based on date range
   const filterDataByDateRange = (
-    data: RevenueTrend[] | TicketsTrend[],
+    data: any[],
     range: DateRange,
   ) => {
     if (!range.start || !range.end || !data) return data;
     return data.filter((d) => {
       const date = new Date(d.date);
-      return isWithinInterval(date, { start: range.start, end: range.end });
+      return isWithinInterval(date, { start: range.start!, end: range.end! });
     });
   };
 

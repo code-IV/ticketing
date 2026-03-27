@@ -1,10 +1,13 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { gameService } from "@/services/adminService";
+import { gameService, adminService } from "@/services/adminService";
 import { Game } from "@/types";
 import { Trash2, Save, ArrowLeft, Plus, X } from "lucide-react";
-import { useTheme } from "@/contexts/ThemeContext";
+import { useTheme } from '@/contexts/ThemeContext';
+import GalleryManager from '@/components/admin/GalleryManager';
+import ValidationModal from '@/components/ui/ValidationModal';
+import ConfirmationModal from '@/components/ui/ConfirmationModal';
 
 export default function GameDetailsPage() {
   const { id } = useParams<{ id: string }>();
@@ -18,11 +21,15 @@ export default function GameDetailsPage() {
     description: "",
     rules: "",
     status: "OPEN",
-    ticket_types: [],
+    ticketTypes: [],
+    gallery: [],
   });
   const [savedData, setSavedData] = useState<Partial<Game>>({});
   const [diff, setDiff] = useState<Partial<Game>>({});
   const [showModal, setShowModal] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  const [showValidationModal, setShowValidationModal] = useState(false);
+  const [showConfirmationModal, setShowConfirmationModal] = useState(false);
 
   // 1. Fetch Game Data
   useEffect(() => {
@@ -32,9 +39,9 @@ export default function GameDetailsPage() {
   const fetchGame = async () => {
     try {
       const response = await gameService.getGame(id!);
-      console.log("API Response:", response);
-      const data = response.data?.game || {};
-      console.log("Game data:", data);
+      console.log('API Response:', response);
+      const data = (response.data as any)?.data || response.data || {};
+      console.log('Game data:', data);
       setFormData(data);
       setSavedData(data);
     } catch (error) {
@@ -50,17 +57,17 @@ export default function GameDetailsPage() {
 
     // Check simple fields
     (Object.keys(formData) as Array<keyof Game>).forEach((key) => {
-      if (key !== "ticket_types" && formData[key] !== savedData[key]) {
+      if (key !== "ticketTypes" && formData[key] !== savedData[key]) {
         changes[key] = formData[key];
       }
     });
 
-    // Check ticket_types (deep comparison)
+    // Check ticketTypes (deep comparison)
     if (
-      JSON.stringify(formData.ticket_types) !==
-      JSON.stringify(savedData.ticket_types)
+      JSON.stringify(formData.ticketTypes) !==
+      JSON.stringify(savedData.ticketTypes)
     ) {
-      changes.ticket_types = formData.ticket_types;
+      changes.ticketTypes = formData.ticketTypes;
     }
 
     return changes;
@@ -112,17 +119,93 @@ export default function GameDetailsPage() {
 
   // 2. Handle Update
   const handleUpdate = async () => {
+    // Form validation
+    const validationErrors: string[] = [];
+    
+    // Check required fields
+    if (!formData.name || formData.name.trim() === '') {
+      validationErrors.push('Game name is required');
+    }
+    
+    if (!formData.ticketTypes || formData.ticketTypes.length === 0) {
+      validationErrors.push('At least one ticket type is required');
+    }
+    
+    // Validate ticket types
+    formData.ticketTypes?.forEach((ticket, index) => {
+      if (!ticket.category) {
+        validationErrors.push(`Ticket type ${index + 1}: Category is required`);
+      }
+      
+      if (!ticket.price || ticket.price < 10) {
+        validationErrors.push(`Ticket type ${index + 1}: Price must be at least 10 ETB`);
+      }
+      
+      if (ticket.price > 5000) {
+        validationErrors.push(`Ticket type ${index + 1}: Price cannot exceed 5000 ETB`);
+      }
+    });
+    
+    // Show validation errors if any
+    if (validationErrors.length > 0) {
+      setValidationErrors(validationErrors);
+      setShowValidationModal(true);
+      return;
+    }
+    
+    // Show confirmation dialog
+    setShowConfirmationModal(true);
+  };
+
+  const confirmUpdate = async () => {
+    setShowConfirmationModal(false);
     setIsUpdating(true);
     try {
-      console.log("=== DATA COMPARISON ===");
-      console.log("Current form data:", formData);
-      console.log("Saved data:", savedData);
-      console.log("Changes to send (diff):", diff);
-      console.log("=======================");
+      console.log('=== DATA COMPARISON ===');
+      console.log('Current form data:', formData);
+      console.log('Saved data:', savedData);
+      console.log('Changes to send (diff):', diff);
+      console.log('=======================');
+      
+      let finalDiff = { ...diff };
+      
+      // Upload new files first
+      if (finalDiff.gallery) {
+        // filter items that have a local file attached
+        const newMediaItems = finalDiff.gallery.filter((item: any) => item.file);
+        
+        if (newMediaItems.length > 0) {
+          const uploadsObj = new FormData();
+          newMediaItems.forEach((item: any) => {
+            uploadsObj.append('mediaFiles', item.file);
+            uploadsObj.append('label', item.label);
+          });
+          
+          try {
+            const uploadResponse = await adminService.uploadGameMedia(id!, uploadsObj);
+            const uploadedItems = uploadResponse.data || [];
+            
+            // Swap temp ids with actual backend URLs and IDs
+            finalDiff.gallery = finalDiff.gallery.map((item: any) => {
+              if (item.file) {
+                const uploadedMatch = uploadedItems.find((u: any) => u.name === item.name);
+                if (uploadedMatch) {
+                  return { ...item, id: uploadedMatch.id, url: uploadedMatch.url, file: undefined };
+                }
+              }
+              return item;
+            });
+          } catch (uploadError) {
+             console.error("Upload media failed:", uploadError);
+             alert("Media upload failed! Gallery won't be saved.");
+             delete finalDiff.gallery;
+          }
+        }
+      }
 
-      const response = await gameService.updateGame(id!, diff);
-      console.log("Update response:", response);
-
+      const response = await gameService.updateGame(id!, finalDiff);
+      console.log('Update response:', response);
+      
       // After update, fetch fresh data to compare
       const freshResponse = await gameService.getGame(id!);
       const freshData = freshResponse.data?.game || freshResponse.data || {};
@@ -225,7 +308,7 @@ export default function GameDetailsPage() {
                   placeholder="Game Name"
                 />
                 <textarea
-                  className={`w-full p-4 border-none rounded-2xl min-h-[120px] ${isDarkTheme ? "bg-bg3 text-white" : "bg-slate-50"}`}
+                  className={`w-full p-4 border-none rounded-2xl min-h-30 ${isDarkTheme ? "bg-bg3 text-white" : "bg-slate-50"}`}
                   value={formData.description}
                   onChange={(e) =>
                     setFormData({ ...formData, description: e.target.value })
@@ -235,16 +318,24 @@ export default function GameDetailsPage() {
               </div>
             </section>
 
-            <section
-              className={`p-6 rounded-3xl border shadow-sm ${isDarkTheme ? "bg-[#0A0A0A] border-gray-700" : "bg-white border-slate-100"}`}
-            >
-              <h2
-                className={`text-lg font-black mb-4 ${isDarkTheme ? "text-white" : "text-slate-800"}`}
-              >
+            {/* Gallery Management Section */}
+            <section className={`p-6 rounded-3xl border shadow-sm space-y-4 ${isDarkTheme ? 'bg-[#0A0A0A] border-gray-700' : 'bg-white border-slate-100'}`}>
+              <h2 className={`text-lg font-black ${isDarkTheme ? 'text-white' : 'text-slate-800'}`}>
+                Media Gallery
+              </h2>
+              <GalleryManager
+                gallery={formData.gallery || []}
+                onChange={(gallery) => setFormData({ ...formData, gallery })}
+                isDarkTheme={isDarkTheme}
+              />
+            </section>
+
+            <section className={`p-6 rounded-3xl border shadow-sm ${isDarkTheme ? 'bg-[#0A0A0A] border-gray-700' : 'bg-white border-slate-100'}`}>
+              <h2 className={`text-lg font-black mb-4 ${isDarkTheme ? 'text-white' : 'text-slate-800'}`}>
                 Pricing Matrix
               </h2>
               <div className="space-y-3">
-                {formData?.ticket_types?.map((tt, index) => (
+                {formData?.ticketTypes?.map((tt, index) => (
                   <div
                     key={index}
                     className={`flex items-center gap-3 p-3 rounded-2xl ${isDarkTheme ? "bg-bg3" : "bg-slate-50"}`}
@@ -255,10 +346,8 @@ export default function GameDetailsPage() {
                       >
                         {tt.category}
                       </span>
-                      <p
-                        className={`text-sm font-bold ${isDarkTheme ? "text-gray-300" : "text-slate-700"}`}
-                      >
-                        {/* {tt.name} */}
+                      <p className={`text-sm font-bold ${isDarkTheme ? 'text-gray-300' : 'text-slate-700'}`}>
+                        {tt.category} Ticket
                       </p>
                     </div>
                     <div
@@ -274,7 +363,7 @@ export default function GameDetailsPage() {
                         className={`w-20 p-2 font-black text-right outline-none ${isDarkTheme ? "text-white" : ""}`}
                         value={tt.price}
                         onChange={(e) => {
-                          const newTypes = (formData.ticket_types ?? []).map(
+                          const newTypes = (formData.ticketTypes ?? []).map(
                             (t, i) =>
                               i === index
                                 ? {
@@ -283,12 +372,68 @@ export default function GameDetailsPage() {
                                   }
                                 : t,
                           );
-                          setFormData({ ...formData, ticket_types: newTypes });
+                          setFormData({ ...formData, ticketTypes: newTypes });
                         }}
                       />
                     </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newTypes = (formData.ticketTypes ?? []).filter((_, i) => i !== index);
+                        setFormData({ ...formData, ticketTypes: newTypes });
+                      }}
+                      className={`p-2 rounded-lg transition-colors ${
+                        isDarkTheme 
+                          ? 'bg-red-600 text-white hover:bg-red-700' 
+                          : 'bg-red-500 text-white hover:bg-red-600'
+                      }`}
+                    >
+                      <Trash2 size={16} />
+                    </button>
                   </div>
                 ))}
+                
+                {/* Add New Ticket Type Button */}
+                <div className="pt-4">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const existingCategories = (formData.ticketTypes ?? []).map(tt => tt.category);
+                      const availableCategories = ["ADULT", "CHILD", "SENIOR", "STUDENT", "GROUP"].filter(
+                        cat => !existingCategories.includes(cat as any)
+                      );
+                      
+                      if (availableCategories.length === 0) {
+                        alert("All ticket categories are already added!");
+                        return;
+                      }
+                      
+                      const newTicket = {
+                        category: availableCategories[0] as any,
+                        price: 100,
+                        max_quantity: 100,
+                        status: "ACTIVE" as const,
+                        id: `temp-${Date.now()}`,
+                        product_id: "",
+                        created_at: new Date().toISOString(),
+                        updated_at: new Date().toISOString(),
+                      };
+                      
+                      setFormData({ 
+                        ...formData, 
+                        ticketTypes: [...(formData.ticketTypes ?? []), newTicket] 
+                      });
+                    }}
+                    className={`w-full py-3 px-4 rounded-xl font-bold transition-colors flex items-center justify-center gap-2 ${
+                      isDarkTheme
+                        ? 'bg-green-600 text-white hover:bg-green-700'
+                        : 'bg-green-500 text-white hover:bg-green-600'
+                    }`}
+                  >
+                    <Plus size={20} />
+                    Add New Ticket Type
+                  </button>
+                </div>
               </div>
             </section>
           </div>
@@ -329,7 +474,7 @@ export default function GameDetailsPage() {
             >
               <h3 className="font-bold mb-2">Internal Rules</h3>
               <textarea
-                className={`w-full border-none rounded-xl p-3 text-sm min-h-[150px] ${isDarkTheme ? "bg-bg3 text-gray-300" : "bg-slate-800 text-slate-300"}`}
+                className={`w-full border-none rounded-xl p-3 text-sm min-h-37.5 ${isDarkTheme ? "bg-bg3 text-gray-300" : "bg-slate-800 text-slate-300"}`}
                 value={formData.rules}
                 onChange={(e) =>
                   setFormData({ ...formData, rules: e.target.value })
@@ -344,7 +489,7 @@ export default function GameDetailsPage() {
           className={`fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm p-4 ${isDarkTheme ? "bg-black/60" : "bg-slate-900/60"}`}
         >
           <div
-            className={`w-full max-w-md rounded-[32px] shadow-2xl overflow-hidden animate-in zoom-in-95 ${isDarkTheme ? "bg-[#0A0A0A]" : "bg-white"}`}
+            className={`w-full max-w-md rounded-4xl shadow-2xl overflow-hidden animate-in zoom-in-95 ${isDarkTheme ? "bg-[#0A0A0A]" : "bg-white"}`}
           >
             <div className="p-8">
               <h3
@@ -372,10 +517,10 @@ export default function GameDetailsPage() {
                     <div
                       className={`text-sm font-bold ${isDarkTheme ? "text-gray-300" : "text-slate-700"}`}
                     >
-                      {key === "ticket_types" ? (
+                      {key === "ticketTypes" ? (
                         `${(value as any[]).length} categories updated`
                       ) : (
-                        <span className="break-words line-clamp-2">
+                        <span className="wrap-break-word line-clamp-2">
                           {String(value)}
                         </span>
                       )}
@@ -397,6 +542,27 @@ export default function GameDetailsPage() {
           </div>
         </div>
       )}
+
+      {/* Validation Modal */}
+      <ValidationModal
+        isOpen={showValidationModal}
+        onClose={() => setShowValidationModal(false)}
+        errors={validationErrors}
+        isDarkTheme={isDarkTheme}
+      />
+
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showConfirmationModal}
+        onClose={() => setShowConfirmationModal(false)}
+        onConfirm={confirmUpdate}
+        title="Confirm Changes"
+        message="Are you sure you want to save these changes to the game?"
+        confirmText="Save Changes"
+        cancelText="Cancel"
+        isDarkTheme={isDarkTheme}
+        isLoading={isUpdating}
+      />
     </>
   );
 }

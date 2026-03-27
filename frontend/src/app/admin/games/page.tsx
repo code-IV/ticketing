@@ -72,9 +72,9 @@ const GamesManagementPage = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
           {filteredGames.map((game) => {
-            const config = statusConfig(isDarkTheme)[game.status as keyof typeof statusConfig] || statusConfig(isDarkTheme).CLOSED;
+            const config = statusConfig(isDarkTheme)[game.status] || statusConfig(isDarkTheme).CLOSED;
             return (
-              <div key={game.id} onClick={() => router.push(`/admin/games/${game.id}`)} className={`group relative rounded-3xl border shadow-lg hover:shadow-2xl hover:-translate-y-2 hover:border-accent/50 transition-all duration-500 overflow-hidden cursor-pointer ${isDarkTheme ? 'bg-gradient-to-br from-[#0A0A0A] to-[#1a1a1a] border-gray-700' : 'bg-white border-slate-200'}`}>
+              <div key={game.id} onClick={() => router.push(`/admin/games/${game.id}`)} className={`group relative rounded-3xl border shadow-lg hover:shadow-2xl hover:-translate-y-2 hover:border-accent/50 transition-all duration-500 overflow-hidden cursor-pointer ${isDarkTheme ? 'bg-linear-to-br from-[#0A0A0A] to-[#1a1a1a] border-gray-700' : 'bg-white border-slate-200'}`}>
                 <div className="relative p-8">
                   <div className="flex justify-between items-start mb-6">
                     <div className={`flex items-center gap-2 px-4 py-2 rounded-full text-[11px] font-black uppercase shadow-md ${config.bg} ${config.text}`}><span className="w-2 h-2 rounded-full bg-current opacity-60" />{config.label}</div>
@@ -84,7 +84,7 @@ const GamesManagementPage = () => {
                       </select>
                     </div>
                   </div>
-                  <h3 className={`text-2xl font-black mb-6 bg-gradient-to-r ${isDarkTheme ? 'from-white to-gray-300' : 'from-slate-900 to-slate-700'} bg-clip-text text-transparent`}>{game.name}</h3>
+                  <h3 className={`text-2xl font-black mb-6 bg-linear-to-r ${isDarkTheme ? 'from-white to-gray-300' : 'from-slate-900 to-slate-700'} bg-clip-text text-transparent`}>{game.name}</h3>
                   <div className={`flex justify-end border-t pt-6 ${isDarkTheme ? 'border-gray-700/50' : 'border-slate-200/50'}`}>
                     <Link href={`/admin/analitics/games/${game.id}`} onClick={e => e.stopPropagation()} className={`group/btn relative px-6 py-3 rounded-2xl font-bold text-sm bg-accent2 hover:bg-accent2/90 text-black`}>
                       <span className="relative z-10">View Statistics</span>

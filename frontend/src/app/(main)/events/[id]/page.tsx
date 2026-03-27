@@ -7,7 +7,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { eventService } from "@/services/eventService";
 import { bookingService } from "@/services/bookingService";
 import { guestCookieUtils } from "@/utils/cookies";
-import { Event, BookingItem } from "@/types";
+import { Event, BookingItem, MediaDisplayItem } from "@/types";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Clock,
@@ -206,7 +206,7 @@ export default function EventDetailPage({
   };
 
   // Media handling functions with useMemo to prevent race conditions
-  const mediaItems = useMemo(() => {
+  const mediaItems = useMemo((): MediaDisplayItem[] => {
     if (!event) return [];
 
     // Filter for banner-labeled images from gallery
@@ -237,7 +237,7 @@ export default function EventDetailPage({
     ];
   }, [event]);
 
-  const currentMedia = mediaItems[selectedMediaIndex];
+  const currentMedia: MediaDisplayItem | undefined = mediaItems[selectedMediaIndex];
 
   // Get current lightbox media based on source
   const getLightboxMedia = () => {
@@ -394,7 +394,7 @@ export default function EventDetailPage({
             />
           )}
           <div
-            className={`absolute inset-0 bg-gradient-to-b ${
+            className={`absolute inset-0 bg-linear-to-b ${
               isDarkTheme
                 ? "from-[#0A0A0A]/20 via-[#0A0A0A]/10 to-[#0A0A0A]"
                 : "from-gray-40/20 via-gray-50/10 to-gray-50"

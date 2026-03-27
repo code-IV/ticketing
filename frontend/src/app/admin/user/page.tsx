@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Search, Trash2, Users, AlertTriangle, CheckCircle, Shield, RefreshCw, CheckCircle2 } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { adminService } from '@/services/adminService';
@@ -46,28 +46,29 @@ export default function UserManagement() {
 
   const hideConfirmDialog = () => setConfirmDialog(null);
 
-  const goToPage = (page: number) => { if (page >= 1 && page <= totalPages) setCurrentPage(page); };
-  const goToPreviousPage = () => { if (currentPage > 1) setCurrentPage(currentPage - 1); };
-  const goToNextPage = () => { if (currentPage < totalPages) setCurrentPage(currentPage + 1); };
-
-  useEffect(() => {
-    loadUsers();
-  }, [currentPage, roleFilter, statusFilter]);
-
-  const loadUsers = async () => {
+  const loadUsers = useCallback(async () => {
+    console.log('loadUsers called with:', { currentPage, roleFilter, statusFilter });
     try {
       setLoading(true);
       setError(null);
       const apiRole = roleFilter === "ALL" ? undefined : roleFilter;
       const apiStatus = statusFilter === "ALL" ? undefined : statusFilter.toLowerCase();
+      console.log('Making API call with params:', { currentPage, usersPerPage, apiRole, apiStatus });
       const response = await adminService.getAllUsers(currentPage, usersPerPage, apiRole, apiStatus);
+      console.log('API response:', response);
       
-      let usersData = response.data?.data || response.data?.users || response.data || [];
-      const paginationData = response.data?.pagination;
+      // The actual API response structure is: { success: true, message: '...', data: { users: [...], pagination: {...} } }
+      const responseData = response.data; // Direct access, not response.data.data
+      console.log('Response data:', responseData);
+      let usersData = responseData?.users || [];
+      const paginationData = responseData?.pagination;
+      
+      console.log('Users data:', usersData);
+      console.log('Pagination data:', paginationData);
       
       usersData = usersData.map((user: any) => ({
         ...user,
-        role: user.role_name || user.role || 'VISITOR'
+        role: (user.role_name || user.role || 'VISITOR') as "SUPERADMIN" | "ADMIN" | "STAFF" | "VISITOR"
       }));
       
       if (paginationData) {
@@ -75,13 +76,23 @@ export default function UserManagement() {
         setTotalUsers(paginationData.total || 0);
       }
       setUsers(usersData);
+      console.log('Users set successfully:', usersData.length);
     } catch (err: any) {
+      console.error('Error in loadUsers:', err);
       setError(`Failed to load users: ${err.message || 'Unknown error'}`);
       setUsers([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentPage, roleFilter, statusFilter, usersPerPage]);
+
+  const goToPage = (page: number) => { if (page >= 1 && page <= totalPages) setCurrentPage(page); };
+  const goToPreviousPage = () => { if (currentPage > 1) setCurrentPage(currentPage - 1); };
+  const goToNextPage = () => { if (currentPage < totalPages) setCurrentPage(currentPage + 1); };
+
+  useEffect(() => {
+    loadUsers();
+  }, [currentPage, roleFilter, statusFilter, loadUsers]);
 
   const handleDeleteUser = async (userId: string, userEmail: string) => {
     showConfirmDialog('Delete User', `Are you sure you want to delete user "${userEmail}"?`, async () => {
@@ -159,7 +170,7 @@ export default function UserManagement() {
 
       {/* Confirmation Dialog */}
       {confirmDialog && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center">
+        <div className="fixed inset-0 z-200 flex items-center justify-center">
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={hideConfirmDialog} />
           <div className={`relative rounded-4xl shadow-xl max-w-md w-full mx-4 p-6 ${isDarkTheme ? 'bg-[#1a1a1a] text-white' : 'bg-white text-gray-900'}`}>
             <h3 className={`text-xl font-semibold mb-2 ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}>{confirmDialog.title}</h3>
@@ -233,7 +244,7 @@ export default function UserManagement() {
               <tr key={user.id} className={`transition-colors ${isDarkTheme ? 'hover:bg-gray-800/50' : 'hover:bg-blue-50/30'}`}>
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-3">
-                    <div className={`h-8 w-8 rounded-full flex items-center justify-center text-xs font-black ${isDarkTheme ? 'bg-indigo-900/50 text-indigo-300' : 'bg-gradient-to-tr from-blue-500 to-indigo-500 text-white'}`}>{(user.email || 'U')[0].toUpperCase()}</div>
+                    <div className={`h-8 w-8 rounded-full flex items-center justify-center text-xs font-black ${isDarkTheme ? 'bg-indigo-900/50 text-indigo-300' : 'bg-linear-to-tr from-blue-500 to-indigo-500 text-white'}`}>{(user.email || 'U')[0].toUpperCase()}</div>
                     <span className={`text-sm font-medium ${isDarkTheme ? 'text-white' : 'text-slate-900'}`}>{user.email}</span>
                   </div>
                 </td>
@@ -264,7 +275,7 @@ export default function UserManagement() {
           <div key={user.id} className={`p-4 rounded-2xl border shadow-sm ${isDarkTheme ? 'bg-[#0A0A0A] border-gray-700' : 'bg-white border-slate-200'}`}>
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
-                <div className={`h-10 w-10 rounded-xl flex items-center justify-center text-sm font-black ${isDarkTheme ? 'bg-indigo-900/50 text-indigo-300' : 'bg-gradient-to-tr from-blue-500 to-indigo-500 text-white'}`}>
+                <div className={`h-10 w-10 rounded-xl flex items-center justify-center text-sm font-black ${isDarkTheme ? 'bg-indigo-900/50 text-indigo-300' : 'bg-linear-to-tr from-blue-500 to-indigo-500 text-white'}`}>
                   {(user.email || 'U')[0].toUpperCase()}
                 </div>
                 <div className="min-w-0">

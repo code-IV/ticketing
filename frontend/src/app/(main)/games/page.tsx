@@ -227,7 +227,7 @@ export default function GamesListingPage() {
                   router.push(`/games/${game.id}`);
                 }
               }}
-              className={`group relative h-[520px] rounded-[48px] overflow-hidden border-2 border-transparent transition-all duration-500 shadow-xl hover:border-[#ffd84f]/30 ${
+              className={`group relative h-130 rounded-[48px] overflow-hidden border-2 border-transparent transition-all duration-500 shadow-xl hover:border-[#ffd84f]/30 ${
                 game.id.startsWith("mock-")
                   ? "cursor-not-allowed opacity-75"
                   : "cursor-pointer"
@@ -243,7 +243,7 @@ export default function GamesListingPage() {
                   }`}
                   alt={game.name}
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/40 to-transparent" />
+                <div className="absolute inset-0 bg-linear-to-t from-slate-950 via-slate-900/40 to-transparent" />
               </div>
 
               {/* Status Badge */}
@@ -264,7 +264,7 @@ export default function GamesListingPage() {
                   From
                 </span>
                 <span className="text-sm font-black italic text-black">
-                  {game.ticket_types?.[0]?.price ?? "0"}
+                  {game.ticketTypes?.[0]?.price ?? "0"}
                 </span>
               </div>
 

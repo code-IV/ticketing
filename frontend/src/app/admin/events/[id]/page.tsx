@@ -37,7 +37,6 @@ export default function EditEventPage() {
 
   const [ticketTypes, setTicketTypes] = useState<CreateTicketTypeRequest[]>([
     {
-      name: "",
       category: "ADULT",
       price: 0,
       description: "",
@@ -95,7 +94,6 @@ export default function EditEventPage() {
     setTicketTypes([
       ...ticketTypes,
       {
-        name: "",
         category: "ADULT",
         price: 0,
         description: "",
@@ -131,7 +129,7 @@ export default function EditEventPage() {
     try {
       // Validate ticket types
       const invalidTicketType = ticketTypes.find(
-        (tt) => !tt.name.trim() || tt.price <= 0,
+        (tt) => tt.price <= 0,
       );
       if (invalidTicketType) {
         setError("All ticket types must have a name and price greater than 0");
@@ -376,15 +374,6 @@ export default function EditEventPage() {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <Input
-                        label="Ticket Name"
-                        value={ticketType.name}
-                        onChange={(e) =>
-                          updateTicketType(index, "name", e.target.value)
-                        }
-                        required
-                        placeholder="e.g., Adult Ticket"
-                      />
 
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">

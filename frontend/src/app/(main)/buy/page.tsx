@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   Ticket,
@@ -7,10 +7,8 @@ import {
   Zap,
   Plus,
   Minus,
-  Info,
   Sparkles,
   ArrowRight,
-  MapPin,
   ChevronDown,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -111,7 +109,7 @@ const BuyTicketsPage = () => {
       const game = games?.find((g) => g.id === gameId);
       const gameTotal = Object.entries(selections).reduce((sum, [cat, qty]) => {
         const price =
-          game?.ticket_types?.find((t) => t.category === cat)?.price || 0;
+          game?.ticketTypes?.find((t) => t.category === cat)?.price || 0;
         return sum + price * qty;
       }, 0);
       return grandTotal + gameTotal;
@@ -132,7 +130,7 @@ const BuyTicketsPage = () => {
         const gameData = games?.find((g) => g.id === gameId);
         if (!gameData) continue;
         for (const [category, quantity] of Object.entries(selections)) {
-          const ticketType = gameData.ticket_types?.find(
+          const ticketType = gameData.ticketTypes?.find(
             (t) => t.category === category,
           );
           if (ticketType) {
@@ -194,7 +192,7 @@ const BuyTicketsPage = () => {
               passDetails:
                 ((booking as any).passes as any[])?.flatMap(
                   (pass: any) =>
-                    pass.ticket_types?.map((tt: any) => ({
+                    pass.ticketTypes?.map((tt: any) => ({
                       productName: pass.gameName || "Game Pass",
                       totalQuantity: tt.quantity,
                       usedQuantity: 0,
@@ -275,8 +273,8 @@ const BuyTicketsPage = () => {
                     const isOpen = openGameId === game.id;
                     const hasItems = !!cart[game.id];
                     const posterImage = getPosterImage(game);
-                    const lowestPrice = game.ticket_types?.length
-                      ? Math.min(...game.ticket_types.map((t) => t.price))
+                    const lowestPrice = game.ticketTypes?.length
+                      ? Math.min(...game.ticketTypes.map((t) => t.price))
                       : 0;
 
                     return (
@@ -285,7 +283,7 @@ const BuyTicketsPage = () => {
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         id={`game-visual-${game.id}`}
-                        className={`group relative min-h-[400px] rounded-[40px] overflow-hidden border-2 transition-all cursor-pointer ${
+                        className={`group relative min-h-100 rounded-[40px] overflow-hidden border-2 transition-all cursor-pointer ${
                           hasItems
                             ? " ring-4 ring-indigo-50"
                             : `border-transparent shadow-sm hover:shadow-xl ${isDarkTheme ? "bg-gray-800" : "bg-white"}`
@@ -309,7 +307,7 @@ const BuyTicketsPage = () => {
                               posterImage === "/l.jpg" ? "blur-sm" : ""
                             }`}
                           />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
+                          <div className="absolute inset-0 bg-linear-to-t from-black/90 via-black/20 to-transparent" />
                         </div>
 
                         <div className="absolute top-6 left-6 right-6 flex justify-between items-start z-10">
@@ -349,7 +347,7 @@ const BuyTicketsPage = () => {
                                 className="overflow-hidden bg-white/10 backdrop-blur-xl mt-2 rounded-3xl border border-white/20 p-4 space-y-3"
                                 onClick={(e) => e.stopPropagation()}
                               >
-                                {game.ticket_types?.map((tt) => {
+                                {game.ticketTypes?.map((tt) => {
                                   const qty = cart[game.id]?.[tt.category] || 0;
                                   return (
                                     <div
@@ -487,7 +485,7 @@ const BuyTicketsPage = () => {
                               <div className="pl-5 space-y-2">
                                 {Object.entries(selections).map(
                                   ([category, qty]) => {
-                                    const ticketInfo = game?.ticket_types?.find(
+                                    const ticketInfo = game?.ticketTypes?.find(
                                       (t) => t.category === category,
                                     );
                                     return (
@@ -523,7 +521,7 @@ const BuyTicketsPage = () => {
                   </div>
 
                   <div
-                    className={`rounded-[32px] p-8 border ${isDarkTheme ? "bg-bg3 border-gray-600" : "bg-slate-50 border-slate-100"}`}
+                    className={`rounded-4xl p-8 border ${isDarkTheme ? "bg-bg3 border-gray-600" : "bg-slate-50 border-slate-100"}`}
                   >
                     <p
                       className={`text-[10px] font-black uppercase tracking-widest mb-1 ${isDarkTheme ? "text-accent" : "text-accent2"}`}
@@ -549,7 +547,7 @@ const BuyTicketsPage = () => {
                     whileTap={{ scale: 0.98 }}
                     disabled={total === 0 || bookingLoading}
                     onClick={handleCheckout}
-                    className="w-full mt-8 py-6 bg-accent text-white rounded-[24px] font-black uppercase text-xs tracking-[0.3em] flex items-center justify-center gap-4 hover:bg-yellow-400 transition-all shadow-xl disabled:opacity-20 disabled:grayscale"
+                    className="w-full mt-8 py-6 bg-accent text-white rounded-3xl font-black uppercase text-xs tracking-[0.3em] flex items-center justify-center gap-4 hover:bg-yellow-400 transition-all shadow-xl disabled:opacity-20 disabled:grayscale"
                   >
                     {bookingLoading ? (
                       <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -578,7 +576,7 @@ const BuyTicketsPage = () => {
           >
             <button
               onClick={scrollToSummary}
-              className="w-full relative py-6 rounded-[32px] shadow-[0_25px_50px_rgba(0,0,0,0.15)] flex items-center justify-between px-8 overflow-hidden group border border-accent"
+              className="w-full relative py-6 rounded-4xl shadow-[0_25px_50px_rgba(0,0,0,0.15)] flex items-center justify-between px-8 overflow-hidden group border border-accent"
             >
               {/* Cinematic Frosted Glass Background */}
               <div

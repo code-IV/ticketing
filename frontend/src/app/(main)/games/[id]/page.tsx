@@ -268,7 +268,7 @@ export default function GameDetailPage({
             alt={game?.name || "Game"}
           />
           <div
-            className={`absolute inset-0 bg-gradient-to-b ${
+            className={`absolute inset-0 bg-linear-to-b ${
               isDarkTheme
                 ? "from-[#0A0A0A]/20 via-[#0A0A0A]/10 to-[#0A0A0A]"
                 : "from-gray-400/20 via-gray-50/10 to-gray-50"
@@ -650,7 +650,7 @@ export default function GameDetailPage({
                 </div>
 
                 <div className="space-y-4 mb-8">
-                  {game?.ticket_types?.map((ticket) => (
+                  {game?.ticketTypes?.map((ticket) => (
                     <div
                       key={ticket.id}
                       className={`backdrop-blur-sm border rounded-2xl p-4 ${

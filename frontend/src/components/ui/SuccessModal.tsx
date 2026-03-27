@@ -85,7 +85,7 @@ Thank you for choosing Bora Park!
             initial={{ scale: 0.9, y: 20, opacity: 0 }}
             animate={{ scale: 1, y: 0, opacity: 1 }}
             exit={{ scale: 0.9, y: 20, opacity: 0 }}
-            className={`relative w-full max-w-md rounded-[32px] overflow-hidden shadow-2xl ${
+            className={`relative w-full max-w-md rounded-4xl overflow-hidden shadow-2xl ${
               isDarkTheme ? "bg-gray-800" : "bg-white"
             }`}
             onClick={(e) => e.stopPropagation()}
@@ -93,7 +93,7 @@ Thank you for choosing Bora Park!
             {/* Header */}
             <div
               className={`relative p-8 text-center ${
-                isDarkTheme ? "bg-gradient-to-b from-gray-900 to-gray-800" : "bg-gradient-to-b from-white to-gray-50"
+                isDarkTheme ? "bg-linear-to-b from-gray-900 to-gray-800" : "bg-linear-to-b from-white to-gray-50"
               }`}
             >
               <button
