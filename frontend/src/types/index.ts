@@ -60,6 +60,7 @@ export interface Event {
   ticketsSold: number;
   availableTickets?: number;
   isActive: boolean;
+  status?: "ACTIVE" | "CANCELLED" | "COMPLETED" | "UPCOMING";
   ticketTypes?: TicketType[];
   gallery?: MediaItem[];
 }

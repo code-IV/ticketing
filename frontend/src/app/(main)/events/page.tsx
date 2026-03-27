@@ -83,15 +83,23 @@ export default function EventsPage() {
 
   // 5. Banner Cycling Logic
   useEffect(() => {
+    // Clear all existing intervals first
+    Object.values(intervalRefs.current).forEach(clearInterval);
+    intervalRefs.current = {};
+
     events.forEach((event) => {
-      const banners =
-        event.gallery?.filter((item) => item.label === "banner") || [];
-      if (banners.length > 1) {
+      const posters =
+        event.gallery?.filter((item) => item.label === "poster") || [];
+      if (posters.length > 1) {
         intervalRefs.current[event.id] = setInterval(() => {
-          setBannerIndexes((prev) => ({
-            ...prev,
-            [event.id]: ((prev[event.id] || 0) + 1) % banners.length,
-          }));
+          setBannerIndexes((prev) => {
+            const currentIndex = prev[event.id] || 0;
+            const nextIndex = (currentIndex + 1) % posters.length;
+            return {
+              ...prev,
+              [event.id]: nextIndex,
+            };
+          });
         }, 5000);
       }
     });
@@ -103,10 +111,19 @@ export default function EventsPage() {
 
   // 6. Helpers
   const getBannerImage = (event: Event) => {
-    const banners =
+    const posters =
       event.gallery?.filter((item) => item.label === "poster") || [];
     const index = bannerIndexes[event.id] || 0;
-    return banners[index]?.url || "/l.jpg";
+    return posters[index] || null;
+  };
+
+  const isVideoPoster = (poster: any) => {
+    if (!poster) return false;
+    // Check both the type field and file extension
+    return poster.type === "VIDEO" || 
+           poster.url?.includes('.mp4') || 
+           poster.url?.includes('.webm') || 
+           poster.url?.includes('.mov');
   };
 
   const handlePreviousPage = () => {
@@ -182,14 +199,44 @@ export default function EventsPage() {
               >
                 {/* MEDIA */}
                 <div className="relative h-64 lg:h-auto lg:w-112.5 shrink-0 overflow-hidden bg-[#ffd84f]">
-                  <img
-                    src={getBannerImage(event)}
-                    crossOrigin="anonymous"
-                    alt={event.name}
-                    className={`absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 ${
-                      getBannerImage(event) === "/l.jpg" ? "blur-sm" : ""
-                    }`}
-                  />
+                  {(() => {
+                    const poster = getBannerImage(event);
+                    
+                    if (!poster) {
+                      return (
+                        <img
+                          src="/l.jpg"
+                          alt={event.name}
+                          className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 blur-sm"
+                        />
+                      );
+                    }
+                    
+                    const posterUrl = poster.url;
+                    const isVideo = isVideoPoster(poster);
+                    
+                    if (isVideo) {
+                      return (
+                        <video
+                          src={posterUrl}
+                          autoPlay
+                          muted
+                          loop
+                          playsInline
+                          className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                        />
+                      );
+                    } else {
+                      return (
+                        <img
+                          src={posterUrl}
+                          crossOrigin="anonymous"
+                          alt={event.name}
+                          className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                        />
+                      );
+                    }
+                  })()}
                   <div className="absolute top-4 left-4">
                     <div className="bg-black/80 backdrop-blur-md p-3 rounded-2xl border border-white/10">
                       <p className="text-[10px] font-black text-[#ffd84f] uppercase tracking-widest leading-none mb-1">

@@ -28,6 +28,7 @@ import {
   Users,
 } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { format } from "date-fns";
 import SuccessModal from "@/components/ui/SuccessModal";
 
@@ -381,11 +382,16 @@ export default function EventDetailPage({
                   <source src={currentMedia.url} type="video/mp4" />
                 </video>
               ) : (
-                <img
-                  src={currentMedia?.url || ""}
-                  className="w-full h-full object-cover"
-                  alt={currentMedia?.alt || event.name}
-                />
+                <div className="relative w-full h-full">
+                  <Image
+                    src={currentMedia?.url?.replace('http://localhost:5000', '') || ""}
+                    alt={currentMedia?.alt || event.name}
+                    fill
+                    className="object-cover"
+                    sizes="100vw"
+                    priority
+                  />
+                </div>
               )}
             </>
           ) : (
