@@ -73,7 +73,7 @@ const bookingController = {
       }
 
       // Check overall availability
-      const availability = await Event.checkAvailability(
+      const availability = await Event.getEventCapacityStats(
         eventId,
         totalQuantity,
       );
