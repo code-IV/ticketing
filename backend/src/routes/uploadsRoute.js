@@ -28,6 +28,14 @@ router.post(
   //
   UploadsController.uploadProductMedia,
 );
+router.delete(
+  "/rm/:id",
+  isAuthenticated,
+  isAdmin,
+  uuidParamRule("id"),
+  handleValidation,
+  UploadsController.deleteMediaById,
+);
 
 router.get("/", isAuthenticated, isAdmin, UploadsController.getAll);
 router.get("/t", isAuthenticated, isAdmin, UploadsController.getByType);

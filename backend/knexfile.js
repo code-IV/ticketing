@@ -4,10 +4,8 @@ require("dotenv").config();
 /**
  * @type { Object.<string, import("knex").Knex.Config> }
  */
-const requiredEnvVars = ["DB_HOST", "DB_NAME", "DB_USER", "DB_PASSWORD"];
-requiredEnvVars.forEach((key) => {
-  if (!process.env[key]) throw new Error(`Missing required env var: ${key}`);
-});
+const key = "DATABASE_URL";
+if (!process.env[key]) throw new Error(`Missing required env var: ${key}`);
 module.exports = {
   development: {
     client: "postgresql",

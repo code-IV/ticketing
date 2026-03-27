@@ -1,6 +1,6 @@
 const fs = require("fs");
 const { getClient } = require("../../config/db");
-const { uploadToLocal } = require("../../utils/uploads");
+const { uploadToLocal, deleteFromLocal } = require("../../utils/uploads");
 const { Event } = require("../models/Event");
 const { Media } = require("../models/Media");
 const { Product } = require("../models/Product");
@@ -31,6 +31,7 @@ const UploadsService = {
           const thumbMediaData = {
             name: thumb.originalname,
             url: thumbInfo.url,
+            path: thumbInfo.path,
             type: thumb.mimetype,
             label: "thumbnail",
             provider: "LOCAL",
@@ -41,7 +42,7 @@ const UploadsService = {
             },
           };
 
-          await Event.createMedia(thumbMediaData, client);
+          await Media.createMedia(thumbMediaData, client);
         }
 
         // 2. Handle Main File
@@ -51,6 +52,7 @@ const UploadsService = {
         const mainMediaData = {
           name: file.originalname,
           url: fileInfo.url,
+          path: fileInfo.path,
           type: file.mimetype,
           label: label,
           thumbnail_url: thumbInfo ? thumbInfo.url : null, // The string URL
@@ -62,8 +64,8 @@ const UploadsService = {
         };
 
         // 3. Insert Main Media and Link to Product
-        const mainMediaId = await Event.createMedia(mainMediaData, client);
-        await Event.linkProductMedia(productId, mainMediaId, client);
+        const mainMediaId = await Media.createMedia(mainMediaData, client);
+        await Media.linkProductMedia(productId, mainMediaId, client);
       }
 
       await client.query("COMMIT");
@@ -91,6 +93,40 @@ const UploadsService = {
         );
       }
 
+      throw error;
+    } finally {
+      client.release();
+    }
+  },
+  async deleteMediaFromProduct(mediaId) {
+    const client = await getClient();
+    try {
+      await client.query("BEGIN");
+
+      // 1. Fetch media details first to get the storage path/URL
+      // You'll need a method like getMediaById in your Event model
+      const media = await Media.getMediaById(mediaId);
+      if (!media) {
+        throw new Error("Media record not found");
+      }
+
+      // 2. Unlink from Product and Delete Media Record
+      // This order respects foreign key constraints if you have them
+      await Media.deleteMediaRecord(mediaId, client);
+
+      // 3. Commit the DB changes
+      await client.query("COMMIT");
+      try {
+        console.log("media.path", media.path);
+        await deleteFromLocal(media.path);
+      } catch (err) {
+        console.error("Storage Cleanup Failed:", err);
+        throw new Error("Media unlink failed");
+      }
+
+      return { success: true };
+    } catch (error) {
+      await client.query("ROLLBACK");
       throw error;
     } finally {
       client.release();
