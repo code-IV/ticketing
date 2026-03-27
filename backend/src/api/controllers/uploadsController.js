@@ -47,14 +47,25 @@ const UploadsController = {
   },
 
   async getAll(req, res, next) {
-    try {
-      const result = await UploadsService.getAll();
+  try {
+    const { page = 1, limit = 32, type } = req.query;
+    const result = await UploadsService.getAll(
+      parseInt(page) || 1, 
+      parseInt(limit) || 32, 
+      type
+    );
 
-      return apiResponse(res, 200, true, "Media retrieved.", result);
-    } catch (err) {
-      next(err);
-    }
-  },
+    // Combine them into one object so apiResponse sends everything
+    const responsePayload = {
+      media: result.data,
+      pagination: result.pagination
+    };
+
+    return apiResponse(res, 200, true, "Media retrieved.", responsePayload);
+  } catch (err) {
+    next(err);
+  }
+},
   async getById(req, res, next) {
     try {
       const id = req.params.id;
@@ -109,20 +120,21 @@ const UploadsController = {
     }
   },
   async getByType(req, res, next) {
-    try {
-      const { type } = req.query;
-      if (type !== "image" && type !== "video") {
-        return apiResponse(res, 400, false, "invalid query", {
-          valid: false,
-          reason: "INVALID_QUERY",
-        });
-      }
-      const result = await UploadsService.getByType(type);
-      return apiResponse(res, 200, true, "Media retrieved", result);
-    } catch (err) {
-      next(err);
+  try {
+    const { type, page = 1, limit = 32 } = req.query;
+    if (type !== "image" && type !== "video") {
+      return apiResponse(res, 400, false, "invalid query", { valid: false, reason: "INVALID_QUERY" });
     }
-  },
+    const result = await UploadsService.getByType(
+      type,
+      parseInt(page) || 1,
+      parseInt(limit) || 32
+    );
+    return apiResponse(res, 200, true, "Media retrieved", result.data, result.pagination);
+  } catch (err) {
+    next(err);
+  }
+}
 };
 
 module.exports = { UploadsController };

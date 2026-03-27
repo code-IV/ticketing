@@ -218,11 +218,26 @@ const CreateEventDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
       });
       onSuccess();
       onClose();
-    } catch (error) {
-      console.error("Failed to create event:", error);
-    } finally {
+    } catch (err: any) {
+      console.error("Failed to create event:", err);
+      
+      // Show specific validation errors
+      if (err.response?.data?.errors) {
+        const errorMessages = err.response.data.errors.map((e: any) => 
+          `${e.field}: ${e.message}`
+        ).join(', ');
+        console.error('Validation errors:', errorMessages);
+        alert(`Validation failed: ${errorMessages}`);
+      } else if (err.response?.data?.message) {
+        console.error('API Error:', err.response.data.message);
+        alert(`Error: ${err.response.data.message}`);
+      } else {
+        console.error('Unknown error:', err.message);
+        alert(`Failed to create event: ${err.message}`);
+      }
+      
       setLoading(false);
-    }
+    } 
   };
 
   if (!isOpen) return null;

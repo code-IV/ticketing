@@ -374,6 +374,7 @@ export default function EventDetailPage({
                 <video
                   className="w-full h-full object-cover"
                   autoPlay
+                  crossOrigin="anonymous"
                   muted
                   loop
                   playsInline
@@ -387,6 +388,7 @@ export default function EventDetailPage({
                     src={currentMedia?.url?.replace('http://localhost:5000', '') || ""}
                     alt={currentMedia?.alt || event.name}
                     fill
+                    crossOrigin="anonymous"
                     className="object-cover"
                     sizes="100vw"
                     priority
@@ -977,6 +979,7 @@ export default function EventDetailPage({
                   return currentLightboxMedia?.type === "video" ? (
                     <video
                       className="w-full h-full rounded-3xl"
+                      crossOrigin="anonymous"
                       controls
                       autoPlay
                       playsInline

@@ -174,8 +174,8 @@ const UploadsService = {
     }
   },
 
-  async getAll() {
-    const media = await Media.getAllMedia();
+  async getAll(page = 1, limit = 32, type = null) {
+    const media = await Media.getAllMedia(page, limit, type);
     return media;
   },
   async getById(id) {
