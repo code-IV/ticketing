@@ -42,6 +42,17 @@ const UploadsController = {
     }
   },
 
+  async deleteMediaById(req, res, next) {
+    try {
+      const id = req.params.id;
+      const result = await UploadsService.deleteMediaFromProduct(id);
+
+      return apiResponse(res, 200, true, "Media removed.", result);
+    } catch (err) {
+      next(err);
+    }
+  },
+
   async getAll(req, res, next) {
     try {
       const result = await UploadsService.getAll();

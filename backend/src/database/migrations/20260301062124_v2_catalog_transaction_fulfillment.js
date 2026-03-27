@@ -25,7 +25,7 @@ exports.up = async function (knex) {
 
   // 3. TICKET_TYPES: Use the category ENUM
   await knex.schema.createTable("ticket_types", (table) => {
-    table.uuid("id").primary().defaultTo(knex.raw("uuid_generate_v4()"));
+    table.uuid("id").primary().defaultTo(knex.raw("gen_random_uuid()"));
     table
       .uuid("product_id")
       .references("id")
@@ -39,7 +39,7 @@ exports.up = async function (knex) {
 
   // 4. BOOKINGS: Use the booking_status ENUM
   await knex.schema.createTable("bookings", (table) => {
-    table.uuid("id").primary().defaultTo(knex.raw("uuid_generate_v4()"));
+    table.uuid("id").primary().defaultTo(knex.raw("gen_random_uuid()"));
     table.string("booking_reference", 20).unique().notNullable();
     table.uuid("user_id").nullable();
     table.decimal("total_amount", 10, 2).notNullable();
@@ -51,7 +51,7 @@ exports.up = async function (knex) {
 
   // 5. BOOKING_ITEMS
   await knex.schema.createTable("booking_items", (table) => {
-    table.uuid("id").primary().defaultTo(knex.raw("uuid_generate_v4()"));
+    table.uuid("id").primary().defaultTo(knex.raw("gen_random_uuid()"));
     table
       .uuid("booking_id")
       .references("id")
@@ -70,7 +70,7 @@ exports.up = async function (knex) {
 
   // 6. PAYMENTS
   await knex.schema.createTable("payments", (table) => {
-    table.uuid("id").primary().defaultTo(knex.raw("uuid_generate_v4()"));
+    table.uuid("id").primary().defaultTo(knex.raw("gen_random_uuid()"));
     table
       .uuid("booking_id")
       .references("id")
@@ -87,7 +87,7 @@ exports.up = async function (knex) {
 
   // 7. TICKETS: Use ticket_status ENUM
   await knex.schema.createTable("tickets", (table) => {
-    table.uuid("id").primary().defaultTo(knex.raw("uuid_generate_v4()"));
+    table.uuid("id").primary().defaultTo(knex.raw("gen_random_uuid()"));
     table
       .uuid("booking_id")
       .references("id")
@@ -102,7 +102,7 @@ exports.up = async function (knex) {
 
   // 8. TICKET_PRODUCTS: Use ticket_product_status ENUM
   await knex.schema.createTable("ticket_products", (table) => {
-    table.uuid("id").primary().defaultTo(knex.raw("uuid_generate_v4()"));
+    table.uuid("id").primary().defaultTo(knex.raw("gen_random_uuid()"));
     table
       .uuid("ticket_id")
       .references("id")

@@ -38,12 +38,13 @@ const Event = {
 
   async createMedia(mediaData, client) {
     const sql = `
-      INSERT INTO media (name, url, type, label, thumbnail_url, provider)
-      VALUES ($1, $2, $3, $4, $5, $6)
+      INSERT INTO media (name, url, path, type, label, thumbnail_url, provider)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
       RETURNING id`;
     const { rows } = await client.query(sql, [
       mediaData.name,
       mediaData.url,
+      mediaData.path,
       mediaData.type,
       mediaData.label,
       mediaData.thumbnail_url,

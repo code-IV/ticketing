@@ -12,7 +12,7 @@ const Media = {
   },
   async getMediaById(id) {
     const sql = `
-        SELECT id, name, ($1 || url) AS url, type, provider, metadata FROM media WHERE id=$2;
+        SELECT id, name, ($1 || url) AS url, path, type, provider, metadata FROM media WHERE id=$2;
         `;
 
     const media = await query(sql, [BACKEND_URL, id]);
@@ -38,6 +38,15 @@ const Media = {
 
     const media = await query(sql, [BACKEND_URL, type]);
     return media.rows;
+  },
+
+  async deleteMediaRecord(id, client) {
+    const sql = `
+        DELETE FROM media WHERE id=$1 RETURNING*;
+        `;
+
+    const media = await client.query(sql, [id]);
+    return media.rows[0];
   },
 };
 

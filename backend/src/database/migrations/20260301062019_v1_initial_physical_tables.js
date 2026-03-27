@@ -3,9 +3,6 @@
  * @returns { Promise<void> }
  */
 exports.up = async function (knex) {
-  // 1. Enable UUID Extension
-  await knex.raw('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"');
-
   // 2. Create Base Types
   await knex.raw(
     `CREATE TYPE game_status AS ENUM ('OPEN', 'ON_MAINTENANCE', 'UPCOMING', 'CLOSED')`,
@@ -13,7 +10,7 @@ exports.up = async function (knex) {
 
   // Roles table
   await knex.schema.createTable("roles", (table) => {
-    table.uuid("id").primary().defaultTo(knex.raw("uuid_generate_v4()"));
+    table.uuid("id").primary().defaultTo(knex.raw("gen_random_uuid()"));
     table.string("name").unique().notNullable(); // SUPERADMIN, ADMIN, etc.
     table.integer("rank").notNullable();
     table.string("description").nullable();
@@ -30,7 +27,7 @@ exports.up = async function (knex) {
 
   // 3. Create Users Table
   await knex.schema.createTable("users", (table) => {
-    table.uuid("id").primary().defaultTo(knex.raw("uuid_generate_v4()"));
+    table.uuid("id").primary().defaultTo(knex.raw("gen_random_uuid()"));
     table.string("first_name", 100).notNullable();
     table.string("last_name", 100).notNullable();
     table.string("email", 255).unique().notNullable();
@@ -47,7 +44,7 @@ exports.up = async function (knex) {
 
   // 4. Create Events Table (Physical Entity)
   await knex.schema.createTable("events", (table) => {
-    table.uuid("id").primary().defaultTo(knex.raw("uuid_generate_v4()"));
+    table.uuid("id").primary().defaultTo(knex.raw("gen_random_uuid()"));
     table.string("name", 255).notNullable();
     table.text("description");
     table.date("event_date").notNullable();
@@ -68,7 +65,7 @@ exports.up = async function (knex) {
 
   // 5. Games Table (Physical Entity - NO PRICE HERE)
   await knex.schema.createTable("games", (table) => {
-    table.uuid("id").primary().defaultTo(knex.raw("uuid_generate_v4()"));
+    table.uuid("id").primary().defaultTo(knex.raw("gen_random_uuid()"));
     table.string("name").notNullable();
     table.text("description");
     table.text("rules");
@@ -78,7 +75,7 @@ exports.up = async function (knex) {
 
   // PRODUCTS: The Definition
   await knex.schema.createTable("products", (table) => {
-    table.uuid("id").primary().defaultTo(knex.raw("uuid_generate_v4()"));
+    table.uuid("id").primary().defaultTo(knex.raw("gen_random_uuid()"));
     table.string("name").notNullable();
     table.enu("product_type", ["GAME", "EVENT"]).notNullable();
     table
@@ -107,9 +104,10 @@ exports.up = async function (knex) {
   `);
 
   await knex.schema.createTable("media", (table) => {
-    table.uuid("id").primary().defaultTo(knex.raw("uuid_generate_v4()"));
+    table.uuid("id").primary().defaultTo(knex.raw("gen_random_uuid()"));
     table.string("name").notNullable();
     table.string("url").unique().notNullable();
+    table.string("path").unique().notNullable();
     table.string("type").notNullable(); // e.g., 'image/jpeg', 'video/mp4'
     table.string("provider").defaultTo("LOCAL"); // e.g., 'local', 's3', 'cloudinary'
     table
@@ -122,7 +120,7 @@ exports.up = async function (knex) {
   });
 
   await knex.schema.createTable("products_media", (table) => {
-    table.uuid("id").primary().defaultTo(knex.raw("uuid_generate_v4()"));
+    table.uuid("id").primary().defaultTo(knex.raw("gen_random_uuid()"));
     table
       .uuid("product_id")
       .notNullable()
