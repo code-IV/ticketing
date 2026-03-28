@@ -45,26 +45,35 @@ const EventService = {
 
   // events.service.js
 
-  async updateEvent(id, updateData) {
+  async updateEvent(id, eventData) {
     const client = await getClient();
     try {
       await client.query("BEGIN");
-      const { media, ...eventData } = updateData;
 
       // Perform the core update
-      const updatedEvent = await Event.updateEvent(id, eventData);
+      const updatedEvent = await Event.updateEvent(id, eventData, client);
 
       if (!updatedEvent) {
         throw new Error("Event not found");
       }
 
-      // If media array is provided (even if empty), sync it
-      if (media !== undefined) {
-        await Event.syncEventMedia(id, media);
+      for (const type of eventData.ticketTypes || []) {
+        await TicketType.update(
+          { ...type, productId: eventData.productId },
+          client,
+        );
+      }
+
+      if (eventData.mediaIds?.length) {
+        await UploadsService.addMediaToProduct(
+          eventData.productId,
+          eventData.mediaIds,
+          client,
+        );
       }
 
       await client.query("COMMIT");
-      return this.getEventById(id);
+      return this.updateEvent;
     } catch (error) {
       await client.query("ROLLBACK");
       throw error;

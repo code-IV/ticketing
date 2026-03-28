@@ -97,34 +97,18 @@ const EventController = {
   },
 
   /**
-   * PUT /api/admin/events/:id - Update an event
+   * PATCH /api/admin/events/:id - Update an event
    */
   async updateEvent(req, res, next) {
     try {
-      const {
-        name,
-        description,
-        eventDate,
-        startTime,
-        endTime,
-        capacity,
-        isActive,
-      } = req.body;
+      const eventReq = req.body;
 
       const existing = await Event.findById(req.params.id);
       if (!existing) {
         return apiResponse(res, 404, false, "Event not found.");
       }
 
-      const event = await EventService.updateEvent(req.params.id, {
-        name,
-        description,
-        eventDate,
-        startTime,
-        endTime,
-        capacity,
-        isActive,
-      });
+      const event = await EventService.updateEvent(req.params.id, eventReq);
 
       return apiResponse(res, 200, true, "Event updated successfully.", {
         event,

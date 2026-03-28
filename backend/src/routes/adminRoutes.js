@@ -40,10 +40,9 @@ router.post(
   handleValidation,
   EventController.createEventWithTicketTypes,
 );
-router.put(
-  "/events/:id",
+router.patch(
+  "/event/:id",
   uuidParamRule("id"),
-  updateEventRules,
   handleValidation,
   EventController.updateEvent,
 );

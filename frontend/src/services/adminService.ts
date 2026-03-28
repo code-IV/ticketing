@@ -77,9 +77,10 @@ export const adminService = {
       endTime: string;
       capacity: number;
       isActive: boolean;
+      mediaIds: string[];
     }>,
   ): Promise<ApiResponse<{ event: Event }>> {
-    const response = await api.put(`/admin/events/${id}`, data);
+    const response = await api.patch(`/admin/event/${id}`, data);
     return response.data;
   },
 
@@ -283,9 +284,24 @@ export const adminService = {
     return response.data;
   },
 
-  async getAllMedia(page = 1, limit = 32, type?: 'image' | 'video' | 'all'): Promise<ApiResponse<{ data: any[]; pagination: { totalPages: number; total: number; page: number; limit: number; hasNext: boolean } }>> {
+  async getAllMedia(
+    page = 1,
+    limit = 32,
+    type?: "image" | "video" | "all",
+  ): Promise<
+    ApiResponse<{
+      data: any[];
+      pagination: {
+        totalPages: number;
+        total: number;
+        page: number;
+        limit: number;
+        hasNext: boolean;
+      };
+    }>
+  > {
     const params: any = { page, limit };
-    if (type && type !== 'all') {
+    if (type && type !== "all") {
       params.type = type;
     }
     const response = await api.get("/media", { params });

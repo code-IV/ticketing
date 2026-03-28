@@ -190,7 +190,7 @@ const Event = {
   /**
    * Update an event
    */
-  async updateEvent(id, data) {
+  async updateEvent(id, data, client) {
     const {
       name,
       description,
@@ -223,7 +223,7 @@ const Event = {
       capacity,
       isActive,
     ];
-    const result = await query(sql, values);
+    const result = await client.query(sql, values);
     return result.rows[0];
   },
 
