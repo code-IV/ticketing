@@ -29,15 +29,25 @@ const GameController = {
   async updateGame(req, res, next) {
     try {
       const { id } = req.params;
-      const { name, description, rules, status, ticket_types } = req.body;
-      const game = await GameService.update(id, {
+      const {
+        productId,
         name,
         description,
         rules,
         status,
-        ticket_types,
+        ticketTypes,
+        mediaIds,
+      } = req.body;
+      const game = await GameService.update(id, {
+        productId,
+        name,
+        description,
+        rules,
+        status,
+        ticketTypes,
+        mediaIds,
       });
-      return apiResponse(res, 201, true, "Game created successfully", { game });
+      return apiResponse(res, 200, true, "Game updated successfully", { game });
     } catch (err) {
       next(err);
     }

@@ -1,6 +1,7 @@
 class GameRes {
   constructor(game) {
     this.id = game.id;
+    this.productId = game.product_id;
     this.name = game.name;
     this.description = game.description;
     this.rules = game.rules;

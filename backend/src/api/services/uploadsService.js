@@ -110,7 +110,6 @@ const UploadsService = {
           throw new Error(`Temp file missing: ${tempPath}`);
         }
 
-        console.log("upld", media);
         // ✅ Use safe filename (UUID-based)
         const filename = path.basename(tempPath);
 

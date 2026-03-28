@@ -184,7 +184,7 @@ const CreateGameDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
       }
       const response = await gameService.createGame({
         ...formData,
-        mediaIds: media.data.mediaIds,
+        mediaIds: media?.data?.mediaIds,
       });
       setFormData({
         name: "",

@@ -138,44 +138,49 @@ const Game = {
 
   async findById(id) {
     const sql = `
+    WITH product_details AS (
     SELECT 
-      g.*, 
-      -- Aggregate Ticket Types
-      COALESCE(
-          (SELECT JSON_AGG(DISTINCT JSONB_BUILD_OBJECT(
-              'id', tt.id,
-              'category', tt.category,
-              'price', tt.price
-          ))
-          FROM products p
-          JOIN ticket_types tt ON p.id = tt.product_id
-          WHERE p.game_id = g.id), 
-          '[]'
-      ) AS ticket_types,
-      
-      -- Aggregate Gallery (Media)
-      COALESCE(
-          (SELECT JSON_AGG(JSONB_BUILD_OBJECT(
-              'id', m.id,
-              'name', m.name,
-              'url', '${BACKEND_URL}' || m.url,
-              'type', m.type,
-              'label', m.label,
-              'thumbnailUrl', CASE 
-                                WHEN m.thumbnail_url IS NOT NULL THEN '${BACKEND_URL}' || m.thumbnail_url 
-                                ELSE NULL 
-                              END,
-              'sort_order', pm.sort_order
-          ) ORDER BY pm.sort_order ASC)
-          FROM products p
-          JOIN products_media pm ON p.id = pm.product_id
-          JOIN media m ON pm.media_id = m.id
-          WHERE p.game_id = g.id), 
-          '[]'
-      ) AS gallery
-      
-    FROM games g
-    WHERE g.id = $1;
+        p.game_id,
+        p.id AS product_id,
+        -- Aggregate Ticket Types once
+        COALESCE(
+            JSONB_AGG(DISTINCT JSONB_BUILD_OBJECT(
+                'id', tt.id,
+                'category', tt.category,
+                'price', tt.price
+            )) FILTER (WHERE tt.id IS NOT NULL), 
+            '[]'
+        ) AS ticket_types,
+        -- Aggregate Media once
+        COALESCE(
+            JSONB_AGG(JSONB_BUILD_OBJECT(
+                'id', m.id,
+                'name', m.name,
+                'url', '${BACKEND_URL}' || m.url,
+                'type', m.type,
+                'label', m.label,
+                'thumbnailUrl', CASE 
+                                    WHEN m.thumbnail_url IS NOT NULL THEN '${BACKEND_URL}' || m.thumbnail_url 
+                                    ELSE NULL 
+                                END,
+                'sort_order', pm.sort_order
+            ) ORDER BY pm.sort_order ASC) FILTER (WHERE m.id IS NOT NULL), 
+            '[]'
+        ) AS gallery
+    FROM products p
+    LEFT JOIN ticket_types tt ON p.id = tt.product_id
+    LEFT JOIN products_media pm ON p.id = pm.product_id
+    LEFT JOIN media m ON pm.media_id = m.id
+    GROUP BY p.game_id, p.id
+)
+SELECT 
+    g.*, 
+    pd.product_id,
+    pd.ticket_types,
+    pd.gallery
+FROM games g
+LEFT JOIN product_details pd ON g.id = pd.game_id
+WHERE g.id = $1;
   `;
 
     const result = await query(sql, [id]);

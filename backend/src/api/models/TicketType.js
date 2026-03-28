@@ -38,16 +38,18 @@ const TicketType = {
   /**
    * Update a ticket type
    */
-  async update({ category, price, maxQuantityPerBooking, isActive, id }, db) {
+  async update({ category, price, maxQuantityPerBooking, productId, id }, db) {
     const sql = `
-      UPDATE ticket_types
-      SET category = COALESCE($2, category),
-          price = COALESCE($3, price),
-          max_quantity = COALESCE($4, max_quantity),
-          is_active = COALESCE($5, is_active)
-      WHERE id = $1
+      INSERT INTO ticket_types (id, product_id, category, price, max_quantity)
+      VALUES (COALESCE($1, gen_random_uuid()), $2, $3, $4, $5)
+      ON CONFLICT (id)
+      DO UPDATE SET 
+          product_id = COALESCE(EXCLUDED.product_id, ticket_types.product_id),
+          category = COALESCE(EXCLUDED.category, ticket_types.category),
+          price = COALESCE(EXCLUDED.price, ticket_types.price),
+          max_quantity = COALESCE(EXCLUDED.max_quantity, ticket_types.max_quantity)
       RETURNING *`;
-    const values = [id, category, price, maxQuantityPerBooking, isActive];
+    const values = [null, productId, category, price, maxQuantityPerBooking];
     const result = await db.query(sql, values);
     return result.rows[0] || null;
   },

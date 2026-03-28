@@ -30,7 +30,7 @@ const GameService = {
       for (const type of ticket_types || []) {
         await TicketType.create({ ...type, productId }, client);
       }
-      console.log("gameService", mediaIds);
+
       if (mediaIds?.length) {
         await UploadsService.addMediaToProduct(productId, mediaIds, client);
       }
@@ -47,7 +47,15 @@ const GameService = {
   },
 
   async update(id, gameData) {
-    const { name, description, rules, status, ticket_types } = gameData;
+    const {
+      productId,
+      name,
+      description,
+      rules,
+      status,
+      ticketTypes,
+      mediaIds,
+    } = gameData;
     const client = await getClient();
 
     try {
@@ -62,8 +70,12 @@ const GameService = {
       });
 
       // Task 2: Update tickets if provided
-      for (const type of ticket_types || []) {
-        await TicketType.update({ ...type, id }, client);
+      for (const type of ticketTypes || []) {
+        await TicketType.update({ ...type, productId }, client);
+      }
+
+      if (mediaIds?.length) {
+        await UploadsService.addMediaToProduct(productId, mediaIds, client);
       }
 
       await client.query("COMMIT");
