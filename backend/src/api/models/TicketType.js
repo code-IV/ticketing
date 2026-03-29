@@ -1,4 +1,4 @@
-const { query } = require("../../config/db");
+const { query, getClient } = require("../../config/db");
 
 const TicketType = {
   /**
@@ -55,12 +55,57 @@ const TicketType = {
   },
 
   /**
-   * Delete (deactivate) a ticket type
+   * Delete / deactivate a ticket type
    */
-  async deactivate(id) {
-    const sql = `UPDATE ticket_types SET is_active = false WHERE id = $1 RETURNING *`;
-    const result = await query(sql, [id]);
-    return result.rows[0] || null;
+  async delete(id) {
+    const client = await getClient();
+    try {
+      await client.query("BEGIN");
+
+      const check = await client.query(
+        `SELECT 1 FROM booking_items WHERE ticket_type_id = $1 LIMIT 1`,
+        [id],
+      );
+
+      if (check.rowCount > 0) {
+        const softDeleteResult = await client.query(
+          `UPDATE ticket_types SET deleted_at = now() WHERE id = $1 RETURNING *`,
+          [id],
+        );
+        await client.query("COMMIT");
+        return { ...softDeleteResult.rows[0], _softDelete: true };
+      }
+
+      // 1. Try a Hard Delete first
+      const result = await client.query(
+        `DELETE FROM ticket_types WHERE id = $1 RETURNING *`,
+        [id],
+      );
+
+      // If nothing was deleted (id didn't exist)
+      if (result.rowCount === 0) {
+        await client.query("COMMIT");
+        return null;
+      }
+
+      await client.query("COMMIT");
+      return { ...result.rows[0], _softDelete: false };
+    } catch (err) {
+      // 2. If Foreign Key violation (23503), perform Soft Delete
+      if (err.code === "23503") {
+        const softDeleteResult = await client.query(
+          `UPDATE ticket_types SET deleted_at = now() WHERE id = $1 RETURNING *`,
+          [id],
+        );
+        await client.query("COMMIT");
+        return { ...softDeleteResult.rows[0], _softDelete: true };
+      }
+
+      await client.query("ROLLBACK");
+      throw err;
+    } finally {
+      client.release();
+    }
   },
 };
 

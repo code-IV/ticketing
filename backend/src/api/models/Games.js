@@ -188,14 +188,59 @@ WHERE g.id = $1;
   },
 
   async deleteGame(id) {
-    const sql = `
-    DELETE FROM games 
-    WHERE id = $1
-    RETURNING *
-  `;
-    const result = await query(sql, [id]);
-    // result.rows[0] contains the deleted game data
-    return result.rows[0] || null;
+    const client = await getClient();
+    try {
+      await client.query("BEGIN");
+
+      const checkRes = await client.query(
+        `SELECT 
+            p.id AS product_id,
+            EXISTS (
+              SELECT 1 FROM ticket_products tp WHERE tp.product_id = p.id LIMIT 1
+            ) AS has_tickets
+          FROM products p
+          WHERE p.game_id = $1`,
+        [id],
+      );
+
+      const product = checkRes.rows[0];
+
+      if (product) {
+        if (product.has_tickets) {
+          // 3. SOFT DELETE: Tickets exist
+          const softDeleteRes = await client.query(
+            `UPDATE products SET is_active = false WHERE id = $1 RETURNING *`,
+            [product.product_id],
+          );
+          await client.query("COMMIT");
+          return { ...softDeleteRes.rows[0], _softDelete: true };
+        }
+      }
+
+      // 4. HARD DELETE: No tickets exist, try to wipe the game
+      const deleteRes = await client.query(
+        `DELETE FROM games WHERE id = $1 RETURNING *`,
+        [id],
+      );
+
+      await client.query("COMMIT");
+      return deleteRes.rows[0] || null;
+    } catch (err) {
+      await client.query("ROLLBACK");
+
+      // Handle unexpected Foreign Key violations (safety net)
+      if (err.code === "23503") {
+        const fallbackRes = await client.query(
+          `UPDATE products SET is_active = false WHERE game_id = $1 RETURNING *`,
+          [id],
+        );
+        return { ...fallbackRes.rows[0], _softDelete: true };
+      }
+
+      throw err;
+    } finally {
+      client.release();
+    }
   },
 };
 

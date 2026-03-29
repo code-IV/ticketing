@@ -7,6 +7,7 @@ const {
   bookingService,
   bookingStatsService,
 } = require("../services/bookingService");
+const { EventService } = require("../services/eventService");
 
 const bookingController = {
   /**
@@ -73,7 +74,7 @@ const bookingController = {
       }
 
       // Check overall availability
-      const availability = await Event.checkAvailability(
+      const availability = await EventService.checkAvailability(
         eventId,
         totalQuantity,
       );

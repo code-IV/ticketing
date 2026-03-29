@@ -34,6 +34,7 @@ exports.up = async function (knex) {
     table.specificType("category", "ticket_category").notNullable();
     table.decimal("price", 10, 2).notNullable();
     table.integer("max_quantity").nullable();
+    table.timestamp("deleted_at").nullable();
     table.timestamps(true, true);
   });
 

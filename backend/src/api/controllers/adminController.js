@@ -124,7 +124,7 @@ const adminController = {
    */
   async deleteTicketType(req, res, next) {
     try {
-      const ticketType = await TicketType.deactivate(req.params.id);
+      const ticketType = await TicketType.delete(req.params.id);
       if (!ticketType) {
         return apiResponse(res, 404, false, "Ticket type not found.");
       }
@@ -257,7 +257,7 @@ const adminController = {
         lastName: last_name,
         email: email,
         phone: phone,
-        roleName: role,  // Fix: Map role to roleName as expected by the model
+        roleName: role, // Fix: Map role to roleName as expected by the model
         isActive: is_active,
       });
       return apiResponse(res, 200, true, "User type updated successfully.", {

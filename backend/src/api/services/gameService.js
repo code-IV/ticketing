@@ -116,7 +116,7 @@ const GameService = {
 
       return { game: new GameRes(game) };
     } catch (error) {
-      console.error("Error in gameService.getAllGames:", error);
+      console.error("Error in gameService.getById:", error);
       throw new Error("Could not retrieve games catalog.");
     }
   },
@@ -124,11 +124,10 @@ const GameService = {
   async deleteById(id) {
     try {
       const games = await Game.deleteGame(id);
-
       return games;
     } catch (error) {
-      console.error("Error in gameService.getAllGames:", error);
-      throw new Error("Could not retrieve games catalog.");
+      console.error("Error in gameService.deleteById:", error);
+      throw new Error("Could not delete games catalog.");
     }
   },
 };

@@ -283,13 +283,61 @@ const Event = {
    * Delete an event
    */
   async delete(id) {
-    const sql = `
-      DELETE FROM events 
-      WHERE id = $1
-      RETURNING *
-    `;
-    const result = await query(sql, [id]);
-    return result.rows[0] || null;
+    const client = await getClient();
+    try {
+      await client.query("BEGIN");
+
+      // 1. Lock the row for the duration of the transaction
+      const { rows } = await client.query(
+        `SELECT tickets_sold FROM events WHERE id = $1 FOR UPDATE`,
+        [id],
+      );
+
+      if (rows.length === 0) {
+        await client.query("ROLLBACK");
+        return null;
+      }
+
+      if (rows[0].tickets_sold > 0) {
+        // SOFT DELETE
+        await client.query(
+          `UPDATE products SET is_active = false WHERE event_id = $1`,
+          [id],
+        );
+        const result = await client.query(
+          `UPDATE events SET is_active = false WHERE id = $1 RETURNING *`,
+          [id],
+        );
+        await client.query("COMMIT");
+        return { ...result.rows[0], _softDelete: true };
+      }
+
+      // HARD DELETE
+      const result = await client.query(
+        `DELETE FROM events WHERE id = $1 RETURNING *`,
+        [id],
+      );
+      await client.query("COMMIT");
+      return result.rows[0];
+    } catch (err) {
+      // Handle FK violation if tickets_sold was 0 but other references exist (like logs)
+      if (err.code === "23503") {
+        await client.query(
+          `UPDATE products SET is_active = false WHERE event_id = $1`,
+          [id],
+        );
+        const result = await client.query(
+          `UPDATE events SET is_active = false WHERE id = $1 RETURNING *`,
+          [id],
+        );
+        await client.query("COMMIT");
+        return { ...result.rows[0], _softDelete: true };
+      }
+      await client.query("ROLLBACK");
+      throw err;
+    } finally {
+      client.release();
+    }
   },
 
   async findById(id) {
