@@ -53,6 +53,7 @@ export interface CreateGame {
 }
 
 export interface Event {
+  createdAt: string;
   id: string;
   name: string;
   description?: string;

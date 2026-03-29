@@ -5,7 +5,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { adminService } from "@/services/adminService";
 import { 
   Image as ImageIcon, Video, X, Play, 
-  Maximize2, Hash, Layers, ChevronLeft, ChevronRight
+  Maximize2, Hash, Layers, ChevronLeft, ChevronRight, Trash, Edit3
 } from "lucide-react";
 
 interface MediaItem {
@@ -29,6 +29,20 @@ export default function MediaPage() {
   const [filter, setFilter] = useState<'all' | 'image' | 'video'>('all');
   const [totalItems, setTotalItems] = useState(0);
   
+  // Modal states
+  const [deleteModal, setDeleteModal] = useState<MediaItem | null>(null);
+  const [labelModal, setLabelModal] = useState<MediaItem | null>(null);
+  const [newLabel, setNewLabel] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isUpdatingLabel, setIsUpdatingLabel] = useState(false);
+  
+  // Predefined label options
+  const labelOptions = [
+    'banner',
+    'poster', 
+    'gallery'
+  ];
+  
   const d = isDarkTheme;
   const surface = d ? "bg-[#0d0d0f]" : "bg-[#f8f8fa]";
   const card = d ? "bg-[#141416]" : "bg-white";
@@ -47,9 +61,9 @@ export default function MediaPage() {
       const response = await adminService.getAllMedia(currentPage, 32, filter);
       
       if (response.success && response.data) {
-        // --- FIX: Access the nested media and pagination objects ---
-        const mediaList = response.data.media || [];
-        const pagination = response.data.pagination || {};
+        // --- FIX: Access nested media and pagination objects ---
+        const mediaList = response.data?.media || [];
+        const pagination = response.data?.pagination || {};
 
         setMedia(mediaList);
         setTotalItems(pagination.total || mediaList.length);
@@ -74,8 +88,54 @@ export default function MediaPage() {
   // Stats are based on totalItems from the backend
   const stats = {
     total: totalItems,
-    images: filter === 'image' ? totalItems : media.filter(m => m.type.startsWith('image/')).length,
-    videos: filter === 'video' ? totalItems : media.filter(m => m.type.startsWith('video/')).length,
+    images: filter === 'image' ? totalItems : media.filter(m => m.type?.startsWith('image/')).length,
+    videos: filter === 'video' ? totalItems : media.filter(m => m.type?.startsWith('video/')).length,
+  };
+
+  // Handler functions
+  const handleDeleteMedia = async (item: MediaItem) => {
+    setIsDeleting(true);
+    try {
+      const response = await adminService.deleteMedia(item.id);
+      if (response.success) {
+        setMedia(prev => prev.filter(m => m.id !== item.id));
+        setTotalItems(prev => prev - 1);
+        setDeleteModal(null);
+      } else {
+        setError(response.message || "Failed to delete media");
+      }
+    } catch (err: any) {
+      setError("Failed to delete media");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleUpdateLabel = async () => {
+    if (!labelModal) return;
+    
+    setIsUpdatingLabel(true);
+    try {
+      const response = await adminService.updateMediaLabel(labelModal.id, newLabel);
+      if (response.success) {
+        setMedia(prev => prev.map(m => 
+          m.id === labelModal.id ? { ...m, label: newLabel } : m
+        ));
+        setLabelModal(null);
+        setNewLabel('');
+      } else {
+        setError(response.message || "Failed to update label");
+      }
+    } catch (err: any) {
+      setError("Failed to update label");
+    } finally {
+      setIsUpdatingLabel(false);
+    }
+  };
+
+  const openLabelModal = (item: MediaItem) => {
+    setLabelModal(item);
+    setNewLabel(item.label || '');
   };
 
   if (loading && media.length === 0) return (
@@ -231,7 +291,7 @@ export default function MediaPage() {
                 className={`group relative rounded-4xl border ${border} ${card} overflow-hidden hover:border-accent/50 hover:shadow-2xl transition-all duration-500`}
               >
                 <div className="relative aspect-square overflow-hidden bg-black/20">
-                  {item.type.startsWith("image/") ? (
+                  {item.type?.startsWith("image/") ? (
                     <img src={item.url} alt={item.name} crossOrigin="anonymous" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
@@ -250,9 +310,15 @@ export default function MediaPage() {
                     </span>
                   </div>
 
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
                      <button onClick={() => setSelectedMedia(item)} className="p-4 bg-white text-black rounded-2xl hover:bg-accent transition-all transform translate-y-4 group-hover:translate-y-0 shadow-2xl">
                         <Maximize2 size={24} />
+                     </button>
+                     <button onClick={() => openLabelModal(item)} className="p-4 bg-accent text-black rounded-2xl hover:bg-accent/80 transition-all transform translate-y-4 group-hover:translate-y-0 shadow-2xl">
+                        <Edit3 size={24} />
+                     </button>
+                     <button onClick={() => setDeleteModal(item)} className="p-4 bg-red-500 text-white rounded-2xl hover:bg-red-600 transition-all transform translate-y-4 group-hover:translate-y-0 shadow-2xl">
+                        <Trash size={24} />
                      </button>
                   </div>
                 </div>
@@ -261,7 +327,7 @@ export default function MediaPage() {
                   <h3 className={`text-sm font-bold truncate mb-1 ${text}`}>{item.name}</h3>
                   <div className="flex items-center justify-between opacity-50">
                      <p className={`text-[10px] font-bold uppercase tracking-widest`}>{item.provider}</p>
-                     <p className="text-[10px] font-black uppercase">{item.type.split('/')[1]}</p>
+                     <p className="text-[10px] font-black uppercase">{item.type?.split('/')?.[1] || 'N/A'}</p>
                   </div>
                 </div>
               </motion.div>
@@ -275,7 +341,7 @@ export default function MediaPage() {
         {selectedMedia && (
           <motion.div
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/95 backdrop-blur-3xl"
+            className="fixed inset-0 z-100 flex items-center justify-center p-6 bg-black/95 backdrop-blur-3xl"
           >
             <button onClick={() => setSelectedMedia(null)} className="absolute top-8 right-8 z-10 p-4 bg-white/10 text-white rounded-2xl hover:bg-accent/50 transition-all">
               <X size={24} />
@@ -286,7 +352,7 @@ export default function MediaPage() {
               className="relative w-full max-w-6xl flex flex-col items-center"
             >
               <div className="relative w-full h-[70vh] flex items-center justify-center rounded-[48px] overflow-hidden shadow-2xl bg-black/40 border border-white/5">
-                {selectedMedia.type.startsWith("image/") ? (
+                {selectedMedia.type?.startsWith("image/") ? (
                   <img src={selectedMedia.url} alt={selectedMedia.name} crossOrigin="anonymous" className="max-w-full max-h-full object-contain" />
                 ) : (
                   <video src={selectedMedia.url} controls autoPlay crossOrigin="anonymous" className="max-w-full max-h-full" />
@@ -298,6 +364,128 @@ export default function MediaPage() {
                    {selectedMedia.label || 'Asset'}
                 </span>
                 <h2 className="text-2xl md:text-4xl font-black text-white tracking-tighter">{selectedMedia.name}</h2>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* --- DELETE CONFIRMATION MODAL --- */}
+      <AnimatePresence>
+        {deleteModal && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-100 flex items-center justify-center p-6 bg-black/95 backdrop-blur-3xl"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+              className={`relative w-full max-w-md rounded-3xl p-8 ${card} border ${border} shadow-2xl`}
+            >
+              <div className="text-center">
+                <div className="w-16 h-16 bg-red-500/20 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                  <Trash size={32} className="text-red-500" />
+                </div>
+                <h3 className={`text-2xl font-black mb-3 ${text}`}>Delete Media?</h3>
+                <p className={`${muted} mb-8`}>
+                  Are you sure you want to delete "{deleteModal.name}"? This action cannot be undone.
+                </p>
+                <div className="flex gap-4">
+                  <button
+                    onClick={() => setDeleteModal(null)}
+                    disabled={isDeleting}
+                    className={`flex-1 px-6 py-3 rounded-2xl font-bold transition-all ${
+                      d ? 'bg-gray-800 text-white hover:bg-gray-700' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
+                    } ${isDeleting ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => handleDeleteMedia(deleteModal)}
+                    disabled={isDeleting}
+                    className="flex-1 px-6 py-3 bg-red-500 text-white rounded-2xl font-bold hover:bg-red-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    {isDeleting ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        Deleting...
+                      </>
+                    ) : (
+                      <>
+                        <Trash size={18} />
+                        Delete
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* --- LABEL EDIT MODAL --- */}
+      <AnimatePresence>
+        {labelModal && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-100 flex items-center justify-center p-6 bg-black/95 backdrop-blur-3xl"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+              className={`relative w-full max-w-md rounded-3xl p-8 ${card} border ${border} shadow-2xl`}
+            >
+              <div className="text-center">
+                <div className="w-16 h-16 bg-accent/20 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                  <Edit3 size={32} className="text-accent" />
+                </div>
+                <h3 className={`text-2xl font-black mb-3 ${text}`}>Change Label</h3>
+                <p className={`${muted} mb-6`}>
+                  Update the label for "{labelModal.name}"
+                </p>
+                <select
+                  value={newLabel}
+                  onChange={(e) => setNewLabel(e.target.value)}
+                  className={`w-full px-4 py-3 rounded-2xl border ${border} ${card} ${text} mb-6 focus:outline-none focus:ring-2 focus:ring-accent cursor-pointer`}
+                  autoFocus
+                >
+                  <option value="">Select a label...</option>
+                  {labelOptions.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+                <div className="flex gap-4">
+                  <button
+                    onClick={() => {
+                      setLabelModal(null);
+                      setNewLabel('');
+                    }}
+                    disabled={isUpdatingLabel}
+                    className={`flex-1 px-6 py-3 rounded-2xl font-bold transition-all ${
+                      d ? 'bg-gray-800 text-white hover:bg-gray-700' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
+                    } ${isUpdatingLabel ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleUpdateLabel}
+                    disabled={isUpdatingLabel || !newLabel.trim()}
+                    className="flex-1 px-6 py-3 bg-accent text-black rounded-2xl font-bold hover:bg-accent/80 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    {isUpdatingLabel ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                        Updating...
+                      </>
+                    ) : (
+                      <>
+                        <Edit3 size={18} />
+                        Update
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
             </motion.div>
           </motion.div>

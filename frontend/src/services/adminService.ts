@@ -284,27 +284,24 @@ export const adminService = {
     return response.data;
   },
 
-  async getAllMedia(
-    page = 1,
-    limit = 32,
-    type?: "image" | "video" | "all",
-  ): Promise<
-    ApiResponse<{
-      data: any[];
-      pagination: {
-        totalPages: number;
-        total: number;
-        page: number;
-        limit: number;
-        hasNext: boolean;
-      };
-    }>
-  > {
+  async getAllMedia(page = 1, limit = 32, type?: 'image' | 'video' | 'all'): Promise<ApiResponse<{
+    media: never[]; data: any[]; pagination: { totalPages: number; total: number; page: number; limit: number; hasNext: boolean } 
+}>> {
     const params: any = { page, limit };
     if (type && type !== "all") {
       params.type = type;
     }
     const response = await api.get("/media", { params });
+    return response.data;
+  },
+
+  async deleteMedia(id: string): Promise<ApiResponse> {
+    const response = await api.delete(`/media/rm/${id}`);
+    return response.data;
+  },
+
+  async updateMediaLabel(id: string, label: string): Promise<ApiResponse> {
+    const response = await api.patch(`/media/${id}`, { label });
     return response.data;
   },
 };
