@@ -13,7 +13,7 @@ import {
   Trash2,
   ArrowLeft,
 } from "lucide-react";
-import { gameService } from "@/services/adminService";
+import { adminService, gameService } from "@/services/adminService";
 import { Game } from "@/types";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useRouter, useParams } from "next/navigation";
@@ -50,8 +50,9 @@ export default function EditGamePage() {
   const router = useRouter();
   const params = useParams();
   const gameId = params.id as string;
-  
+
   const [loading, setLoading] = useState(false);
+  const [game, setGame] = useState<any>({});
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [labelModalOpen, setLabelModalOpen] = useState(false);
@@ -63,16 +64,30 @@ export default function EditGamePage() {
     description: "",
     rules: "",
     status: "OPEN" as "OPEN" | "CLOSED" | "ON_MAINTENANCE" | "UPCOMING",
-    ticketTypes: [] as any[],
+    ticketTypes: [] as {
+      id: string;
+      productId: string;
+      category: "ADULT" | "CHILD" | "SENIOR" | "STUDENT" | "GROUP";
+      price: number;
+      max_quantity: number;
+    }[],
     mediaFiles: [] as any[],
   });
 
   const [newTicket, setNewTicket] = useState({
-    category: "ADULT",
+    id: "",
+    productId: "",
+    category: "ADULT" as const,
     price: 0,
     max_quantity: 100,
-    status: "ACTIVE" as const,
   });
+
+  // Sync productId when game loads
+  useEffect(() => {
+    if (game?.productId) {
+      setNewTicket((prev) => ({ ...prev, productId: game.productId }));
+    }
+  }, [game?.productId]);
 
   useEffect(() => {
     loadGame();
@@ -82,30 +97,35 @@ export default function EditGamePage() {
     try {
       setLoading(true);
       const response = await gameService.getGame(gameId);
+      setGame(response.data?.game);
       const game = response.data?.game || response.data;
-      
-      if (game && 'name' in game) {
+
+      if (game && "name" in game) {
         setFormData({
           name: game.name || "",
           description: game.description || "",
           rules: game.rules || "",
           status: game.status || "OPEN",
-          ticketTypes: game.ticketTypes?.map((tt: any) => ({
-            category: tt.category || "ADULT",
-            price: parseFloat(tt.price) || 0,
-            max_quantity: tt.max_quantity || 100,
-            status: tt.status || "ACTIVE",
-          })) || [],
+          ticketTypes:
+            game.ticketTypes?.map((tt: any) => ({
+              id: tt.id || "",
+              productId: game.productId || "",
+              category: tt.category || "ADULT",
+              price: parseFloat(tt.price) || 0,
+              max_quantity: tt.max_quantity || 100,
+            })) || [],
           mediaFiles: [],
         });
 
         // Load existing media
         if (game.gallery && game.gallery.length > 0) {
-          setExistingMedia(game.gallery.map((media: any) => ({
-            ...media,
-            existing: true,
-            preview: media.url,
-          })));
+          setExistingMedia(
+            game.gallery.map((media: any) => ({
+              ...media,
+              existing: true,
+              preview: media.url,
+            })),
+          );
         }
       }
     } catch (err: any) {
@@ -117,23 +137,35 @@ export default function EditGamePage() {
   };
 
   const getPosterCount = () => {
-    const existingPosters = existingMedia.filter(m => m.label === "poster").length;
-    const newPosters = formData.mediaFiles.filter(m => m.label === "poster").length;
+    const existingPosters = existingMedia.filter(
+      (m) => m.label === "poster",
+    ).length;
+    const newPosters = formData.mediaFiles.filter(
+      (m) => m.label === "poster",
+    ).length;
     return existingPosters + newPosters;
   };
-  
+
   const getBannerCount = () => {
-    const existingBanners = existingMedia.filter(m => m.label === "banner").length;
-    const newBanners = formData.mediaFiles.filter(m => m.label === "banner").length;
+    const existingBanners = existingMedia.filter(
+      (m) => m.label === "banner",
+    ).length;
+    const newBanners = formData.mediaFiles.filter(
+      (m) => m.label === "banner",
+    ).length;
     return existingBanners + newBanners;
   };
-  
+
   const getVideoCount = () => {
-    const existingVideos = existingMedia.filter(m => m.type === "VIDEO").length;
-    const newVideos = formData.mediaFiles.filter(m => m.type === "VIDEO").length;
+    const existingVideos = existingMedia.filter(
+      (m) => m.type === "VIDEO",
+    ).length;
+    const newVideos = formData.mediaFiles.filter(
+      (m) => m.type === "VIDEO",
+    ).length;
     return existingVideos + newVideos;
   };
-  
+
   const hasPosterSlot = () => getPosterCount() < 3;
   const hasBannerSlot = () => getBannerCount() < 3;
   const hasVideoSlot = () => getVideoCount() < 3;
@@ -185,10 +217,7 @@ export default function EditGamePage() {
     setLabelModalOpen(false);
   };
 
-  const handleVideoThumbnailUpload = async (
-    videoIndex: number,
-    file: File,
-  ) => {
+  const handleVideoThumbnailUpload = async (videoIndex: number, file: File) => {
     if (!file) return;
     const tinyThumb = await getTinyPreview(file);
     setFormData((prev) => {
@@ -222,10 +251,21 @@ export default function EditGamePage() {
   };
 
   const addCategory = () => {
-    if (!newTicket.category || isNaN(newTicket.price)) return alert("Please provide at least a category and price");
-    if (formData.ticketTypes.some((tt) => tt.category === newTicket.category)) return alert("Category already exists.");
-    setFormData((p) => ({ ...p, ticketTypes: [...p.ticketTypes, { ...newTicket }] }));
-    setNewTicket({ category: "ADULT", price: 0, max_quantity: 100, status: "ACTIVE" });
+    if (!newTicket.category || isNaN(newTicket.price))
+      return alert("Please provide at least a category and price");
+    if (formData.ticketTypes.some((tt) => tt.category === newTicket.category))
+      return alert("Category already exists.");
+    setFormData((p) => ({
+      ...p,
+      ticketTypes: [...p.ticketTypes, { ...newTicket }],
+    }));
+    setNewTicket({
+      id: "",
+      productId: game.productId,
+      category: "ADULT",
+      price: 0,
+      max_quantity: 100,
+    });
   };
 
   const removeTicketType = (index: number) => {
@@ -237,11 +277,7 @@ export default function EditGamePage() {
     }
   };
 
-  const updateTicketType = (
-    index: number,
-    field: keyof any,
-    value: any,
-  ) => {
+  const updateTicketType = (index: number, field: keyof any, value: any) => {
     const updatedTicketTypes = [...formData.ticketTypes];
     updatedTicketTypes[index] = {
       ...updatedTicketTypes[index],
@@ -271,8 +307,9 @@ export default function EditGamePage() {
     if (submitting) return;
     setSubmitting(true);
     setError("");
-    
+
     const payload = {
+      productId: game.productId,
       name: formData.name,
       description: formData.description,
       rules: formData.rules,
@@ -282,9 +319,10 @@ export default function EditGamePage() {
         price: parseFloat(tt.price.toString()),
       })),
     };
-    
+
     try {
       // Upload new media files first
+      let media;
       if (formData.mediaFiles.length > 0) {
         const data = new FormData();
         formData.mediaFiles.forEach((m: any) => {
@@ -293,12 +331,15 @@ export default function EditGamePage() {
           data.append("thumbnail", m.thumbnail || null);
         });
         // For now, skip media upload since the method doesn't exist
-        // await gameService.uploadGameMedia(gameId, data);
+        media = await adminService.uploadProductMedia(data);
       }
-      
+
       // Update game details
-      await gameService.updateGame(gameId, payload);
-      
+      await gameService.updateGame(gameId, {
+        ...payload,
+        mediaIds: media?.data?.mediaIds || [],
+      });
+
       router.push("/admin/games");
     } catch (error) {
       console.error("Failed to update game:", error);
@@ -345,14 +386,11 @@ export default function EditGamePage() {
               <h1 className={`text-2xl font-bold tracking-tight ${text}`}>
                 Edit Game
               </h1>
-              <p className={`text-sm ${muted} mt-0.5`}>
-                {formData.name}
-              </p>
+              <p className={`text-sm ${muted} mt-0.5`}>{formData.name}</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
             <div>
-
               <select
                 className={`px-3 py-2 rounded-xl text-sm font-medium outline-none border-2 border-transparent transition-all focus:border-accent/50 ${inputBg} ${text}`}
                 value={formData.status}
@@ -393,14 +431,18 @@ export default function EditGamePage() {
             <div className={`p-6 rounded-3xl border ${border} ${card}`}>
               <div className="flex items-center gap-2 mb-6">
                 <Tag size={14} className={muted} />
-                <h2 className={`text-sm font-bold uppercase tracking-wider ${muted}`}>
+                <h2
+                  className={`text-sm font-bold uppercase tracking-wider ${muted}`}
+                >
                   Game Details
                 </h2>
               </div>
-              
+
               <div className="space-y-4">
                 <div>
-                  <label className={`block text-xs font-semibold uppercase tracking-wider mb-2 ${muted}`}>
+                  <label
+                    className={`block text-xs font-semibold uppercase tracking-wider mb-2 ${muted}`}
+                  >
                     Game Name
                   </label>
                   <input
@@ -415,7 +457,9 @@ export default function EditGamePage() {
                 </div>
 
                 <div>
-                  <label className={`block text-xs font-semibold uppercase tracking-wider mb-2 ${muted}`}>
+                  <label
+                    className={`block text-xs font-semibold uppercase tracking-wider mb-2 ${muted}`}
+                  >
                     Description
                   </label>
                   <textarea
@@ -433,7 +477,9 @@ export default function EditGamePage() {
                 </div>
 
                 <div>
-                  <label className={`block text-xs font-semibold uppercase tracking-wider mb-2 ${muted}`}>
+                  <label
+                    className={`block text-xs font-semibold uppercase tracking-wider mb-2 ${muted}`}
+                  >
                     Internal Rules
                   </label>
                   <textarea
@@ -456,11 +502,13 @@ export default function EditGamePage() {
             <div className={`p-6 rounded-3xl border ${border} ${card}`}>
               <div className="flex items-center gap-2 mb-6">
                 <Tag size={14} className={muted} />
-                <h2 className={`text-sm font-bold uppercase tracking-wider ${muted}`}>
+                <h2
+                  className={`text-sm font-bold uppercase tracking-wider ${muted}`}
+                >
                   Ticket Types
                 </h2>
               </div>
-              
+
               {/* Existing tickets */}
               {formData.ticketTypes.length > 0 && (
                 <div className="space-y-2 mb-4">
@@ -582,11 +630,13 @@ export default function EditGamePage() {
             <div className={`p-6 rounded-3xl border ${border} ${card}`}>
               <div className="flex items-center gap-2 mb-6">
                 <ImageIcon size={14} className={muted} />
-                <h2 className={`text-sm font-bold uppercase tracking-wider ${muted}`}>
+                <h2
+                  className={`text-sm font-bold uppercase tracking-wider ${muted}`}
+                >
                   Game Media
                 </h2>
               </div>
-              
+
               {/* Quota strip */}
               <div
                 className={`flex items-center justify-between px-4 py-2.5 rounded-xl text-xs font-semibold ${d ? "bg-white/4" : "bg-black/3"}`}
@@ -655,11 +705,13 @@ export default function EditGamePage() {
                 {/* Existing Media */}
                 {existingMedia.length > 0 && (
                   <div className="mb-4">
-                    <p className={`text-xs font-semibold uppercase tracking-wider mb-3 ${muted}`}>
+                    <p
+                      className={`text-xs font-semibold uppercase tracking-wider mb-3 ${muted}`}
+                    >
                       Existing Media
                     </p>
                     <div className="grid grid-cols-3 gap-2.5">
-                      {existingMedia.map((media, idx) => (
+                      {existingMedia.map((media, idx) =>
                         media.type === "IMAGE" ? (
                           <div
                             key={`existing-${idx}`}
@@ -717,8 +769,8 @@ export default function EditGamePage() {
                             }}
                             onRemoveMedia={(index) => removeMedia(index, true)}
                           />
-                        )
-                      ))}
+                        ),
+                      )}
                     </div>
                   </div>
                 )}
@@ -726,11 +778,13 @@ export default function EditGamePage() {
                 {/* New Media */}
                 {formData.mediaFiles.length > 0 && (
                   <div>
-                    <p className={`text-xs font-semibold uppercase tracking-wider mb-3 ${muted}`}>
+                    <p
+                      className={`text-xs font-semibold uppercase tracking-wider mb-3 ${muted}`}
+                    >
                       New Media
                     </p>
                     <div className="grid grid-cols-3 gap-2.5">
-                      {formData.mediaFiles.map((media, idx) => (
+                      {formData.mediaFiles.map((media, idx) =>
                         media.type === "IMAGE" ? (
                           <div
                             key={`new-${idx}`}
@@ -768,7 +822,8 @@ export default function EditGamePage() {
                               setFormData((prev) => {
                                 const updatedMedia = [...prev.mediaFiles];
                                 if (updatedMedia[index]) {
-                                  updatedMedia[index].thumbnailPreview = preview;
+                                  updatedMedia[index].thumbnailPreview =
+                                    preview;
                                   updatedMedia[index].thumbnail = file;
                                   updatedMedia[index].preview = preview;
                                 }
@@ -779,7 +834,8 @@ export default function EditGamePage() {
                               setFormData((prev) => {
                                 const updatedMedia = [...prev.mediaFiles];
                                 if (updatedMedia[index]) {
-                                  updatedMedia[index].thumbnailPreview = undefined;
+                                  updatedMedia[index].thumbnailPreview =
+                                    undefined;
                                   updatedMedia[index].thumbnail = undefined;
                                 }
                                 return { ...prev, mediaFiles: updatedMedia };
@@ -787,29 +843,32 @@ export default function EditGamePage() {
                             }}
                             onRemoveMedia={(index) => removeMedia(index, false)}
                           />
-                        )
-                      ))}
+                        ),
+                      )}
                     </div>
                   </div>
                 )}
 
-                {existingMedia.length === 0 && formData.mediaFiles.length === 0 && (
-                  <div
-                    className={`flex flex-col items-center justify-center py-8 rounded-2xl ${d ? "bg-white/2" : "bg-black/2"}`}
-                  >
-                    <ImageIcon size={28} className={`${muted} mb-2`} />
-                    <p className={`text-xs font-medium ${muted}`}>
-                      No media added yet
-                    </p>
-                  </div>
-                )}
+                {existingMedia.length === 0 &&
+                  formData.mediaFiles.length === 0 && (
+                    <div
+                      className={`flex flex-col items-center justify-center py-8 rounded-2xl ${d ? "bg-white/2" : "bg-black/2"}`}
+                    >
+                      <ImageIcon size={28} className={`${muted} mb-2`} />
+                      <p className={`text-xs font-medium ${muted}`}>
+                        No media added yet
+                      </p>
+                    </div>
+                  )}
               </div>
             </div>
           </div>
         </div>
 
         {/* ── Footer Actions ── */}
-        <div className={`flex items-center justify-between mt-8 p-6 rounded-3xl border ${border} ${card}`}>
+        <div
+          className={`flex items-center justify-between mt-8 p-6 rounded-3xl border ${border} ${card}`}
+        >
           <button
             onClick={() => router.push("/admin/games")}
             className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition-all ${d ? "bg-white/6 hover:bg-white/10 text-white/70" : "bg-black/5 hover:bg-black/10 text-black/60"}`}
@@ -822,7 +881,9 @@ export default function EditGamePage() {
               {formData.ticketTypes.length} ticket type
               {formData.ticketTypes.length !== 1 ? "s" : ""} ·{" "}
               {formData.mediaFiles.length + existingMedia.length} file
-              {formData.mediaFiles.length + existingMedia.length !== 1 ? "s" : ""}
+              {formData.mediaFiles.length + existingMedia.length !== 1
+                ? "s"
+                : ""}
             </span>
             <button
               disabled={submitting}
@@ -857,7 +918,9 @@ export default function EditGamePage() {
               className={`w-full max-w-sm mx-4 rounded-3xl shadow-2xl overflow-hidden border ${border} ${d ? "bg-[#141416]" : "bg-white"}`}
             >
               <div className={`px-6 pt-6 pb-4 border-b ${border}`}>
-                <h3 className={`text-base font-bold ${text}`}>Tag this image</h3>
+                <h3 className={`text-base font-bold ${text}`}>
+                  Tag this image
+                </h3>
                 <p className={`text-xs mt-0.5 ${muted}`}>
                   Choose how this image will be used
                 </p>

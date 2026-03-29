@@ -2,10 +2,12 @@ const { getClient } = require("../../config/db");
 const { GameRes } = require("../dtos/gameDto");
 const { Game, GameStats } = require("../models/Games");
 const TicketType = require("../models/TicketType");
+const UploadsService = require("./uploadsService");
 
 const GameService = {
   async create(gameData) {
-    const { name, description, rules, status, ticket_types } = gameData;
+    const { name, description, rules, status, ticket_types, mediaIds } =
+      gameData;
     const client = await getClient();
 
     try {
@@ -29,6 +31,10 @@ const GameService = {
         await TicketType.create({ ...type, productId }, client);
       }
 
+      if (mediaIds?.length) {
+        await UploadsService.addMediaToProduct(productId, mediaIds, client);
+      }
+
       await client.query("COMMIT");
 
       return { game: newGame, productId: productId };
@@ -41,7 +47,15 @@ const GameService = {
   },
 
   async update(id, gameData) {
-    const { name, description, rules, status, ticket_types } = gameData;
+    const {
+      productId,
+      name,
+      description,
+      rules,
+      status,
+      ticketTypes,
+      mediaIds,
+    } = gameData;
     const client = await getClient();
 
     try {
@@ -56,8 +70,12 @@ const GameService = {
       });
 
       // Task 2: Update tickets if provided
-      for (const type of ticket_types || []) {
-        await TicketType.update({ ...type, id }, client);
+      for (const type of ticketTypes || []) {
+        await TicketType.update({ ...type, productId }, client);
+      }
+
+      if (mediaIds?.length) {
+        await UploadsService.addMediaToProduct(productId, mediaIds, client);
       }
 
       await client.query("COMMIT");
@@ -98,7 +116,7 @@ const GameService = {
 
       return { game: new GameRes(game) };
     } catch (error) {
-      console.error("Error in gameService.getAllGames:", error);
+      console.error("Error in gameService.getById:", error);
       throw new Error("Could not retrieve games catalog.");
     }
   },
@@ -106,11 +124,10 @@ const GameService = {
   async deleteById(id) {
     try {
       const games = await Game.deleteGame(id);
-
       return games;
     } catch (error) {
-      console.error("Error in gameService.getAllGames:", error);
-      throw new Error("Could not retrieve games catalog.");
+      console.error("Error in gameService.deleteById:", error);
+      throw new Error("Could not delete games catalog.");
     }
   },
 };

@@ -36,27 +36,6 @@ const Event = {
     return rows[0].id;
   },
 
-  async createMedia(mediaData, client) {
-    const sql = `
-      INSERT INTO media (name, url, type, label, thumbnail_url, provider)
-      VALUES ($1, $2, $3, $4, $5, $6)
-      RETURNING id`;
-    const { rows } = await client.query(sql, [
-      mediaData.name,
-      mediaData.url,
-      mediaData.type,
-      mediaData.label,
-      mediaData.thumbnail_url,
-      mediaData.provider,
-    ]);
-    return rows[0].id;
-  },
-
-  async linkProductMedia(productId, mediaId, client) {
-    const sql = `INSERT INTO products_media (product_id, media_id) VALUES ($1, $2)`;
-    await client.query(sql, [productId, mediaId]);
-  },
-
   /**
    * Find event by ID with its ticket types
    */
@@ -70,7 +49,7 @@ const Event = {
       (
         SELECT COALESCE(JSON_AGG(tt.* ORDER BY tt.price ASC), '[]')
         FROM ticket_types tt
-        WHERE tt.product_id = p.id
+        WHERE tt.product_id = p.id AND tt.deleted_at IS NULL
       ) AS ticket_types,
       -- Subquery for Media
       (
@@ -136,7 +115,7 @@ const Event = {
     LEFT JOIN products p ON p.event_id = e.id
     LEFT JOIN products_media pm ON pm.product_id = p.id
     LEFT JOIN media m ON m.id = pm.media_id
-    WHERE e.is_active = true AND e.event_date >= CURRENT_DATE
+    WHERE e.is_active = true AND p.is_active = true AND e.event_date >= CURRENT_DATE
     GROUP BY e.id, p.id -- p.id added to group by since it's in SELECT
     ORDER BY e.event_date ASC
     LIMIT $1 OFFSET $2`;
@@ -193,6 +172,7 @@ const Event = {
     LEFT JOIN ticket_types tt ON tt.product_id = p.id
     LEFT JOIN booking_items bi ON bi.ticket_type_id = tt.id
     LEFT JOIN bookings b ON bi.booking_id = b.id AND b.status = 'CONFIRMED'
+    WHERE p.is_active=true
     GROUP BY e.id, p.id
     ORDER BY e.event_date ASC
     LIMIT $1 OFFSET $2;
@@ -211,7 +191,7 @@ const Event = {
   /**
    * Update an event
    */
-  async updateEvent(id, data) {
+  async updateEvent(id, data, client) {
     const {
       name,
       description,
@@ -244,7 +224,7 @@ const Event = {
       capacity,
       isActive,
     ];
-    const result = await query(sql, values);
+    const result = await client.query(sql, values);
     return result.rows[0];
   },
 
@@ -304,13 +284,61 @@ const Event = {
    * Delete an event
    */
   async delete(id) {
-    const sql = `
-      DELETE FROM events 
-      WHERE id = $1
-      RETURNING *
-    `;
-    const result = await query(sql, [id]);
-    return result.rows[0] || null;
+    const client = await getClient();
+    try {
+      await client.query("BEGIN");
+
+      // 1. Lock the row for the duration of the transaction
+      const { rows } = await client.query(
+        `SELECT tickets_sold FROM events WHERE id = $1 FOR UPDATE`,
+        [id],
+      );
+
+      if (rows.length === 0) {
+        await client.query("ROLLBACK");
+        return null;
+      }
+
+      if (rows[0].tickets_sold > 0) {
+        // SOFT DELETE
+        await client.query(
+          `UPDATE products SET is_active = false WHERE event_id = $1`,
+          [id],
+        );
+        const result = await client.query(
+          `UPDATE events SET is_active = false WHERE id = $1 RETURNING *`,
+          [id],
+        );
+        await client.query("COMMIT");
+        return { ...result.rows[0], _softDelete: true };
+      }
+
+      // HARD DELETE
+      const result = await client.query(
+        `DELETE FROM events WHERE id = $1 RETURNING *`,
+        [id],
+      );
+      await client.query("COMMIT");
+      return result.rows[0];
+    } catch (err) {
+      // Handle FK violation if tickets_sold was 0 but other references exist (like logs)
+      if (err.code === "23503") {
+        await client.query(
+          `UPDATE products SET is_active = false WHERE event_id = $1`,
+          [id],
+        );
+        const result = await client.query(
+          `UPDATE events SET is_active = false WHERE id = $1 RETURNING *`,
+          [id],
+        );
+        await client.query("COMMIT");
+        return { ...result.rows[0], _softDelete: true };
+      }
+      await client.query("ROLLBACK");
+      throw err;
+    } finally {
+      client.release();
+    }
   },
 
   async findById(id) {

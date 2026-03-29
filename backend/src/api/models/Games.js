@@ -59,7 +59,7 @@ const Game = {
           'id', tt.id,
           'category', tt.category,
           'price', tt.price
-        )) FROM ticket_types tt WHERE tt.product_id = p.id),
+        )) FROM ticket_types tt WHERE tt.product_id = p.id AND tt.deleted_at IS NULL),
         '[]'
       ) AS ticket_types,
       -- Aggregate Media Gallery
@@ -83,6 +83,7 @@ const Game = {
       ) AS gallery
     FROM games g
     LEFT JOIN products p ON g.id = p.game_id
+    WHERE p.is_active=true
     ORDER BY g.created_at DESC;
   `;
 
@@ -102,7 +103,7 @@ const Game = {
           'id', tt.id,
           'category', tt.category,
           'price', tt.price
-        )) FROM ticket_types tt WHERE tt.product_id = p.id), 
+        )) FROM ticket_types tt WHERE tt.product_id = p.id AND tt.deleted_at IS NULL), 
         '[]'
       ) AS ticket_types,
       -- Aggregate Media Gallery
@@ -126,7 +127,7 @@ const Game = {
       ) AS gallery
     FROM games g
     LEFT JOIN products p ON g.id = p.game_id
-    WHERE g.status = 'OPEN'
+    WHERE g.status = 'OPEN' AND p.is_active=true
     ORDER BY g.created_at DESC;
   `;
 
@@ -138,44 +139,49 @@ const Game = {
 
   async findById(id) {
     const sql = `
+    WITH product_details AS (
     SELECT 
-      g.*, 
-      -- Aggregate Ticket Types
-      COALESCE(
-          (SELECT JSON_AGG(DISTINCT JSONB_BUILD_OBJECT(
-              'id', tt.id,
-              'category', tt.category,
-              'price', tt.price
-          ))
-          FROM products p
-          JOIN ticket_types tt ON p.id = tt.product_id
-          WHERE p.game_id = g.id), 
-          '[]'
-      ) AS ticket_types,
-      
-      -- Aggregate Gallery (Media)
-      COALESCE(
-          (SELECT JSON_AGG(JSONB_BUILD_OBJECT(
-              'id', m.id,
-              'name', m.name,
-              'url', '${BACKEND_URL}' || m.url,
-              'type', m.type,
-              'label', m.label,
-              'thumbnailUrl', CASE 
-                                WHEN m.thumbnail_url IS NOT NULL THEN '${BACKEND_URL}' || m.thumbnail_url 
-                                ELSE NULL 
-                              END,
-              'sort_order', pm.sort_order
-          ) ORDER BY pm.sort_order ASC)
-          FROM products p
-          JOIN products_media pm ON p.id = pm.product_id
-          JOIN media m ON pm.media_id = m.id
-          WHERE p.game_id = g.id), 
-          '[]'
-      ) AS gallery
-      
-    FROM games g
-    WHERE g.id = $1;
+        p.game_id,
+        p.id AS product_id,
+        -- Aggregate Ticket Types once
+        COALESCE(
+            JSONB_AGG(DISTINCT JSONB_BUILD_OBJECT(
+                'id', tt.id,
+                'category', tt.category,
+                'price', tt.price
+            )) FILTER (WHERE tt.id IS NOT NULL AND tt.deleted_at IS NULL), 
+            '[]'
+        ) AS ticket_types,
+        -- Aggregate Media once
+        COALESCE(
+            JSONB_AGG(JSONB_BUILD_OBJECT(
+                'id', m.id,
+                'name', m.name,
+                'url', '${BACKEND_URL}' || m.url,
+                'type', m.type,
+                'label', m.label,
+                'thumbnailUrl', CASE 
+                                    WHEN m.thumbnail_url IS NOT NULL THEN '${BACKEND_URL}' || m.thumbnail_url 
+                                    ELSE NULL 
+                                END,
+                'sort_order', pm.sort_order
+            ) ORDER BY pm.sort_order ASC) FILTER (WHERE m.id IS NOT NULL), 
+            '[]'
+        ) AS gallery
+    FROM products p
+    LEFT JOIN ticket_types tt ON p.id = tt.product_id
+    LEFT JOIN products_media pm ON p.id = pm.product_id
+    LEFT JOIN media m ON pm.media_id = m.id
+    GROUP BY p.game_id, p.id
+)
+SELECT 
+    g.*, 
+    pd.product_id,
+    pd.ticket_types,
+    pd.gallery
+FROM games g
+LEFT JOIN product_details pd ON g.id = pd.game_id
+WHERE g.id = $1;
   `;
 
     const result = await query(sql, [id]);
@@ -183,14 +189,59 @@ const Game = {
   },
 
   async deleteGame(id) {
-    const sql = `
-    DELETE FROM games 
-    WHERE id = $1
-    RETURNING *
-  `;
-    const result = await query(sql, [id]);
-    // result.rows[0] contains the deleted game data
-    return result.rows[0] || null;
+    const client = await getClient();
+    try {
+      await client.query("BEGIN");
+
+      const checkRes = await client.query(
+        `SELECT 
+            p.id AS product_id,
+            EXISTS (
+              SELECT 1 FROM ticket_products tp WHERE tp.product_id = p.id LIMIT 1
+            ) AS has_tickets
+          FROM products p
+          WHERE p.game_id = $1`,
+        [id],
+      );
+
+      const product = checkRes.rows[0];
+
+      if (product) {
+        if (product.has_tickets) {
+          // 3. SOFT DELETE: Tickets exist
+          const softDeleteRes = await client.query(
+            `UPDATE products SET is_active = false WHERE id = $1 RETURNING *`,
+            [product.product_id],
+          );
+          await client.query("COMMIT");
+          return { ...softDeleteRes.rows[0], _softDelete: true };
+        }
+      }
+
+      // 4. HARD DELETE: No tickets exist, try to wipe the game
+      const deleteRes = await client.query(
+        `DELETE FROM games WHERE id = $1 RETURNING *`,
+        [id],
+      );
+
+      await client.query("COMMIT");
+      return deleteRes.rows[0] || null;
+    } catch (err) {
+      await client.query("ROLLBACK");
+
+      // Handle unexpected Foreign Key violations (safety net)
+      if (err.code === "23503") {
+        const fallbackRes = await client.query(
+          `UPDATE products SET is_active = false WHERE game_id = $1 RETURNING *`,
+          [id],
+        );
+        return { ...fallbackRes.rows[0], _softDelete: true };
+      }
+
+      throw err;
+    } finally {
+      client.release();
+    }
   },
 };
 

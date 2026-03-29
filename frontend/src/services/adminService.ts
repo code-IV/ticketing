@@ -33,45 +33,19 @@ export const adminService = {
     startTime: string;
     endTime: string;
     capacity: number;
+    mediaIds: any[];
   }): Promise<ApiResponse<{ event: Event; productId: string }>> {
     const response = await api.post("/admin/events", data);
     return response.data;
   },
 
   uploadProductMedia: async (
-    productId: string,
     formData: FormData, // Accepts the pre-constructed FormData
   ): Promise<any> => {
-    const response = await api.post(`/media/uploads/${productId}`, formData, {
+    const response = await api.post(`/media/upload`, formData, {
       headers: {
         // Note: Most modern browsers/Axios versions set this automatically
         // when they see FormData, including the necessary 'boundary' string.
-        "Content-Type": "multipart/form-data",
-      },
-    });
-    return response.data;
-  },
-
-  uploadEventMedia: async (
-    eventId: string,
-    formData: FormData, // Accepts the pre-constructed FormData
-  ): Promise<any> => {
-    const response = await api.post(`/media/uploads/events/${eventId}`, formData, {
-      headers: {
-        // Note: Most modern browsers/Axios versions set this automatically
-        // when they see FormData, including the necessary 'boundary' string.
-        "Content-Type": "multipart/form-data",
-      },
-    });
-    return response.data;
-  },
-
-  uploadGameMedia: async (
-    gameId: string,
-    formData: FormData,
-  ): Promise<any> => {
-    const response = await api.post(`/media/uploads/game/${gameId}`, formData, {
-      headers: {
         "Content-Type": "multipart/form-data",
       },
     });
@@ -103,9 +77,10 @@ export const adminService = {
       endTime: string;
       capacity: number;
       isActive: boolean;
+      mediaIds: string[];
     }>,
   ): Promise<ApiResponse<{ event: Event }>> {
-    const response = await api.put(`/admin/events/${id}`, data);
+    const response = await api.patch(`/admin/event/${id}`, data);
     return response.data;
   },
 
@@ -305,6 +280,45 @@ export const adminService = {
   ): Promise<PaginatedResponse<Payment>> {
     const response = await api.get("/admin/reports/payments", {
       params: { page, limit, status },
+    });
+    return response.data;
+  },
+
+  async getAllMedia(
+    page = 1,
+    limit = 32,
+    type?: "image" | "video" | "all",
+  ): Promise<
+    ApiResponse<{
+      media: never[];
+      data: any[];
+      pagination: {
+        totalPages: number;
+        total: number;
+        page: number;
+        limit: number;
+        hasNext: boolean;
+      };
+    }>
+  > {
+    const params: any = { page, limit };
+    if (type && type !== "all") {
+      params.type = type;
+    }
+    const response = await api.get("/media", { params });
+    return response.data;
+  },
+
+  async deleteMedia(id: string): Promise<ApiResponse> {
+    const response = await api.delete(`/media/rm/${id}`);
+    return response.data;
+  },
+
+  async updateMediaData(id: string, formData: FormData): Promise<ApiResponse> {
+    const response = await api.patch(`/media/upload/${id}`, formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
     });
     return response.data;
   },

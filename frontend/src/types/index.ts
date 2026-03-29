@@ -14,14 +14,16 @@ export interface User {
 
 export interface Game {
   id: string;
+  productId?: string;
   name: string;
   description: string;
   rules: string;
   status: "OPEN" | "ON_MAINTENANCE" | "UPCOMING" | "CLOSED";
+  mediaIds?: string[];
   ticketTypes?: TicketType[];
   gallery?: MediaItem[];
-  createdAt: string;
-  updatedAt: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface MediaItem {
@@ -47,9 +49,11 @@ export interface CreateGame {
   description: string;
   rules: string;
   status: "OPEN" | "ON_MAINTENANCE" | "UPCOMING" | "CLOSED";
+  mediaIds: string[];
 }
 
 export interface Event {
+  createdAt: string;
   id: string;
   name: string;
   description?: string;
@@ -67,16 +71,17 @@ export interface Event {
 
 export interface TicketType {
   id: string;
-  product_id: string;
+  productId: string;
   category: "ADULT" | "CHILD" | "SENIOR" | "STUDENT" | "GROUP";
   price: number;
   max_quantity: number;
   status?: "ACTIVE" | "INACTIVE";
-  created_at: string;
-  updated_at: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface CreateTicketTypeRequest {
+  id: string | null;
   category: "ADULT" | "CHILD" | "SENIOR" | "STUDENT" | "GROUP";
   price: number;
   description?: string;

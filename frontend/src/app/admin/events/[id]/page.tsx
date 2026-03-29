@@ -51,8 +51,9 @@ export default function EditEventPage() {
   const router = useRouter();
   const params = useParams();
   const eventId = params.id as string;
-  
+
   const [loading, setLoading] = useState(false);
+  const [event, setEvent] = useState<any>({});
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [labelModalOpen, setLabelModalOpen] = useState(false);
@@ -73,9 +74,9 @@ export default function EditEventPage() {
   });
 
   const [newTicket, setNewTicket] = useState<CreateTicketTypeRequest>({
+    id: null,
     category: "ADULT",
     price: 0,
-    description: "",
     maxQuantityPerBooking: 10,
   });
 
@@ -87,7 +88,7 @@ export default function EditEventPage() {
     try {
       setLoading(true);
       const response = await eventService.getEventById(eventId);
-      const event = response.data?.event;
+      setEvent(response.data?.event);
 
       if (event) {
         setFormData({
@@ -99,22 +100,26 @@ export default function EditEventPage() {
           capacity: event.capacity?.toString() || "",
           isActive: event.isActive !== false,
           status: event.status || "ACTIVE",
-          ticket_types: event.ticketTypes?.map((tt: any) => ({
-            category: tt.category || "ADULT",
-            price: parseFloat(tt.price) || 0,
-            description: tt.description || "",
-            maxQuantityPerBooking: tt.max_quantity_per_booking || 10,
-          })) || [],
+          ticket_types:
+            event.ticketTypes?.map((tt: any) => ({
+              id: tt.id || null,
+              category: tt.category || "ADULT",
+              price: parseFloat(tt.price) || 0,
+              description: tt.description || "",
+              maxQuantityPerBooking: tt.max_quantity_per_booking || 10,
+            })) || [],
           mediaFiles: [],
         });
 
         // Load existing media
         if (event.gallery && event.gallery.length > 0) {
-          setExistingMedia(event.gallery.map((media: any) => ({
-            ...media,
-            existing: true,
-            preview: media.url,
-          })));
+          setExistingMedia(
+            event.gallery.map((media: any) => ({
+              ...media,
+              existing: true,
+              preview: media.url,
+            })),
+          );
         }
       }
     } catch (err: any) {
@@ -126,23 +131,35 @@ export default function EditEventPage() {
   };
 
   const getPosterCount = () => {
-    const existingPosters = existingMedia.filter(m => m.label === "poster").length;
-    const newPosters = formData.mediaFiles.filter(m => m.label === "poster").length;
+    const existingPosters = existingMedia.filter(
+      (m) => m.label === "poster",
+    ).length;
+    const newPosters = formData.mediaFiles.filter(
+      (m) => m.label === "poster",
+    ).length;
     return existingPosters + newPosters;
   };
-  
+
   const getBannerCount = () => {
-    const existingBanners = existingMedia.filter(m => m.label === "banner").length;
-    const newBanners = formData.mediaFiles.filter(m => m.label === "banner").length;
+    const existingBanners = existingMedia.filter(
+      (m) => m.label === "banner",
+    ).length;
+    const newBanners = formData.mediaFiles.filter(
+      (m) => m.label === "banner",
+    ).length;
     return existingBanners + newBanners;
   };
-  
+
   const getVideoCount = () => {
-    const existingVideos = existingMedia.filter(m => m.type === "VIDEO").length;
-    const newVideos = formData.mediaFiles.filter(m => m.type === "VIDEO").length;
+    const existingVideos = existingMedia.filter(
+      (m) => m.type === "VIDEO",
+    ).length;
+    const newVideos = formData.mediaFiles.filter(
+      (m) => m.type === "VIDEO",
+    ).length;
     return existingVideos + newVideos;
   };
-  
+
   const hasPosterSlot = () => getPosterCount() < 3;
   const hasBannerSlot = () => getBannerCount() < 3;
   const hasVideoSlot = () => getVideoCount() < 3;
@@ -194,10 +211,7 @@ export default function EditEventPage() {
     setLabelModalOpen(false);
   };
 
-  const handleVideoThumbnailUpload = async (
-    videoIndex: number,
-    file: File,
-  ) => {
+  const handleVideoThumbnailUpload = async (videoIndex: number, file: File) => {
     if (!file) return;
     const tinyThumb = await getTinyPreview(file);
     setFormData((prev) => {
@@ -231,10 +245,20 @@ export default function EditEventPage() {
   };
 
   const addCategory = () => {
-    if (!newTicket.category || isNaN(newTicket.price)) return alert("Please provide at least a category and price");
-    if (formData.ticket_types.some((tt) => tt.category === newTicket.category)) return alert("Category already exists.");
-    setFormData((p) => ({ ...p, ticket_types: [...p.ticket_types, { ...newTicket }] }));
-    setNewTicket({ category: "ADULT", price: 0, description: "", maxQuantityPerBooking: 10 });
+    if (!newTicket.category || isNaN(newTicket.price))
+      return alert("Please provide at least a category and price");
+    if (formData.ticket_types.some((tt) => tt.category === newTicket.category))
+      return alert("Category already exists.");
+    setFormData((p) => ({
+      ...p,
+      ticket_types: [...p.ticket_types, { ...newTicket }],
+    }));
+    setNewTicket({
+      id: null,
+      category: "ADULT",
+      price: 0,
+      maxQuantityPerBooking: 10,
+    });
   };
 
   const removeTicketType = (index: number) => {
@@ -280,8 +304,9 @@ export default function EditEventPage() {
     if (submitting) return;
     setSubmitting(true);
     setError("");
-    
+
     const payload = {
+      productId: event.productId,
       name: formData.name,
       description: formData.description,
       eventDate: formData.eventDate,
@@ -294,11 +319,11 @@ export default function EditEventPage() {
         price: parseFloat(tt.price.toString()),
       })),
     };
-    
+
     try {
       // Update event details
-      await adminService.updateEventWithTicketTypes(eventId, payload);
-      
+
+      let media;
       // Upload new media files
       if (formData.mediaFiles.length > 0) {
         const data = new FormData();
@@ -307,9 +332,13 @@ export default function EditEventPage() {
           data.append("label", m.label);
           data.append("thumbnail", m.thumbnail || null);
         });
-        await adminService.uploadProductMedia(eventId, data);
+        media = await adminService.uploadProductMedia(data);
       }
-      
+      await adminService.updateEvent(eventId, {
+        ...payload,
+        mediaIds: media?.data?.mediaIds,
+      });
+
       router.push("/admin/events");
     } catch (error) {
       console.error("Failed to update event:", error);
@@ -356,14 +385,11 @@ export default function EditEventPage() {
               <h1 className={`text-2xl font-bold tracking-tight ${text}`}>
                 Edit Event
               </h1>
-              <p className={`text-sm ${muted} mt-0.5`}>
-                {formData.name}
-              </p>
+              <p className={`text-sm ${muted} mt-0.5`}>{formData.name}</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
             <div>
-
               <select
                 className={`px-3 py-2 rounded-xl text-sm font-medium outline-none border-2 border-transparent transition-all focus:border-accent/50 ${inputBg} ${text}`}
                 value={formData.status}
@@ -404,14 +430,18 @@ export default function EditEventPage() {
             <div className={`p-6 rounded-3xl border ${border} ${card}`}>
               <div className="flex items-center gap-2 mb-6">
                 <Calendar size={14} className={muted} />
-                <h2 className={`text-sm font-bold uppercase tracking-wider ${muted}`}>
+                <h2
+                  className={`text-sm font-bold uppercase tracking-wider ${muted}`}
+                >
                   Event Details
                 </h2>
               </div>
-              
+
               <div className="space-y-4">
                 <div>
-                  <label className={`block text-xs font-semibold uppercase tracking-wider mb-2 ${muted}`}>
+                  <label
+                    className={`block text-xs font-semibold uppercase tracking-wider mb-2 ${muted}`}
+                  >
                     Event Name
                   </label>
                   <input
@@ -426,7 +456,9 @@ export default function EditEventPage() {
                 </div>
 
                 <div>
-                  <label className={`block text-xs font-semibold uppercase tracking-wider mb-2 ${muted}`}>
+                  <label
+                    className={`block text-xs font-semibold uppercase tracking-wider mb-2 ${muted}`}
+                  >
                     Description
                   </label>
                   <textarea
@@ -445,7 +477,9 @@ export default function EditEventPage() {
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className={`block text-xs font-semibold uppercase tracking-wider mb-2 ${muted}`}>
+                    <label
+                      className={`block text-xs font-semibold uppercase tracking-wider mb-2 ${muted}`}
+                    >
                       Date
                     </label>
                     <input
@@ -461,7 +495,9 @@ export default function EditEventPage() {
                     />
                   </div>
                   <div>
-                    <label className={`block text-xs font-semibold uppercase tracking-wider mb-2 ${muted}`}>
+                    <label
+                      className={`block text-xs font-semibold uppercase tracking-wider mb-2 ${muted}`}
+                    >
                       Capacity
                     </label>
                     <input
@@ -475,7 +511,9 @@ export default function EditEventPage() {
                     />
                   </div>
                   <div>
-                    <label className={`block text-xs font-semibold uppercase tracking-wider mb-2 ${muted}`}>
+                    <label
+                      className={`block text-xs font-semibold uppercase tracking-wider mb-2 ${muted}`}
+                    >
                       Start Time
                     </label>
                     <input
@@ -491,7 +529,9 @@ export default function EditEventPage() {
                     />
                   </div>
                   <div>
-                    <label className={`block text-xs font-semibold uppercase tracking-wider mb-2 ${muted}`}>
+                    <label
+                      className={`block text-xs font-semibold uppercase tracking-wider mb-2 ${muted}`}
+                    >
                       End Time
                     </label>
                     <input
@@ -511,11 +551,13 @@ export default function EditEventPage() {
             <div className={`p-6 rounded-3xl border ${border} ${card}`}>
               <div className="flex items-center gap-2 mb-6">
                 <Tag size={14} className={muted} />
-                <h2 className={`text-sm font-bold uppercase tracking-wider ${muted}`}>
+                <h2
+                  className={`text-sm font-bold uppercase tracking-wider ${muted}`}
+                >
                   Ticket Types
                 </h2>
               </div>
-              
+
               {/* Existing tickets */}
               {formData.ticket_types.length > 0 && (
                 <div className="space-y-2 mb-4">
@@ -624,13 +666,6 @@ export default function EditEventPage() {
                   placeholder="Optional description for this ticket type…"
                   rows={2}
                   className={`w-full mt-3 px-3 py-2.5 rounded-xl text-sm font-medium outline-none border border-transparent focus:border-accent/50 resize-none transition-all placeholder:${muted} ${inputBg} ${text}`}
-                  value={newTicket.description}
-                  onChange={(e) =>
-                    setNewTicket({
-                      ...newTicket,
-                      description: e.target.value,
-                    })
-                  }
                 />
                 <button
                   type="button"
@@ -649,11 +684,13 @@ export default function EditEventPage() {
             <div className={`p-6 rounded-3xl border ${border} ${card}`}>
               <div className="flex items-center gap-2 mb-6">
                 <ImageIcon size={14} className={muted} />
-                <h2 className={`text-sm font-bold uppercase tracking-wider ${muted}`}>
+                <h2
+                  className={`text-sm font-bold uppercase tracking-wider ${muted}`}
+                >
                   Event Media
                 </h2>
               </div>
-              
+
               {/* Quota strip */}
               <div
                 className={`flex items-center justify-between px-4 py-2.5 rounded-xl text-xs font-semibold ${d ? "bg-white/4" : "bg-black/3"}`}
@@ -722,11 +759,13 @@ export default function EditEventPage() {
                 {/* Existing Media */}
                 {existingMedia.length > 0 && (
                   <div className="mb-4">
-                    <p className={`text-xs font-semibold uppercase tracking-wider mb-3 ${muted}`}>
+                    <p
+                      className={`text-xs font-semibold uppercase tracking-wider mb-3 ${muted}`}
+                    >
                       Existing Media
                     </p>
                     <div className="grid grid-cols-3 gap-2.5">
-                      {existingMedia.map((media, idx) => (
+                      {existingMedia.map((media, idx) =>
                         media.type === "IMAGE" ? (
                           <div
                             key={`existing-${idx}`}
@@ -784,8 +823,8 @@ export default function EditEventPage() {
                             }}
                             onRemoveMedia={(index) => removeMedia(index, true)}
                           />
-                        )
-                      ))}
+                        ),
+                      )}
                     </div>
                   </div>
                 )}
@@ -793,11 +832,13 @@ export default function EditEventPage() {
                 {/* New Media */}
                 {formData.mediaFiles.length > 0 && (
                   <div>
-                    <p className={`text-xs font-semibold uppercase tracking-wider mb-3 ${muted}`}>
+                    <p
+                      className={`text-xs font-semibold uppercase tracking-wider mb-3 ${muted}`}
+                    >
                       New Media
                     </p>
                     <div className="grid grid-cols-3 gap-2.5">
-                      {formData.mediaFiles.map((media, idx) => (
+                      {formData.mediaFiles.map((media, idx) =>
                         media.type === "IMAGE" ? (
                           <div
                             key={`new-${idx}`}
@@ -835,7 +876,8 @@ export default function EditEventPage() {
                               setFormData((prev) => {
                                 const updatedMedia = [...prev.mediaFiles];
                                 if (updatedMedia[index]) {
-                                  updatedMedia[index].thumbnailPreview = preview;
+                                  updatedMedia[index].thumbnailPreview =
+                                    preview;
                                   updatedMedia[index].thumbnail = file;
                                   updatedMedia[index].preview = preview;
                                 }
@@ -846,7 +888,8 @@ export default function EditEventPage() {
                               setFormData((prev) => {
                                 const updatedMedia = [...prev.mediaFiles];
                                 if (updatedMedia[index]) {
-                                  updatedMedia[index].thumbnailPreview = undefined;
+                                  updatedMedia[index].thumbnailPreview =
+                                    undefined;
                                   updatedMedia[index].thumbnail = undefined;
                                 }
                                 return { ...prev, mediaFiles: updatedMedia };
@@ -854,22 +897,23 @@ export default function EditEventPage() {
                             }}
                             onRemoveMedia={(index) => removeMedia(index, false)}
                           />
-                        )
-                      ))}
+                        ),
+                      )}
                     </div>
                   </div>
                 )}
 
-                {existingMedia.length === 0 && formData.mediaFiles.length === 0 && (
-                  <div
-                    className={`flex flex-col items-center justify-center py-8 rounded-2xl ${d ? "bg-white/2" : "bg-black/2"}`}
-                  >
-                    <ImageIcon size={28} className={`${muted} mb-2`} />
-                    <p className={`text-xs font-medium ${muted}`}>
-                      No media added yet
-                    </p>
-                  </div>
-                )}
+                {existingMedia.length === 0 &&
+                  formData.mediaFiles.length === 0 && (
+                    <div
+                      className={`flex flex-col items-center justify-center py-8 rounded-2xl ${d ? "bg-white/2" : "bg-black/2"}`}
+                    >
+                      <ImageIcon size={28} className={`${muted} mb-2`} />
+                      <p className={`text-xs font-medium ${muted}`}>
+                        No media added yet
+                      </p>
+                    </div>
+                  )}
               </div>
             </div>
           </div>
@@ -889,7 +933,9 @@ export default function EditEventPage() {
               {formData.ticket_types.length} ticket type
               {formData.ticket_types.length !== 1 ? "s" : ""} ·{" "}
               {formData.mediaFiles.length + existingMedia.length} file
-              {formData.mediaFiles.length + existingMedia.length !== 1 ? "s" : ""}
+              {formData.mediaFiles.length + existingMedia.length !== 1
+                ? "s"
+                : ""}
             </span>
             <button
               disabled={submitting}
@@ -924,7 +970,9 @@ export default function EditEventPage() {
               className={`w-full max-w-sm mx-4 rounded-3xl shadow-2xl overflow-hidden border ${border} ${d ? "bg-[#141416]" : "bg-white"}`}
             >
               <div className={`px-6 pt-6 pb-4 border-b ${border}`}>
-                <h3 className={`text-base font-bold ${text}`}>Tag this image</h3>
+                <h3 className={`text-base font-bold ${text}`}>
+                  Tag this image
+                </h3>
                 <p className={`text-xs mt-0.5 ${muted}`}>
                   Choose how this image will be used
                 </p>

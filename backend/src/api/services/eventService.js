@@ -2,6 +2,7 @@ const { getClient } = require("../../config/db");
 const { EventRes } = require("../dtos/eventDto");
 const { Event, EventStats } = require("../models/Event");
 const TicketType = require("../models/TicketType");
+const UploadsService = require("./uploadsService");
 
 const EventService = {
   async createEvent(eventData) {
@@ -25,6 +26,13 @@ const EventService = {
       for (const type of eventData.ticketTypes || []) {
         await TicketType.create({ ...type, productId }, client);
       }
+      if (eventData.mediaIds?.length) {
+        await UploadsService.addMediaToProduct(
+          productId,
+          eventData.mediaIds,
+          client,
+        );
+      }
       await client.query("COMMIT");
       return { event: newEvent, productId: productId };
     } catch (error) {
@@ -37,26 +45,35 @@ const EventService = {
 
   // events.service.js
 
-  async updateEvent(id, updateData) {
+  async updateEvent(id, eventData) {
     const client = await getClient();
     try {
       await client.query("BEGIN");
-      const { media, ...eventData } = updateData;
 
       // Perform the core update
-      const updatedEvent = await Event.updateEvent(id, eventData);
+      const updatedEvent = await Event.updateEvent(id, eventData, client);
 
       if (!updatedEvent) {
         throw new Error("Event not found");
       }
 
-      // If media array is provided (even if empty), sync it
-      if (media !== undefined) {
-        await Event.syncEventMedia(id, media);
+      for (const type of eventData.ticketTypes || []) {
+        await TicketType.update(
+          { ...type, productId: eventData.productId },
+          client,
+        );
+      }
+
+      if (eventData.mediaIds?.length) {
+        await UploadsService.addMediaToProduct(
+          eventData.productId,
+          eventData.mediaIds,
+          client,
+        );
       }
 
       await client.query("COMMIT");
-      return this.getEventById(id);
+      return this.updateEvent;
     } catch (error) {
       await client.query("ROLLBACK");
       throw error;

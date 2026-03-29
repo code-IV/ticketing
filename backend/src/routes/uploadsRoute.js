@@ -6,11 +6,9 @@ const { uuidParamRule, handleValidation } = require("../middleware/validate");
 const { UploadsController } = require("../api/controllers/uploadsController");
 
 router.post(
-  "/uploads/:productId",
+  "/upload",
   isAuthenticated,
   isAdmin,
-  uuidParamRule("productId"),
-  handleValidation,
   upload.fields([
     { name: "mediaFiles", maxCount: 10 },
     { name: "thumbnail", maxCount: 1 },
@@ -27,6 +25,24 @@ router.post(
   },
   //
   UploadsController.uploadProductMedia,
+);
+
+router.patch(
+  "/upload/:id",
+  isAuthenticated,
+  isAdmin,
+  uuidParamRule("id"),
+  handleValidation,
+  upload.fields([{ name: "thumbnail", maxCount: 1 }]),
+  UploadsController.updateMedia,
+);
+router.delete(
+  "/rm/:id",
+  isAuthenticated,
+  isAdmin,
+  uuidParamRule("id"),
+  handleValidation,
+  UploadsController.deleteMediaById,
 );
 
 router.get("/", isAuthenticated, isAdmin, UploadsController.getAll);

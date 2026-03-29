@@ -1,6 +1,7 @@
 class EventRes {
   constructor(event) {
     this.id = event.id;
+    this.productId = event.product_id;
     this.name = event.name;
     this.description = event.description;
     this.eventDate = event.event_date;

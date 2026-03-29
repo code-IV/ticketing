@@ -4,10 +4,6 @@ const UploadsService = require("../services/uploadsService");
 const UploadsController = {
   async uploadProductMedia(req, res, next) {
     try {
-      const { productId } = req.params; // We link media to the Product
-      if (!productId) {
-        return apiResponse(res, 400, false, "Product ID is required.");
-      }
       const { label } = req.body; // This is an array of strings
 
       // req.files is now an object with keys 'mediaFiles' and 'thumbnail'
@@ -24,10 +20,7 @@ const UploadsController = {
         label: label[index],
       }));
 
-      const mediaResults = await UploadsService.addMediaToProduct(
-        productId,
-        media,
-      );
+      const mediaResults = await UploadsService.addMediaToTemp(media);
 
       return apiResponse(
         res,
@@ -42,11 +35,56 @@ const UploadsController = {
     }
   },
 
+  async updateMedia(req, res, next) {
+    try {
+      const id = req.params.id;
+      const { label } = req.body;
+      const thumb = req.files?.thumbnail || null;
+
+      const updateResults = await UploadsService.updateMediaData(
+        { id, label },
+        thumb,
+      );
+      return apiResponse(
+        res,
+        200,
+        true,
+        "Media updated successfully.",
+        updateResults,
+      );
+    } catch (err) {
+      console.log(err);
+      next(err);
+    }
+  },
+
+  async deleteMediaById(req, res, next) {
+    try {
+      const id = req.params.id;
+      const result = await UploadsService.deleteMediaFromProduct(id);
+
+      return apiResponse(res, 200, true, "Media removed.", result);
+    } catch (err) {
+      next(err);
+    }
+  },
+
   async getAll(req, res, next) {
     try {
-      const result = await UploadsService.getAll();
+      const { page = 1, limit = 32, type } = req.query;
+      const result = await UploadsService.getAll(
+        parseInt(page) || 1,
+        parseInt(limit) || 32,
+        type,
+      );
 
-      return apiResponse(res, 200, true, "Media retrieved.", result);
+      // Combine them into one object so apiResponse sends everything
+      const responsePayload = {
+        media: result.data,
+        pagination: result.pagination,
+      };
+
+      return apiResponse(res, 200, true, "Media retrieved.", responsePayload);
     } catch (err) {
       next(err);
     }
@@ -106,15 +144,26 @@ const UploadsController = {
   },
   async getByType(req, res, next) {
     try {
-      const { type } = req.query;
+      const { type, page = 1, limit = 32 } = req.query;
       if (type !== "image" && type !== "video") {
         return apiResponse(res, 400, false, "invalid query", {
           valid: false,
           reason: "INVALID_QUERY",
         });
       }
-      const result = await UploadsService.getByType(type);
-      return apiResponse(res, 200, true, "Media retrieved", result);
+      const result = await UploadsService.getByType(
+        type,
+        parseInt(page) || 1,
+        parseInt(limit) || 32,
+      );
+      return apiResponse(
+        res,
+        200,
+        true,
+        "Media retrieved",
+        result.data,
+        result.pagination,
+      );
     } catch (err) {
       next(err);
     }
