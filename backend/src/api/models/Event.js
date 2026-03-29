@@ -49,7 +49,7 @@ const Event = {
       (
         SELECT COALESCE(JSON_AGG(tt.* ORDER BY tt.price ASC), '[]')
         FROM ticket_types tt
-        WHERE tt.product_id = p.id
+        WHERE tt.product_id = p.id AND tt.deleted_at IS NULL
       ) AS ticket_types,
       -- Subquery for Media
       (

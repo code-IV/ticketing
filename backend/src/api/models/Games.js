@@ -59,7 +59,7 @@ const Game = {
           'id', tt.id,
           'category', tt.category,
           'price', tt.price
-        )) FROM ticket_types tt WHERE tt.product_id = p.id),
+        )) FROM ticket_types tt WHERE tt.product_id = p.id AND tt.deleted_at IS NULL),
         '[]'
       ) AS ticket_types,
       -- Aggregate Media Gallery
@@ -103,7 +103,7 @@ const Game = {
           'id', tt.id,
           'category', tt.category,
           'price', tt.price
-        )) FROM ticket_types tt WHERE tt.product_id = p.id), 
+        )) FROM ticket_types tt WHERE tt.product_id = p.id AND tt.deleted_at IS NULL), 
         '[]'
       ) AS ticket_types,
       -- Aggregate Media Gallery
@@ -149,7 +149,7 @@ const Game = {
                 'id', tt.id,
                 'category', tt.category,
                 'price', tt.price
-            )) FILTER (WHERE tt.id IS NOT NULL), 
+            )) FILTER (WHERE tt.id IS NOT NULL AND tt.deleted_at IS NULL), 
             '[]'
         ) AS ticket_types,
         -- Aggregate Media once
