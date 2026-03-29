@@ -8,8 +8,6 @@
 
 ### 🎨 Frontend: /home Page
 
-- [ ] **Events Section:** - [ ] Logic: Only show `events-list` if data is present (conditional rendering).
-  - [ ] Layout: Single event display (Removed Grid layout).
 - [ ] **Games Section:**
   - [ ] Layout: Restructure into two distinct rows.
   - [ ] Interaction: Add hover-to-play video logic.
