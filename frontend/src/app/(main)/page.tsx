@@ -214,7 +214,7 @@ export default function Home() {
       </motion.div>
 
       <div className="space-y-20 lg:space-y-32">
-        {[...events].sort((a, b) => new Date(b.createdAt || b.eventDate) - new Date(a.createdAt || a.eventDate)).map((event, i) => {
+        {[...events].sort((a, b) => new Date(b.createdAt || b.eventDate).getTime() - new Date(a.createdAt || a.eventDate).getTime()).map((event, i) => {
           const adultPrice = event.ticketTypes?.find((t) => t.category === "ADULT")?.price ?? 0;
           const posterMedia = event.gallery?.find(m => m.label === 'poster') || event.gallery?.[0];
           const bannerMedia = event.gallery?.find(m => m.label === 'banner') || event.gallery?.[1] || event.gallery?.[0];
