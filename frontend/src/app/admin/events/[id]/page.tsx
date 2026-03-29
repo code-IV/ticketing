@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   X,
   Plus,
@@ -59,6 +60,10 @@ export default function EditEventPage() {
   const [labelModalOpen, setLabelModalOpen] = useState(false);
   const [pendingFile, setPendingFile] = useState<any>(null);
   const [existingMedia, setExistingMedia] = useState<any[]>([]);
+  const [previewModal, setPreviewModal] = useState<{
+    media: any;
+    type: 'image' | 'video';
+  } | null>(null);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -88,20 +93,26 @@ export default function EditEventPage() {
     try {
       setLoading(true);
       const response = await eventService.getEventById(eventId);
-      setEvent(response.data?.event);
+      const eventData = response.data?.event;
+      setEvent(eventData);
 
-      if (event) {
+      // Debug: Log the event data structure
+      console.log('🔍 Event Data:', eventData);
+      console.log('🔍 Event Gallery:', eventData?.gallery);
+      console.log('🔍 All Event Keys:', Object.keys(eventData || {}));
+
+      if (eventData) {
         setFormData({
-          name: event.name || "",
-          description: event.description || "",
-          eventDate: event.eventDate || "",
-          startTime: event.startTime || "",
-          endTime: event.endTime || "",
-          capacity: event.capacity?.toString() || "",
-          isActive: event.isActive !== false,
-          status: event.status || "ACTIVE",
+          name: eventData.name || "",
+          description: eventData.description || "",
+          eventDate: eventData.eventDate || "",
+          startTime: eventData.startTime || "",
+          endTime: eventData.endTime || "",
+          capacity: eventData.capacity?.toString() || "",
+          isActive: eventData.isActive !== false,
+          status: eventData.status || "ACTIVE",
           ticket_types:
-            event.ticketTypes?.map((tt: any) => ({
+            eventData.ticketTypes?.map((tt: any) => ({
               id: tt.id || null,
               category: tt.category || "ADULT",
               price: parseFloat(tt.price) || 0,
@@ -112,14 +123,37 @@ export default function EditEventPage() {
         });
 
         // Load existing media
-        if (event.gallery && event.gallery.length > 0) {
+        if (eventData.gallery && eventData.gallery.length > 0) {
+          console.log('🎯 Loading gallery media:', eventData.gallery);
           setExistingMedia(
-            event.gallery.map((media: any) => ({
-              ...media,
-              existing: true,
-              preview: media.url,
-            })),
+            eventData.gallery.map((media: any, index: number) => {
+              // Debug: Log each media item to see available fields
+              console.log(`🔍 Media Item ${index}:`, media);
+              console.log(`🔍 Media ${index} Keys:`, Object.keys(media));
+              console.log(`🔍 Media ${index} thumbnail fields:`, {
+                thumbnail_url: media.thumbnail_url,
+                thumbnail: media.thumbnail,
+                thumbnailUrl: media.thumbnailUrl,
+                thumb_url: media.thumb_url,
+                thumb: media.thumb,
+                preview_url: media.preview_url,
+              });
+              
+              return {
+                ...media,
+                existing: true,
+                preview: media.url,
+                // Try multiple possible thumbnail field names
+                thumbnailPreview: media.thumbnailUrl || null,
+                thumbnail: (media.thumbnailUrl) ? { 
+                  name: 'thumbnail', 
+                  url: media.thumbnailUrl 
+                } : null
+              };
+            }),
           );
+        } else {
+          console.log('❌ No gallery data found');
         }
       }
     } catch (err: any) {
@@ -209,6 +243,45 @@ export default function EditEventPage() {
       URL.revokeObjectURL(pendingFile.preview);
     setPendingFile(null);
     setLabelModalOpen(false);
+  };
+
+  const handleMediaPreview = (media: any, isExisting: boolean = false) => {
+    const mediaType = media.type === "VIDEO" ? "video" : "image";
+    setPreviewModal({
+      media: {
+        ...media,
+        url: isExisting ? media.url : media.preview,
+        thumbnailUrl: media.thumbnailPreview || media.thumbnailUrl,
+      },
+      type: mediaType,
+    });
+  };
+
+  const handleVideoPreview = (media: any, isExisting: boolean = false) => {
+    setPreviewModal({
+      media: {
+        ...media,
+        url: isExisting ? media.url : media.preview,
+      },
+      type: 'video',
+    });
+  };
+
+  const handleThumbnailPreview = (media: any) => {
+    if (media.thumbnailPreview || media.thumbnailUrl) {
+      setPreviewModal({
+        media: {
+          ...media,
+          url: media.thumbnailPreview || media.thumbnailUrl,
+          name: media.name ? `${media.name} - Thumbnail` : 'Thumbnail',
+        },
+        type: 'image',
+      });
+    }
+  };
+
+  const closePreviewModal = () => {
+    setPreviewModal(null);
   };
 
   const handleVideoThumbnailUpload = async (videoIndex: number, file: File) => {
@@ -769,7 +842,8 @@ export default function EditEventPage() {
                         media.type === "IMAGE" ? (
                           <div
                             key={`existing-${idx}`}
-                            className="relative aspect-square rounded-xl overflow-hidden group shadow-sm"
+                            className="relative aspect-square rounded-xl overflow-hidden group shadow-sm cursor-pointer"
+                            onClick={() => handleMediaPreview(media, true)}
                           >
                             <img
                               src={media.url}
@@ -780,7 +854,10 @@ export default function EditEventPage() {
                             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all" />
                             {/* Remove btn */}
                             <button
-                              onClick={() => removeMedia(idx, true)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                removeMedia(idx, true);
+                              }}
                               className="absolute top-1.5 right-1.5 w-6 h-6 flex items-center justify-center bg-red-500 hover:bg-red-400 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-all scale-75 group-hover:scale-100"
                             >
                               <X size={11} />
@@ -822,6 +899,8 @@ export default function EditEventPage() {
                               });
                             }}
                             onRemoveMedia={(index) => removeMedia(index, true)}
+                            onPreview={() => handleVideoPreview(media, true)}
+                            onThumbnailPreview={() => handleThumbnailPreview(media)}
                           />
                         ),
                       )}
@@ -842,18 +921,22 @@ export default function EditEventPage() {
                         media.type === "IMAGE" ? (
                           <div
                             key={`new-${idx}`}
-                            className="relative aspect-square rounded-xl overflow-hidden group shadow-sm"
+                            className="relative aspect-square rounded-xl overflow-hidden group shadow-sm cursor-pointer"
+                            onClick={() => handleMediaPreview(media, false)}
                           >
                             <img
                               src={media.preview}
                               className="w-full h-full object-cover"
-                              alt="preview"
+                              alt="new media"
                             />
                             {/* Hover overlay */}
                             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all" />
                             {/* Remove btn */}
                             <button
-                              onClick={() => removeMedia(idx, false)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                removeMedia(idx, false);
+                              }}
                               className="absolute top-1.5 right-1.5 w-6 h-6 flex items-center justify-center bg-red-500 hover:bg-red-400 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-all scale-75 group-hover:scale-100"
                             >
                               <X size={11} />
@@ -896,6 +979,8 @@ export default function EditEventPage() {
                               });
                             }}
                             onRemoveMedia={(index) => removeMedia(index, false)}
+                            onPreview={() => handleVideoPreview(media, false)}
+                            onThumbnailPreview={() => handleThumbnailPreview(media)}
                           />
                         ),
                       )}
@@ -1010,7 +1095,67 @@ export default function EditEventPage() {
             </div>
           </div>
         )}
+
+        {/* Media Preview Modal */}
+        <AnimatePresence>
+          {previewModal && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm"
+              onClick={closePreviewModal}
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                className="relative max-w-4xl max-h-[90vh] w-full h-full flex items-center justify-center"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Close button */}
+                <button
+                  onClick={closePreviewModal}
+                  className="absolute top-4 right-4 z-10 w-10 h-10 flex items-center justify-center bg-black/50 hover:bg-black/70 text-white rounded-full transition-all"
+                >
+                  <X size={20} />
+                </button>
+
+                {/* Media content */}
+                {previewModal.type === 'image' ? (
+                  <img
+                    src={previewModal.media.url}
+                    alt="Preview"
+                    className="max-w-full max-h-full object-contain rounded-lg"
+                  />
+                ) : (
+                  <video
+                    src={previewModal.media.url}
+                    controls
+                    autoPlay
+                    className="max-w-full max-h-full rounded-lg"
+                  />
+                )}
+
+                {/* Media info */}
+                <div className="absolute bottom-4 left-4 right-4 bg-black/70 backdrop-blur-sm text-white p-3 rounded-lg">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-semibold truncate">{previewModal.media.name || 'Media'}</p>
+                      <p className="text-sm opacity-80">{previewModal.type.toUpperCase()}</p>
+                    </div>
+                    {previewModal.media.label && (
+                      <span className="bg-accent text-black px-2 py-1 rounded text-xs font-bold uppercase">
+                        {previewModal.media.label}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
-}
+};

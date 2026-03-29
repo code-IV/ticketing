@@ -28,6 +28,8 @@ interface VideoThumbnailCardProps {
   onThumbnailUpload: (index: number, file: File, preview: string) => void;
   onThumbnailDelete: (index: number) => void;
   onRemoveMedia: (index: number) => void;
+  onPreview?: (media: any) => void; // Video preview handler
+  onThumbnailPreview?: (media: any) => void; // Thumbnail image preview handler
   className?: string; // Additional CSS classes
 }
 
@@ -39,6 +41,8 @@ const VideoThumbnailCard: React.FC<VideoThumbnailCardProps> = ({
   onThumbnailUpload,
   onThumbnailDelete,
   onRemoveMedia,
+  onPreview,
+  onThumbnailPreview,
   className = "",
 }) => {
   const handleThumbnailClick = () => {
@@ -64,7 +68,8 @@ const VideoThumbnailCard: React.FC<VideoThumbnailCardProps> = ({
 
   return (
     <div
-      className={`relative aspect-square rounded-xl overflow-hidden group shadow-sm ${className}`}
+      className={`relative aspect-square rounded-xl overflow-hidden group shadow-sm cursor-pointer ${className}`}
+      onClick={() => onPreview && onPreview(media)}
     >
       {/* Video background */}
       <div
@@ -82,7 +87,10 @@ const VideoThumbnailCard: React.FC<VideoThumbnailCardProps> = ({
               ? 'bg-red-500 hover:bg-red-400 text-white'
               : 'bg-emerald-500 hover:bg-emerald-400 text-white'
           }`}
-          onClick={handleThumbnailClick}
+          onClick={(e) => {
+            e.stopPropagation();
+            handleThumbnailClick();
+          }}
         >
           {media.thumbnail ? (
             <Trash2 size={14} className="text-white" />
@@ -93,7 +101,13 @@ const VideoThumbnailCard: React.FC<VideoThumbnailCardProps> = ({
 
         {/* Thumbnail preview */}
         {media.thumbnailPreview && (
-          <div className="absolute top-1.5 left-1.5 w-10 h-10 rounded-md ring-2 ring-emerald-400 overflow-hidden">
+          <div 
+            className="absolute top-1.5 left-1.5 w-10 h-10 rounded-md ring-2 ring-emerald-400 overflow-hidden cursor-pointer hover:ring-emerald-300 transition-all z-20"
+            onClick={(e) => {
+              e.stopPropagation();
+              onThumbnailPreview && onThumbnailPreview(media);
+            }}
+          >
             <img
               src={media.thumbnailPreview}
               className="w-full h-full object-cover"
@@ -104,11 +118,14 @@ const VideoThumbnailCard: React.FC<VideoThumbnailCardProps> = ({
       </div>
 
       {/* Hover overlay */}
-      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all" />
+      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all pointer-events-none" />
 
       {/* Remove media button */}
       <button
-        onClick={() => onRemoveMedia(index)}
+        onClick={(e) => {
+          e.stopPropagation();
+          onRemoveMedia(index);
+        }}
         className="absolute top-1.5 right-1.5 w-6 h-6 flex items-center justify-center bg-red-500 hover:bg-red-400 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-all scale-75 group-hover:scale-100"
       >
         <X size={11} />
