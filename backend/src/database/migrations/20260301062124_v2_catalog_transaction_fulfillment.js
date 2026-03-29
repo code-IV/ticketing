@@ -38,6 +38,12 @@ exports.up = async function (knex) {
     table.timestamps(true, true);
   });
 
+  await knex.raw(`
+  CREATE UNIQUE INDEX idx_ticket_types_product_category_active 
+  ON ticket_types (product_id, category) 
+  WHERE deleted_at IS NULL
+`);
+
   // 4. BOOKINGS: Use the booking_status ENUM
   await knex.schema.createTable("bookings", (table) => {
     table.uuid("id").primary().defaultTo(knex.raw("gen_random_uuid()"));
