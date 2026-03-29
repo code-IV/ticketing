@@ -84,6 +84,7 @@ export interface CreateTicketTypeRequest {
   id: string | null;
   category: "ADULT" | "CHILD" | "SENIOR" | "STUDENT" | "GROUP";
   price: number;
+  description?: string;
   maxQuantityPerBooking?: number;
 }
 

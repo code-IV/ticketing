@@ -68,6 +68,7 @@ const CreateEventDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
   });
 
   const [newTicket, setNewTicket] = useState<CreateTicketTypeRequest>({
+    id: null,
     category: "ADULT",
     price: 0,
     description: "",
@@ -167,6 +168,7 @@ const CreateEventDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
       ticket_types: [...p.ticket_types, { ...newTicket }],
     }));
     setNewTicket({
+      id: null,
       category: "ADULT",
       price: 0,
       description: "",
