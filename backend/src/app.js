@@ -62,10 +62,6 @@ app.use(
   "/media/uploads",
   express.static(path.join(__dirname, "../public/media/uploads")),
 );
-app.use(
-  "/uploads",
-  express.static(path.join(__dirname, "../public/uploads")),
-);
 
 // ============================================
 // API ROUTES
