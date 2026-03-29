@@ -29,7 +29,7 @@ const TicketType = {
   async findByEventId(eventId) {
     const sql = `
       SELECT * FROM ticket_types
-      WHERE event_id = $1 AND is_active = true
+      WHERE event_id = $1 AND deleted_at IS NULL
       ORDER BY price ASC`;
     const result = await query(sql, [eventId]);
     return result.rows;

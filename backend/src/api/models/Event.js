@@ -115,7 +115,7 @@ const Event = {
     LEFT JOIN products p ON p.event_id = e.id
     LEFT JOIN products_media pm ON pm.product_id = p.id
     LEFT JOIN media m ON m.id = pm.media_id
-    WHERE e.is_active = true AND e.event_date >= CURRENT_DATE
+    WHERE e.is_active = true AND p.is_active = true AND e.event_date >= CURRENT_DATE
     GROUP BY e.id, p.id -- p.id added to group by since it's in SELECT
     ORDER BY e.event_date ASC
     LIMIT $1 OFFSET $2`;
@@ -172,6 +172,7 @@ const Event = {
     LEFT JOIN ticket_types tt ON tt.product_id = p.id
     LEFT JOIN booking_items bi ON bi.ticket_type_id = tt.id
     LEFT JOIN bookings b ON bi.booking_id = b.id AND b.status = 'CONFIRMED'
+    WHERE p.is_active=true
     GROUP BY e.id, p.id
     ORDER BY e.event_date ASC
     LIMIT $1 OFFSET $2;

@@ -83,6 +83,7 @@ const Game = {
       ) AS gallery
     FROM games g
     LEFT JOIN products p ON g.id = p.game_id
+    WHERE p.is_active=true
     ORDER BY g.created_at DESC;
   `;
 
@@ -126,7 +127,7 @@ const Game = {
       ) AS gallery
     FROM games g
     LEFT JOIN products p ON g.id = p.game_id
-    WHERE g.status = 'OPEN'
+    WHERE g.status = 'OPEN' AND p.is_active=true
     ORDER BY g.created_at DESC;
   `;
 
