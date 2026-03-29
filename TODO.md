@@ -18,8 +18,8 @@
 
 ### ⚙️ Backend: API & Logic
 
-- [ ] **Endpoint:** `POST /api/games/create`
-  - [ ] Change: Convert to **Atomic Transaction** (Multipart/Form-Data). - [ ] Logic: Implement `JSON.parse` for the `game` metadata string.
+- [ ] **Endpoint:** `GET /api/Search`
+  - [ ] Change: ADD **Search Functionlity** to search for games, events, users.
 - [ ] **Media Handling:**
   - [ ] Task: Generate Low-Res Image Placeholders (LQIP) on upload.
   - [ ] Task: Implement WebP conversion for performance.
