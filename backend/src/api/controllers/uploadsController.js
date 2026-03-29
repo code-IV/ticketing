@@ -35,6 +35,29 @@ const UploadsController = {
     }
   },
 
+  async updateMedia(req, res, next) {
+    try {
+      const id = req.params.id;
+      const { label } = req.body;
+      const thumb = req.files?.thumbnail || null;
+
+      const updateResults = await UploadsService.updateMediaData(
+        { id, label },
+        thumb,
+      );
+      return apiResponse(
+        res,
+        200,
+        true,
+        "Media updated successfully.",
+        updateResults,
+      );
+    } catch (err) {
+      console.log(err);
+      next(err);
+    }
+  },
+
   async deleteMediaById(req, res, next) {
     try {
       const id = req.params.id;
@@ -47,25 +70,25 @@ const UploadsController = {
   },
 
   async getAll(req, res, next) {
-  try {
-    const { page = 1, limit = 32, type } = req.query;
-    const result = await UploadsService.getAll(
-      parseInt(page) || 1, 
-      parseInt(limit) || 32, 
-      type
-    );
+    try {
+      const { page = 1, limit = 32, type } = req.query;
+      const result = await UploadsService.getAll(
+        parseInt(page) || 1,
+        parseInt(limit) || 32,
+        type,
+      );
 
-    // Combine them into one object so apiResponse sends everything
-    const responsePayload = {
-      media: result.data,
-      pagination: result.pagination
-    };
+      // Combine them into one object so apiResponse sends everything
+      const responsePayload = {
+        media: result.data,
+        pagination: result.pagination,
+      };
 
-    return apiResponse(res, 200, true, "Media retrieved.", responsePayload);
-  } catch (err) {
-    next(err);
-  }
-},
+      return apiResponse(res, 200, true, "Media retrieved.", responsePayload);
+    } catch (err) {
+      next(err);
+    }
+  },
   async getById(req, res, next) {
     try {
       const id = req.params.id;
@@ -120,21 +143,31 @@ const UploadsController = {
     }
   },
   async getByType(req, res, next) {
-  try {
-    const { type, page = 1, limit = 32 } = req.query;
-    if (type !== "image" && type !== "video") {
-      return apiResponse(res, 400, false, "invalid query", { valid: false, reason: "INVALID_QUERY" });
+    try {
+      const { type, page = 1, limit = 32 } = req.query;
+      if (type !== "image" && type !== "video") {
+        return apiResponse(res, 400, false, "invalid query", {
+          valid: false,
+          reason: "INVALID_QUERY",
+        });
+      }
+      const result = await UploadsService.getByType(
+        type,
+        parseInt(page) || 1,
+        parseInt(limit) || 32,
+      );
+      return apiResponse(
+        res,
+        200,
+        true,
+        "Media retrieved",
+        result.data,
+        result.pagination,
+      );
+    } catch (err) {
+      next(err);
     }
-    const result = await UploadsService.getByType(
-      type,
-      parseInt(page) || 1,
-      parseInt(limit) || 32
-    );
-    return apiResponse(res, 200, true, "Media retrieved", result.data, result.pagination);
-  } catch (err) {
-    next(err);
-  }
-}
+  },
 };
 
 module.exports = { UploadsController };

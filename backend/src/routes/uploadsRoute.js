@@ -26,6 +26,16 @@ router.post(
   //
   UploadsController.uploadProductMedia,
 );
+
+router.patch(
+  "/upload/:id",
+  isAuthenticated,
+  isAdmin,
+  uuidParamRule("id"),
+  handleValidation,
+  upload.fields([{ name: "thumbnail", maxCount: 1 }]),
+  UploadsController.updateMedia,
+);
 router.delete(
   "/rm/:id",
   isAuthenticated,

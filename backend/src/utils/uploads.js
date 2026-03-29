@@ -31,14 +31,13 @@ exports.uploadToTemp = async (file) => {
   };
 };
 
-exports.promoteFile = async (tempPath, productId, filename) => {
+exports.promoteFile = async (tempPath, filename) => {
   // Resolve target directory from project root
   const targetDir = path.join(
     process.cwd(), // project root
     "public",
     "media",
     "uploads",
-    String(productId),
   );
 
   await fs.promises.mkdir(targetDir, { recursive: true });
@@ -50,7 +49,7 @@ exports.promoteFile = async (tempPath, productId, filename) => {
 
   return {
     path: newPath,
-    url: `/media/uploads/${productId}/${filename}`, // URL relative to server
+    url: `/media/uploads/${filename}`, // URL relative to server
   };
 };
 

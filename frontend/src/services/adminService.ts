@@ -284,9 +284,23 @@ export const adminService = {
     return response.data;
   },
 
-  async getAllMedia(page = 1, limit = 32, type?: 'image' | 'video' | 'all'): Promise<ApiResponse<{
-    media: never[]; data: any[]; pagination: { totalPages: number; total: number; page: number; limit: number; hasNext: boolean } 
-}>> {
+  async getAllMedia(
+    page = 1,
+    limit = 32,
+    type?: "image" | "video" | "all",
+  ): Promise<
+    ApiResponse<{
+      media: never[];
+      data: any[];
+      pagination: {
+        totalPages: number;
+        total: number;
+        page: number;
+        limit: number;
+        hasNext: boolean;
+      };
+    }>
+  > {
     const params: any = { page, limit };
     if (type && type !== "all") {
       params.type = type;
@@ -300,8 +314,12 @@ export const adminService = {
     return response.data;
   },
 
-  async updateMediaLabel(id: string, label: string): Promise<ApiResponse> {
-    const response = await api.patch(`/media/${id}`, { label });
+  async updateMediaData(id: string, formData: FormData): Promise<ApiResponse> {
+    const response = await api.patch(`/media/upload/${id}`, formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
     return response.data;
   },
 };

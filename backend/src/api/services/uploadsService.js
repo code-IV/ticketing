@@ -38,7 +38,11 @@ const UploadsService = {
             metadata: {
               size: thumb.size,
               encoding: thumb.encoding,
-              parent_label: label,
+              metadata: {
+                size: thumb.size,
+                encoding: thumb.encoding,
+                parent_label: media.label,
+              },
             },
           };
 
@@ -113,10 +117,10 @@ const UploadsService = {
         // ✅ Use safe filename (UUID-based)
         const filename = path.basename(tempPath);
 
-        const promoted = await promoteFile(tempPath, productId, media.name);
+        const promoted = await promoteFile(tempPath, media.name);
         promotedPaths.push(promoted.path);
 
-        await Media.updateMedia(
+        await Media.promoteMedia(
           media.id,
           {
             path: promoted.path,
@@ -136,6 +140,46 @@ const UploadsService = {
       }
 
       throw err;
+    }
+  },
+  async updateMediaData(media, thumb = null) {
+    const client = await getClient();
+    const paths = [];
+    let promoted = null;
+    try {
+      await client.query("BEGIN");
+      if (thumb) {
+        const tempThumb = await uploadToTemp(thumb);
+        paths.push(tempThumb.path);
+        const thumbMediaData = {
+          name: thumb.originalname,
+          url: tempThumb.url,
+          path: tempThumb.path,
+          type: thumb.mimetype,
+          label: "thumbnail",
+          provider: "LOCAL",
+          metadata: {
+            size: thumb.size,
+            encoding: thumb.encoding,
+            parent_label: media.label,
+          },
+        };
+
+        await Media.createMedia(thumbMediaData, client);
+        promoted = await promoteFile(thumbMediaData.path, thumbMediaData.name);
+        paths.push(promoted.path);
+      }
+      await Media.updateMedia(media.id, media.label, promoted?.url, client);
+      await client.query("COMMIT");
+      return { success: true };
+    } catch (err) {
+      for (const p of paths) {
+        await fs.promises.unlink(p).catch(() => {});
+      }
+      await client.query("ROLLBACK");
+      throw err;
+    } finally {
+      client.release();
     }
   },
   async deleteMediaFromProduct(mediaId) {
