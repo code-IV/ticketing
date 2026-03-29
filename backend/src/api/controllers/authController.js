@@ -38,7 +38,17 @@ const authController = {
         lastName: user.last_name,
       };
 
-      return apiResponse(res, 201, true, "Registration successful.", { user });
+      return apiResponse(res, 201, true, "Registration successful.", {
+        user: {
+          id: user.id,
+          first_name: user.first_name,
+          last_name: user.last_name,
+          email: user.email,
+          phone: user.phone,
+          role: user.role,
+          permissions: user.permissions,
+        },
+      });
     } catch (err) {
       next(err);
     }
@@ -88,6 +98,7 @@ const authController = {
           email: user.email,
           phone: user.phone,
           role: user.role,
+          permissions: user.permissions,
         },
       });
     } catch (err) {
@@ -130,7 +141,17 @@ const authController = {
       if (!user) {
         return apiResponse(res, 404, false, "User not found.");
       }
-      return apiResponse(res, 200, true, "User retrieved.", { user });
+      return apiResponse(res, 200, true, "User retrieved.", {
+        user: {
+          id: user.id,
+          first_name: user.first_name,
+          last_name: user.last_name,
+          email: user.email,
+          phone: user.phone,
+          role: user.role,
+          permissions: user.permissions,
+        },
+      });
     } catch (err) {
       console.log(err);
       next(err);

@@ -14,7 +14,7 @@ import {
   Moon,
   Sun,
 } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 
@@ -32,6 +32,16 @@ export function Navbar({ nav }: { nav: Nav[] }) {
   const pathname = usePathname();
   const isHomePage = pathname === "/";
   const { scrollY } = useScroll();
+
+  const filteredNav = useMemo(() => {
+    return nav.filter((item) => {
+      if (item.name === "admin" || item.href === "/admin") {
+        // Use optional chaining and ensure permissions exists
+        return user?.permissions?.includes("ADMIN");
+      }
+      return true;
+    });
+  }, [user]);
 
   useMotionValueEvent(scrollY, "change", (y) => {
     setScrolled(y > 40);
@@ -72,13 +82,6 @@ export function Navbar({ nav }: { nav: Nav[] }) {
     : isDarkTheme
       ? "brightness-0 invert"
       : "";
-
-  const filteredNav = nav.filter((item) => {
-    if (item.name === "admin" || item.href === "/admin") {
-      return user?.permissions?.includes("ADMIN");
-    }
-    return true; // Show all other links
-  });
 
   return (
     <>
