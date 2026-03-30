@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   X,
   Plus,
@@ -58,6 +59,10 @@ export default function EditGamePage() {
   const [labelModalOpen, setLabelModalOpen] = useState(false);
   const [pendingFile, setPendingFile] = useState<any>(null);
   const [existingMedia, setExistingMedia] = useState<any[]>([]);
+  const [previewModal, setPreviewModal] = useState<{
+    media: any;
+    type: 'image' | 'video';
+  } | null>(null);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -124,6 +129,11 @@ export default function EditGamePage() {
               ...media,
               existing: true,
               preview: media.url,
+              thumbnailPreview: media.thumbnailUrl || null,
+              thumbnail: media.thumbnailUrl ? { 
+                name: 'thumbnail', 
+                url: media.thumbnailUrl 
+              } : null,
             })),
           );
         }
@@ -248,6 +258,45 @@ export default function EditGamePage() {
         return { ...prev, mediaFiles: updatedMedia };
       });
     }
+  };
+
+  const handleMediaPreview = (media: any, isExisting: boolean = false) => {
+    const mediaType = media.type === "VIDEO" ? "video" : "image";
+    setPreviewModal({
+      media: {
+        ...media,
+        url: isExisting ? media.url : media.preview,
+        thumbnailUrl: media.thumbnailPreview || media.thumbnailUrl,
+      },
+      type: mediaType,
+    });
+  };
+
+  const handleVideoPreview = (media: any, isExisting: boolean = false) => {
+    setPreviewModal({
+      media: {
+        ...media,
+        url: isExisting ? media.url : media.preview,
+      },
+      type: 'video',
+    });
+  };
+
+  const handleThumbnailPreview = (media: any) => {
+    if (media.thumbnailPreview || media.thumbnailUrl) {
+      setPreviewModal({
+        media: {
+          ...media,
+          url: media.thumbnailPreview || media.thumbnailUrl,
+          name: media.name ? `${media.name} - Thumbnail` : 'Thumbnail',
+        },
+        type: 'image',
+      });
+    }
+  };
+
+  const closePreviewModal = () => {
+    setPreviewModal(null);
   };
 
   const addCategory = () => {
@@ -715,7 +764,8 @@ export default function EditGamePage() {
                         media.type === "IMAGE" ? (
                           <div
                             key={`existing-${idx}`}
-                            className="relative aspect-square rounded-xl overflow-hidden group shadow-sm"
+                            className="relative aspect-square rounded-xl overflow-hidden group shadow-sm cursor-pointer"
+                            onClick={() => handleMediaPreview(media, true)}
                           >
                             <img
                               src={media.url}
@@ -726,7 +776,10 @@ export default function EditGamePage() {
                             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all" />
                             {/* Remove btn */}
                             <button
-                              onClick={() => removeMedia(idx, true)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                removeMedia(idx, true);
+                              }}
                               className="absolute top-1.5 right-1.5 w-6 h-6 flex items-center justify-center bg-red-500 hover:bg-red-400 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-all scale-75 group-hover:scale-100"
                             >
                               <X size={11} />
@@ -768,6 +821,8 @@ export default function EditGamePage() {
                               });
                             }}
                             onRemoveMedia={(index) => removeMedia(index, true)}
+                            onPreview={() => handleVideoPreview(media, true)}
+                            onThumbnailPreview={() => handleThumbnailPreview(media)}
                           />
                         ),
                       )}
@@ -788,7 +843,8 @@ export default function EditGamePage() {
                         media.type === "IMAGE" ? (
                           <div
                             key={`new-${idx}`}
-                            className="relative aspect-square rounded-xl overflow-hidden group shadow-sm"
+                            className="relative aspect-square rounded-xl overflow-hidden group shadow-sm cursor-pointer"
+                            onClick={() => handleMediaPreview(media, false)}
                           >
                             <img
                               src={media.preview}
@@ -799,7 +855,10 @@ export default function EditGamePage() {
                             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all" />
                             {/* Remove btn */}
                             <button
-                              onClick={() => removeMedia(idx, false)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                removeMedia(idx, false);
+                              }}
                               className="absolute top-1.5 right-1.5 w-6 h-6 flex items-center justify-center bg-red-500 hover:bg-red-400 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-all scale-75 group-hover:scale-100"
                             >
                               <X size={11} />
@@ -842,6 +901,8 @@ export default function EditGamePage() {
                               });
                             }}
                             onRemoveMedia={(index) => removeMedia(index, false)}
+                            onPreview={() => handleVideoPreview(media, false)}
+                            onThumbnailPreview={() => handleThumbnailPreview(media)}
                           />
                         ),
                       )}
@@ -958,7 +1019,67 @@ export default function EditGamePage() {
             </div>
           </div>
         )}
+
+        {/* Media Preview Modal */}
+        <AnimatePresence>
+          {previewModal && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm"
+              onClick={closePreviewModal}
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                className="relative max-w-4xl max-h-[90vh] w-full h-full flex items-center justify-center"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Close button */}
+                <button
+                  onClick={closePreviewModal}
+                  className="absolute top-4 right-4 z-10 w-10 h-10 flex items-center justify-center bg-black/50 hover:bg-black/70 text-white rounded-full transition-all"
+                >
+                  <X size={20} />
+                </button>
+
+                {/* Media content */}
+                {previewModal.type === 'image' ? (
+                  <img
+                    src={previewModal.media.url}
+                    alt="Preview"
+                    className="max-w-full max-h-full object-contain rounded-lg"
+                  />
+                ) : (
+                  <video
+                    src={previewModal.media.url}
+                    controls
+                    autoPlay
+                    className="max-w-full max-h-full rounded-lg"
+                  />
+                )}
+
+                {/* Media info */}
+                <div className="absolute bottom-4 left-4 right-4 bg-black/70 backdrop-blur-sm text-white p-3 rounded-lg">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-semibold truncate">{previewModal.media.name || 'Media'}</p>
+                      <p className="text-sm opacity-80">{previewModal.type.toUpperCase()}</p>
+                    </div>
+                    {previewModal.media.label && (
+                      <span className="bg-accent text-black px-2 py-1 rounded text-xs font-bold uppercase">
+                        {previewModal.media.label}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
-}
+};
