@@ -142,6 +142,24 @@ const UploadsService = {
       throw err;
     }
   },
+  async persistMedia(uploads, productId) {
+    const client = await getClient();
+    try {
+      await client.query("BEGIN");
+
+      for (const upload of uploads) {
+        await Media.createMedia(upload, client);
+        await Media.linkProductMedia(productId, upload.id, client);
+      }
+      await client.query("COMMIT");
+      return { success: true };
+    } catch (err) {
+      await client.query("ROLLBACK");
+      throw err;
+    } finally {
+      client.release();
+    }
+  },
   async updateMediaData(media, thumb = null) {
     const client = await getClient();
     const paths = [];

@@ -1,4 +1,5 @@
 const { createClient } = require("@supabase/supabase-js");
+const { v4: uuidv4 } = require("uuid");
 const path = require("path");
 const fs = require("fs");
 
@@ -6,13 +7,13 @@ const fs = require("fs");
 let supabase = null;
 if (
   process.env.SUPABASE_URL &&
-  process.env.SUPABASE_ANON_KEY &&
+  process.env.SUPABASE_SERVICE_ROLE_KEY &&
   process.env.SUPABASE_URL !== "anything" &&
-  process.env.SUPABASE_ANON_KEY !== "anything"
+  process.env.SUPABASE_SERVICE_ROLE_KEY !== "anything"
 ) {
   supabase = createClient(
     process.env.SUPABASE_URL,
-    process.env.SUPABASE_ANON_KEY,
+    process.env.SUPABASE_SERVICE_ROLE_KEY,
   );
 }
 
@@ -114,4 +115,37 @@ exports.uploadToSupabase = async (file) => {
       path: data.path,
     }),
   };
+};
+
+exports.supaseSignedUrl = async (files, productId) => {
+  const uploads = [];
+  for (const file of files || []) {
+    const mediaId = uuidv4();
+
+    const ext = file.filename.split(".").pop();
+    const type = file.type.startsWith("image") ? "images" : "videos";
+
+    const path = `products/${productId}/${type}/${mediaId}.${ext}`;
+    const publicUrl = `${process.env.SUPABASE_URL}/storage/v1/object/public/media/${path}`;
+
+    const { data, error } = await supabase.storage
+      .from("media")
+      .createSignedUploadUrl(path);
+
+    if (error) {
+      throw error;
+    }
+
+    uploads.push({
+      mediaId,
+      name: file.filename,
+      path,
+      url: publicUrl,
+      type,
+      label: file.label,
+      signedUrl: data.signedUrl,
+    });
+  }
+
+  return uploads;
 };

@@ -36,6 +36,15 @@ router.patch(
   upload.fields([{ name: "thumbnail", maxCount: 1 }]),
   UploadsController.updateMedia,
 );
+
+router.post(
+  "/persist/:id",
+  isAuthenticated,
+  isAdmin,
+  uuidParamRule("id"),
+  handleValidation,
+  UploadsController.persistMediaUpload,
+);
 router.delete(
   "/rm/:id",
   isAuthenticated,
@@ -48,6 +57,7 @@ router.delete(
 router.get("/", isAuthenticated, isAdmin, UploadsController.getAll);
 router.get("/t", isAuthenticated, isAdmin, UploadsController.getByType);
 router.get("/n", isAuthenticated, isAdmin, UploadsController.getByName);
+router.get("/url/:id", UploadsController.readUrl);
 router.get(
   "/:id",
   isAuthenticated,

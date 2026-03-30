@@ -2,6 +2,23 @@ const { apiResponse } = require("../../utils/helpers");
 const UploadsService = require("../services/uploadsService");
 
 const UploadsController = {
+  // Node.js / Express
+  async readUrl(req, res) {
+    const { id } = req.params;
+
+    // 1. Fetch media row
+    const media = await UploadsService.getById(id);
+
+    // 2. Generate signed read URL from Supabase
+    const { data, error } = supabase.storage
+      .from("games")
+      .createSignedUrl(media.path, 60 * 60); // 1 hour expiration
+
+    if (error) return res.status(500).json({ error: error.message });
+
+    return res.json({ url: data.signedUrl });
+  },
+
   async uploadProductMedia(req, res, next) {
     try {
       const { label } = req.body; // This is an array of strings
@@ -28,6 +45,29 @@ const UploadsController = {
         true,
         "Media uploaded successfully.",
         mediaResults,
+      );
+    } catch (err) {
+      console.log(err);
+      next(err);
+    }
+  },
+
+  async persistMediaUpload(req, res, next) {
+    try {
+      const productId = req.params.id;
+      const { uploads } = req.body;
+      console.log(req.body);
+
+      const persistResults = await UploadsService.persistMedia(
+        uploads,
+        productId,
+      );
+      return apiResponse(
+        res,
+        200,
+        true,
+        "Media persistance completed successfully.",
+        persistResults,
       );
     } catch (err) {
       console.log(err);

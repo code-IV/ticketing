@@ -49,7 +49,10 @@ export interface CreateGame {
   description: string;
   rules: string;
   status: "OPEN" | "ON_MAINTENANCE" | "UPCOMING" | "CLOSED";
-  mediaIds: string[];
+  files: {
+    filename: string;
+    type: string;
+  }[];
 }
 
 export interface Event {

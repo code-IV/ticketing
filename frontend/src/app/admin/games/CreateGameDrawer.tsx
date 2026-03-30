@@ -174,20 +174,41 @@ const CreateGameDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
     if (loading) return;
     setLoading(true);
     try {
-      let media;
-      if (formData.mediaFiles.length > 0) {
-        const data = new FormData();
-        formData.mediaFiles.forEach((m: any) => {
-          data.append("mediaFiles", m.file);
-          data.append("label", m.label);
-          data.append("thumbnail", m.thumbnail || null);
-        });
-        media = await adminService.uploadProductMedia(data);
-      }
+      const fileMeta = formData.mediaFiles.map((m: any) => ({
+        filename: m.file.name,
+        type: m.file.type,
+        label: m.label,
+      }));
       const response = await gameService.createGame({
         ...formData,
-        mediaIds: media?.data?.mediaIds,
+        files: fileMeta,
       });
+      const { productId, uploads } = response.data ? response.data : null;
+
+      if (productId && uploads) {
+        await Promise.all(
+          uploads.map((upload: any, index: number) => {
+            const file = formData.mediaFiles[index].file;
+
+            return fetch(upload.signedUrl, {
+              method: "PUT",
+              body: file,
+              headers: {
+                "Content-Type": file.type,
+              },
+            });
+          }),
+        );
+        const metaData = uploads.map((u: any) => ({
+          id: u.mediaId,
+          name: u.name,
+          path: u.path,
+          url: u.url,
+          type: u.type,
+          label: u.label,
+        }));
+        await adminService.persistMediaData(productId, metaData);
+      }
       setFormData({
         name: "",
         description: "",

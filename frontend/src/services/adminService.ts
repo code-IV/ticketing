@@ -284,6 +284,11 @@ export const adminService = {
     return response.data;
   },
 
+  async persistMediaData(id: string, uploads: any[]): Promise<ApiResponse> {
+    const response = await api.post(`/media/persist/${id}`, { uploads });
+    return response.data;
+  },
+
   async getAllMedia(
     page = 1,
     limit = 32,
@@ -311,6 +316,11 @@ export const adminService = {
 
   async deleteMedia(id: string): Promise<ApiResponse> {
     const response = await api.delete(`/media/rm/${id}`);
+    return response.data;
+  },
+
+  async getMediaUrl(id: string): Promise<ApiResponse> {
+    const response = await api.get(`/media/url/${id}`);
     return response.data;
   },
 
@@ -345,7 +355,7 @@ export const ticketService = {
 export const gameService = {
   async createGame(
     data: CreateGame,
-  ): Promise<ApiResponse<{ game: Game; productId: string }>> {
+  ): Promise<ApiResponse<{ game: Game; productId: string; uploads: any }>> {
     const response = await api.post("/admin/game", data);
     return response.data;
   },
