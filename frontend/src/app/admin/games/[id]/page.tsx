@@ -773,11 +773,11 @@ export default function EditGamePage() {
   const labelCls = `text-[10px] font-semibold uppercase tracking-[0.12em] ${muted}`;
 
   return (
-    <div className={`min-h-screen ${surface} pt-20`}>
+    <div className={`min-h-screen ${surface} pt-5 sm:pt-20`}>
       <div className="max-w-7xl mx-auto px-8 py-8">
         {/* ── Header ── */}
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-4">
+        <div className="flex  justify-between gap-2 mb-8">
+          <div className="flex items-baseline gap-4">
             <button
               onClick={() => router.push("/admin/games")}
               className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${d ? "hover:bg-white/8 text-white/50 hover:text-white" : "hover:bg-black/5 text-black/40 hover:text-black"}`}
@@ -791,7 +791,14 @@ export default function EditGamePage() {
               <p className={`text-sm ${muted} mt-0.5`}>{formData.name}</p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-3">
+            <button
+              onClick={handleDelete}
+              className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all bg-red-500 hover:bg-red-600 text-white`}
+            >
+              <Trash2 size={16} className="inline mr-2" />
+              Delete Game
+            </button>
             <div>
               <select
                 className={`px-3 py-2 rounded-xl text-sm font-medium outline-none border-2 border-transparent transition-all focus:border-accent/50 ${inputBg} ${text}`}
@@ -809,13 +816,6 @@ export default function EditGamePage() {
                 <option value="UPCOMING">UPCOMING</option>
               </select>
             </div>
-            <button
-              onClick={handleDelete}
-              className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all bg-red-500 hover:bg-red-600 text-white`}
-            >
-              <Trash2 size={16} className="inline mr-2" />
-              Delete Game
-            </button>
           </div>
         </div>
 
