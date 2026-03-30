@@ -19,6 +19,7 @@ import { Game } from "@/types";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useRouter, useParams } from "next/navigation";
 import VideoThumbnailCard from "@/components/VideoThumbnailCard";
+import ConfirmationModal from "@/components/ConfirmationModal";
 
 const getTinyPreview = (file: File): Promise<string> =>
   new Promise((res) => {
@@ -63,6 +64,22 @@ export default function EditGamePage() {
     media: any;
     type: 'image' | 'video';
   } | null>(null);
+
+  const [deleteModal, setDeleteModal] = useState<{
+    isOpen: boolean;
+    type: 'ticket' | 'media';
+    index: number;
+    isExisting: boolean;
+    item: any;
+  }>({
+    isOpen: false,
+    type: 'ticket',
+    index: -1,
+    isExisting: false,
+    item: null,
+  });
+
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -243,21 +260,14 @@ export default function EditGamePage() {
   };
 
   const removeMedia = (index: number, isExisting: boolean = false) => {
-    if (isExisting) {
-      setExistingMedia((prev) => {
-        const updated = [...prev];
-        updated.splice(index, 1);
-        return updated;
-      });
-    } else {
-      setFormData((prev) => {
-        const updatedMedia = [...prev.mediaFiles];
-        if (updatedMedia[index].type === "VIDEO")
-          URL.revokeObjectURL(updatedMedia[index].preview);
-        updatedMedia.splice(index, 1);
-        return { ...prev, mediaFiles: updatedMedia };
-      });
-    }
+    const media = isExisting ? existingMedia[index] : formData.mediaFiles[index];
+    setDeleteModal({
+      isOpen: true,
+      type: 'media',
+      index,
+      isExisting,
+      item: media,
+    });
   };
 
   const handleMediaPreview = (media: any, isExisting: boolean = false) => {
@@ -299,6 +309,70 @@ export default function EditGamePage() {
     setPreviewModal(null);
   };
 
+  const handleDeleteConfirm = async () => {
+    setDeleteLoading(true);
+    
+    try {
+      if (deleteModal.type === 'ticket' && deleteModal.item.id) {
+        // Delete existing ticket type from backend
+        await adminService.deleteTicketType(deleteModal.item.id);
+      } else if (deleteModal.type === 'media' && deleteModal.item.id) {
+        // Delete existing media from backend
+        await adminService.deleteMedia(deleteModal.item.id);
+      }
+      
+      // Update frontend state after successful backend deletion
+      if (deleteModal.type === 'ticket') {
+        setFormData((p) => ({
+          ...p,
+          ticketTypes: p.ticketTypes.filter((_, i) => i !== deleteModal.index),
+        }));
+      } else if (deleteModal.type === 'media') {
+        if (deleteModal.isExisting) {
+          setExistingMedia((prev) => {
+            const updated = [...prev];
+            updated.splice(deleteModal.index, 1);
+            return updated;
+          });
+        } else {
+          setFormData((prev) => {
+            const updatedMedia = [...prev.mediaFiles];
+            if (updatedMedia[deleteModal.index].type === "VIDEO")
+              URL.revokeObjectURL(updatedMedia[deleteModal.index].preview);
+            updatedMedia.splice(deleteModal.index, 1);
+            return { ...prev, mediaFiles: updatedMedia };
+          });
+        }
+      }
+      
+      // Close modal
+      setDeleteModal({
+        isOpen: false,
+        type: 'ticket',
+        index: -1,
+        isExisting: false,
+        item: null,
+      });
+    } catch (error) {
+      console.error(`Failed to delete ${deleteModal.type}:`, error);
+      setError(`Failed to delete ${deleteModal.type}. Please try again.`);
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    if (!deleteLoading) {
+      setDeleteModal({
+        isOpen: false,
+        type: 'ticket',
+        index: -1,
+        isExisting: false,
+        item: null,
+      });
+    }
+  };
+
   const addCategory = () => {
     if (!newTicket.category || isNaN(newTicket.price))
       return alert("Please provide at least a category and price");
@@ -319,10 +393,13 @@ export default function EditGamePage() {
 
   const removeTicketType = (index: number) => {
     if (formData.ticketTypes.length > 1) {
-      setFormData((p) => ({
-        ...p,
-        ticketTypes: p.ticketTypes.filter((_, i) => i !== index),
-      }));
+      setDeleteModal({
+        isOpen: true,
+        type: 'ticket',
+        index,
+        isExisting: false,
+        item: formData.ticketTypes[index],
+      });
     }
   };
 
@@ -1083,6 +1160,19 @@ export default function EditGamePage() {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Delete Confirmation Modal */}
+        <ConfirmationModal
+          isOpen={deleteModal.isOpen}
+          onClose={handleDeleteCancel}
+          onConfirm={handleDeleteConfirm}
+          title={`Delete ${deleteModal.type === 'ticket' ? 'Ticket Type' : 'Media'}`}
+          message={`Are you sure you want to delete this ${deleteModal.type === 'ticket' ? 'ticket type' : 'media file'}? This action cannot be undone.`}
+          confirmText="Delete"
+          cancelText="Cancel"
+          loading={deleteLoading}
+          type="danger"
+        />
       </div>
     </div>
   );
