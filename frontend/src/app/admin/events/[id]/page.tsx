@@ -400,10 +400,14 @@ export default function EditEventPage() {
       // Upload new media files
       if (formData.mediaFiles.length > 0) {
         const data = new FormData();
-        formData.mediaFiles.forEach((m: any) => {
+        formData.mediaFiles.forEach((m: any, index: number) => {
           data.append("mediaFiles", m.file);
           data.append("label", m.label);
-          data.append("thumbnail", m.thumbnail || null);
+          
+          // Named thumbnail per video index
+          if (m.thumbnail) {
+            data.append(`thumbnail_${index}`, m.thumbnail);
+          }
         });
         media = await adminService.uploadProductMedia(data);
       }

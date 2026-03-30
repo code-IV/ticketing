@@ -11,9 +11,21 @@ router.post(
   isAdmin,
   upload.fields([
     { name: "mediaFiles", maxCount: 10 },
-    { name: "thumbnail", maxCount: 1 },
+    { name: "thumbnail_0", maxCount: 1 },
+    { name: "thumbnail_1", maxCount: 1 },
+    { name: "thumbnail_2", maxCount: 1 },
+    { name: "thumbnail_3", maxCount: 1 },
+    { name: "thumbnail_4", maxCount: 1 },
+    { name: "thumbnail_5", maxCount: 1 },
+    { name: "thumbnail_6", maxCount: 1 },
+    { name: "thumbnail_7", maxCount: 1 },
+    { name: "thumbnail_8", maxCount: 1 },
+    { name: "thumbnail_9", maxCount: 1 },
+    { name: "thumbnail", maxCount: 10 }, // TEMP: Accept old field name
   ]),
   (req, res, next) => {
+    console.log('🔍 Received fields:', Object.keys(req.body));
+    console.log('🔍 Received files:', Object.keys(req.files || {}));
     if (req.body.label) {
       req.body.label = Array.isArray(req.body.label)
         ? req.body.label
