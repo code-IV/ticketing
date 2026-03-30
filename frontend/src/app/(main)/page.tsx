@@ -213,14 +213,14 @@ export default function Home() {
         </h2>
       </motion.div>
 
-      <div className="space-y-20 lg:space-y-32">
+      <div className="flex gap-6 overflow-x-auto scrollbar-hide px-2 py-4">
         {[...events].sort((a, b) => new Date(b.createdAt || b.eventDate).getTime() - new Date(a.createdAt || a.eventDate).getTime()).map((event, i) => {
           const adultPrice = event.ticketTypes?.find((t) => t.category === "ADULT")?.price ?? 0;
           const posterMedia = event.gallery?.find(m => m.label === 'poster') || event.gallery?.[0];
           const bannerMedia = event.gallery?.find(m => m.label === 'banner') || event.gallery?.[1] || event.gallery?.[0];
 
           return (
-            <div key={event.id} className="relative">
+            <div key={event.id} className="relative flex-shrink-0 w-[calc(100vw-70px)] max-w-96 lg:w-96">
               
               {/* 📱 MOBILE & TABLET VIEW (Cinematic Frame Style - Design 3) */}
               <motion.div 
@@ -457,9 +457,9 @@ export default function Home() {
                         </span>{" "}
                         ETB
                       </p>
-                      <Link href="/buy">
+                      <Link href={`/games/${game.id}`}>
                         <button className="bg-[#FFD84D] text-black font-black text-xs px-5 py-2.5 rounded-full hover:bg-white transition-colors">
-                          BOOK
+                          VIEW DETAILS
                         </button>
                       </Link>
                     </div>
