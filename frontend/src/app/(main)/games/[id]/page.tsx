@@ -115,7 +115,7 @@ export default function GameDetailPage({
 
       // Add gallery images first
       const images = galleryItems.filter(
-        (item) => item.type === "image" || !item.type,
+        (item) => item.type?.startsWith("image") || !item.type,
       );
       images.forEach((item, index) => {
         items.push({
@@ -127,7 +127,7 @@ export default function GameDetailPage({
       });
 
       // Add gallery videos
-      const videos = galleryItems.filter((item) => item.type === "video");
+      const videos = galleryItems.filter((item) => item.type?.startsWith("video"));
       videos.forEach((item, index) => {
         items.push({
           type: "video",
@@ -264,6 +264,7 @@ export default function GameDetailPage({
         <div className="absolute inset-0">
           <img
             src={bannerImage}
+            crossOrigin="anonymous"
             className="w-full h-full object-cover"
             alt={game?.name || "Game"}
           />
@@ -456,6 +457,7 @@ export default function GameDetailPage({
               >
                 <img
                   src={item.thumbnail}
+                  crossOrigin="anonymous"
                   alt={item.alt}
                   className="w-full h-full object-cover transition-transform duration-300 hover:scale-110"
                 />
@@ -731,6 +733,7 @@ export default function GameDetailPage({
                   controls
                   autoPlay
                   playsInline
+                  crossOrigin="anonymous"
                 >
                   <source
                     src={mediaItems[selectedMediaIndex]?.url}
@@ -740,6 +743,7 @@ export default function GameDetailPage({
               ) : (
                 <img
                   src={mediaItems[selectedMediaIndex]?.url}
+                  crossOrigin="anonymous"
                   alt={mediaItems[selectedMediaIndex]?.alt}
                   className="w-full h-full object-contain rounded-3xl"
                 />
