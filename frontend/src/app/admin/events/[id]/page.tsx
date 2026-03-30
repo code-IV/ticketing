@@ -81,6 +81,7 @@ export default function EditEventPage() {
   });
 
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [originalData, setOriginalData] = useState<any>(null);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -119,7 +120,7 @@ export default function EditEventPage() {
       console.log('🔍 All Event Keys:', Object.keys(eventData || {}));
 
       if (eventData) {
-        setFormData({
+        const formDataValues = {
           name: eventData.name || "",
           description: eventData.description || "",
           eventDate: eventData.eventDate || "",
@@ -136,7 +137,12 @@ export default function EditEventPage() {
               maxQuantityPerBooking: tt.max_quantity_per_booking || 10,
             })) || [],
           mediaFiles: [],
-        });
+        };
+
+        setFormData(formDataValues);
+        
+        // Store original data for change detection
+        setOriginalData(formDataValues);
 
         // Load existing media
         if (eventData.gallery && eventData.gallery.length > 0) {
@@ -178,6 +184,53 @@ export default function EditEventPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const hasFieldChanged = (original: any, current: any, field: string) => {
+    if (!original || !current) return false;
+    
+    // Handle number vs string conversions
+    if (typeof original === 'number' && typeof current === 'string') {
+      return original !== parseFloat(current);
+    }
+    if (typeof original === 'string' && typeof current === 'number') {
+      return parseFloat(original) !== current;
+    }
+    
+    return original !== current;
+  };
+
+  const getTicketTypeChanges = (original: any[], current: any[]) => {
+    const changes: any[] = [];
+    
+    if (!original || original.length === 0) return current;
+    if (!current || current.length === 0) return [];
+    
+    current.forEach(currentTT => {
+      const originalTT = original.find(o => o.id === currentTT.id);
+      
+      if (!originalTT) {
+        // New ticket type
+        changes.push({
+          ...currentTT,
+          price: parseFloat(currentTT.price.toString())
+        });
+      } else if (
+        originalTT.category !== currentTT.category ||
+        originalTT.price !== parseFloat(currentTT.price.toString()) ||
+        originalTT.maxQuantityPerBooking !== currentTT.maxQuantityPerBooking
+      ) {
+        // Modified ticket type
+        changes.push({
+          id: currentTT.id,
+          category: currentTT.category,
+          price: parseFloat(currentTT.price.toString()),
+          maxQuantityPerBooking: currentTT.maxQuantityPerBooking
+        });
+      }
+    });
+    
+    return changes;
   };
 
   const getPosterCount = () => {
@@ -314,10 +367,12 @@ export default function EditEventPage() {
       
       // Update frontend state after successful backend deletion
       if (deleteModal.type === 'ticket') {
-        setFormData((p) => ({
-          ...p,
-          ticket_types: p.ticket_types.filter((_, i) => i !== deleteModal.index),
-        }));
+        const updatedFormData = {
+          ...formData,
+          ticket_types: formData.ticket_types.filter((_, i) => i !== deleteModal.index),
+        };
+        setFormData(updatedFormData);
+        setOriginalData(updatedFormData);
       } else if (deleteModal.type === 'media') {
         if (deleteModal.isExisting) {
           setExistingMedia((prev) => {
@@ -334,6 +389,7 @@ export default function EditEventPage() {
             return { ...prev, mediaFiles: updatedMedia };
           });
         }
+        setOriginalData(formData);
       }
       
       // Close modal
@@ -454,20 +510,44 @@ export default function EditEventPage() {
     setSubmitting(true);
     setError("");
 
-    const payload = {
-      productId: event.productId,
-      name: formData.name,
-      description: formData.description,
-      eventDate: formData.eventDate,
-      startTime: formData.startTime,
-      endTime: formData.endTime,
-      capacity: parseInt(formData.capacity, 10),
-      isActive: formData.isActive,
-      ticketTypes: formData.ticket_types.map((tt) => ({
-        ...tt,
-        price: parseFloat(tt.price.toString()),
-      })),
-    };
+    // Get only changed fields
+    const payload: any = { productId: event.productId };
+    
+    // Add only changed event fields
+    if (hasFieldChanged(originalData?.name, formData.name, 'name')) {
+      payload.name = formData.name;
+    }
+    if (hasFieldChanged(originalData?.description, formData.description, 'description')) {
+      payload.description = formData.description;
+    }
+    if (hasFieldChanged(originalData?.eventDate, formData.eventDate, 'eventDate')) {
+      payload.eventDate = formData.eventDate;
+    }
+    if (hasFieldChanged(originalData?.startTime, formData.startTime, 'startTime')) {
+      payload.startTime = formData.startTime;
+    }
+    if (hasFieldChanged(originalData?.endTime, formData.endTime, 'endTime')) {
+      payload.endTime = formData.endTime;
+    }
+    if (hasFieldChanged(originalData?.capacity, formData.capacity, 'capacity')) {
+      payload.capacity = parseInt(formData.capacity, 10);
+    }
+    if (hasFieldChanged(originalData?.isActive, formData.isActive, 'isActive')) {
+      payload.isActive = formData.isActive;
+    }
+    
+    // Handle ticket types
+    const ticketChanges = getTicketTypeChanges(originalData?.ticket_types, formData.ticket_types);
+    if (ticketChanges.length > 0) {
+      payload.ticketTypes = ticketChanges;
+    }
+
+    // Check if any changes exist
+    if (Object.keys(payload).length === 1) { // Only productId
+      setError("No changes to save");
+      setSubmitting(false);
+      return;
+    }
 
     try {
       // Update event details
@@ -492,6 +572,9 @@ export default function EditEventPage() {
         mediaIds: media?.data?.mediaIds,
       });
 
+      // Update original data after successful save
+      setOriginalData(formData);
+      
       router.push("/admin/events");
     } catch (error) {
       console.error("Failed to update event:", error);

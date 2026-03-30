@@ -80,6 +80,7 @@ export default function EditGamePage() {
   });
 
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [originalData, setOriginalData] = useState<any>(null);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -123,7 +124,7 @@ export default function EditGamePage() {
       const game = response.data?.game || response.data;
 
       if (game && "name" in game) {
-        setFormData({
+        const formDataValues = {
           name: game.name || "",
           description: game.description || "",
           rules: game.rules || "",
@@ -137,7 +138,12 @@ export default function EditGamePage() {
               max_quantity: tt.max_quantity || 100,
             })) || [],
           mediaFiles: [],
-        });
+        };
+
+        setFormData(formDataValues);
+        
+        // Store original data for change detection
+        setOriginalData(formDataValues);
 
         // Load existing media
         if (game.gallery && game.gallery.length > 0) {
@@ -161,6 +167,53 @@ export default function EditGamePage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const hasFieldChanged = (original: any, current: any, field: string) => {
+    if (!original || !current) return false;
+    
+    // Handle number vs string conversions
+    if (typeof original === 'number' && typeof current === 'string') {
+      return original !== parseFloat(current);
+    }
+    if (typeof original === 'string' && typeof current === 'number') {
+      return parseFloat(original) !== current;
+    }
+    
+    return original !== current;
+  };
+
+  const getTicketTypeChanges = (original: any[], current: any[]) => {
+    const changes: any[] = [];
+    
+    if (!original || original.length === 0) return current;
+    if (!current || current.length === 0) return [];
+    
+    current.forEach(currentTT => {
+      const originalTT = original.find(o => o.id === currentTT.id);
+      
+      if (!originalTT) {
+        // New ticket type
+        changes.push({
+          ...currentTT,
+          price: parseFloat(currentTT.price.toString())
+        });
+      } else if (
+        originalTT.category !== currentTT.category ||
+        originalTT.price !== parseFloat(currentTT.price.toString()) ||
+        originalTT.max_quantity !== currentTT.max_quantity
+      ) {
+        // Modified ticket type
+        changes.push({
+          id: currentTT.id,
+          category: currentTT.category,
+          price: parseFloat(currentTT.price.toString()),
+          maxQuantityPerBooking: currentTT.max_quantity
+        });
+      }
+    });
+    
+    return changes;
   };
 
   const getPosterCount = () => {
@@ -323,10 +376,12 @@ export default function EditGamePage() {
       
       // Update frontend state after successful backend deletion
       if (deleteModal.type === 'ticket') {
-        setFormData((p) => ({
-          ...p,
-          ticketTypes: p.ticketTypes.filter((_, i) => i !== deleteModal.index),
-        }));
+        const updatedFormData = {
+          ...formData,
+          ticketTypes: formData.ticketTypes.filter((_, i) => i !== deleteModal.index),
+        };
+        setFormData(updatedFormData);
+        setOriginalData(updatedFormData);
       } else if (deleteModal.type === 'media') {
         if (deleteModal.isExisting) {
           setExistingMedia((prev) => {
@@ -343,6 +398,7 @@ export default function EditGamePage() {
             return { ...prev, mediaFiles: updatedMedia };
           });
         }
+        setOriginalData(formData);
       }
       
       // Close modal
@@ -434,17 +490,35 @@ export default function EditGamePage() {
     setSubmitting(true);
     setError("");
 
-    const payload = {
-      productId: game.productId,
-      name: formData.name,
-      description: formData.description,
-      rules: formData.rules,
-      status: formData.status,
-      ticketTypes: formData.ticketTypes.map((tt) => ({
-        ...tt,
-        price: parseFloat(tt.price.toString()),
-      })),
-    };
+    // Get only changed fields
+    const payload: any = { productId: game.productId };
+    
+    // Add only changed game fields
+    if (hasFieldChanged(originalData?.name, formData.name, 'name')) {
+      payload.name = formData.name;
+    }
+    if (hasFieldChanged(originalData?.description, formData.description, 'description')) {
+      payload.description = formData.description;
+    }
+    if (hasFieldChanged(originalData?.rules, formData.rules, 'rules')) {
+      payload.rules = formData.rules;
+    }
+    if (hasFieldChanged(originalData?.status, formData.status, 'status')) {
+      payload.status = formData.status;
+    }
+    
+    // Handle ticket types
+    const ticketChanges = getTicketTypeChanges(originalData?.ticketTypes, formData.ticketTypes);
+    if (ticketChanges.length > 0) {
+      payload.ticketTypes = ticketChanges;
+    }
+
+    // Check if any changes exist
+    if (Object.keys(payload).length === 1) { // Only productId
+      setError("No changes to save");
+      setSubmitting(false);
+      return;
+    }
 
     try {
       // Upload new media files first
@@ -470,6 +544,9 @@ export default function EditGamePage() {
         mediaIds: media?.data?.mediaIds || [],
       });
 
+      // Update original data after successful save
+      setOriginalData(formData);
+      
       router.push("/admin/games");
     } catch (error) {
       console.error("Failed to update game:", error);
