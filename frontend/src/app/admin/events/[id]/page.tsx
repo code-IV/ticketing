@@ -116,7 +116,6 @@ export default function EditEventPage() {
               id: tt.id || null,
               category: tt.category || "ADULT",
               price: parseFloat(tt.price) || 0,
-              description: tt.description || "",
               maxQuantityPerBooking: tt.max_quantity_per_booking || 10,
             })) || [],
           mediaFiles: [],
@@ -739,11 +738,6 @@ export default function EditEventPage() {
                     </span>
                   </div>
                 </div>
-                <textarea
-                  placeholder="Optional description for this ticket type…"
-                  rows={2}
-                  className={`w-full mt-3 px-3 py-2.5 rounded-xl text-sm font-medium outline-none border border-transparent focus:border-accent/50 resize-none transition-all placeholder:${muted} ${inputBg} ${text}`}
-                />
                 <button
                   type="button"
                   onClick={addCategory}

@@ -152,8 +152,7 @@ const createEventWithTicketTypesRules = [
   body("ticketTypes.*.price")
     .isFloat({ min: 0 })
     .withMessage("Price must be a non-negative number"),
-  body("ticketTypes.*.description").optional().trim(),
-  body("ticketTypes.*.maxQuantityPerBooking")
+    body("ticketTypes.*.maxQuantityPerBooking")
     .optional()
     .isInt({ min: 1, max: 50 })
     .withMessage("Max quantity per booking must be between 1 and 50"),
