@@ -732,6 +732,7 @@ export default function GameDetailPage({
                   className="w-full h-full rounded-3xl"
                   controls
                   autoPlay
+                  muted
                   playsInline
                   crossOrigin="anonymous"
                 >

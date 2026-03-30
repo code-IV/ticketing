@@ -177,20 +177,49 @@ const CreateEventDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (loading) return;
+    
+    // Add validation for required event date
+    console.log("=== DEBUGGING EVENT CREATION ===");
+    console.log("formData.eventDate:", JSON.stringify(formData.eventDate));
+    console.log("formData.eventDate type:", typeof formData.eventDate);
+    console.log("Is eventDate falsy?", !formData.eventDate);
+    
+    if (!formData.eventDate || formData.eventDate === "") {
+      alert("Please select a valid event date");
+      setLoading(false);
+      return;
+    }
+    
     setLoading(true);
+    
+    // Create date and validate it's a real date
+    const eventDate = new Date(formData.eventDate);
+    if (isNaN(eventDate.getTime())) {
+      alert("Invalid date selected. Please choose a valid date.");
+      setLoading(false);
+      return;
+    }
+    
+    const formattedDate = eventDate.toISOString().split('T')[0];
+    
     const payload = {
       name: formData.name,
       description: formData.description,
-      eventDate: formData.eventDate,
+      eventDate: formattedDate,
       startTime: formData.startTime,
       endTime: formData.endTime,
       capacity: parseInt(formData.capacity, 10),
       ticketTypes: formData.ticket_types.map((tt) => ({
         ...tt,
-        category: tt.category.toLowerCase(),
+        category: tt.category.toUpperCase(), // Fix: Convert to uppercase for database enum
         price: parseFloat(tt.price.toString()),
       })),
     };
+
+    console.log("Final payload being sent:", JSON.stringify(payload, null, 2));
+    console.log("payload.eventDate:", payload.eventDate);
+    console.log("payload.eventDate type:", typeof payload.eventDate);
+    console.log("================================");
     try {
       let media;
       if (formData.mediaFiles.length > 0) {
@@ -355,10 +384,10 @@ const CreateEventDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
                         className={`w-full px-4 py-3 rounded-2xl text-sm font-medium outline-none border-2 border-transparent transition-all focus:border-accent/50 ${inputBg} ${text}`}
                         value={formData.eventDate}
                         onChange={(e) =>
-                          setFormData({
-                            ...formData,
+                          setFormData(prev => ({
+                            ...prev,
                             eventDate: e.target.value,
-                          })
+                          }))
                         }
                       />
                     </Field>

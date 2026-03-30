@@ -151,7 +151,7 @@ export default function EditEventPage() {
         const formDataValues = {
           name: eventData.name || "",
           description: eventData.description || "",
-          eventDate: eventData.eventDate || "",
+          eventDate: eventData.eventDate ? new Date(eventData.eventDate).toISOString().split('T')[0] : "",
           startTime: eventData.startTime || "",
           endTime: eventData.endTime || "",
           capacity: eventData.capacity?.toString() || "",

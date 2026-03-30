@@ -14,6 +14,81 @@ import {
 } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
 
+// Helper to detect if URL is a video
+const isVideoUrl = (url: string) => {
+  const videoExtensions = ['.mp4', '.webm', '.ogg', '.mov'];
+  return videoExtensions.some(ext => url.toLowerCase().endsWith(ext));
+};
+
+// Component that handles cycling of posters (images and videos)
+const BannerMedia = ({ posters, gameName }: { posters: Array<{ url: string; label?: string }>; gameName: string }) => {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const currentPoster = posters[currentIndex]?.url || '/l.jpg';
+  const isVideo = isVideoUrl(currentPoster);
+
+  const goToNext = () => {
+    setCurrentIndex((prev) => (prev + 1) % posters.length);
+  };
+
+  useEffect(() => {
+    // Clear previous timers
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+
+    if (isVideo) {
+      // Force play the video
+      videoRef.current?.play().catch(err => console.log("Autoplay blocked or failed", err));
+      
+      // Safety Fallback: If video stalls or is too long, skip after 10s
+      timeoutRef.current = setTimeout(goToNext, 10000);
+    } else {
+      // Standard Image Interval
+      timeoutRef.current = setTimeout(goToNext, 4000);
+    }
+
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+  }, [currentIndex, isVideo, posters.length]);
+
+  if (posters.length === 0) {
+    return <img src="/l.jpg" className="w-full h-full object-cover blur-sm" alt={gameName} />;
+  }
+
+  return (
+    <AnimatePresence mode="wait">
+      {isVideo ? (
+        <motion.video
+          key={currentIndex} // FORCES FRESH MOUNT
+          ref={videoRef}
+          src={currentPoster}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          autoPlay
+          muted
+          playsInline
+          onEnded={goToNext}
+          className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
+        />
+      ) : (
+        <motion.img
+          key={currentIndex} // FORCES FRESH MOUNT
+          src={currentPoster}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          crossOrigin="anonymous"
+          className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
+          alt={gameName}
+        />
+      )}
+    </AnimatePresence>
+  );
+};
+
 export default function GamesListingPage() {
   const { isDarkTheme } = useTheme();
   const router = useRouter();
@@ -24,12 +99,6 @@ export default function GamesListingPage() {
   const [itemsPerPage, setItemsPerPage] = useState(12);
   const [showShareModal, setShowShareModal] = useState(false);
   const [selectedGame, setSelectedGame] = useState<Game | null>(null);
-
-  // State for banner cycling
-  const [bannerIndexes, setBannerIndexes] = useState<{ [key: string]: number }>(
-    {},
-  );
-  const intervalRefs = useRef<{ [key: string]: NodeJS.Timeout }>({});
 
   useEffect(() => {
     const fetchGames = async () => {
@@ -54,37 +123,6 @@ export default function GamesListingPage() {
 
     fetchGames();
   }, []);
-
-  // Banner Cycling Logic
-  useEffect(() => {
-    games.forEach((game) => {
-      const posters =
-        game.gallery?.filter((item) => item.label === "poster") || [];
-      if (posters.length > 1) {
-        intervalRefs.current[game.id] = setInterval(() => {
-          setBannerIndexes((prev) => ({
-            ...prev,
-            [game.id]: ((prev[game.id] || 0) + 1) % posters.length,
-          }));
-        }, 4000); // 4 seconds
-      }
-    });
-
-    return () => {
-      Object.values(intervalRefs.current).forEach(clearInterval);
-    };
-  }, [games]);
-
-  // Helper function to get banner image
-  const getBannerImage = (game: Game) => {
-    const posters =
-      game.gallery?.filter((item) => item.label === "poster") || [];
-    if (posters.length === 0) {
-      return "/l.jpg"; // Fallback to poster placeholder
-    }
-    const index = bannerIndexes[game.id] || 0;
-    return posters[index]?.url || posters[0]?.url || "/poster.jpg";
-  };
 
   // Responsive items per page logic
   useEffect(() => {
@@ -233,15 +271,11 @@ export default function GamesListingPage() {
                   : "cursor-pointer"
               }`}
             >
-              {/* Image Background Layer */}
+              {/* Image/Video Background Layer */}
               <div className="absolute inset-0">
-                <img
-                  src={getBannerImage(game)}
-                  crossOrigin="anonymous"
-                  className={`w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110 ${
-                    getBannerImage(game) === "/l.jpg" ? "blur-sm" : ""
-                  }`}
-                  alt={game.name}
+                <BannerMedia
+                  posters={game.gallery?.filter((item) => item.label === "poster") || []}
+                  gameName={game.name}
                 />
                 <div className="absolute inset-0 bg-linear-to-t from-slate-950 via-slate-900/40 to-transparent" />
               </div>
@@ -270,11 +304,6 @@ export default function GamesListingPage() {
 
               {/* Bottom Content Area */}
               <div className="absolute bottom-0 left-0 right-0 p-10">
-                {/* <div className="flex items-center gap-2 mb-3">
-                    <MapPin size={14} style={{ color: '#ffd84f' }} />
-                    <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: '#ffd84f' }}>Zone B-0{index + 1}</span>
-                </div> */}
-
                 <h3
                   className="text-4xl font-black text-white tracking-tighter uppercase italic leading-none mb-4 group-hover transition-colors"
                   style={{ "--hover-color": "#ffd84f" } as React.CSSProperties}
@@ -584,4 +613,4 @@ export default function GamesListingPage() {
       `}</style>
     </div>
   );
-}
+}  

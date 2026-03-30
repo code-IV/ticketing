@@ -35,7 +35,7 @@ export const adminService = {
     capacity: number;
     mediaIds: any[];
   }): Promise<ApiResponse<{ event: Event; productId: string }>> {
-    const response = await api.post("/admin/events-with-tickets", data);
+    const response = await api.post("/admin/events", data);
     return response.data;
   },
 
@@ -49,13 +49,6 @@ export const adminService = {
         "Content-Type": "multipart/form-data",
       },
     });
-    return response.data;
-  },
-
-  async createEventWithTicketTypes(
-    data: CreateEventWithTicketTypesRequest,
-  ): Promise<ApiResponse<{ event: Event; ticketTypes: TicketType[] }>> {
-    const response = await api.post("/admin/events-with-tickets", data);
     return response.data;
   },
 
