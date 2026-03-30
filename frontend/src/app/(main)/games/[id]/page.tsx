@@ -99,9 +99,14 @@ export default function GameDetailPage({
     }
 
     const currentBanner = banners[bannerIndex] || banners[0];
+    const isVideo = currentBanner?.type?.startsWith("video") || 
+                    currentBanner?.url?.includes('.mp4') || 
+                    currentBanner?.url?.includes('.webm') || 
+                    currentBanner?.url?.includes('.mov');
+    
     return {
       url: currentBanner?.url || "/banner.jpg",
-      type: currentBanner?.type?.startsWith("video") ? "video" : "image"
+      type: isVideo ? "video" : "image"
     };
   };
 
