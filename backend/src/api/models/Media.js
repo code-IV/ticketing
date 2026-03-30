@@ -4,7 +4,7 @@ const BACKEND_URL = require("../../config/settings");
 const Media = {
   async createMedia(mediaData, client) {
     const sql = `
-      INSERT INTO media (id, name, path,url, type, label)
+      INSERT INTO media (id, name, path, url, type, label)
       VALUES ($1, $2, $3, $4, $5, $6)
       RETURNING id`;
     const { rows } = await client.query(sql, [
@@ -52,7 +52,7 @@ RETURNING *;`;
 
   async getAllMedia() {
     const sql = `
-        SELECT id, name, ($1 || url) AS url, type, provider, metadata FROM media;
+        SELECT id, name,  url, type, provider, metadata FROM media;
         `;
 
     const media = await query(sql, [BACKEND_URL]);
@@ -93,7 +93,7 @@ RETURNING *;`;
       }
 
       // Get results
-      let sql = `SELECT id, name, ($1 || url) AS url, type, provider, created_at, label FROM media`;
+      let sql = `SELECT id, name,  url, type, provider, created_at, label FROM media`;
       let params = [BACKEND_URL];
 
       if (type) {
@@ -126,7 +126,7 @@ RETURNING *;`;
   },
   async getMediaById(id) {
     const sql = `
-        SELECT id, name, ($1 || url) AS url, path, type, provider, metadata, label FROM media WHERE id=$2;
+        SELECT id, name,  url, path, type, provider, metadata, label FROM media WHERE id=$2;
         `;
 
     const media = await query(sql, [BACKEND_URL, id]);
@@ -135,7 +135,7 @@ RETURNING *;`;
 
   async getMediaByName(name) {
     const sql = `
-        SELECT id, name, ($1 || url) AS url, type, provider, metadata FROM media WHERE name=$2;
+        SELECT id, name,  url, type, provider, metadata FROM media WHERE name=$2;
         `;
 
     const media = await query(sql, [BACKEND_URL, name]);
@@ -145,7 +145,7 @@ RETURNING *;`;
   async getMediaByType(type) {
     // Use LIKE with a wildcard to match the prefix
     const sql = `
-    SELECT id, name, ($1 || url) AS url, type, provider, metadata 
+    SELECT id, name,  url, type, provider, metadata 
     FROM media 
     WHERE type LIKE $2 || '/%';
   `;
