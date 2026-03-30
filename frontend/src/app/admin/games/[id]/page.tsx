@@ -235,18 +235,21 @@ export default function EditGamePage() {
           ...currentTT,
           price: parseFloat(currentTT.price.toString())
         });
-      } else if (
-        originalTT.category !== currentTT.category ||
-        originalTT.price !== parseFloat(currentTT.price.toString()) ||
-        originalTT.max_quantity !== currentTT.max_quantity
-      ) {
-        // Modified ticket type
-        changes.push({
-          id: currentTT.id,
-          category: currentTT.category,
-          price: parseFloat(currentTT.price.toString()),
-          maxQuantityPerBooking: currentTT.max_quantity
-        });
+      } else {
+        // Check if anything actually changed
+        const categoryChanged = originalTT.category !== currentTT.category;
+        const priceChanged = originalTT.price !== parseFloat(currentTT.price.toString());
+        const maxQtyChanged = originalTT.max_quantity !== currentTT.max_quantity;
+        
+        if (categoryChanged || priceChanged || maxQtyChanged) {
+          // Modified ticket type - send complete object
+          changes.push({
+            id: currentTT.id,
+            category: currentTT.category,
+            price: parseFloat(currentTT.price.toString()),
+            maxQuantityPerBooking: currentTT.max_quantity
+          });
+        }
       }
     });
     
@@ -649,6 +652,18 @@ export default function EditGamePage() {
   };
 
   const updateTicketType = (index: number, field: keyof any, value: any) => {
+    // Prevent duplicate ticket types - only 1 per category
+    if (field === 'category') {
+      const categoryExists = formData.ticketTypes.some((tt, i) => 
+        tt.category === value && i !== index
+      );
+      if (categoryExists) {
+        setError(`A ${value} ticket type already exists`);
+        setTimeout(() => setError(''), 3000);
+        return;
+      }
+    }
+    
     const updatedTicketTypes = [...formData.ticketTypes];
     updatedTicketTypes[index] = {
       ...updatedTicketTypes[index],
@@ -904,17 +919,39 @@ export default function EditGamePage() {
                       key={index}
                       className={`flex items-center justify-between px-4 py-3 rounded-2xl border ${border} ${card}`}
                     >
-                      <div className="flex items-center gap-3">
-                        <span
-                          className={`text-[10px] font-bold px-2.5 py-1 rounded-lg uppercase tracking-wider ${CATEGORY_COLORS[tt.category] ?? "bg-gray-500/10 text-gray-400"}`}
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <select
+                          value={tt.category}
+                          onChange={(e) => updateTicketType(index, 'category', e.target.value)}
+                          className={`text-[10px] font-bold px-2.5 py-1.5 rounded-lg uppercase tracking-wider border-2 border-transparent focus:border-accent/50 outline-none appearance-none cursor-pointer ${CATEGORY_COLORS[tt.category] ?? "bg-gray-500/10 text-gray-400"} ${inputBg} ${text} ${border}`}
+                          style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23999' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 4px center', backgroundSize: '12px', paddingRight: '20px' }}
                         >
-                          {tt.category}
-                        </span>
-                        <div>
-                          <p className={`text-xs ${muted}`}>
-                            {tt.price} ETB · max {tt.max_quantity}
-                            /booking
-                          </p>
+                          <option value="ADULT">ADULT</option>
+                          <option value="CHILD">CHILD</option>
+                          <option value="SENIOR">SENIOR</option>
+                          <option value="STUDENT">STUDENT</option>
+                          <option value="GROUP">GROUP</option>
+                        </select>
+                        
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={tt.price}
+                            onChange={(e) => updateTicketType(index, 'price', parseFloat(e.target.value) || 0)}
+                            className={`w-20 px-2 py-1 text-xs rounded-lg ${inputBg} ${text} border ${border} focus:border-accent/50 outline-none`}
+                            placeholder="Price"
+                          />
+                          <span className={`text-xs ${muted}`}>ETB</span>
+                          <input
+                            type="number"
+                            min="1"
+                            value={tt.max_quantity}
+                            onChange={(e) => updateTicketType(index, 'max_quantity', parseInt(e.target.value) || 1)}
+                            className={`w-20 px-2 py-1 text-xs rounded-lg ${inputBg} ${text} border ${border} focus:border-accent/50 outline-none`}
+                            placeholder="Max"
+                          />
                         </div>
                       </div>
                       <button

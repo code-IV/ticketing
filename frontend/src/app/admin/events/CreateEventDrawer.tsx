@@ -187,6 +187,7 @@ const CreateEventDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
       capacity: parseInt(formData.capacity, 10),
       ticketTypes: formData.ticket_types.map((tt) => ({
         ...tt,
+        category: tt.category.toLowerCase(),
         price: parseFloat(tt.price.toString()),
       })),
     };

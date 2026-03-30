@@ -2,6 +2,7 @@ const { Event } = require("../models/Event");
 const { EventService, EventStatsService } = require("../services/eventService");
 const TicketType = require("../models/TicketType");
 const { apiResponse } = require("../../utils/helpers");
+const { query } = require("../../config/db");
 
 const EventController = {
   /**

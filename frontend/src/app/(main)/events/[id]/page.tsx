@@ -213,7 +213,7 @@ export default function EventDetailPage({
     // Filter for banner-labeled images from gallery
     const bannerImages = (event.gallery || [])
       .filter(
-        (item) => item.label && item.label.toLowerCase().includes("banner"),
+        (item) => item.label && (item.label.toLowerCase().includes("banner") || item.label.toLowerCase().includes("poster")),
       )
       .map((item, index) => ({
         type: "image" as const,
@@ -278,14 +278,14 @@ export default function EventDetailPage({
     return [
       {
         type: "image" as const,
-        url: "/img.jpg",
-        thumbnail: "/img.jpg",
+        url: "/banner.jpg",
+        thumbnail: "/banner.jpg",
         alt: `${event.name} gallery image`,
       },
       {
         type: "video" as const,
         url: "/vid.mp4",
-        thumbnail: "/img.jpg",
+        thumbnail: "/banner.jpg",
         alt: `${event.name} gallery video`,
       },
     ];
@@ -385,7 +385,7 @@ export default function EventDetailPage({
               ) : (
                 <div className="relative w-full h-full">
                   <Image
-                    src={currentMedia?.url?.replace('http://localhost:5000', '') || ""}
+                    src={currentMedia?.url || ""}
                     alt={currentMedia?.alt || event.name}
                     fill
                     crossOrigin="anonymous"

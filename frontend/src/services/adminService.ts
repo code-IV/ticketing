@@ -35,7 +35,7 @@ export const adminService = {
     capacity: number;
     mediaIds: any[];
   }): Promise<ApiResponse<{ event: Event; productId: string }>> {
-    const response = await api.post("/admin/events", data);
+    const response = await api.post("/admin/events-with-tickets", data);
     return response.data;
   },
 

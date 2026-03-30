@@ -139,11 +139,6 @@ const createEventWithTicketTypesRules = [
   body("ticketTypes")
     .isArray({ min: 1 })
     .withMessage("At least one ticket type is required"),
-  body("ticketTypes.*.name")
-    .trim()
-    .notEmpty()
-    .withMessage("Ticket type name is required")
-    .isLength({ max: 100 }),
   body("ticketTypes.*.category")
     .isIn(["adult", "child", "senior", "student", "group"])
     .withMessage(
