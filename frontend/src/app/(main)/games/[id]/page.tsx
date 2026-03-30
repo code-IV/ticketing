@@ -88,17 +88,21 @@ export default function GameDetailPage({
     };
   }, [game]);
 
-  const getBannerImage = () => {
+  const getBannerMedia = () => {
     if (!game || !game.gallery) {
-      return "/banner.jpg"; // Fallback to banner placeholder
+      return { url: "/banner.jpg", type: "image" };
     }
 
     const banners = game.gallery.filter((item) => item.label === "banner");
     if (banners.length === 0) {
-      return "/banner.jpg"; // Fallback to banner placeholder
+      return { url: "/banner.jpg", type: "image" };
     }
 
-    return banners[bannerIndex]?.url || banners[0]?.url || "/banner.jpg";
+    const currentBanner = banners[bannerIndex] || banners[0];
+    return {
+      url: currentBanner?.url || "/banner.jpg",
+      type: currentBanner?.type?.startsWith("video") ? "video" : "image"
+    };
   };
 
   const getMediaItems = () => {
@@ -252,8 +256,8 @@ export default function GameDetailPage({
   const currentMedia = mediaItems[selectedMediaIndex];
   const gameIndex = parseInt(gameId) || 0;
 
-  // Get banner image for hero section
-  const bannerImage = getBannerImage();
+  // Get banner media for hero section
+  const bannerMedia = getBannerMedia();
 
   return (
     <div
@@ -262,19 +266,24 @@ export default function GameDetailPage({
       {/* Hero Section with Video/Image Background */}
       <section className="relative h-screen overflow-hidden">
         <div className="absolute inset-0">
-          <img
-            src={bannerImage}
-            crossOrigin="anonymous"
-            className="w-full h-full object-cover"
-            alt={game?.name || "Game"}
-          />
-          <div
-            className={`absolute inset-0 bg-linear-to-b ${
-              isDarkTheme
-                ? "from-[#0A0A0A]/20 via-[#0A0A0A]/10 to-[#0A0A0A]"
-                : "from-gray-400/20 via-gray-50/10 to-gray-50"
-            }`}
-          />
+          {bannerMedia.type === "video" ? (
+            <video
+              src={bannerMedia.url}
+              autoPlay
+              muted
+              loop
+              playsInline
+              crossOrigin="anonymous"
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <img
+              src={bannerMedia.url}
+              crossOrigin="anonymous"
+              className="w-full h-full object-cover"
+              alt={game?.name || "Game"}
+            />
+          )}
         </div>
 
         {/* Back Button */}
