@@ -169,6 +169,23 @@ const UploadsController = {
     } catch (err) {
       next(err);
     }
+},
+
+async updateMedia(req, res, next) {
+  try {
+    const { id } = req.params;
+    const { label } = req.body;
+    
+    if (!id) {
+      return apiResponse(res, 400, false, "Media ID required");
+    }
+    
+    const result = await UploadsService.updateMedia(id, { label });
+    
+    return apiResponse(res, 200, true, "Media updated successfully", result);
+  } catch (err) {
+    next(err);
+  }
   },
 };
 

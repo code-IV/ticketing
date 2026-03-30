@@ -163,6 +163,12 @@ RETURNING *;`;
     const media = await client.query(sql, [id]);
     return media.rows[0];
   },
+
+  async updateMediaLabel(id, label) {
+    const sql = `UPDATE media SET label = $1 WHERE id = $2 RETURNING *`;
+    const result = await query(sql, [label, id]);
+    return result.rows[0];
+  },
 };
 
 module.exports = { Media };

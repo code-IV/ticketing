@@ -68,5 +68,13 @@ router.get(
   handleValidation,
   UploadsController.getById,
 );
+router.patch(
+  "/:id",
+  isAuthenticated,
+  isAdmin,
+  uuidParamRule("id"),
+  handleValidation,
+  UploadsController.updateMedia,
+);
 
 module.exports = router;

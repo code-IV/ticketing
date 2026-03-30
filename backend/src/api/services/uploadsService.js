@@ -242,6 +242,15 @@ const UploadsService = {
     const media = await Media.getMediaByType(type);
     return media;
   },
+
+  async updateMedia(id, { label }) {
+    if (!id) {
+      throw new Error("Media ID is required");
+    }
+    
+    const result = await Media.updateMediaLabel(id, label);
+    return result;
+  },
 };
 
 module.exports = UploadsService;

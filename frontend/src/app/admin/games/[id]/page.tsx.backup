@@ -64,7 +64,6 @@ export default function EditGamePage() {
   const [previewModal, setPreviewModal] = useState<{
     media: any;
     type: 'image' | 'video';
-    isExisting: boolean;
   } | null>(null);
 
   const [deleteModal, setDeleteModal] = useState<{
@@ -119,26 +118,6 @@ export default function EditGamePage() {
     max_quantity: 100,
   });
 
-  // Helper to convert backend MIME type to internal type constant
-  const inferMediaType = (media: any): "IMAGE" | "VIDEO" => {
-    if (media.type) {
-      // If it's already our constant, return it
-      if (media.type === "IMAGE" || media.type === "VIDEO") return media.type;
-      // Otherwise treat MIME type
-      if (media.type.startsWith("image/")) return "IMAGE";
-      if (media.type.startsWith("video/")) return "VIDEO";
-    }
-    if (media.mimeType) {
-      if (media.mimeType.startsWith("image/")) return "IMAGE";
-      if (media.mimeType.startsWith("video/")) return "VIDEO";
-    }
-    if (media.url) {
-      const url = media.url.toLowerCase();
-      if (url.match(/\.(mp4|mov|webm|avi|mkv)$/)) return "VIDEO";
-    }
-    return "IMAGE"; // default
-  };
-
   // Sync productId when game loads
   useEffect(() => {
     if (game?.productId) {
@@ -185,7 +164,6 @@ export default function EditGamePage() {
             game.gallery.map((media: any) => ({
               ...media,
               existing: true,
-              type: inferMediaType(media),  // <-- critical fix
               preview: media.url,
               thumbnailPreview: media.thumbnailUrl || null,
               thumbnail: media.thumbnailUrl ? { 
@@ -197,6 +175,7 @@ export default function EditGamePage() {
         }
       }
     } catch (err: any) {
+      console.error("Failed to load game:", err);
       setError(err.response?.data?.message || "Failed to load game");
     } finally {
       setLoading(false);
@@ -204,10 +183,7 @@ export default function EditGamePage() {
   };
 
   const hasFieldChanged = (original: any, current: any, field: string) => {
-    // Handle null values - if original is null and current has content, it's a change
-    if (original === null && current !== null) return true;
-    if (original === null && current === null) return false;
-    if (original !== null && current === null) return true; // Text → Null case
+    if (!original || !current) return false;
     
     // Handle number vs string conversions
     if (typeof original === 'number' && typeof current === 'string') {
@@ -321,13 +297,23 @@ export default function EditGamePage() {
 
       setLoading(true);
       try {
+        console.log('🎯 Updating media label:', {
+          mediaId: labelModal.media.id,
+          isExisting: labelModal.isExisting,
+          newLabel,
+          media: labelModal.media
+        });
+
         if (labelModal.isExisting && labelModal.media.id) {
+          console.log('📡 Making API call to update existing media');
           await adminService.updateMediaLabel(labelModal.media.id, newLabel);
+          console.log('✅ API call successful, updating state');
           
           setExistingMedia(prev => prev.map(m => 
             m.id === labelModal.media.id ? { ...m, label: newLabel } : m
           ));
         } else {
+          console.log('📝 Updating new media in formData');
           setFormData(prev => ({
             ...prev,
             mediaFiles: prev.mediaFiles.map(m => 
@@ -336,21 +322,15 @@ export default function EditGamePage() {
           }));
         }
         
-        // Create updated media object for preview modal
-        const updatedMedia = { ...labelModal.media, label: newLabel };
-        
-        // Close label modal and reopen preview modal with updated media
         setLabelModal({ isOpen: false, media: null, isExisting: false, currentLabel: "" });
-        
-        // Reopen preview modal with updated media
-        setTimeout(() => {
-          setPreviewModal({
-            media: updatedMedia,
-            type: inferMediaType(updatedMedia),
-            isExisting: labelModal.isExisting
-          });
-        }, 100); // Small delay to ensure smooth transition
+        console.log('🎉 Label update completed successfully');
       } catch (err: any) {
+        console.error('❌ Error updating label:', err);
+        console.error('❌ Error details:', {
+          message: err.message,
+          response: err.response?.data,
+          status: err.response?.status
+        });
         setError("Failed to update label");
       } finally {
         setLoading(false);
@@ -438,21 +418,14 @@ export default function EditGamePage() {
     });
   };
 
-  // FIX: Await the promise from getTinyPreview
   const handleMediaUpload = async (
     e: React.ChangeEvent<HTMLInputElement>,
     type: "IMAGE" | "VIDEO",
   ) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    let preview: string;
-    if (type === "IMAGE") {
-      preview = await getTinyPreview(file);  // ✅ await the async function
-    } else {
-      preview = URL.createObjectURL(file);
-    }
-
+    const preview =
+      type === "IMAGE" ? await getTinyPreview(file) : URL.createObjectURL(file);
     const newMedia = { file, type, name: "", url: "", provider: "", preview };
     if (isGalleryOnly()) {
       setFormData((p) => ({
@@ -490,7 +463,8 @@ export default function EditGamePage() {
       const updatedMedia = [...prev.mediaFiles];
       if (updatedMedia[videoIndex]) {
         updatedMedia[videoIndex].thumbnailPreview = tinyThumb;
-        updatedMedia[videoIndex].thumbnail = file;
+        updatedMedia[videoIndex].thumbnail = file; // Store the actual thumbnail file
+        // Also update the main preview to show thumbnail in top-left
         updatedMedia[videoIndex].preview = tinyThumb;
       }
       return { ...prev, mediaFiles: updatedMedia };
@@ -517,7 +491,6 @@ export default function EditGamePage() {
         thumbnailUrl: media.thumbnailPreview || media.thumbnailUrl,
       },
       type: mediaType,
-      isExisting,
     });
   };
 
@@ -528,7 +501,6 @@ export default function EditGamePage() {
         url: isExisting ? media.url : media.preview,
       },
       type: 'video',
-      isExisting,
     });
   };
 
@@ -541,7 +513,6 @@ export default function EditGamePage() {
           name: media.name ? `${media.name} - Thumbnail` : 'Thumbnail',
         },
         type: 'image',
-        isExisting: !!media.id,
       });
     }
   };
@@ -554,12 +525,15 @@ export default function EditGamePage() {
     setDeleteLoading(true);
     
     try {
-      if (deleteModal.type === 'ticket' && deleteModal.item.id && deleteModal.item.id.trim() !== "") {
+      if (deleteModal.type === 'ticket' && deleteModal.item.id) {
+        // Delete existing ticket type from backend
         await adminService.deleteTicketType(deleteModal.item.id);
       } else if (deleteModal.type === 'media' && deleteModal.item.id) {
+        // Delete existing media from backend
         await adminService.deleteMedia(deleteModal.item.id);
       }
       
+      // Update frontend state after successful backend deletion
       if (deleteModal.type === 'ticket') {
         const updatedFormData = {
           ...formData,
@@ -592,6 +566,7 @@ export default function EditGamePage() {
         }));
       }
       
+      // Close modal
       setDeleteModal({
         isOpen: false,
         type: 'ticket',
@@ -600,6 +575,7 @@ export default function EditGamePage() {
         item: null,
       });
     } catch (error) {
+      console.error(`Failed to delete ${deleteModal.type}:`, error);
       setError(`Failed to delete ${deleteModal.type}. Please try again.`);
     } finally {
       setDeleteLoading(false);
@@ -667,6 +643,7 @@ export default function EditGamePage() {
         await gameService.deleteGame(gameId);
         router.push("/admin/games");
       } catch (error) {
+        console.error("Failed to delete game:", error);
         setError("Failed to delete game");
       }
     }
@@ -681,6 +658,7 @@ export default function EditGamePage() {
     // Get only changed fields
     const payload: any = { productId: game.productId };
     
+    // Add only changed game fields
     if (hasFieldChanged(originalData?.name, formData.name, 'name')) {
       payload.name = formData.name;
     }
@@ -688,17 +666,20 @@ export default function EditGamePage() {
       payload.description = formData.description;
     }
     if (hasFieldChanged(originalData?.rules, formData.rules, 'rules')) {
+      console.log('🎯 Rules changed:', { original: originalData?.rules, current: formData.rules });
       payload.rules = formData.rules;
     }
     if (hasFieldChanged(originalData?.status, formData.status, 'status')) {
       payload.status = formData.status;
     }
     
+    // Handle ticket types
     const ticketChanges = getTicketTypeChanges(originalData?.ticketTypes, formData.ticketTypes);
     if (ticketChanges.length > 0) {
       payload.ticketTypes = ticketChanges;
     }
 
+    // Check if any changes exist
     if (Object.keys(payload).length === 1) { // Only productId
       setError("No changes to save");
       setSubmitting(false);
@@ -706,30 +687,35 @@ export default function EditGamePage() {
     }
 
     try {
-      // Upload new media files if any (if service method exists)
+      // Upload new media files first
       let media;
       if (formData.mediaFiles.length > 0) {
         const data = new FormData();
         formData.mediaFiles.forEach((m: any, index: number) => {
           data.append("mediaFiles", m.file);
           data.append("label", m.label);
+          
+          // Named thumbnail per video index
           if (m.thumbnail) {
             data.append(`thumbnail_${index}`, m.thumbnail);
           }
         });
-        // Assuming adminService.uploadProductMedia exists, otherwise skip or handle
-        // For now, keep the original approach: comment out if method not available
-        // media = await adminService.uploadProductMedia(data);
+        // For now, skip media upload since the method doesn't exist
+        media = await adminService.uploadProductMedia(data);
       }
 
+      // Update game details
       await gameService.updateGame(gameId, {
         ...payload,
         mediaIds: media?.data?.mediaIds || [],
       });
 
+      // Update original data after successful save
       setOriginalData(formData);
+      
       router.push("/admin/games");
     } catch (error) {
+      console.error("Failed to update game:", error);
       setError("Failed to update game");
     } finally {
       setSubmitting(false);
@@ -1099,73 +1085,72 @@ export default function EditGamePage() {
                     </p>
                     <div className="grid grid-cols-3 gap-2.5">
                       {existingMedia.map((media, idx) => {
-                        if (media.type === "IMAGE") {
-                          return (
-                            <div
-                              key={`existing-${idx}`}
-                              className="relative aspect-square rounded-xl overflow-hidden group shadow-sm cursor-pointer"
-                              onClick={() => handleMediaPreview(media, true)}
-                            >
-                              <img
-                                src={media.url}
-                                className="w-full h-full object-cover"
-                                alt="existing media"
-                                crossOrigin="anonymous"
-                              />
-                              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all" />
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  removeMedia(idx, true);
-                                }}
-                                className="absolute top-1.5 right-1.5 w-6 h-6 flex items-center justify-center bg-red-500 hover:bg-red-400 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-all scale-75 group-hover:scale-100"
-                              >
-                                <X size={11} />
-                              </button>
-                              <div className="absolute bottom-1.5 left-1.5 opacity-0 group-hover:opacity-100 transition-all">
-                                <span className="bg-black/70 backdrop-blur-sm text-white/80 text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md">
-                                  {media.label ?? media.type.toLowerCase()}
-                                </span>
-                              </div>
-                            </div>
-                          );
-                        } else {
-                          return (
-                            <VideoThumbnailCard
-                              key={`existing-${idx}`}
-                              media={media}
-                              index={idx}
-                              isDarkTheme={d}
-                              muted={muted}
-                              onThumbnailUpload={async (index, file, preview) => {
-                                setExistingMedia((prev) => {
-                                  const updated = [...prev];
-                                  if (updated[index]) {
-                                    updated[index].thumbnailPreview = preview;
-                                    updated[index].thumbnail = file;
-                                    updated[index].hasChanges = true;
-                                  }
-                                  return updated;
-                                });
-                              }}
-                              onThumbnailDelete={(index) => {
-                                setExistingMedia((prev) => {
-                                  const updated = [...prev];
-                                  if (updated[index]) {
-                                    updated[index].thumbnailPreview = undefined;
-                                    updated[index].thumbnail = undefined;
-                                    updated[index].hasChanges = true;
-                                  }
-                                  return updated;
-                                });
-                              }}
-                              onRemoveMedia={(index) => removeMedia(index, true)}
-                              onPreview={() => handleVideoPreview(media, true)}
-                              onThumbnailPreview={() => handleThumbnailPreview(media)}
+                        console.log('🖼️ Existing media type:', media.type, 'media:', media);
+                        return media.type === "IMAGE" ? (
+                          <div
+                            key={`existing-${idx}`}
+                            className="relative aspect-square rounded-xl overflow-hidden group shadow-sm cursor-pointer"
+                            onClick={() => handleMediaPreview(media, true)}
+                          >
+                            <img
+                              src={media.url}
+                              className="w-full h-full object-cover"
+                              alt="existing media"
                             />
-                          );
-                        }
-                      })}
+                            {/* Hover overlay */}
+                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all" />
+                            {/* Delete button only */}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                removeMedia(idx, true);
+                              }}
+                              className="absolute top-1.5 right-1.5 w-6 h-6 flex items-center justify-center bg-red-500 hover:bg-red-400 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-all scale-75 group-hover:scale-100"
+                            >
+                              <X size={11} />
+                            </button>
+                            {/* Label badge */}
+                            <div className="absolute bottom-1.5 left-1.5 opacity-0 group-hover:opacity-100 transition-all">
+                              <span className="bg-black/70 backdrop-blur-sm text-white/80 text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md">
+                                {media.label ?? media.type.toLowerCase()}
+                              </span>
+                            </div>
+                          </div>
+                        ) : (
+                          <VideoThumbnailCard
+                            key={`existing-${idx}`}
+                            media={media}
+                            index={idx}
+                            isDarkTheme={d}
+                            muted={muted}
+                            onThumbnailUpload={async (index, file, preview) => {
+                              setExistingMedia((prev) => {
+                                const updated = [...prev];
+                                if (updated[index]) {
+                                  updated[index].thumbnailPreview = preview;
+                                  updated[index].thumbnail = file;
+                                  updated[index].hasChanges = true;
+                                }
+                                return updated;
+                              });
+                            }}
+                            onThumbnailDelete={(index) => {
+                              setExistingMedia((prev) => {
+                                const updated = [...prev];
+                                if (updated[index]) {
+                                  updated[index].thumbnailPreview = undefined;
+                                  updated[index].thumbnail = undefined;
+                                  updated[index].hasChanges = true;
+                                }
+                                return updated;
+                              });
+                            }}
+                            onRemoveMedia={(index) => removeMedia(index, true)}
+                            onPreview={() => handleVideoPreview(media, true)}
+                            onThumbnailPreview={() => handleThumbnailPreview(media)}
+                          />
+                        ),
+                      )}
                     </div>
                   </div>
                 )}
@@ -1190,9 +1175,10 @@ export default function EditGamePage() {
                               src={media.preview}
                               className="w-full h-full object-cover"
                               alt="preview"
-                              crossOrigin="anonymous"
                             />
+                            {/* Hover overlay */}
                             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all" />
+                            {/* Delete button only */}
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -1202,6 +1188,7 @@ export default function EditGamePage() {
                             >
                               <X size={11} />
                             </button>
+                            {/* Label badge */}
                             <div className="absolute bottom-1.5 left-1.5 opacity-0 group-hover:opacity-100 transition-all">
                               <span className="bg-black/70 backdrop-blur-sm text-white/80 text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md">
                                 {media.label ?? media.type.toLowerCase()}
@@ -1219,7 +1206,8 @@ export default function EditGamePage() {
                               setFormData((prev) => {
                                 const updatedMedia = [...prev.mediaFiles];
                                 if (updatedMedia[index]) {
-                                  updatedMedia[index].thumbnailPreview = preview;
+                                  updatedMedia[index].thumbnailPreview =
+                                    preview;
                                   updatedMedia[index].thumbnail = file;
                                   updatedMedia[index].preview = preview;
                                 }
@@ -1230,7 +1218,8 @@ export default function EditGamePage() {
                               setFormData((prev) => {
                                 const updatedMedia = [...prev.mediaFiles];
                                 if (updatedMedia[index]) {
-                                  updatedMedia[index].thumbnailPreview = undefined;
+                                  updatedMedia[index].thumbnailPreview =
+                                    undefined;
                                   updatedMedia[index].thumbnail = undefined;
                                 }
                                 return { ...prev, mediaFiles: updatedMedia };
@@ -1327,7 +1316,6 @@ export default function EditGamePage() {
                   src={pendingFile.preview}
                   className="w-full h-36 object-cover rounded-2xl mb-4"
                   alt="pending"
-                  crossOrigin="anonymous"
                 />
                 <div className="grid grid-cols-3 gap-2">
                   {getAvailableImageLabels().map((label) => (
@@ -1374,6 +1362,7 @@ export default function EditGamePage() {
                 className="relative max-w-4xl max-h-[90vh] w-full h-full flex items-center justify-center"
                 onClick={(e) => e.stopPropagation()}
               >
+                {/* Close button */}
                 <button
                   onClick={closePreviewModal}
                   className="absolute top-4 right-4 z-10 w-10 h-10 flex items-center justify-center bg-black/50 hover:bg-black/70 text-white rounded-full transition-all"
@@ -1381,23 +1370,23 @@ export default function EditGamePage() {
                   <X size={20} />
                 </button>
 
+                {/* Media content */}
                 {previewModal.type === 'image' ? (
                   <img
                     src={previewModal.media.url}
                     alt="Preview"
                     className="max-w-full max-h-full object-contain rounded-lg"
-                    crossOrigin="anonymous"
                   />
                 ) : (
                   <video
                     src={previewModal.media.url}
                     controls
                     autoPlay
-                    crossOrigin="anonymous"
                     className="max-w-full max-h-full rounded-lg"
                   />
                 )}
 
+                {/* Media info */}
                 <div className="absolute bottom-4 left-4 right-4 bg-black/70 backdrop-blur-sm text-white p-3 rounded-lg">
                   <div className="flex items-center justify-between">
                     <div>
@@ -1437,4 +1426,4 @@ export default function EditGamePage() {
       </div>
     </div>
   );
-}
+};

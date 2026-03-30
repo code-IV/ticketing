@@ -13,6 +13,7 @@ import {
   ChevronRight,
   Trash2,
   ArrowLeft,
+  Play,
 } from "lucide-react";
 import { adminService } from "@/services/adminService";
 import { eventService } from "@/services/eventService";
@@ -33,12 +34,32 @@ const getTinyPreview = (file: File): Promise<string> =>
         canvas.width = 300;
         canvas.height = (img.height / img.width) * 300;
         ctx?.drawImage(img, 0, 0, 300, canvas.height);
-        res(canvas.toDataURL("image/jpeg", 0.7));
+        res(canvas.toDataURL("jpeg", 0.7));
       };
       img.src = e.target?.result as string;
     };
     reader.readAsDataURL(file);
   });
+
+// Helper to convert backend MIME type to internal type constant
+const inferMediaType = (media: any): "image" | "video" => {
+  if (media.type) {
+    // If it's already our constant, return it
+    if (media.type === "image" || media.type === "video") return media.type;
+    // Otherwise treat MIME type
+    if (media.type.startsWith("image/")) return "image";
+    if (media.type.startsWith("video/")) return "video";
+  }
+  if (media.mimeType) {
+    if (media.mimeType.startsWith("image/")) return "image";
+    if (media.mimeType.startsWith("video/")) return "video";
+  }
+  if (media.url) {
+    const url = media.url.toLowerCase();
+    if (url.match(/\.(mp4|mov|webm|avi|mkv)$/)) return "video";
+  }
+  return "image"; // default
+};
 
 const CATEGORY_COLORS: Record<string, string> = {
   ADULT: "bg-accent/10 text-accent ring-1 ring-accent/20",
@@ -83,6 +104,18 @@ export default function EditEventPage() {
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [originalData, setOriginalData] = useState<any>(null);
 
+  const [labelModal, setLabelModal] = useState<{
+    isOpen: boolean;
+    media: any;
+    isExisting: boolean;
+    currentLabel: string;
+  }>({
+    isOpen: false,
+    media: null,
+    isExisting: false,
+    currentLabel: "",
+  });
+
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -114,11 +147,6 @@ export default function EditEventPage() {
       const eventData = response.data?.event;
       setEvent(eventData);
 
-      // Debug: Log the event data structure
-      console.log('🔍 Event Data:', eventData);
-      console.log('🔍 Event Gallery:', eventData?.gallery);
-      console.log('🔍 All Event Keys:', Object.keys(eventData || {}));
-
       if (eventData) {
         const formDataValues = {
           name: eventData.name || "",
@@ -146,24 +174,12 @@ export default function EditEventPage() {
 
         // Load existing media
         if (eventData.gallery && eventData.gallery.length > 0) {
-          console.log('🎯 Loading gallery media:', eventData.gallery);
           setExistingMedia(
             eventData.gallery.map((media: any, index: number) => {
-              // Debug: Log each media item to see available fields
-              console.log(`🔍 Media Item ${index}:`, media);
-              console.log(`🔍 Media ${index} Keys:`, Object.keys(media));
-              console.log(`🔍 Media ${index} thumbnail fields:`, {
-                thumbnail_url: media.thumbnail_url,
-                thumbnail: media.thumbnail,
-                thumbnailUrl: media.thumbnailUrl,
-                thumb_url: media.thumb_url,
-                thumb: media.thumb,
-                preview_url: media.preview_url,
-              });
-              
               return {
                 ...media,
                 existing: true,
+                type: inferMediaType(media),  // <-- critical fix
                 preview: media.url,
                 // Try multiple possible thumbnail field names
                 thumbnailPreview: media.thumbnailUrl || null,
@@ -172,14 +188,13 @@ export default function EditEventPage() {
                   url: media.thumbnailUrl 
                 } : null
               };
-            }),
+            })
           );
         } else {
-          console.log('❌ No gallery data found');
+          // No gallery data found
         }
       }
     } catch (err: any) {
-      console.error("Failed to load event:", err);
       setError(err.response?.data?.message || "Failed to load event");
     } finally {
       setLoading(false);
@@ -187,7 +202,10 @@ export default function EditEventPage() {
   };
 
   const hasFieldChanged = (original: any, current: any, field: string) => {
-    if (!original || !current) return false;
+    // Handle null values - if original is null and current has content, it's a change
+    if (original === null && current !== null) return true;
+    if (original === null && current === null) return false;
+    if (original !== null && current === null) return true; // Text → Null case
     
     // Handle number vs string conversions
     if (typeof original === 'number' && typeof current === 'string') {
@@ -274,6 +292,148 @@ export default function EditEventPage() {
     if (hasBannerSlot()) labels.push("banner");
     labels.push("gallery");
     return labels;
+  };
+
+  const EditLabelModal = () => {
+    const [newLabel, setNewLabel] = useState("");
+    const [loading, setLoading] = useState(false);
+
+    const { isDarkTheme } = useTheme();
+    const d = isDarkTheme;
+    const card = d ? "bg-[#141416]" : "bg-white";
+    const border = d ? "border-white/[0.06]" : "border-black/[0.06]";
+    const text = d ? "text-white" : "text-[#0d0d0f]";
+    const muted = d ? "text-white/40" : "text-black/40";
+
+    useEffect(() => {
+      if (labelModal.isOpen) {
+        setNewLabel(labelModal.currentLabel);
+      }
+    }, [labelModal.isOpen, labelModal.currentLabel]);
+
+    const handleSave = async () => {
+      if (!newLabel || !["poster", "banner", "gallery"].includes(newLabel)) {
+        setError("Please enter a valid label: poster, banner, or gallery");
+        return;
+      }
+
+      setLoading(true);
+      try {
+        if (labelModal.isExisting && labelModal.media.id) {
+          await adminService.updateMediaLabel(labelModal.media.id, newLabel);
+          
+          setExistingMedia(prev => prev.map(m => 
+            m.id === labelModal.media.id ? { ...m, label: newLabel } : m
+          ));
+        } else {
+          setFormData(prev => ({
+            ...prev,
+            mediaFiles: prev.mediaFiles.map(m => 
+              m === labelModal.media ? { ...m, label: newLabel } : m
+            )
+          }));
+        }
+        
+        // Create updated media object for preview modal
+        const updatedMedia = { ...labelModal.media, label: newLabel };
+        
+        // Close label modal and reopen preview modal with updated media
+        setLabelModal({ isOpen: false, media: null, isExisting: false, currentLabel: "" });
+        
+        // Reopen preview modal with updated media
+        setTimeout(() => {
+          setPreviewModal({
+            media: updatedMedia,
+            type: inferMediaType(updatedMedia),
+            isExisting: labelModal.isExisting
+          });
+        }, 100); // Small delay to ensure smooth transition
+      } catch (err: any) {
+        setError("Failed to update label");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    const handleClose = () => {
+      if (!loading) {
+        setLabelModal({ isOpen: false, media: null, isExisting: false, currentLabel: "" });
+      }
+    };
+
+    return (
+      <AnimatePresence>
+        {labelModal.isOpen && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-100 flex items-center justify-center p-6 bg-black/95 backdrop-blur-3xl"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+              className={`relative w-full max-w-md rounded-3xl p-8 ${card} border ${border} shadow-2xl`}
+            >
+              <div className="text-center">
+                <div className="w-16 h-16 bg-accent/20 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                  <Tag size={32} className="text-accent" />
+                </div>
+                <h3 className={`text-2xl font-black mb-3 ${text}`}>Change Label</h3>
+                <p className={`${muted} mb-6`}>
+                  Update the label for "{labelModal.media?.name || 'Media'}"
+                </p>
+                <select
+                  value={newLabel}
+                  onChange={(e) => setNewLabel(e.target.value)}
+                  className={`w-full px-4 py-3 rounded-2xl border ${border} ${card} ${text} mb-6 focus:outline-none focus:ring-2 focus:ring-accent cursor-pointer`}
+                  autoFocus
+                >
+                  <option value="">Select a label...</option>
+                  <option value="poster">Poster</option>
+                  <option value="banner">Banner</option>
+                  <option value="gallery">Gallery</option>
+                </select>
+                <div className="flex gap-4">
+                  <button
+                    onClick={handleClose}
+                    disabled={loading}
+                    className={`flex-1 px-6 py-3 rounded-2xl font-bold transition-all ${
+                      d ? 'bg-gray-800 text-white hover:bg-gray-700' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
+                    } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSave}
+                    disabled={loading || !newLabel.trim()}
+                    className="flex-1 px-6 py-3 bg-accent text-black rounded-2xl font-bold hover:bg-accent/80 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    {loading ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                        Updating...
+                      </>
+                    ) : (
+                      <>
+                        <Tag size={18} />
+                        Update
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    );
+  };
+
+  const handleEditLabel = (media: any, isExisting: boolean = false) => {
+    setLabelModal({
+      isOpen: true,
+      media,
+      isExisting,
+      currentLabel: media.label || "gallery",
+    });
   };
 
   const handleMediaUpload = async (
@@ -401,7 +561,6 @@ export default function EditEventPage() {
         item: null,
       });
     } catch (error) {
-      console.error(`Failed to delete ${deleteModal.type}:`, error);
       setError(`Failed to delete ${deleteModal.type}. Please try again.`);
     } finally {
       setDeleteLoading(false);
@@ -498,7 +657,6 @@ export default function EditEventPage() {
         await adminService.deleteEvent(eventId);
         router.push("/admin/events");
       } catch (error) {
-        console.error("Failed to delete event:", error);
         setError("Failed to delete event");
       }
     }
@@ -577,7 +735,6 @@ export default function EditEventPage() {
       
       router.push("/admin/events");
     } catch (error) {
-      console.error("Failed to update event:", error);
       setError("Failed to update event");
     } finally {
       setSubmitting(false);
@@ -1007,10 +1164,11 @@ export default function EditEventPage() {
                               src={media.url}
                               className="w-full h-full object-cover"
                               alt="existing media"
+                              crossOrigin="anonymous"
                             />
                             {/* Hover overlay */}
                             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all" />
-                            {/* Remove btn */}
+                            {/* Delete button only */}
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -1086,10 +1244,11 @@ export default function EditEventPage() {
                               src={media.preview}
                               className="w-full h-full object-cover"
                               alt="new media"
+                              crossOrigin="anonymous"
                             />
                             {/* Hover overlay */}
                             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all" />
-                            {/* Remove btn */}
+                            {/* Delete button only */}
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -1225,6 +1384,7 @@ export default function EditEventPage() {
                   src={pendingFile.preview}
                   className="w-full h-36 object-cover rounded-2xl mb-4"
                   alt="pending"
+                  crossOrigin="anonymous"
                 />
                 <div className="grid grid-cols-3 gap-2">
                   {getAvailableImageLabels().map((label) => (
@@ -1285,12 +1445,14 @@ export default function EditEventPage() {
                     src={previewModal.media.url}
                     alt="Preview"
                     className="max-w-full max-h-full object-contain rounded-lg"
+                    crossOrigin="anonymous"
                   />
                 ) : (
                   <video
                     src={previewModal.media.url}
                     controls
                     autoPlay
+                    crossOrigin="anonymous"
                     className="max-w-full max-h-full rounded-lg"
                   />
                 )}
@@ -1303,9 +1465,12 @@ export default function EditEventPage() {
                       <p className="text-sm opacity-80">{previewModal.type.toUpperCase()}</p>
                     </div>
                     {previewModal.media.label && (
-                      <span className="bg-accent text-black px-2 py-1 rounded text-xs font-bold uppercase">
+                      <button
+                        onClick={() => handleEditLabel(previewModal.media, previewModal.isExisting)}
+                        className="bg-accent hover:bg-accent/80 text-black px-2 py-1 rounded text-xs font-bold uppercase transition-colors cursor-pointer"
+                      >
                         {previewModal.media.label}
-                      </span>
+                      </button>
                     )}
                   </div>
                 </div>
@@ -1326,6 +1491,9 @@ export default function EditEventPage() {
           loading={deleteLoading}
           type="danger"
         />
+
+        {/* Edit Label Modal */}
+        <EditLabelModal />
       </div>
     </div>
   );
