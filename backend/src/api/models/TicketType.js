@@ -49,7 +49,7 @@ const TicketType = {
           price = COALESCE(EXCLUDED.price, ticket_types.price),
           max_quantity = COALESCE(EXCLUDED.max_quantity, ticket_types.max_quantity)
       RETURNING *`;
-    const values = [null, productId, category, price, maxQuantityPerBooking];
+    const values = [id, productId, category, price, maxQuantityPerBooking];
     const result = await db.query(sql, values);
     return result.rows[0] || null;
   },

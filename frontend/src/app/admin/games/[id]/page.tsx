@@ -63,19 +63,19 @@ export default function EditGamePage() {
   const [existingMedia, setExistingMedia] = useState<any[]>([]);
   const [previewModal, setPreviewModal] = useState<{
     media: any;
-    type: 'image' | 'video';
+    type: "image" | "video";
     isExisting: boolean;
   } | null>(null);
 
   const [deleteModal, setDeleteModal] = useState<{
     isOpen: boolean;
-    type: 'ticket' | 'media';
+    type: "ticket" | "media";
     index: number;
     isExisting: boolean;
     item: any;
   }>({
     isOpen: false,
-    type: 'ticket',
+    type: "ticket",
     index: -1,
     isExisting: false,
     item: null,
@@ -112,7 +112,7 @@ export default function EditGamePage() {
   });
 
   const [newTicket, setNewTicket] = useState({
-    id: "",
+    id: null,
     productId: "",
     category: "ADULT" as const,
     price: 0,
@@ -165,7 +165,7 @@ export default function EditGamePage() {
           status: game.status || "OPEN",
           ticketTypes:
             game.ticketTypes?.map((tt: any) => ({
-              id: tt.id || "",
+              id: tt.id || null,
               productId: game.productId || "",
               category: tt.category || "ADULT",
               price: parseFloat(tt.price) || 0,
@@ -175,7 +175,7 @@ export default function EditGamePage() {
         };
 
         setFormData(formDataValues);
-        
+
         // Store original data for change detection
         setOriginalData(formDataValues);
 
@@ -185,13 +185,15 @@ export default function EditGamePage() {
             game.gallery.map((media: any) => ({
               ...media,
               existing: true,
-              type: inferMediaType(media),  // <-- critical fix
+              type: inferMediaType(media), // <-- critical fix
               preview: media.url,
               thumbnailPreview: media.thumbnailUrl || null,
-              thumbnail: media.thumbnailUrl ? { 
-                name: 'thumbnail', 
-                url: media.thumbnailUrl 
-              } : null,
+              thumbnail: media.thumbnailUrl
+                ? {
+                    name: "thumbnail",
+                    url: media.thumbnailUrl,
+                  }
+                : null,
             })),
           );
         }
@@ -208,51 +210,53 @@ export default function EditGamePage() {
     if (original === null && current !== null) return true;
     if (original === null && current === null) return false;
     if (original !== null && current === null) return true; // Text → Null case
-    
+
     // Handle number vs string conversions
-    if (typeof original === 'number' && typeof current === 'string') {
+    if (typeof original === "number" && typeof current === "string") {
       return original !== parseFloat(current);
     }
-    if (typeof original === 'string' && typeof current === 'number') {
+    if (typeof original === "string" && typeof current === "number") {
       return parseFloat(original) !== current;
     }
-    
+
     return original !== current;
   };
 
   const getTicketTypeChanges = (original: any[], current: any[]) => {
     const changes: any[] = [];
-    
+
     if (!original || original.length === 0) return current;
     if (!current || current.length === 0) return [];
-    
-    current.forEach(currentTT => {
-      const originalTT = original.find(o => o.id === currentTT.id);
-      
+
+    current.forEach((currentTT) => {
+      const originalTT = original.find((o) => o.id === currentTT.id);
+
       if (!originalTT) {
         // New ticket type
         changes.push({
           ...currentTT,
-          price: parseFloat(currentTT.price.toString())
+          price: parseFloat(currentTT.price.toString()),
         });
       } else {
         // Check if anything actually changed
         const categoryChanged = originalTT.category !== currentTT.category;
-        const priceChanged = originalTT.price !== parseFloat(currentTT.price.toString());
-        const maxQtyChanged = originalTT.max_quantity !== currentTT.max_quantity;
-        
+        const priceChanged =
+          originalTT.price !== parseFloat(currentTT.price.toString());
+        const maxQtyChanged =
+          originalTT.max_quantity !== currentTT.max_quantity;
+
         if (categoryChanged || priceChanged || maxQtyChanged) {
           // Modified ticket type - send complete object
           changes.push({
             id: currentTT.id,
             category: currentTT.category,
             price: parseFloat(currentTT.price.toString()),
-            maxQuantityPerBooking: currentTT.max_quantity
+            maxQuantityPerBooking: currentTT.max_quantity,
           });
         }
       }
     });
-    
+
     return changes;
   };
 
@@ -326,31 +330,38 @@ export default function EditGamePage() {
       try {
         if (labelModal.isExisting && labelModal.media.id) {
           await adminService.updateMediaLabel(labelModal.media.id, newLabel);
-          
-          setExistingMedia(prev => prev.map(m => 
-            m.id === labelModal.media.id ? { ...m, label: newLabel } : m
-          ));
+
+          setExistingMedia((prev) =>
+            prev.map((m) =>
+              m.id === labelModal.media.id ? { ...m, label: newLabel } : m,
+            ),
+          );
         } else {
-          setFormData(prev => ({
+          setFormData((prev) => ({
             ...prev,
-            mediaFiles: prev.mediaFiles.map(m => 
-              m === labelModal.media ? { ...m, label: newLabel } : m
-            )
+            mediaFiles: prev.mediaFiles.map((m) =>
+              m === labelModal.media ? { ...m, label: newLabel } : m,
+            ),
           }));
         }
-        
+
         // Create updated media object for preview modal
         const updatedMedia = { ...labelModal.media, label: newLabel };
-        
+
         // Close label modal and reopen preview modal with updated media
-        setLabelModal({ isOpen: false, media: null, isExisting: false, currentLabel: "" });
-        
+        setLabelModal({
+          isOpen: false,
+          media: null,
+          isExisting: false,
+          currentLabel: "",
+        });
+
         // Reopen preview modal with updated media
         setTimeout(() => {
           setPreviewModal({
             media: updatedMedia,
             type: inferMediaType(updatedMedia),
-            isExisting: labelModal.isExisting
+            isExisting: labelModal.isExisting,
           });
         }, 100); // Small delay to ensure smooth transition
       } catch (err: any) {
@@ -362,7 +373,12 @@ export default function EditGamePage() {
 
     const handleClose = () => {
       if (!loading) {
-        setLabelModal({ isOpen: false, media: null, isExisting: false, currentLabel: "" });
+        setLabelModal({
+          isOpen: false,
+          media: null,
+          isExisting: false,
+          currentLabel: "",
+        });
       }
     };
 
@@ -370,20 +386,26 @@ export default function EditGamePage() {
       <AnimatePresence>
         {labelModal.isOpen && (
           <motion.div
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
             className="fixed inset-0 z-100 flex items-center justify-center p-6 bg-black/95 backdrop-blur-3xl"
           >
             <motion.div
-              initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
               className={`relative w-full max-w-md rounded-3xl p-8 ${card} border ${border} shadow-2xl`}
             >
               <div className="text-center">
                 <div className="w-16 h-16 bg-accent/20 rounded-2xl flex items-center justify-center mx-auto mb-6">
                   <Tag size={32} className="text-accent" />
                 </div>
-                <h3 className={`text-2xl font-black mb-3 ${text}`}>Change Label</h3>
+                <h3 className={`text-2xl font-black mb-3 ${text}`}>
+                  Change Label
+                </h3>
                 <p className={`${muted} mb-6`}>
-                  Update the label for "{labelModal.media?.name || 'Media'}"
+                  Update the label for "{labelModal.media?.name || "Media"}"
                 </p>
                 <select
                   value={newLabel}
@@ -401,8 +423,10 @@ export default function EditGamePage() {
                     onClick={handleClose}
                     disabled={loading}
                     className={`flex-1 px-6 py-3 rounded-2xl font-bold transition-all ${
-                      d ? 'bg-gray-800 text-white hover:bg-gray-700' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
-                    } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      d
+                        ? "bg-gray-800 text-white hover:bg-gray-700"
+                        : "bg-gray-200 text-gray-800 hover:bg-gray-300"
+                    } ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
                   >
                     Cancel
                   </button>
@@ -451,7 +475,7 @@ export default function EditGamePage() {
 
     let preview: string;
     if (type === "IMAGE") {
-      preview = await getTinyPreview(file);  // ✅ await the async function
+      preview = await getTinyPreview(file); // ✅ await the async function
     } else {
       preview = URL.createObjectURL(file);
     }
@@ -501,10 +525,12 @@ export default function EditGamePage() {
   };
 
   const removeMedia = (index: number, isExisting: boolean = false) => {
-    const media = isExisting ? existingMedia[index] : formData.mediaFiles[index];
+    const media = isExisting
+      ? existingMedia[index]
+      : formData.mediaFiles[index];
     setDeleteModal({
       isOpen: true,
-      type: 'media',
+      type: "media",
       index,
       isExisting,
       item: media,
@@ -530,7 +556,7 @@ export default function EditGamePage() {
         ...media,
         url: isExisting ? media.url : media.preview,
       },
-      type: 'video',
+      type: "video",
       isExisting,
     });
   };
@@ -541,9 +567,9 @@ export default function EditGamePage() {
         media: {
           ...media,
           url: media.thumbnailPreview || media.thumbnailUrl,
-          name: media.name ? `${media.name} - Thumbnail` : 'Thumbnail',
+          name: media.name ? `${media.name} - Thumbnail` : "Thumbnail",
         },
-        type: 'image',
+        type: "image",
         isExisting: !!media.id,
       });
     }
@@ -555,25 +581,33 @@ export default function EditGamePage() {
 
   const handleDeleteConfirm = async () => {
     setDeleteLoading(true);
-    
+
     try {
-      if (deleteModal.type === 'ticket' && deleteModal.item.id && deleteModal.item.id.trim() !== "") {
+      if (
+        deleteModal.type === "ticket" &&
+        deleteModal.item.id &&
+        deleteModal.item.id.trim() !== ""
+      ) {
         await adminService.deleteTicketType(deleteModal.item.id);
-      } else if (deleteModal.type === 'media' && deleteModal.item.id) {
+      } else if (deleteModal.type === "media" && deleteModal.item.id) {
         await adminService.deleteMedia(deleteModal.item.id);
       }
-      
-      if (deleteModal.type === 'ticket') {
+
+      if (deleteModal.type === "ticket") {
         const updatedFormData = {
           ...formData,
-          ticketTypes: formData.ticketTypes.filter((_, i) => i !== deleteModal.index),
+          ticketTypes: formData.ticketTypes.filter(
+            (_, i) => i !== deleteModal.index,
+          ),
         };
         setFormData(updatedFormData);
         setOriginalData((prev) => ({
           ...prev,
-          ticketTypes: formData.ticketTypes.filter((_, i) => i !== deleteModal.index),
+          ticketTypes: formData.ticketTypes.filter(
+            (_, i) => i !== deleteModal.index,
+          ),
         }));
-      } else if (deleteModal.type === 'media') {
+      } else if (deleteModal.type === "media") {
         if (deleteModal.isExisting) {
           setExistingMedia((prev) => {
             const updated = [...prev];
@@ -594,10 +628,10 @@ export default function EditGamePage() {
           mediaFiles: formData.mediaFiles,
         }));
       }
-      
+
       setDeleteModal({
         isOpen: false,
-        type: 'ticket',
+        type: "ticket",
         index: -1,
         isExisting: false,
         item: null,
@@ -613,7 +647,7 @@ export default function EditGamePage() {
     if (!deleteLoading) {
       setDeleteModal({
         isOpen: false,
-        type: 'ticket',
+        type: "ticket",
         index: -1,
         isExisting: false,
         item: null,
@@ -631,7 +665,7 @@ export default function EditGamePage() {
       ticketTypes: [...p.ticketTypes, { ...newTicket }],
     }));
     setNewTicket({
-      id: "",
+      id: null,
       productId: game.productId,
       category: "ADULT",
       price: 0,
@@ -640,10 +674,10 @@ export default function EditGamePage() {
   };
 
   const removeTicketType = (index: number) => {
-    if (formData.ticketTypes.length > 1) {
+    if (formData.ticketTypes.length > 0) {
       setDeleteModal({
         isOpen: true,
-        type: 'ticket',
+        type: "ticket",
         index,
         isExisting: false,
         item: formData.ticketTypes[index],
@@ -653,17 +687,17 @@ export default function EditGamePage() {
 
   const updateTicketType = (index: number, field: keyof any, value: any) => {
     // Prevent duplicate ticket types - only 1 per category
-    if (field === 'category') {
-      const categoryExists = formData.ticketTypes.some((tt, i) => 
-        tt.category === value && i !== index
+    if (field === "category") {
+      const categoryExists = formData.ticketTypes.some(
+        (tt, i) => tt.category === value && i !== index,
       );
       if (categoryExists) {
         setError(`A ${value} ticket type already exists`);
-        setTimeout(() => setError(''), 3000);
+        setTimeout(() => setError(""), 3000);
         return;
       }
     }
-    
+
     const updatedTicketTypes = [...formData.ticketTypes];
     updatedTicketTypes[index] = {
       ...updatedTicketTypes[index],
@@ -695,26 +729,36 @@ export default function EditGamePage() {
 
     // Get only changed fields
     const payload: any = { productId: game.productId };
-    
-    if (hasFieldChanged(originalData?.name, formData.name, 'name')) {
+
+    if (hasFieldChanged(originalData?.name, formData.name, "name")) {
       payload.name = formData.name;
     }
-    if (hasFieldChanged(originalData?.description, formData.description, 'description')) {
+    if (
+      hasFieldChanged(
+        originalData?.description,
+        formData.description,
+        "description",
+      )
+    ) {
       payload.description = formData.description;
     }
-    if (hasFieldChanged(originalData?.rules, formData.rules, 'rules')) {
+    if (hasFieldChanged(originalData?.rules, formData.rules, "rules")) {
       payload.rules = formData.rules;
     }
-    if (hasFieldChanged(originalData?.status, formData.status, 'status')) {
+    if (hasFieldChanged(originalData?.status, formData.status, "status")) {
       payload.status = formData.status;
     }
-    
-    const ticketChanges = getTicketTypeChanges(originalData?.ticketTypes, formData.ticketTypes);
+
+    const ticketChanges = getTicketTypeChanges(
+      originalData?.ticketTypes,
+      formData.ticketTypes,
+    );
     if (ticketChanges.length > 0) {
       payload.ticketTypes = ticketChanges;
     }
 
-    if (Object.keys(payload).length === 1) { // Only productId
+    if (Object.keys(payload).length === 1) {
+      // Only productId
       setError("No changes to save");
       setSubmitting(false);
       return;
@@ -920,26 +964,32 @@ export default function EditGamePage() {
                       className={`flex items-center justify-between px-4 py-3 rounded-2xl border ${border} ${card}`}
                     >
                       <div className="flex items-center gap-3 flex-wrap">
-                        <select
-                          value={tt.category}
-                          onChange={(e) => updateTicketType(index, 'category', e.target.value)}
+                        <span
                           className={`text-[10px] font-bold px-2.5 py-1.5 rounded-lg uppercase tracking-wider border-2 border-transparent focus:border-accent/50 outline-none appearance-none cursor-pointer ${CATEGORY_COLORS[tt.category] ?? "bg-gray-500/10 text-gray-400"} ${inputBg} ${text} ${border}`}
-                          style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23999' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 4px center', backgroundSize: '12px', paddingRight: '20px' }}
+                          style={{
+                            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23999' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E")`,
+                            backgroundRepeat: "no-repeat",
+                            backgroundPosition: "right 4px center",
+                            backgroundSize: "12px",
+                            paddingRight: "20px",
+                          }}
                         >
-                          <option value="ADULT">ADULT</option>
-                          <option value="CHILD">CHILD</option>
-                          <option value="SENIOR">SENIOR</option>
-                          <option value="STUDENT">STUDENT</option>
-                          <option value="GROUP">GROUP</option>
-                        </select>
-                        
+                          {tt.category}
+                        </span>
+
                         <div className="flex items-center gap-2">
                           <input
                             type="number"
                             min="0"
                             step="0.01"
                             value={tt.price}
-                            onChange={(e) => updateTicketType(index, 'price', parseFloat(e.target.value) || 0)}
+                            onChange={(e) =>
+                              updateTicketType(
+                                index,
+                                "price",
+                                parseFloat(e.target.value) || 0,
+                              )
+                            }
                             className={`w-20 px-2 py-1 text-xs rounded-lg ${inputBg} ${text} border ${border} focus:border-accent/50 outline-none`}
                             placeholder="Price"
                           />
@@ -948,7 +998,13 @@ export default function EditGamePage() {
                             type="number"
                             min="1"
                             value={tt.max_quantity}
-                            onChange={(e) => updateTicketType(index, 'max_quantity', parseInt(e.target.value) || 1)}
+                            onChange={(e) =>
+                              updateTicketType(
+                                index,
+                                "max_quantity",
+                                parseInt(e.target.value) || 1,
+                              )
+                            }
                             className={`w-20 px-2 py-1 text-xs rounded-lg ${inputBg} ${text} border ${border} focus:border-accent/50 outline-none`}
                             placeholder="Max"
                           />
@@ -1174,7 +1230,11 @@ export default function EditGamePage() {
                               index={idx}
                               isDarkTheme={d}
                               muted={muted}
-                              onThumbnailUpload={async (index, file, preview) => {
+                              onThumbnailUpload={async (
+                                index,
+                                file,
+                                preview,
+                              ) => {
                                 setExistingMedia((prev) => {
                                   const updated = [...prev];
                                   if (updated[index]) {
@@ -1196,9 +1256,13 @@ export default function EditGamePage() {
                                   return updated;
                                 });
                               }}
-                              onRemoveMedia={(index) => removeMedia(index, true)}
+                              onRemoveMedia={(index) =>
+                                removeMedia(index, true)
+                              }
                               onPreview={() => handleVideoPreview(media, true)}
-                              onThumbnailPreview={() => handleThumbnailPreview(media)}
+                              onThumbnailPreview={() =>
+                                handleThumbnailPreview(media)
+                              }
                             />
                           );
                         }
@@ -1256,7 +1320,8 @@ export default function EditGamePage() {
                               setFormData((prev) => {
                                 const updatedMedia = [...prev.mediaFiles];
                                 if (updatedMedia[index]) {
-                                  updatedMedia[index].thumbnailPreview = preview;
+                                  updatedMedia[index].thumbnailPreview =
+                                    preview;
                                   updatedMedia[index].thumbnail = file;
                                   updatedMedia[index].preview = preview;
                                 }
@@ -1267,7 +1332,8 @@ export default function EditGamePage() {
                               setFormData((prev) => {
                                 const updatedMedia = [...prev.mediaFiles];
                                 if (updatedMedia[index]) {
-                                  updatedMedia[index].thumbnailPreview = undefined;
+                                  updatedMedia[index].thumbnailPreview =
+                                    undefined;
                                   updatedMedia[index].thumbnail = undefined;
                                 }
                                 return { ...prev, mediaFiles: updatedMedia };
@@ -1275,7 +1341,9 @@ export default function EditGamePage() {
                             }}
                             onRemoveMedia={(index) => removeMedia(index, false)}
                             onPreview={() => handleVideoPreview(media, false)}
-                            onThumbnailPreview={() => handleThumbnailPreview(media)}
+                            onThumbnailPreview={() =>
+                              handleThumbnailPreview(media)
+                            }
                           />
                         ),
                       )}
@@ -1418,7 +1486,7 @@ export default function EditGamePage() {
                   <X size={20} />
                 </button>
 
-                {previewModal.type === 'image' ? (
+                {previewModal.type === "image" ? (
                   <img
                     src={previewModal.media.url}
                     alt="Preview"
@@ -1438,12 +1506,21 @@ export default function EditGamePage() {
                 <div className="absolute bottom-4 left-4 right-4 bg-black/70 backdrop-blur-sm text-white p-3 rounded-lg">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="font-semibold truncate">{previewModal.media.name || 'Media'}</p>
-                      <p className="text-sm opacity-80">{previewModal.type.toUpperCase()}</p>
+                      <p className="font-semibold truncate">
+                        {previewModal.media.name || "Media"}
+                      </p>
+                      <p className="text-sm opacity-80">
+                        {previewModal.type.toUpperCase()}
+                      </p>
                     </div>
                     {previewModal.media.label && (
                       <button
-                        onClick={() => handleEditLabel(previewModal.media, previewModal.isExisting)}
+                        onClick={() =>
+                          handleEditLabel(
+                            previewModal.media,
+                            previewModal.isExisting,
+                          )
+                        }
                         className="bg-accent hover:bg-accent/80 text-black px-2 py-1 rounded text-xs font-bold uppercase transition-colors cursor-pointer"
                       >
                         {previewModal.media.label}
@@ -1461,8 +1538,8 @@ export default function EditGamePage() {
           isOpen={deleteModal.isOpen}
           onClose={handleDeleteCancel}
           onConfirm={handleDeleteConfirm}
-          title={`Delete ${deleteModal.type === 'ticket' ? 'Ticket Type' : 'Media'}`}
-          message={`Are you sure you want to delete this ${deleteModal.type === 'ticket' ? 'ticket type' : 'media file'}? This action cannot be undone.`}
+          title={`Delete ${deleteModal.type === "ticket" ? "Ticket Type" : "Media"}`}
+          message={`Are you sure you want to delete this ${deleteModal.type === "ticket" ? "ticket type" : "media file"}? This action cannot be undone.`}
           confirmText="Delete"
           cancelText="Cancel"
           loading={deleteLoading}

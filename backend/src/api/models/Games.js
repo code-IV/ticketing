@@ -196,7 +196,6 @@ WHERE g.id = $1;
   `;
 
     const result = await query(sql, [id]);
-    console.log(result.rows[0].gallery);
     return result.rows[0];
   },
 
