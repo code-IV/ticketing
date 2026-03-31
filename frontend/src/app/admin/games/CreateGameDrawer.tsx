@@ -71,7 +71,6 @@ const CreateGameDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
     id: null,
     category: "ADULT",
     price: 0,
-    description: "",
     maxQuantityPerBooking: 10,
   });
 
@@ -164,7 +163,6 @@ const CreateGameDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
       id: null,
       category: "ADULT",
       price: 0,
-      description: "",
       maxQuantityPerBooking: 10,
     });
   };
@@ -461,18 +459,6 @@ const CreateGameDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
                         </span>
                       </div>
                     </div>
-                    <textarea
-                      placeholder="Optional description for this ticket type…"
-                      rows={2}
-                      className={`w-full mt-3 px-3 py-2.5 rounded-xl text-sm font-medium outline-none border border-transparent focus:border-accent2/50 resize-none transition-all placeholder:${muted} ${inputBg} ${text}`}
-                      value={newTicket.description}
-                      onChange={(e) =>
-                        setNewTicket({
-                          ...newTicket,
-                          description: e.target.value,
-                        })
-                      }
-                    />
                     <button
                       type="button"
                       onClick={addCategory}

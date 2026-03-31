@@ -22,13 +22,15 @@ const Media = {
       UPDATE media 
       SET 
           url = $2, 
-          path = $3
+          path = $3,
+          thumbnail_url = $4
       WHERE id = $1
       RETURNING *;`;
     const { rows } = await client.query(sql, [
       id,
       mediaData.url,
       mediaData.path,
+      mediaData.thumbnailUrl,
     ]);
     return rows[0].id;
   },
@@ -129,7 +131,7 @@ RETURNING *;`;
         SELECT id, name,  url, path, type, provider, metadata, label FROM media WHERE id=$2;
         `;
 
-    const media = await query(sql, [BACKEND_URL, id]);
+    const media = await query(sql, [id]);
     return media.rows[0];
   },
 
@@ -161,6 +163,12 @@ RETURNING *;`;
 
     const media = await client.query(sql, [id]);
     return media.rows[0];
+  },
+
+  async updateMediaLabel(id, label) {
+    const sql = `UPDATE media SET label = $1 WHERE id = $2 RETURNING *`;
+    const result = await query(sql, [label, id]);
+    return result.rows[0];
   },
 };
 

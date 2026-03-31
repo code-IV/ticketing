@@ -213,7 +213,7 @@ export default function EventDetailPage({
     // Filter for banner-labeled images from gallery
     const bannerImages = (event.gallery || [])
       .filter(
-        (item) => item.label && item.label.toLowerCase().includes("banner"),
+        (item) => item.label && (item.label.toLowerCase().includes("banner") || item.label.toLowerCase().includes("poster")),
       )
       .map((item, index) => ({
         type: "image" as const,
@@ -253,7 +253,7 @@ export default function EventDetailPage({
     // If event has gallery items, separate images first, then videos
     if (event.gallery && event.gallery.length > 0) {
       const images = event.gallery
-        .filter((item) => item.type === "image" || !item.type) // assume image if no type
+        .filter((item) => item.type?.startsWith("image") || !item.type) // assume image if no type
         .map((item, index) => ({
           type: "image" as const,
           url: item.url,
@@ -262,7 +262,7 @@ export default function EventDetailPage({
         }));
 
       const videos = event.gallery
-        .filter((item) => item.type === "video")
+        .filter((item) => item.type?.startsWith("video"))
         .map((item, index) => ({
           type: "video" as const,
           url: item.url,
@@ -278,14 +278,14 @@ export default function EventDetailPage({
     return [
       {
         type: "image" as const,
-        url: "/img.jpg",
-        thumbnail: "/img.jpg",
+        url: "/banner.jpg",
+        thumbnail: "/banner.jpg",
         alt: `${event.name} gallery image`,
       },
       {
         type: "video" as const,
         url: "/vid.mp4",
-        thumbnail: "/img.jpg",
+        thumbnail: "/banner.jpg",
         alt: `${event.name} gallery video`,
       },
     ];
@@ -385,7 +385,7 @@ export default function EventDetailPage({
               ) : (
                 <div className="relative w-full h-full">
                   <Image
-                    src={currentMedia?.url?.replace('http://localhost:5000', '') || ""}
+                    src={currentMedia?.url || ""}
                     alt={currentMedia?.alt || event.name}
                     fill
                     crossOrigin="anonymous"
@@ -610,6 +610,7 @@ export default function EventDetailPage({
                 >
                   <img
                     src={item.thumbnail}
+                    crossOrigin="anonymous"
                     alt={item.alt}
                     className="w-full h-full object-cover transition-transform duration-300 hover:scale-110"
                   />
@@ -982,6 +983,7 @@ export default function EventDetailPage({
                       crossOrigin="anonymous"
                       controls
                       autoPlay
+                      muted
                       playsInline
                     >
                       <source

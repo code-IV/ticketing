@@ -52,13 +52,6 @@ export const adminService = {
     return response.data;
   },
 
-  async createEventWithTicketTypes(
-    data: CreateEventWithTicketTypesRequest,
-  ): Promise<ApiResponse<{ event: Event; ticketTypes: TicketType[] }>> {
-    const response = await api.post("/admin/events-with-tickets", data);
-    return response.data;
-  },
-
   async updateEventWithTicketTypes(
     id: string,
     data: CreateEventWithTicketTypesRequest & { isActive: boolean },

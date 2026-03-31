@@ -34,7 +34,7 @@ const GamesManagementPage = () => {
 
       {/* STATS OVERVIEW (Exact UI Clone) */}
       <div className="flex flex-col md:flex-row gap-6 mb-8">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 flex-1">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 flex-1">
           {[
             { label: "Active Rides", value: games.filter(g => g.status === 'OPEN').length.toString(), icon: <Activity />, color: "text-green-600" },
             { label: "Under Repair", value: games.filter(g => g.status === 'ON_MAINTENANCE').length.toString(), icon: <Settings />, color: "text-orange-600" },

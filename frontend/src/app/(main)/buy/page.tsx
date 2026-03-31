@@ -20,10 +20,13 @@ import { bookingService } from "@/services/bookingService";
 import { guestCookieUtils } from "@/utils/cookies";
 import SuccessModal from "@/components/ui/SuccessModal";
 
-// Helper function to get poster image
+// Helper function to get poster image (images only)
 const getPosterImage = (game: any) => {
   const posters =
-    game.gallery?.filter((item: any) => item.label === "poster") || [];
+    game.gallery?.filter((item: any) => 
+      item.label === "poster" && 
+      (item.type?.startsWith("image/") || !item.type?.startsWith("video/"))
+    ) || [];
   if (posters.length === 0) {
     return "/l.jpg"; // Fallback to poster placeholder
   }

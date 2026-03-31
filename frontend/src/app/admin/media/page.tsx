@@ -129,26 +129,12 @@ export default function MediaPage() {
 
     setIsUpdatingLabel(true);
     try {
-      console.log("c");
-      let formData: any | null = null;
-      const data = new FormData();
-      data.append("label", newLabel);
-      if (formData !== null) {
-        data.append("thumbnail", formData.thumbnail || null);
-      }
-      console.log(data);
-      const response = await adminService.updateMediaData(labelModal.id, data);
-      if (response.success) {
-        setMedia((prev) =>
-          prev.map((m) =>
-            m.id === labelModal.id ? { ...m, label: newLabel } : m,
-          ),
-        );
-        setLabelModal(null);
-        setNewLabel("");
-      } else {
-        setError(response.message || "Failed to update label");
-      }
+      await adminService.updateMediaLabel(labelModal.id, newLabel);
+      setMedia(prev => prev.map(m => 
+        m.id === labelModal.id ? { ...m, label: newLabel } : m
+      ));
+      setLabelModal(null);
+      setNewLabel('');
     } catch (err: any) {
       setError("Failed to update label");
     } finally {
