@@ -34,24 +34,11 @@ router.post(
   handleValidation,
   EventController.createEvent,
 );
-router.post(
-  "/events-with-tickets",
-  createEventWithTicketTypesRules,
-  handleValidation,
-  EventController.createEventWithTicketTypes,
-);
 router.patch(
   "/event/:id",
   uuidParamRule("id"),
   handleValidation,
   EventController.updateEvent,
-);
-router.put(
-  "/events/:id/ticket-types",
-  uuidParamRule("id"),
-  createEventWithTicketTypesRules,
-  handleValidation,
-  EventController.updateEventWithTicketTypes,
 );
 router.patch(
   "/events/status/:id",
