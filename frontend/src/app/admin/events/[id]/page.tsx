@@ -84,18 +84,18 @@ export default function EditEventPage() {
   const [existingMedia, setExistingMedia] = useState<any[]>([]);
   const [previewModal, setPreviewModal] = useState<{
     media: any;
-    type: 'image' | 'video';
+    type: "image" | "video";
   } | null>(null);
 
   const [deleteModal, setDeleteModal] = useState<{
     isOpen: boolean;
-    type: 'ticket' | 'media';
+    type: "ticket" | "media";
     index: number;
     isExisting: boolean;
     item: any;
   }>({
     isOpen: false,
-    type: 'ticket',
+    type: "ticket",
     index: -1,
     isExisting: false,
     item: null,
@@ -151,7 +151,9 @@ export default function EditEventPage() {
         const formDataValues = {
           name: eventData.name || "",
           description: eventData.description || "",
-          eventDate: eventData.eventDate ? new Date(eventData.eventDate).toISOString().split('T')[0] : "",
+          eventDate: eventData.eventDate
+            ? new Date(eventData.eventDate).toISOString().split("T")[0]
+            : "",
           startTime: eventData.startTime || "",
           endTime: eventData.endTime || "",
           capacity: eventData.capacity?.toString() || "",
@@ -168,7 +170,7 @@ export default function EditEventPage() {
         };
 
         setFormData(formDataValues);
-        
+
         // Store original data for change detection
         setOriginalData(formDataValues);
 
@@ -179,16 +181,18 @@ export default function EditEventPage() {
               return {
                 ...media,
                 existing: true,
-                type: inferMediaType(media),  // <-- critical fix
+                type: inferMediaType(media), // <-- critical fix
                 preview: media.url,
                 // Try multiple possible thumbnail field names
                 thumbnailPreview: media.thumbnailUrl || null,
-                thumbnail: (media.thumbnailUrl) ? { 
-                  name: 'thumbnail', 
-                  url: media.thumbnailUrl 
-                } : null
+                thumbnail: media.thumbnailUrl
+                  ? {
+                      name: "thumbnail",
+                      url: media.thumbnailUrl,
+                    }
+                  : null,
               };
-            })
+            }),
           );
         } else {
           // No gallery data found
@@ -206,51 +210,53 @@ export default function EditEventPage() {
     if (original === null && current !== null) return true;
     if (original === null && current === null) return false;
     if (original !== null && current === null) return true; // Text → Null case
-    
+
     // Handle number vs string conversions
-    if (typeof original === 'number' && typeof current === 'string') {
+    if (typeof original === "number" && typeof current === "string") {
       return original !== parseFloat(current);
     }
-    if (typeof original === 'string' && typeof current === 'number') {
+    if (typeof original === "string" && typeof current === "number") {
       return parseFloat(original) !== current;
     }
-    
+
     return original !== current;
   };
 
   const getTicketTypeChanges = (original: any[], current: any[]) => {
     const changes: any[] = [];
-    
+
     if (!original || original.length === 0) return current;
     if (!current || current.length === 0) return [];
-    
-    current.forEach(currentTT => {
-      const originalTT = original.find(o => o.id === currentTT.id);
-      
+
+    current.forEach((currentTT) => {
+      const originalTT = original.find((o) => o.id === currentTT.id);
+
       if (!originalTT) {
         // New ticket type
         changes.push({
           ...currentTT,
-          price: parseFloat(currentTT.price.toString())
+          price: parseFloat(currentTT.price.toString()),
         });
       } else {
         // Check if anything actually changed
         const categoryChanged = originalTT.category !== currentTT.category;
-        const priceChanged = originalTT.price !== parseFloat(currentTT.price.toString());
-        const maxQtyChanged = originalTT.maxQuantityPerBooking !== currentTT.maxQuantityPerBooking;
-        
+        const priceChanged =
+          originalTT.price !== parseFloat(currentTT.price.toString());
+        const maxQtyChanged =
+          originalTT.maxQuantityPerBooking !== currentTT.maxQuantityPerBooking;
+
         if (categoryChanged || priceChanged || maxQtyChanged) {
           // Modified ticket type - send complete object
           changes.push({
             id: currentTT.id,
             category: currentTT.category,
             price: parseFloat(currentTT.price.toString()),
-            maxQuantityPerBooking: currentTT.maxQuantityPerBooking
+            maxQuantityPerBooking: currentTT.maxQuantityPerBooking,
           });
         }
       }
     });
-    
+
     return changes;
   };
 
@@ -324,31 +330,38 @@ export default function EditEventPage() {
       try {
         if (labelModal.isExisting && labelModal.media.id) {
           await adminService.updateMediaLabel(labelModal.media.id, newLabel);
-          
-          setExistingMedia(prev => prev.map(m => 
-            m.id === labelModal.media.id ? { ...m, label: newLabel } : m
-          ));
+
+          setExistingMedia((prev) =>
+            prev.map((m) =>
+              m.id === labelModal.media.id ? { ...m, label: newLabel } : m,
+            ),
+          );
         } else {
-          setFormData(prev => ({
+          setFormData((prev) => ({
             ...prev,
-            mediaFiles: prev.mediaFiles.map(m => 
-              m === labelModal.media ? { ...m, label: newLabel } : m
-            )
+            mediaFiles: prev.mediaFiles.map((m) =>
+              m === labelModal.media ? { ...m, label: newLabel } : m,
+            ),
           }));
         }
-        
+
         // Create updated media object for preview modal
         const updatedMedia = { ...labelModal.media, label: newLabel };
-        
+
         // Close label modal and reopen preview modal with updated media
-        setLabelModal({ isOpen: false, media: null, isExisting: false, currentLabel: "" });
-        
+        setLabelModal({
+          isOpen: false,
+          media: null,
+          isExisting: false,
+          currentLabel: "",
+        });
+
         // Reopen preview modal with updated media
         setTimeout(() => {
           setPreviewModal({
             media: updatedMedia,
             type: inferMediaType(updatedMedia),
-            isExisting: labelModal.isExisting
+            isExisting: labelModal.isExisting,
           });
         }, 100); // Small delay to ensure smooth transition
       } catch (err: any) {
@@ -360,7 +373,12 @@ export default function EditEventPage() {
 
     const handleClose = () => {
       if (!loading) {
-        setLabelModal({ isOpen: false, media: null, isExisting: false, currentLabel: "" });
+        setLabelModal({
+          isOpen: false,
+          media: null,
+          isExisting: false,
+          currentLabel: "",
+        });
       }
     };
 
@@ -368,20 +386,26 @@ export default function EditEventPage() {
       <AnimatePresence>
         {labelModal.isOpen && (
           <motion.div
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
             className="fixed inset-0 z-100 flex items-center justify-center p-6 bg-black/95 backdrop-blur-3xl"
           >
             <motion.div
-              initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
               className={`relative w-full max-w-md rounded-3xl p-8 ${card} border ${border} shadow-2xl`}
             >
               <div className="text-center">
                 <div className="w-16 h-16 bg-accent/20 rounded-2xl flex items-center justify-center mx-auto mb-6">
                   <Tag size={32} className="text-accent" />
                 </div>
-                <h3 className={`text-2xl font-black mb-3 ${text}`}>Change Label</h3>
+                <h3 className={`text-2xl font-black mb-3 ${text}`}>
+                  Change Label
+                </h3>
                 <p className={`${muted} mb-6`}>
-                  Update the label for "{labelModal.media?.name || 'Media'}"
+                  Update the label for "{labelModal.media?.name || "Media"}"
                 </p>
                 <select
                   value={newLabel}
@@ -399,8 +423,10 @@ export default function EditEventPage() {
                     onClick={handleClose}
                     disabled={loading}
                     className={`flex-1 px-6 py-3 rounded-2xl font-bold transition-all ${
-                      d ? 'bg-gray-800 text-white hover:bg-gray-700' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
-                    } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      d
+                        ? "bg-gray-800 text-white hover:bg-gray-700"
+                        : "bg-gray-200 text-gray-800 hover:bg-gray-300"
+                    } ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
                   >
                     Cancel
                   </button>
@@ -495,7 +521,7 @@ export default function EditEventPage() {
         ...media,
         url: isExisting ? media.url : media.preview,
       },
-      type: 'video',
+      type: "video",
     });
   };
 
@@ -505,9 +531,9 @@ export default function EditEventPage() {
         media: {
           ...media,
           url: media.thumbnailPreview || media.thumbnailUrl,
-          name: media.name ? `${media.name} - Thumbnail` : 'Thumbnail',
+          name: media.name ? `${media.name} - Thumbnail` : "Thumbnail",
         },
-        type: 'image',
+        type: "image",
       });
     }
   };
@@ -518,25 +544,27 @@ export default function EditEventPage() {
 
   const handleDeleteConfirm = async () => {
     setDeleteLoading(true);
-    
+
     try {
-      if (deleteModal.type === 'ticket' && deleteModal.item.id) {
+      if (deleteModal.type === "ticket" && deleteModal.item.id) {
         // Delete existing ticket type from backend
         await adminService.deleteTicketType(deleteModal.item.id);
-      } else if (deleteModal.type === 'media' && deleteModal.item.id) {
+      } else if (deleteModal.type === "media" && deleteModal.item.id) {
         // Delete existing media from backend
         await adminService.deleteMedia(deleteModal.item.id);
       }
-      
+
       // Update frontend state after successful backend deletion
-      if (deleteModal.type === 'ticket') {
+      if (deleteModal.type === "ticket") {
         const updatedFormData = {
           ...formData,
-          ticket_types: formData.ticket_types.filter((_, i) => i !== deleteModal.index),
+          ticket_types: formData.ticket_types.filter(
+            (_, i) => i !== deleteModal.index,
+          ),
         };
         setFormData(updatedFormData);
         setOriginalData(updatedFormData);
-      } else if (deleteModal.type === 'media') {
+      } else if (deleteModal.type === "media") {
         if (deleteModal.isExisting) {
           setExistingMedia((prev) => {
             const updated = [...prev];
@@ -554,11 +582,11 @@ export default function EditEventPage() {
         }
         setOriginalData(formData);
       }
-      
+
       // Close modal
       setDeleteModal({
         isOpen: false,
-        type: 'ticket',
+        type: "ticket",
         index: -1,
         isExisting: false,
         item: null,
@@ -574,7 +602,7 @@ export default function EditEventPage() {
     if (!deleteLoading) {
       setDeleteModal({
         isOpen: false,
-        type: 'ticket',
+        type: "ticket",
         index: -1,
         isExisting: false,
         item: null,
@@ -598,10 +626,12 @@ export default function EditEventPage() {
   };
 
   const removeMedia = (index: number, isExisting: boolean = false) => {
-    const media = isExisting ? existingMedia[index] : formData.mediaFiles[index];
+    const media = isExisting
+      ? existingMedia[index]
+      : formData.mediaFiles[index];
     setDeleteModal({
       isOpen: true,
-      type: 'media',
+      type: "media",
       index,
       isExisting,
       item: media,
@@ -626,10 +656,10 @@ export default function EditEventPage() {
   };
 
   const removeTicketType = (index: number) => {
-    if (formData.ticket_types.length > 1) {
+    if (formData.ticket_types.length > 0) {
       setDeleteModal({
         isOpen: true,
-        type: 'ticket',
+        type: "ticket",
         index,
         isExisting: false,
         item: formData.ticket_types[index],
@@ -643,17 +673,17 @@ export default function EditEventPage() {
     value: any,
   ) => {
     // Prevent duplicate ticket types - only 1 per category
-    if (field === 'category') {
-      const categoryExists = formData.ticket_types.some((tt, i) => 
-        tt.category === value && i !== index
+    if (field === "category") {
+      const categoryExists = formData.ticket_types.some(
+        (tt, i) => tt.category === value && i !== index,
       );
       if (categoryExists) {
         setError(`A ${value.toUpperCase()} ticket type already exists`);
-        setTimeout(() => setError(''), 3000);
+        setTimeout(() => setError(""), 3000);
         return;
       }
     }
-    
+
     const updatedTicketTypes = [...formData.ticket_types];
     updatedTicketTypes[index] = {
       ...updatedTicketTypes[index],
@@ -685,38 +715,56 @@ export default function EditEventPage() {
 
     // Get only changed fields
     const payload: any = { productId: event.productId };
-    
+
     // Add only changed event fields
-    if (hasFieldChanged(originalData?.name, formData.name, 'name')) {
+    if (hasFieldChanged(originalData?.name, formData.name, "name")) {
       payload.name = formData.name;
     }
-    if (hasFieldChanged(originalData?.description, formData.description, 'description')) {
+    if (
+      hasFieldChanged(
+        originalData?.description,
+        formData.description,
+        "description",
+      )
+    ) {
       payload.description = formData.description;
     }
-    if (hasFieldChanged(originalData?.eventDate, formData.eventDate, 'eventDate')) {
+    if (
+      hasFieldChanged(originalData?.eventDate, formData.eventDate, "eventDate")
+    ) {
       payload.eventDate = formData.eventDate;
     }
-    if (hasFieldChanged(originalData?.startTime, formData.startTime, 'startTime')) {
+    if (
+      hasFieldChanged(originalData?.startTime, formData.startTime, "startTime")
+    ) {
       payload.startTime = formData.startTime;
     }
-    if (hasFieldChanged(originalData?.endTime, formData.endTime, 'endTime')) {
+    if (hasFieldChanged(originalData?.endTime, formData.endTime, "endTime")) {
       payload.endTime = formData.endTime;
     }
-    if (hasFieldChanged(originalData?.capacity, formData.capacity, 'capacity')) {
+    if (
+      hasFieldChanged(originalData?.capacity, formData.capacity, "capacity")
+    ) {
       payload.capacity = parseInt(formData.capacity, 10);
     }
-    if (hasFieldChanged(originalData?.isActive, formData.isActive, 'isActive')) {
+    if (
+      hasFieldChanged(originalData?.isActive, formData.isActive, "isActive")
+    ) {
       payload.isActive = formData.isActive;
     }
-    
+
     // Handle ticket types
-    const ticketChanges = getTicketTypeChanges(originalData?.ticket_types, formData.ticket_types);
+    const ticketChanges = getTicketTypeChanges(
+      originalData?.ticket_types,
+      formData.ticket_types,
+    );
     if (ticketChanges.length > 0) {
       payload.ticketTypes = ticketChanges;
     }
 
     // Check if any changes exist
-    if (Object.keys(payload).length === 1) { // Only productId
+    if (Object.keys(payload).length === 1 && formData.mediaFiles.length === 0) {
+      // Only productId
       setError("No changes to save");
       setSubmitting(false);
       return;
@@ -732,7 +780,7 @@ export default function EditEventPage() {
         formData.mediaFiles.forEach((m: any, index: number) => {
           data.append("mediaFiles", m.file);
           data.append("label", m.label);
-          
+
           // Named thumbnail per video index
           if (m.thumbnail) {
             data.append(`thumbnail_${index}`, m.thumbnail);
@@ -747,7 +795,7 @@ export default function EditEventPage() {
 
       // Update original data after successful save
       setOriginalData(formData);
-      
+
       router.push("/admin/events");
     } catch (error) {
       setError("Failed to update event");
@@ -975,26 +1023,32 @@ export default function EditEventPage() {
                       className={`flex items-center justify-between px-4 py-3 rounded-2xl border ${border} ${card}`}
                     >
                       <div className="flex items-center gap-3 flex-wrap">
-                        <select
-                          value={tt.category}
-                          onChange={(e) => updateTicketType(index, 'category', e.target.value)}
+                        <span
                           className={`text-[10px] font-bold px-2.5 py-1.5 rounded-lg uppercase tracking-wider border-2 border-transparent focus:border-accent/50 outline-none appearance-none cursor-pointer ${CATEGORY_COLORS[tt.category] ?? "bg-gray-500/10 text-gray-400"} ${inputBg} ${text} ${border}`}
-                          style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23999' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 4px center', backgroundSize: '12px', paddingRight: '20px' }}
+                          style={{
+                            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23999' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E")`,
+                            backgroundRepeat: "no-repeat",
+                            backgroundPosition: "right 4px center",
+                            backgroundSize: "12px",
+                            paddingRight: "20px",
+                          }}
                         >
-                          <option value="adult">ADULT</option>
-                          <option value="child">CHILD</option>
-                          <option value="senior">SENIOR</option>
-                          <option value="student">STUDENT</option>
-                          <option value="group">GROUP</option>
-                        </select>
-                        
+                          {tt.category}
+                        </span>
+
                         <div className="flex items-center gap-2">
                           <input
                             type="number"
                             min="0"
                             step="0.01"
                             value={tt.price}
-                            onChange={(e) => updateTicketType(index, 'price', parseFloat(e.target.value) || 0)}
+                            onChange={(e) =>
+                              updateTicketType(
+                                index,
+                                "price",
+                                parseFloat(e.target.value) || 0,
+                              )
+                            }
                             className={`w-20 px-2 py-1 text-xs rounded-lg ${inputBg} ${text} border ${border} focus:border-accent/50 outline-none`}
                             placeholder="Price"
                           />
@@ -1003,7 +1057,13 @@ export default function EditEventPage() {
                             type="number"
                             min="1"
                             value={tt.maxQuantityPerBooking}
-                            onChange={(e) => updateTicketType(index, 'maxQuantityPerBooking', parseInt(e.target.value) || 1)}
+                            onChange={(e) =>
+                              updateTicketType(
+                                index,
+                                "maxQuantityPerBooking",
+                                parseInt(e.target.value) || 1,
+                              )
+                            }
                             className={`w-20 px-2 py-1 text-xs rounded-lg ${inputBg} ${text} border ${border} focus:border-accent/50 outline-none`}
                             placeholder="Max"
                           />
@@ -1253,7 +1313,9 @@ export default function EditEventPage() {
                             }}
                             onRemoveMedia={(index) => removeMedia(index, true)}
                             onPreview={() => handleVideoPreview(media, true)}
-                            onThumbnailPreview={() => handleThumbnailPreview(media)}
+                            onThumbnailPreview={() =>
+                              handleThumbnailPreview(media)
+                            }
                           />
                         ),
                       )}
@@ -1334,7 +1396,9 @@ export default function EditEventPage() {
                             }}
                             onRemoveMedia={(index) => removeMedia(index, false)}
                             onPreview={() => handleVideoPreview(media, false)}
-                            onThumbnailPreview={() => handleThumbnailPreview(media)}
+                            onThumbnailPreview={() =>
+                              handleThumbnailPreview(media)
+                            }
                           />
                         ),
                       )}
@@ -1477,7 +1541,7 @@ export default function EditEventPage() {
                 </button>
 
                 {/* Media content */}
-                {previewModal.type === 'image' ? (
+                {previewModal.type === "image" ? (
                   <img
                     src={previewModal.media.url}
                     alt="Preview"
@@ -1498,12 +1562,21 @@ export default function EditEventPage() {
                 <div className="absolute bottom-4 left-4 right-4 bg-black/70 backdrop-blur-sm text-white p-3 rounded-lg">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="font-semibold truncate">{previewModal.media.name || 'Media'}</p>
-                      <p className="text-sm opacity-80">{previewModal.type.toUpperCase()}</p>
+                      <p className="font-semibold truncate">
+                        {previewModal.media.name || "Media"}
+                      </p>
+                      <p className="text-sm opacity-80">
+                        {previewModal.type.toUpperCase()}
+                      </p>
                     </div>
                     {previewModal.media.label && (
                       <button
-                        onClick={() => handleEditLabel(previewModal.media, previewModal.isExisting)}
+                        onClick={() =>
+                          handleEditLabel(
+                            previewModal.media,
+                            previewModal.isExisting,
+                          )
+                        }
                         className="bg-accent hover:bg-accent/80 text-black px-2 py-1 rounded text-xs font-bold uppercase transition-colors cursor-pointer"
                       >
                         {previewModal.media.label}
@@ -1521,8 +1594,8 @@ export default function EditEventPage() {
           isOpen={deleteModal.isOpen}
           onClose={handleDeleteCancel}
           onConfirm={handleDeleteConfirm}
-          title={`Delete ${deleteModal.type === 'ticket' ? 'Ticket Type' : 'Media'}`}
-          message={`Are you sure you want to delete this ${deleteModal.type === 'ticket' ? 'ticket type' : 'media file'}? This action cannot be undone.`}
+          title={`Delete ${deleteModal.type === "ticket" ? "Ticket Type" : "Media"}`}
+          message={`Are you sure you want to delete this ${deleteModal.type === "ticket" ? "ticket type" : "media file"}? This action cannot be undone.`}
           confirmText="Delete"
           cancelText="Cancel"
           loading={deleteLoading}
@@ -1534,4 +1607,4 @@ export default function EditEventPage() {
       </div>
     </div>
   );
-};
+}
