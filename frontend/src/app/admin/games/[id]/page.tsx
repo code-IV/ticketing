@@ -102,7 +102,7 @@ export default function EditGamePage() {
     rules: "",
     status: "OPEN" as "OPEN" | "CLOSED" | "ON_MAINTENANCE" | "UPCOMING",
     ticketTypes: [] as {
-      id: string;
+      id: string | null;
       productId: string;
       category: "ADULT" | "CHILD" | "SENIOR" | "STUDENT" | "GROUP";
       price: number;
@@ -480,7 +480,7 @@ export default function EditGamePage() {
       preview = URL.createObjectURL(file);
     }
 
-    const newMedia = { file, type, name: "", url: "", provider: "", preview };
+    const newMedia = { file, type, preview, label: "gallery" };
     if (isGalleryOnly()) {
       setFormData((p) => ({
         ...p,
@@ -756,8 +756,7 @@ export default function EditGamePage() {
     if (ticketChanges.length > 0) {
       payload.ticketTypes = ticketChanges;
     }
-
-    if (Object.keys(payload).length === 1) {
+    if (Object.keys(payload).length === 1 && formData.mediaFiles.length === 0) {
       // Only productId
       setError("No changes to save");
       setSubmitting(false);
@@ -778,7 +777,7 @@ export default function EditGamePage() {
         });
         // Assuming adminService.uploadProductMedia exists, otherwise skip or handle
         // For now, keep the original approach: comment out if method not available
-        // media = await adminService.uploadProductMedia(data);
+        media = await adminService.uploadProductMedia(data);
       }
 
       await gameService.updateGame(gameId, {
