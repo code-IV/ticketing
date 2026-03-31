@@ -4,8 +4,8 @@ const BACKEND_URL = require("../../config/settings");
 const Media = {
   async createMedia(mediaData, client) {
     const sql = `
-      INSERT INTO media (name, url, path, type, label, thumbnail_url, provider)
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      INSERT INTO media (name, url, path, type, label, thumbnail_url, provider, metadata)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
       RETURNING id`;
     const { rows } = await client.query(sql, [
       mediaData.name,
@@ -15,6 +15,7 @@ const Media = {
       mediaData.label,
       mediaData.thumbnail_url,
       mediaData.provider,
+      mediaData.metadata,
     ]);
     return rows[0].id;
   },
@@ -23,13 +24,15 @@ const Media = {
       UPDATE media 
       SET 
           url = $2, 
-          path = $3
+          path = $3,
+          thumbnail_url = $4
       WHERE id = $1
       RETURNING *;`;
     const { rows } = await client.query(sql, [
       id,
       mediaData.url,
       mediaData.path,
+      mediaData.thumbnailUrl,
     ]);
     return rows[0].id;
   },
@@ -127,10 +130,10 @@ RETURNING *;`;
   },
   async getMediaById(id) {
     const sql = `
-        SELECT id, name, ($1 || url) AS url, path, type, provider, metadata, label FROM media WHERE id=$2;
+        SELECT id, name, url, path, type, provider, metadata, label FROM media WHERE id=$1;
         `;
 
-    const media = await query(sql, [BACKEND_URL, id]);
+    const media = await query(sql, [id]);
     return media.rows[0];
   },
 
