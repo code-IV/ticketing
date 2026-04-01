@@ -3,19 +3,10 @@ const { v4: uuidv4 } = require("uuid");
 const path = require("path");
 const fs = require("fs");
 
-// Only initialize Supabase if credentials are provided
-let supabase = null;
-if (
-  process.env.SUPABASE_URL &&
-  process.env.SUPABASE_SERVICE_ROLE_KEY &&
-  process.env.SUPABASE_URL !== "anything" &&
-  process.env.SUPABASE_SERVICE_ROLE_KEY !== "anything"
-) {
-  supabase = createClient(
-    process.env.SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY,
-  );
-}
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY,
+);
 
 exports.uploadToTemp = async (file) => {
   if (!file.filename) {
@@ -119,33 +110,56 @@ exports.uploadToSupabase = async (file) => {
 
 exports.supaseSignedUrl = async (files, productId) => {
   const uploads = [];
+
   for (const file of files || []) {
     const mediaId = uuidv4();
 
     const ext = file.filename.split(".").pop();
     const type = file.type.startsWith("image") ? "images" : "videos";
 
-    const path = `products/${productId}/${type}/${mediaId}.${ext}`;
-    const publicUrl = `${process.env.SUPABASE_URL}/storage/v1/object/public/media/${path}`;
+    const filePath = `products/${productId}/${type}/${mediaId}.${ext}`;
 
+    // 🔹 main file signed URL
     const { data, error } = await supabase.storage
       .from("media")
-      .createSignedUploadUrl(path);
+      .createSignedUploadUrl(filePath);
 
-    if (error) {
-      throw error;
+    if (error) throw error;
+
+    let thumbnail = null;
+
+    // 🔹 thumbnail handling
+    if (file.thumbnail) {
+      const thumbExt = file.thumbnail.filename?.split(".").pop() || "jpg";
+
+      const thumbPath = `products/${productId}/thumbnails/${mediaId}.${thumbExt}`;
+
+      const { data: thumbData, error: thumbError } = await supabase.storage
+        .from("media")
+        .createSignedUploadUrl(thumbPath);
+
+      if (thumbError) throw thumbError;
+
+      thumbnail = {
+        path: thumbPath,
+        url: `${process.env.SUPABASE_URL}/storage/v1/object/public/media/${thumbPath}`,
+        signedUrl: thumbData.signedUrl,
+      };
     }
 
     uploads.push({
       mediaId,
       name: file.filename,
-      path,
-      url: publicUrl,
-      type,
       label: file.label,
-      signedUrl: data.signedUrl,
+      type,
+      file: {
+        path: filePath,
+        url: `${process.env.SUPABASE_URL}/storage/v1/object/public/media/${filePath}`,
+        signedUrl: data.signedUrl,
+      },
+      thumbnail,
     });
   }
 
-  return uploads;
+  return uploads.length ? uploads : null;
 };

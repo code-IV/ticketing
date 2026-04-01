@@ -10,7 +10,6 @@ const GameController = {
     try {
       const { name, description, rules, status, ticket_types, files } =
         req.body;
-      console.log(files);
       const game = await GameService.create({
         name,
         description,

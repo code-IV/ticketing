@@ -4,8 +4,8 @@ const BACKEND_URL = require("../../config/settings");
 const Media = {
   async createMedia(mediaData, client) {
     const sql = `
-      INSERT INTO media (id, name, path, url, type, label)
-      VALUES ($1, $2, $3, $4, $5, $6)
+      INSERT INTO media (id, name, path, url, type, label, thumbnail_url)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
       RETURNING id`;
     const { rows } = await client.query(sql, [
       mediaData.id,
@@ -14,6 +14,7 @@ const Media = {
       mediaData.url,
       mediaData.type,
       mediaData.label,
+      mediaData.thumbnailUrl,
     ]);
     return rows[0].id;
   },

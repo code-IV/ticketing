@@ -24,8 +24,8 @@ router.post(
     { name: "thumbnail", maxCount: 10 }, // TEMP: Accept old field name
   ]),
   (req, res, next) => {
-    console.log('🔍 Received fields:', Object.keys(req.body));
-    console.log('🔍 Received files:', Object.keys(req.files || {}));
+    console.log("🔍 Received fields:", Object.keys(req.body));
+    console.log("🔍 Received files:", Object.keys(req.files || {}));
     if (req.body.label) {
       req.body.label = Array.isArray(req.body.label)
         ? req.body.label
@@ -69,7 +69,6 @@ router.delete(
 router.get("/", isAuthenticated, isAdmin, UploadsController.getAll);
 router.get("/t", isAuthenticated, isAdmin, UploadsController.getByType);
 router.get("/n", isAuthenticated, isAdmin, UploadsController.getByName);
-router.get("/url/:id", UploadsController.readUrl);
 router.get(
   "/:id",
   isAuthenticated,

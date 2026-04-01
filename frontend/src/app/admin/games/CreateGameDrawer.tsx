@@ -64,7 +64,14 @@ const CreateGameDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
     rules: "",
     status: "OPEN" as "OPEN" | "ON_MAINTENANCE" | "UPCOMING" | "CLOSED",
     ticket_types: [] as CreateTicketTypeRequest[],
-    mediaFiles: [] as any[],
+    mediaFiles: [] as {
+      file: File;
+      thumbnail: File | null;
+      label: string;
+      type: string;
+      preview?: string;
+      thumbnailPreview?: string;
+    }[],
   });
 
   const [newTicket, setNewTicket] = useState<CreateTicketTypeRequest>({
@@ -104,12 +111,12 @@ const CreateGameDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
     if (!file) return;
     const preview =
       type === "IMAGE" ? await getTinyPreview(file) : URL.createObjectURL(file);
-    const newMedia = { file, type, preview, label: "gallery" };
+    const newMedia = { file, thumbnail: null, type, preview, label: "gallery" };
 
     if (isGalleryOnly()) {
       setFormData((p) => ({
         ...p,
-        mediaFiles: [...p.mediaFiles, { ...newMedia, label: "gallery" }],
+        mediaFiles: [...p.mediaFiles, { ...newMedia }],
       }));
     } else {
       setPendingFile(newMedia);
@@ -171,39 +178,62 @@ const CreateGameDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
     e.preventDefault();
     if (loading) return;
     setLoading(true);
+    const payload = {
+      name: formData.name,
+      description: formData.description,
+      rules: formData.rules,
+      status: formData.status,
+      ticketTypes: formData.ticket_types.map((tt) => ({
+        ...tt,
+        category: tt.category.toUpperCase(), // Fix: Convert to uppercase for database enum
+        price: parseFloat(tt.price.toString()),
+      })),
+    };
     try {
       const fileMeta = formData.mediaFiles.map((m: any) => ({
         filename: m.file.name,
         type: m.file.type,
         label: m.label,
+        thumbnail: {
+          filename: m.thumbnail?.name,
+          type: m.thumbnail?.type,
+        },
       }));
       const response = await gameService.createGame({
-        ...formData,
+        ...payload,
         files: fileMeta,
       });
       const { productId, uploads } = response.data ? response.data : null;
 
       if (productId && uploads) {
         await Promise.all(
-          uploads.map((upload: any, index: number) => {
-            const file = formData.mediaFiles[index].file;
+          uploads.map(async (upload: any, index: number) => {
+            const media = formData.mediaFiles[index];
 
-            return fetch(upload.signedUrl, {
+            await fetch(upload.file.signedUrl, {
               method: "PUT",
-              body: file,
-              headers: {
-                "Content-Type": file.type,
-              },
+              body: media.file,
+              headers: { "Content-Type": media.file.type },
             });
+
+            // thumbnail
+            if (upload.thumbnail && media.thumbnail) {
+              await fetch(upload.thumbnail.signedUrl, {
+                method: "PUT",
+                body: media.thumbnail,
+                headers: { "Content-Type": media.thumbnail.type },
+              });
+            }
           }),
         );
         const metaData = uploads.map((u: any) => ({
           id: u.mediaId,
           name: u.name,
-          path: u.path,
-          url: u.url,
           type: u.type,
           label: u.label,
+          path: u.file.path,
+          url: u.file.url,
+          thumbnailUrl: u.thumbnail?.url || null,
         }));
         await adminService.persistMediaData(productId, metaData);
       }
@@ -615,7 +645,7 @@ const CreateGameDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
                                 if (updatedMedia[index]) {
                                   updatedMedia[index].thumbnailPreview =
                                     undefined;
-                                  updatedMedia[index].thumbnail = undefined;
+                                  updatedMedia[index].thumbnail = null;
                                 }
                                 return { ...prev, mediaFiles: updatedMedia };
                               });
