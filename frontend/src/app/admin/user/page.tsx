@@ -463,8 +463,8 @@ export default function UserManagement() {
                   </thead>
                   <tbody className={`divide-y ${isDarkTheme ? 'divide-gray-700' : 'divide-slate-100'}`}>
                     {userBookings.map(booking => {
-                      const totalTickets = booking.passes?.events?.reduce((sum, event) => sum + event.ticketTypes.reduce((s, t) => s + t.quantity, 0), 0) || 0 +
-                                         booking.passes?.games?.reduce((sum, game) => sum + game.ticketTypes.reduce((s, t) => s + t.quantity, 0), 0) || 0;
+                      const totalTickets = booking.passes?.events?.reduce((sum: number, event: any) => sum + event.ticketTypes.reduce((s: number, t: any) => s + t.quantity, 0), 0) || 0 +
+                                         booking.passes?.games?.reduce((sum: number, game: any) => sum + game.ticketTypes.reduce((s: number, t: any) => s + t.quantity, 0), 0) || 0;
                       const bookingType = booking.passes?.events?.length > 0 ? 'EVENT' : 'GAME';
                       
                       return (
@@ -651,7 +651,7 @@ export default function UserManagement() {
                       Booking Items
                     </h4>
                     <div className="space-y-3">
-                      {selectedBooking.passes?.events?.map((event, index) => (
+                      {selectedBooking.passes?.events?.map((event: any, index: number) => (
                         <div key={`event-${index}`} className={`p-3 rounded-lg border ${isDarkTheme ? 'bg-gray-700/50 border-gray-600' : 'bg-white border-gray-200'}`}>
                           <div className="flex items-center justify-between mb-2">
                             <span className={`text-sm font-medium ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}>
@@ -665,7 +665,7 @@ export default function UserManagement() {
                             {new Date(event.eventDate).toLocaleDateString()} • {event.startTime} - {event.endTime}
                           </p>
                           <div className="space-y-1">
-                            {event.ticketTypes.map((ticket, ticketIndex) => (
+                            {event.ticketTypes.map((ticket: any, ticketIndex: number) => (
                               <div key={ticketIndex} className="flex justify-between text-xs">
                                 <span className={isDarkTheme ? 'text-gray-300' : 'text-gray-700'}>
                                   {ticket.category} × {ticket.quantity}
@@ -678,7 +678,7 @@ export default function UserManagement() {
                           </div>
                         </div>
                       ))}
-                      {selectedBooking.passes?.games?.map((game, index) => (
+                      {selectedBooking.passes?.games?.map((game: any, index: number) => (
                         <div key={`game-${index}`} className={`p-3 rounded-lg border ${isDarkTheme ? 'bg-gray-700/50 border-gray-600' : 'bg-white border-gray-200'}`}>
                           <div className="flex items-center justify-between mb-2">
                             <span className={`text-sm font-medium ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}>
@@ -689,7 +689,7 @@ export default function UserManagement() {
                             </span>
                           </div>
                           <div className="space-y-1">
-                            {game.ticketTypes.map((ticket, ticketIndex) => (
+                            {game.ticketTypes.map((ticket: any, ticketIndex: number) => (
                               <div key={ticketIndex} className="flex justify-between text-xs">
                                 <span className={isDarkTheme ? 'text-gray-300' : 'text-gray-700'}>
                                   {ticket.category} × {ticket.quantity}

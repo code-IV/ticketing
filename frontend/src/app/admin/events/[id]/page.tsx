@@ -85,6 +85,7 @@ export default function EditEventPage() {
   const [previewModal, setPreviewModal] = useState<{
     media: any;
     type: "image" | "video";
+    isExisting?: boolean;
   } | null>(null);
 
   const [deleteModal, setDeleteModal] = useState<{
@@ -512,6 +513,7 @@ export default function EditEventPage() {
         thumbnailUrl: media.thumbnailPreview || media.thumbnailUrl,
       },
       type: mediaType,
+      isExisting,
     });
   };
 
@@ -522,6 +524,7 @@ export default function EditEventPage() {
         url: isExisting ? media.url : media.preview,
       },
       type: "video",
+      isExisting,
     });
   };
 
@@ -534,6 +537,7 @@ export default function EditEventPage() {
           name: media.name ? `${media.name} - Thumbnail` : "Thumbnail",
         },
         type: "image",
+        isExisting: media.existing || false,
       });
     }
   };
@@ -931,7 +935,7 @@ export default function EditEventPage() {
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label
                       className={`block text-xs font-semibold uppercase tracking-wider mb-2 ${muted}`}
@@ -1091,7 +1095,7 @@ export default function EditEventPage() {
                 </p>
                 <div className="grid grid-cols-2 gap-3">
                   <select
-                    className={`px-3 py-2.5 rounded-xl text-sm font-medium outline-none border border-transparent focus:border-accent2/50 transition-all ${inputBg} ${text}`}
+                    className={`px-3 py-2.5 rounded-xl text-sm font-medium outline-none border border-transparent focus:border-accent/50 transition-all ${inputBg} ${text}`}
                     value={newTicket.category}
                     onChange={(e) =>
                       setNewTicket({
@@ -1155,7 +1159,7 @@ export default function EditEventPage() {
                 <button
                   type="button"
                   onClick={addCategory}
-                  className="mt-3 w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-accent2/90 hover:bg-accent/90 text-black text-xs font-bold uppercase tracking-widest transition-all active:scale-[0.98]"
+                  className="mt-3 w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-accent/90 hover:bg-accent/80 text-black text-xs font-bold uppercase tracking-widest transition-all active:scale-[0.98]"
                 >
                   <Plus size={14} />
                   Add to list
@@ -1445,8 +1449,8 @@ export default function EditEventPage() {
               onClick={handleUpdate}
               className={`
                 flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold text-black
-                bg-linear-to-r from-accent to-accent2/80
-                hover:from-accent2/90 hover:to-accent2/70
+                bg-linear-to-r from-accent to-accent/80
+                hover:from-accent/90 hover:to-accent/70
                 shadow-lg shadow-accent/30
                 transition-all active:scale-[0.98]
                 ${submitting ? "opacity-50 cursor-not-allowed" : ""}

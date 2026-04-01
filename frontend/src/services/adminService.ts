@@ -307,6 +307,11 @@ export const adminService = {
     });
     return response.data;
   },
+
+  async updateMediaLabel(id: string, label: string): Promise<ApiResponse> {
+    const response = await api.patch(`/media/${id}/label`, { label });
+    return response.data;
+  },
 };
 
 export const ticketService = {

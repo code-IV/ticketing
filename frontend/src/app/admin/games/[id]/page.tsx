@@ -120,23 +120,23 @@ export default function EditGamePage() {
   });
 
   // Helper to convert backend MIME type to internal type constant
-  const inferMediaType = (media: any): "IMAGE" | "VIDEO" => {
+  const inferMediaType = (media: any): "image" | "video" => {
     if (media.type) {
       // If it's already our constant, return it
-      if (media.type === "IMAGE" || media.type === "VIDEO") return media.type;
+      if (media.type === "image" || media.type === "video") return media.type;
       // Otherwise treat MIME type
-      if (media.type.startsWith("image/")) return "IMAGE";
-      if (media.type.startsWith("video/")) return "VIDEO";
+      if (media.type.startsWith("image/")) return "image";
+      if (media.type.startsWith("video/")) return "video";
     }
     if (media.mimeType) {
-      if (media.mimeType.startsWith("image/")) return "IMAGE";
-      if (media.mimeType.startsWith("video/")) return "VIDEO";
+      if (media.mimeType.startsWith("image/")) return "image";
+      if (media.mimeType.startsWith("video/")) return "video";
     }
     if (media.url) {
       const url = media.url.toLowerCase();
-      if (url.match(/\.(mp4|mov|webm|avi|mkv)$/)) return "VIDEO";
+      if (url.match(/\.(mp4|mov|webm|avi|mkv)$/)) return "video";
     }
-    return "IMAGE"; // default
+    return "image"; // default
   };
 
   // Sync productId when game loads
@@ -211,12 +211,14 @@ export default function EditGamePage() {
     if (original === null && current === null) return false;
     if (original !== null && current === null) return true; // Text → Null case
 
-    // Handle number vs string conversions
+    // Handle number vs string conversions with validation
     if (typeof original === "number" && typeof current === "string") {
-      return original !== parseFloat(current);
+      const parsed = parseFloat(current);
+      return !isNaN(parsed) && original !== parsed;
     }
     if (typeof original === "string" && typeof current === "number") {
-      return parseFloat(original) !== current;
+      const parsed = parseFloat(original);
+      return !isNaN(parsed) && parsed !== current;
     }
 
     return original !== current;
@@ -226,8 +228,21 @@ export default function EditGamePage() {
     const changes: any[] = [];
 
     if (!original || original.length === 0) return current;
-    if (!current || current.length === 0) return [];
+    if (!current || current.length === 0) return original.map(o => ({ ...o, _delete: true })); // Mark all for deletion
 
+    // Find deleted ticket types (in original but not in current)
+    original.forEach((originalTT) => {
+      const stillExists = current.find((c) => c.id === originalTT.id);
+      if (!stillExists) {
+        // Mark for deletion
+        changes.push({
+          id: originalTT.id,
+          _delete: true,
+        });
+      }
+    });
+
+    // Check current ticket types for new/modified
     current.forEach((currentTT) => {
       const originalTT = original.find((o) => o.id === currentTT.id);
 
@@ -235,7 +250,7 @@ export default function EditGamePage() {
         // New ticket type
         changes.push({
           ...currentTT,
-          price: parseFloat(currentTT.price.toString()),
+          price: parseFloat(currentTT.price.toString()) || 0,
         });
       } else {
         // Check if anything actually changed
@@ -250,8 +265,8 @@ export default function EditGamePage() {
           changes.push({
             id: currentTT.id,
             category: currentTT.category,
-            price: parseFloat(currentTT.price.toString()),
-            maxQuantityPerBooking: currentTT.max_quantity,
+            price: parseFloat(currentTT.price.toString()) || 0,
+            max_quantity: currentTT.max_quantity, // Fix property name
           });
         }
       }
@@ -570,7 +585,7 @@ export default function EditGamePage() {
           name: media.name ? `${media.name} - Thumbnail` : "Thumbnail",
         },
         type: "image",
-        isExisting: !!media.id,
+        isExisting: media.existing || false,
       });
     }
   };
@@ -601,12 +616,10 @@ export default function EditGamePage() {
           ),
         };
         setFormData(updatedFormData);
-        setOriginalData((prev) => ({
-          ...prev,
-          ticketTypes: formData.ticketTypes.filter(
-            (_, i) => i !== deleteModal.index,
-          ),
-        }));
+        setOriginalData({
+          ...originalData,
+          ticketTypes: updatedFormData.ticketTypes,
+        });
       } else if (deleteModal.type === "media") {
         if (deleteModal.isExisting) {
           setExistingMedia((prev) => {
@@ -623,10 +636,10 @@ export default function EditGamePage() {
             return { ...prev, mediaFiles: updatedMedia };
           });
         }
-        setOriginalData((prev) => ({
-          ...prev,
-          mediaFiles: formData.mediaFiles,
-        }));
+        setOriginalData({
+          ...originalData,
+          mediaFiles: formData.mediaFiles.filter((_, i) => i !== deleteModal.index),
+        });
       }
 
       setDeleteModal({
@@ -1031,13 +1044,13 @@ export default function EditGamePage() {
                 </p>
                 <div className="grid grid-cols-2 gap-3">
                   <select
-                    className={`px-3 py-2.5 rounded-xl text-sm font-medium outline-none border border-transparent focus:border-accent2/50 transition-all ${inputBg} ${text}`}
+                    className={`px-3 py-2.5 rounded-xl text-sm font-medium outline-none border border-transparent focus:border-accent/50 transition-all ${inputBg} ${text}`}
                     value={newTicket.category}
                     onChange={(e) =>
-                      setNewTicket({
-                        ...newTicket,
+                      setNewTicket((prev) => ({
+                        ...prev,
                         category: e.target.value as any,
-                      })
+                      }))
                     }
                   >
                     {["adult", "child", "senior", "student", "group"].map(
@@ -1061,10 +1074,10 @@ export default function EditGamePage() {
                       className={`w-full pl-3 pr-10 py-2.5 rounded-xl text-sm font-medium outline-none border border-transparent focus:border-accent/50 transition-all ${inputBg} ${text}`}
                       value={newTicket.price || ""}
                       onChange={(e) =>
-                        setNewTicket({
-                          ...newTicket,
+                        setNewTicket((prev) => ({
+                          ...prev,
                           price: parseFloat(e.target.value) || 0,
-                        })
+                        }))
                       }
                     />
                     <span
@@ -1079,10 +1092,10 @@ export default function EditGamePage() {
                       className={`w-full pl-3 pr-3 py-2.5 rounded-xl text-sm font-medium outline-none border border-transparent focus:border-accent/50 transition-all ${inputBg} ${text}`}
                       value={newTicket.max_quantity}
                       onChange={(e) =>
-                        setNewTicket({
-                          ...newTicket,
+                        setNewTicket((prev) => ({
+                          ...prev,
                           max_quantity: parseInt(e.target.value),
-                        })
+                        }))
                       }
                     />
                     <span
@@ -1095,7 +1108,7 @@ export default function EditGamePage() {
                 <button
                   type="button"
                   onClick={addCategory}
-                  className="mt-3 w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-accent2/90 hover:bg-accent/90 text-black text-xs font-bold uppercase tracking-widest transition-all active:scale-[0.98]"
+                  className="mt-3 w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-accent/90 hover:bg-accent/80 text-black text-xs font-bold uppercase tracking-widest transition-all active:scale-[0.98]"
                 >
                   <Plus size={14} />
                   Add to list
@@ -1391,8 +1404,8 @@ export default function EditGamePage() {
               onClick={handleUpdate}
               className={`
                 flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold text-black
-                bg-linear-to-r from-accent to-accent2/80
-                hover:from-accent2/90 hover:to-accent2/70
+                bg-linear-to-r from-accent to-accent/80
+                hover:from-accent/90 hover:to-accent/70
                 shadow-lg shadow-accent/30
                 transition-all active:scale-[0.98]
                 ${submitting ? "opacity-50 cursor-not-allowed" : ""}
