@@ -133,7 +133,7 @@ export default function Home() {
 
             <motion.h1
               variants={fadeUp}
-              className="text-[clamp(3.5rem,8vw,8rem)] lg:text-[clamp(3rem,6vw,6rem)] font-black leading-[0.88] tracking-tight mb-10"
+              className="text-[clamp(3.5rem,8vw,10rem)] lg:text-[clamp(3rem,6vw,6rem)] font-black leading-[0.88] tracking-tight mb-10"
               style={{ fontFamily: "'Arial Black', sans-serif" }}
             >
               UNLEASH

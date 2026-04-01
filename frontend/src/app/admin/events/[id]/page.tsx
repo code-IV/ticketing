@@ -1068,7 +1068,7 @@ export default function EditEventPage() {
                                 parseInt(e.target.value) || 1,
                               )
                             }
-                            className={`w-20 px-2 py-1 text-xs rounded-lg ${inputBg} ${text} border ${border} focus:border-accent/50 outline-none`}
+                            className={`hidden w-20 px-2 py-1 text-xs rounded-lg ${inputBg} ${text} border ${border} focus:border-accent/50 outline-none`}
                             placeholder="Max"
                           />
                         </div>
@@ -1140,7 +1140,7 @@ export default function EditEventPage() {
                   <div className="relative">
                     <input
                       type="number"
-                      className={`w-full pl-3 pr-3 py-2.5 rounded-xl text-sm font-medium outline-none border border-transparent focus:border-accent/50 transition-all ${inputBg} ${text}`}
+                      className={` hidden w-full pl-3 pr-3 py-2.5 rounded-xl text-sm font-medium outline-none border border-transparent focus:border-accent/50 transition-all ${inputBg} ${text}`}
                       value={newTicket.maxQuantityPerBooking}
                       onChange={(e) =>
                         setNewTicket({
@@ -1150,7 +1150,7 @@ export default function EditEventPage() {
                       }
                     />
                     <span
-                      className={`absolute -top-2 left-3 text-[9px] font-bold uppercase tracking-wider ${muted} pointer-events-none`}
+                      className={`hidden absolute -top-2 left-3 text-[9px] font-bold uppercase tracking-wider ${muted} pointer-events-none`}
                     >
                       Max qty
                     </span>
