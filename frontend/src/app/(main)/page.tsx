@@ -78,7 +78,7 @@ export default function Home() {
 
   return (
     <div
-      className={`min-h-screen ${isDarkTheme ? "bg-[#0A0A0A] text-white" : "bg-white text-gray-900"} overflow-x-hidden`}
+      className={`min-h-screen  ${isDarkTheme ? "bg-[#0A0A0A] text-white" : "bg-gray-100 text-gray-900"} overflow-x-hidden`}
     >
       <style>{`
         .scrollbar-hide {
@@ -99,15 +99,13 @@ export default function Home() {
             alt="Bora Park"
             crossOrigin="anonymous"
           />
+          {/* Gradient Overlays - Light mode optimized for better text visibility */}
+          {/* Diagonal Gradient: Bottom-left to top-right */}
+          <div className={`absolute inset-0 bg-linear-to-tr ${isDarkTheme ? "from-black/30 via-black/15" : "from-white/20 via-white/20"} to-transparent`} />
+          
+          {/* Bottom Accent: 80% opacity (light) / 100% opacity (dark) */}
           <div
-            className={`absolute inset-0 bg-linear-to-t ${isDarkTheme ? "from-[#0A0A0A] via-[#0A0A0A]/20" : "from-white via-white/15"} to-transparent`}
-          />
-          <div
-            className={`absolute inset-0 bg-linear-to-r ${isDarkTheme ? "from-[#0A0A0A]/30" : "from-white/30"} to-transparent`}
-          />
-          <div className="absolute inset-0 bg-linear-to-b from-black/50 via-black/30 to-transparent" />
-          <div
-            className={`absolute bottom-0 left-0 right-0 h-32 bg-linear-to-t ${isDarkTheme ? "from-[#0A0A0A]" : "from-white"} to-transparent`}
+            className={`absolute bottom-0 left-0 right-0 h-32 bg-linear-to-t ${isDarkTheme ? "from-[#0A0A0A]" : "from-gray-50/10"} to-transparent`}
           />
         </motion.div>
 
@@ -135,7 +133,7 @@ export default function Home() {
 
             <motion.h1
               variants={fadeUp}
-              className="text-[clamp(4rem,12vw,10rem)] font-black leading-[0.88] tracking-tight mb-10"
+              className="text-[clamp(3.5rem,8vw,8rem)] lg:text-[clamp(3rem,6vw,6rem)] font-black leading-[0.88] tracking-tight mb-10"
               style={{ fontFamily: "'Arial Black', sans-serif" }}
             >
               UNLEASH
@@ -184,17 +182,16 @@ export default function Home() {
           className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2"
         >
           <div className="w-px h-16 bg-linear-to-b from-gray-300/0 via-gray-400/40 to-gray-300/0 animate-pulse" />
-          <span
-            className={`text-[10px] font-bold uppercase tracking-widest ${isDarkTheme ? "text-gray-400" : "text-gray-400"}`}
-          >
-            Scroll
-          </span>
         </motion.div>
       </section>
 
 {/* ── EVENTS (Hybrid Immersive Design) ─────────────────────────────── */}
 {events.length > 0 && (
-  <section className="py-20 overflow-hidden">
+  <section className={`py-20 overflow-hidden backdrop-blur-sm ${
+    isDarkTheme 
+      ? "bg-[#0A0A0A]/80" 
+      : "bg-gray-100/80"
+  } ${isDarkTheme ? "text-white" : "text-gray-900"} `}>
     <div className="max-w-400 mx-auto px-6 sm:px-10">
       
       {/* Section Header */}
@@ -208,31 +205,34 @@ export default function Home() {
         <p className="text-accent font-black text-xs uppercase tracking-[0.4em] mb-4">
           Experience
         </p>
-        <h2 className="text-6xl md:text-8xl lg:text-9xl font-black tracking-tighter leading-[0.85] uppercase italic">
+        <h2 className="text-6xl md:text-8xl lg:text-7xl xl:text-8xl font-black tracking-tighter leading-[0.85] uppercase italic">
           Upcoming <span className="text-accent">Events</span>
         </h2>
       </motion.div>
 
-      <div className="flex gap-6 overflow-x-auto scrollbar-hide px-2 py-4">
-        {[...events].sort((a, b) => new Date(b.createdAt || b.eventDate).getTime() - new Date(a.createdAt || a.eventDate).getTime()).map((event, i) => {
+      {/* Mobile: Horizontal scroll */}
+      <div className="lg:hidden flex gap-6 overflow-x-auto scrollbar-hide px-2 py-4">
+        {[...events].sort((a, b) => new Date(b.createdAt || b.eventDate || 0).getTime() - new Date(a.createdAt || a.eventDate || 0).getTime()).map((event, i) => {
           const adultPrice = event.ticketTypes?.find((t) => t.category === "ADULT")?.price ?? 0;
           const posterMedia = event.gallery?.find(m => m.label === 'poster') || event.gallery?.[0];
           const bannerMedia = event.gallery?.find(m => m.label === 'banner') || event.gallery?.[1] || event.gallery?.[0];
 
           return (
-            <div key={event.id} className="relative flex-shrink-0 w-[calc(100vw-70px)] max-w-96 lg:w-96">
+            <div key={event.id} className="relative shrink-0 w-[calc(100vw-90px)] max-w-sm">
               
-              {/* 📱 MOBILE & TABLET VIEW (Cinematic Frame Style - Design 3) */}
+              {/* 📱 MOBILE VIEW - Matching Games Style */}
               <motion.div 
                 initial={{ opacity: 0, y: 50 }}
                 whileInView={{ opacity: 1, y: 0 }}
+                whileHover={{ scale: 1.02, y: -8 }}
+                transition={{ duration: 0.4 }}
                 viewport={{ once: true }}
-                className="lg:hidden relative w-full min-h-[75vh] flex flex-col justify-end p-6 rounded-[40px] overflow-hidden group shadow-2xl border border-white/5 hover:border-accent transition-all"
+                className="relative w-full aspect-3/4 rounded-3xl overflow-hidden group shadow-2xl border border-white/5 hover:border-accent transition-all cursor-pointer"
               >
                 {/* Background Media */}
                 <div className="absolute inset-0 z-0">
                   {posterMedia?.type?.startsWith("image/") ? (
-                    <img src={posterMedia.url} className="w-full h-full object-cover" crossOrigin="anonymous" alt="" />
+                    <img src={posterMedia.url} className="w-full h-full object-cover" crossOrigin="anonymous" alt={event.name} />
                   ) : posterMedia?.type?.startsWith("video/") ? (
                     (() => {
                       const videos = event.gallery?.filter(m => m.type?.startsWith("video/")) || [];
@@ -241,32 +241,39 @@ export default function Home() {
                         <video key={currentVideo.id} src={currentVideo.url} autoPlay muted loop playsInline className="w-full h-full object-cover" crossOrigin="anonymous" />
                       ) : null;
                     })()
-                  ) : null}
-                  {/* Vignette Overlay */}
-                  <div className="absolute inset-0 bg-linear-to-t from-black via-black/20 to-transparent opacity-90" />
+                  ) : (
+                    <img
+                      src={MOCK_IMG}
+                      alt="Placeholder"
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 blur-md animate-pulse"
+                    />
+                  )}
                 </div>
 
-                {/* Content Overlay */}
-                <div className="relative z-10 space-y-6">
-                  <div>
-                    <h3 className="text-5xl font-black text-white tracking-tighter uppercase leading-none mt-4">
-                      {event.name}
-                    </h3>
-                  </div>
-
-                  {/* Floating Glass Control Bar */}
-                  <div className="flex items-center justify-between gap-4 p-3 bg-white/5 backdrop-blur-3xl border border-white/10 rounded-[28px]">
-                    <div className="pl-4">
-                        <span className="text-[10px] font-black uppercase opacity-40 block mb-2 tracking-widest">Status</span>
-                         <span className={`text-sm font-black uppercase tracking-widest ${event.isActive ? 'text-green-500' : 'text-red-500'}`}>
-                            {event.isActive ? 'Available' : 'Fully Booked'}
-                         </span>        
+                {/* Content Overlay - Matching Games Style */}
+                <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent" />
+                <div className="absolute inset-0 flex flex-col justify-end p-6">
+                  <div className="space-y-4">
+                    <div>
+                      <span className="text-[10px] font-black uppercase opacity-40 block mb-2 tracking-widest">Event</span>
+                      <h3 className="text-3xl md:text-4xl font-black text-white tracking-tighter uppercase leading-none">
+                        {event.name}
+                      </h3>
                     </div>
-                     <Link href={`/events/${event.id}`}>
-                      <button className="px-8 py-4 bg-accent text-black font-black text-[10px] uppercase tracking-widest rounded-full active:scale-90 transition-transform">
-                        See details
-                      </button>
-                    </Link>
+
+                    {/* Status and Button */}
+                    <div className="flex items-center justify-between gap-4">
+                      <div>
+                        <span className={`text-sm font-black uppercase tracking-widest ${event.isActive ? 'text-green-500' : 'text-red-500'}`}>
+                          {event.isActive ? 'Available' : 'Fully Booked'}
+                        </span>
+                      </div>
+                      <Link href={`/events/${event.id}`}>
+                        <button className="px-6 py-3 bg-accent text-black font-black text-[10px] uppercase tracking-widest rounded-full hover:shadow-[0_0_20px_rgba(255,216,77,0.4)] transition-all">
+                          View Details
+                        </button>
+                      </Link>
+                    </div>
                   </div>
                 </div>
                 
@@ -277,16 +284,29 @@ export default function Home() {
                   </div>
                 )}
               </motion.div>
+            </div>
+          );
+        })}
+      </div>
 
+      {/* Desktop: Original vertical layout */}
+      <div className="hidden lg:block space-y-20 lg:space-y-32">
+        {[...events].sort((a, b) => new Date(b.createdAt || b.eventDate || 0).getTime() - new Date(a.createdAt || a.eventDate || 0).getTime()).map((event, i) => {
+          const adultPrice = event.ticketTypes?.find((t) => t.category === "ADULT")?.price ?? 0;
+          const posterMedia = event.gallery?.find(m => m.label === 'poster') || event.gallery?.[0];
+          const bannerMedia = event.gallery?.find(m => m.label === 'banner') || event.gallery?.[1] || event.gallery?.[0];
 
+          return (
+            <div key={event.id} className="relative">
+              
               {/* 💻 DESKTOP VIEW (Split Hero Style - Design 1) */}
               <motion.div 
-                className={`hidden lg:flex ${i % 2 === 0 ? "flex-row" : "flex-row-reverse"} items-center gap-20 xl:gap-32`}
+                className={`hidden lg:flex ${i % 2 === 0 ? "flex-row" : "flex-row-reverse"} items-center gap-8 lg:gap-12 xl:gap-16`}
               >
                 {/* Desktop Media Block (60%) */}
                 <div className="relative w-[60%] aspect-16/10 rounded-[60px] overflow-hidden group/media shadow-2xl border border-white/5 bg-zinc-900">
                    {bannerMedia?.type?.startsWith("image/") ? (
-                    <img src={bannerMedia.url} className="w-full h-full object-cover transition-transform duration-1000 group-hover/media:scale-110" crossOrigin="anonymous" alt="" />
+                    <img src={bannerMedia.url} className="w-full h-full object-cover transition-transform duration-1000 group-hover/media:scale-110" crossOrigin="anonymous" alt={event.name} />
                   ) : bannerMedia?.type?.startsWith("video/") ? (
                     (() => {
                       const videos = event.gallery?.filter(m => m.type?.startsWith("video/")) || [];
@@ -295,42 +315,47 @@ export default function Home() {
                         <video key={currentVideo.id} src={currentVideo.url} autoPlay muted loop playsInline className="w-full h-full object-cover transition-transform duration-1000 group-hover/media:scale-110" crossOrigin="anonymous" />
                       ) : null;
                     })()
-                  ) : null}
+                  ) : (
+                    <img
+                      src={MOCK_IMG}
+                      alt="Placeholder"
+                      className="w-full h-full object-cover blur-md animate-pulse"
+                    />
+                  )}
                 </div>
 
                 {/* Desktop Content Block (40%) */}
-                <div className="w-[40%] space-y-10">
+                <div className="w-[30%] gap-5 flex flex-col ">
 
 
-                   <h3 className={`text-7xl xl:text-8xl font-black tracking-tighter leading-[0.85] uppercase ${isDarkTheme ? 'text-white' : 'text-zinc-900'}`}>
+                   <h3 className={`text-4xl xl:text-7xl font-black tracking-tighter leading-[0.85] uppercase ${isDarkTheme ? 'text-white' : 'text-zinc-900'}`}>
                       {event.name}
                    </h3>
 
-                   <p className={`text-xl font-medium leading-relaxed opacity-60 ${isDarkTheme ? 'text-zinc-400' : 'text-zinc-600'}`}>
+                   <p className={` font-medium leading-relaxed opacity-60 ${isDarkTheme ? 'text-zinc-400' : 'text-zinc-600'}`}>
                       {event.description || "Defining the next generation of park experiences through exclusive curated events and world-class production."}
                    </p>
 
-                   <div className="flex items-center gap-12 border-y border-current/10 py-10">
-                     <Link href={`/events/${event.id}`}>
-                        <button 
-                          disabled={!event.isActive}
-                          className={`px-12 py-6 rounded-2xl font-black text-xs uppercase tracking-[0.2em] transition-all ${
-                            !event.isActive 
-                            ? "bg-zinc-800 text-zinc-500" 
-                            : "bg-accent text-black hover:shadow-[0_0_40px_rgba(255,216,77,0.3)] hover:scale-105 active:scale-95"
-                          }`}
-                        >
-                          Book Experience
-                        </button>
-                     </Link>
-
-                      <div className="w-px h-12 bg-current opacity-10" />
-                      <div>
-                         <span className="text-[10px] font-black uppercase opacity-40 block mb-2 tracking-widest">Status</span>
-                         <span className={`text-sm font-black uppercase tracking-widest ${event.isActive ? 'text-green-500' : 'text-red-500'}`}>
-                            {event.isActive ? 'Available' : 'Fully Booked'}
-                         </span>
-                      </div>
+                     <div className="flex justify-between  border-y border-current/10 py-4">
+                       <Link href={`/events/${event.id}`}>
+                          <button
+                            disabled={!event.isActive}
+                            className={`px-6 py-3 lg:px-6  lg:py-5 xl:text-sm  rounded-2xl font-black text-xs uppercase tracking-[0.2em] transition-all ${
+                              !event.isActive
+                              ? "bg-zinc-800 text-zinc-500"
+                              : "bg-accent text-black hover:shadow-[0_0_40px_rgba(255,216,77,0.3)] hover:scale-105 active:scale-95"
+                            }`}
+                          >
+                            Book Experience
+                          </button>
+                       </Link>
+                        <div className="w-px h-12 bg-current opacity-10" />
+                        <div>
+                           <span className="text-[10px] font-black uppercase opacity-40 block mb-2 tracking-widest">Status</span>
+                           <span className={`text-sm font-black uppercase tracking-widest ${event.isActive ? 'text-green-500' : 'text-red-500'}`}>
+                              {event.isActive ? 'Available' : 'Fully Booked'}
+                           </span>
+                        </div>
                    </div>
 
                    
@@ -346,8 +371,8 @@ export default function Home() {
 )}
       {/* ── ATTRACTIONS ──────────────────────────────────────────────────── */}
       <section
-        className={`pb-18 px-2 sm:px-10 lg:px-16 bg-linear-to-b from-transparent ${
-          isDarkTheme ? "to-white/3" : "to-gray-50"
+        className={`py-18 px-2 sm:px-10 lg:px-16 backdrop-blur-lg ${
+          isDarkTheme ? "bg-bg1/45" : "bg-bg2/10"
         }`}
       >
         <div className="max-w-7xl mx-auto">
@@ -363,7 +388,7 @@ export default function Home() {
               className="flex justify-between items-end mb-16"
             >
               <div>
-                <p className="text-[#FFD84D] pl-4 font-black text-xs uppercase tracking-[0.3em] mb-3">
+                <p className="text-accent2 pl-4 font-black text-xs uppercase tracking-[0.3em] mb-3">
                   Top Picks
                 </p>
                 <h2
@@ -472,7 +497,9 @@ export default function Home() {
       </section>
 
       {/* ── STATS ────────────────────────────────────────────────────────── */}
-      <section className="py-24 px-6 sm:px-10 lg:px-16">
+      <section className={`py-24 px-6 sm:px-10 lg:px-16 backdrop-blur-sm ${
+  isDarkTheme ? "bg-[#0A0A0A]/80" : "bg-gray-100/80"
+}`}>
         <div className="max-w-7xl mx-auto">
           <div
             className={`grid grid-cols-2 md:grid-cols-4 gap-px rounded-3xl overflow-hidden border ${
@@ -513,7 +540,9 @@ export default function Home() {
       </section>
 
       {/* ── CTA ──────────────────────────────────────────────────────────── */}
-      <section className="py-28 px-6 sm:px-10 lg:px-16">
+      <section className={`py-28 px-6 sm:px-10 lg:px-16 backdrop-blur-md ${
+  isDarkTheme ? "bg-[#0A0A0A]/60" : "bg-gray-100/60"
+}`}>
         <motion.div
           initial={{ opacity: 0, y: 40 }}
           whileInView={{ opacity: 1, y: 0 }}
