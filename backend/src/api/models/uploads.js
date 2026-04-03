@@ -6,7 +6,8 @@ const Media = {
     const sql = `
       INSERT INTO media (id, name, path, url, type, label, thumbnail_url)
       VALUES ($1, $2, $3, $4, $5, $6, $7)
-      RETURNING id`;
+      RETURNING id
+      ON CONFLICT (path) DO NOTHING`;
     const { rows } = await client.query(sql, [
       mediaData.id,
       mediaData.name,
@@ -14,7 +15,7 @@ const Media = {
       mediaData.url,
       mediaData.type,
       mediaData.label,
-      mediaData.thumbnailUrl,
+      mediaData.thumbnail.url,
     ]);
     return rows[0].id;
   },
@@ -173,4 +174,58 @@ RETURNING *;`;
   },
 };
 
-module.exports = { Media };
+const Sessions = {
+  async createSession(id, metaData) {
+    console.log(metaData);
+    const sql = `INSERT INTO upload_sessions (id, metadata, expires_at) VALUES ($1, $2,  NOW() + INTERVAL '30 minutes') RETURNING id`;
+    const result = await query(sql, [id, JSON.stringify(metaData)]);
+    return result.rows[0];
+  },
+
+  async updateSession(id) {
+    const sql = `
+  UPDATE upload_sessions
+  SET confirmed = TRUE
+  WHERE id = $1 AND confirmed = FALSE
+  `;
+    const result = await query(sql, [id]);
+    console.log(result);
+    if (result.rowCount === 0) {
+      throw new Error("Session already used or invalid");
+    }
+    return result.rows[0].metadata;
+  },
+
+  async getSessionData(id) {
+    const sql = `
+    SELECT id, metadata, expires_at, used
+    FROM upload_sessions
+    WHERE id = $1
+  `;
+
+    const { rows } = await query(sql, [id]);
+
+    if (rows.length === 0) {
+      throw new Error("Upload session not found");
+    }
+
+    const session = rows[0];
+
+    // 🔹 2. Validate session
+    if (session.used) {
+      throw new Error("Session already used");
+    }
+
+    if (new Date(session.expires_at) < new Date()) {
+      throw new Error("Session expired");
+    }
+
+    if (!Array.isArray(session.metadata)) {
+      throw new Error("Invalid session metadata");
+    }
+
+    return session.metadata;
+  },
+};
+
+module.exports = { Media, Sessions };

@@ -151,7 +151,7 @@ const CreateGameDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
     setFormData((prev) => {
       const updatedMedia = [...prev.mediaFiles];
       if (updatedMedia[index].type === "VIDEO")
-        URL.revokeObjectURL(updatedMedia[index].preview);
+        URL.revokeObjectURL(updatedMedia[index].preview ?? "");
       updatedMedia.splice(index, 1);
       return { ...prev, mediaFiles: updatedMedia };
     });
@@ -189,54 +189,69 @@ const CreateGameDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
         price: parseFloat(tt.price.toString()),
       })),
     };
+    let sessionId: string | null = null;
+
     try {
       const fileMeta = formData.mediaFiles.map((m: any) => ({
+        clientId: crypto.randomUUID(),
         filename: m.file.name,
         type: m.file.type,
         label: m.label,
-        thumbnail: {
-          filename: m.thumbnail?.name,
-          type: m.thumbnail?.type,
-        },
+        thumbnail: m.thubnail
+          ? {
+              filename: m.thumbnail?.name,
+              type: m.thumbnail?.type,
+            }
+          : null,
       }));
-      const response = await gameService.createGame({
-        ...payload,
-        files: fileMeta,
-      });
-      const { productId, uploads } = response.data ? response.data : null;
+      if (fileMeta.length) {
+        const response = await adminService.createSessions(fileMeta);
 
-      if (productId && uploads) {
-        await Promise.all(
-          uploads.map(async (upload: any, index: number) => {
-            const media = formData.mediaFiles[index];
+        const { uploads, sessionId } = response.data?.uploads ?? null;
 
-            await fetch(upload.file.signedUrl, {
+        const fileMap = new Map();
+        formData.mediaFiles.forEach((m: any, i: number) => {
+          fileMap.set(fileMeta[i].clientId, m);
+        });
+
+        const results = await Promise.all(
+          uploads.map(async (upload: any) => {
+            const media = fileMap.get(upload.clientId);
+
+            if (!media) throw new Error("File mapping failed");
+
+            const res = await fetch(upload.file.signedUrl, {
               method: "PUT",
               body: media.file,
               headers: { "Content-Type": media.file.type },
             });
+            if (!res.ok) throw new Error("Upload failed");
 
             // thumbnail
             if (upload.thumbnail && media.thumbnail) {
-              await fetch(upload.thumbnail.signedUrl, {
+              const res = await fetch(upload.thumbnail.signedUrl, {
                 method: "PUT",
                 body: media.thumbnail,
                 headers: { "Content-Type": media.thumbnail.type },
               });
+              if (!res.ok) throw new Error("Upload failed");
             }
           }),
         );
-        const metaData = uploads.map((u: any) => ({
-          id: u.mediaId,
-          name: u.name,
-          type: u.type,
-          label: u.label,
-          path: u.file.path,
-          url: u.file.url,
-          thumbnailUrl: u.thumbnail?.url || null,
-        }));
-        await adminService.persistMediaData(productId, metaData);
+
+        // const failed = results.some((r) => r.status === "rejected");
+
+        // if (failed) {
+        //   // await adminService.cancelSession(sessionId);
+        //   throw new Error("Upload failed");
+        // }
       }
+
+      await gameService.createGame({
+        game: payload,
+        sessionId,
+      });
+
       setFormData({
         name: "",
         description: "",

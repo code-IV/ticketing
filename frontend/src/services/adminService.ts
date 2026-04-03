@@ -277,6 +277,11 @@ export const adminService = {
     return response.data;
   },
 
+  async createSessions(files: any[]): Promise<ApiResponse> {
+    const response = await api.post(`/media/sessions`, { files });
+    return response.data;
+  },
+
   async persistMediaData(id: string, uploads: any[]): Promise<ApiResponse> {
     const response = await api.post(`/media/persist/${id}`, { uploads });
     return response.data;
@@ -346,9 +351,16 @@ export const ticketService = {
 };
 
 export const gameService = {
-  async createGame(
-    data: CreateGame,
-  ): Promise<ApiResponse<{ game: Game; productId: string; uploads: any }>> {
+  async createGame(data: {
+    game: CreateGame;
+    sessionId: string | null;
+  }): Promise<
+    ApiResponse<{
+      game: Game;
+      productId: string;
+      preSignedUrls: string[];
+    }>
+  > {
     const response = await api.post("/admin/game", data);
     return response.data;
   },

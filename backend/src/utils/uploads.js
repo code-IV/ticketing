@@ -108,8 +108,9 @@ exports.uploadToSupabase = async (file) => {
   };
 };
 
-exports.supaseSignedUrl = async (files, productId) => {
+exports.supaseSignedUrl = async (files) => {
   const uploads = [];
+  const sessId = uuidv4();
 
   for (const file of files || []) {
     const mediaId = uuidv4();
@@ -117,7 +118,7 @@ exports.supaseSignedUrl = async (files, productId) => {
     const ext = file.filename.split(".").pop();
     const type = file.type.startsWith("image") ? "images" : "videos";
 
-    const filePath = `products/${productId}/${type}/${mediaId}.${ext}`;
+    const filePath = `uploads/${sessId}/${type}/${mediaId}.${ext}`;
 
     // 🔹 main file signed URL
     const { data, error } = await supabase.storage
@@ -132,7 +133,7 @@ exports.supaseSignedUrl = async (files, productId) => {
     if (file.thumbnail) {
       const thumbExt = file.thumbnail.filename?.split(".").pop() || "jpg";
 
-      const thumbPath = `products/${productId}/thumbnails/${mediaId}.${thumbExt}`;
+      const thumbPath = `uploads/${sessId}/thumbnails/${mediaId}.${thumbExt}`;
 
       const { data: thumbData, error: thumbError } = await supabase.storage
         .from("media")
@@ -149,6 +150,7 @@ exports.supaseSignedUrl = async (files, productId) => {
 
     uploads.push({
       mediaId,
+      clientId: file.clientId,
       name: file.filename,
       label: file.label,
       type,
@@ -160,6 +162,44 @@ exports.supaseSignedUrl = async (files, productId) => {
       thumbnail,
     });
   }
+  if (!uploads.length) return null;
+  return { uploads, sessId };
+};
 
-  return uploads.length ? uploads : null;
+exports.checkUploadBySid = async (sessionId, metadata) => {
+  if (!Array.isArray(metadata) || metadata.length === 0)
+    throw new Error("No metadata provided");
+
+  // 1️⃣ List all files under the session folder
+  const { data: files, error } = await supabase.storage
+    .from("media")
+    .list(`uploads/${sessionId}`, { limit: 1000, recursive: true });
+
+  if (error) throw error;
+
+  const existingPaths = new Set(
+    files.map((f) => `uploads/${sessionId}/${f.name}`),
+  );
+
+  // 2️⃣ Validate that each file and thumbnail exists
+  for (const meta of metadata) {
+    if (!existingPaths.has(meta.path)) {
+      throw new Error(`Missing uploaded file: ${meta.path}`);
+    }
+
+    if (meta.thumbnail?.path && !existingPaths.has(meta.thumbnail.path)) {
+      throw new Error(`Missing uploaded thumbnail: ${meta.thumbnail.path}`);
+    }
+  }
+
+  // 3️⃣ If all files exist, return the original metadata
+  return metadata.map((m) => ({
+    mediaId: m.id,
+    name: m.name,
+    path: m.file.path,
+    url: m.file.url,
+    type: m.type,
+    label: m.label,
+    thumbnailUrl: m.thumbnail?.url || null,
+  }));
 };

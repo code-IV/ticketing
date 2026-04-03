@@ -1,6 +1,7 @@
 const { GameService, GameStatsService } = require("../services/gameService");
 const { apiResponse } = require("../../utils/helpers");
 const { supaseSignedUrl } = require("../../utils/uploads");
+const UploadsService = require("../services/uploadsService");
 
 const GameController = {
   /**
@@ -8,21 +9,19 @@ const GameController = {
    */
   async createGame(req, res, next) {
     try {
-      const { name, description, rules, status, ticket_types, files } =
-        req.body;
-      const game = await GameService.create({
+      const { game, sessionId } = req.body;
+      const { name, description, rules, status, ticketTypes } = game;
+
+      const gameRes = await GameService.create({
         name,
         description,
         rules,
         status,
-        ticket_types,
+        ticketTypes,
+        sessionId,
       });
 
-      const uploads = await supaseSignedUrl(files, game.productId);
-      return apiResponse(res, 200, true, "Game created successfully", {
-        ...game,
-        uploads,
-      });
+      return apiResponse(res, 200, true, "Game created successfully", gameRes);
     } catch (err) {
       next(err);
     }

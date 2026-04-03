@@ -5,9 +5,9 @@ const {
   uploadToTemp,
   deleteFromLocal,
   promoteFile,
+  supaseSignedUrl,
 } = require("../../utils/uploads");
-const { Media } = require("../models/Media");
-const { Cipheriv } = require("crypto");
+const { Media, Sessions } = require("../models/uploads");
 
 const UploadsService = {
   async addMediaToTemp(files) {
@@ -163,6 +163,34 @@ const UploadsService = {
       throw err;
     }
   },
+  async createUploadSessions(files) {
+    const client = await getClient();
+    try {
+      const { uploads, sessId } = await supaseSignedUrl(files);
+      await client.query("BEGIN");
+      await Sessions.createSession(sessId, uploads);
+      await client.query("COMMIT");
+      return { uploads, sessionId: sessId };
+    } catch (err) {
+      await client.query("ROLLBACK");
+      throw err;
+    } finally {
+      client.release();
+    }
+  },
+
+  async validateSession(id) {
+    if (!id) {
+      throw new Error("Session ID is required");
+    }
+    try {
+      const metadata = await Sessions.getSessionData(id);
+      const validatedFiles = await checkUploadBySid(id, metadata);
+      return validatedFiles;
+    } catch (err) {
+      throw err;
+    }
+  },
   async persistMedia(uploads, productId) {
     const client = await getClient();
     try {
@@ -173,7 +201,7 @@ const UploadsService = {
         await Media.linkProductMedia(productId, upload.id, client);
       }
       await client.query("COMMIT");
-      return { success: true };
+      return { success: true, preSignedUrls };
     } catch (err) {
       await client.query("ROLLBACK");
       throw err;

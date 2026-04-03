@@ -2,6 +2,24 @@ const { apiResponse } = require("../../utils/helpers");
 const UploadsService = require("../services/uploadsService");
 
 const UploadsController = {
+  async createUploadSession(req, res, next) {
+    try {
+      const { files } = req.body;
+
+      if (files.length === 0) {
+        return apiResponse(res, 400, false, "No files uploaded.");
+      }
+
+      const uploads = await UploadsService.createUploadSessions(files);
+
+      return apiResponse(res, 200, true, "Session created successfully", {
+        uploads,
+      });
+    } catch (err) {
+      console.log(err);
+      next(err);
+    }
+  },
   async uploadProductMedia(req, res, next) {
     try {
       const { label } = req.body; // This is an array of strings

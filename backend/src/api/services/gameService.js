@@ -1,18 +1,23 @@
 const { getClient } = require("../../config/db");
+const { checkUploadBySid } = require("../../utils/uploads");
 const { GameRes } = require("../dtos/gameDto");
 const { Game, GameStats } = require("../models/Games");
 const TicketType = require("../models/TicketType");
+const { Sessions, Media } = require("../models/uploads");
 const UploadsService = require("./uploadsService");
 
 const GameService = {
   async create(gameData) {
-    const { name, description, rules, status, ticket_types, mediaIds } =
+    const { name, description, rules, status, ticketTypes, sessionId } =
       gameData;
     const client = await getClient();
 
     try {
+      const files = sessionId
+        ? await UploadsService.validateSession(sessionId)
+        : [];
       await client.query("BEGIN");
-
+      await Sessions.updateSession(sessionId);
       // 1. Create the base Game
       const newGame = await Game.createGame(client, {
         name,
@@ -27,12 +32,13 @@ const GameService = {
         gameId: newGame.id,
       });
 
-      for (const type of ticket_types || []) {
+      for (const type of ticketTypes || []) {
         await TicketType.create({ ...type, productId }, client);
       }
 
-      if (mediaIds?.length) {
-        await UploadsService.addMediaToProduct(productId, mediaIds, client);
+      for (const file of files || []) {
+        const media = await Media.createMedia(file, client);
+        await Media.linkProductMedia(productId, media.id, client);
       }
 
       await client.query("COMMIT");

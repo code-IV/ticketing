@@ -134,6 +134,7 @@ exports.up = async function (knex) {
       .inTable("media")
       .onDelete("CASCADE");
     table.integer("sort_order").defaultTo(0);
+    table.timestamp("expires_at").nullable().defaultTo(null);
     table.unique(["product_id", "media_id"]);
   });
 };

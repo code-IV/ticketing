@@ -39,6 +39,13 @@ router.post(
   UploadsController.uploadProductMedia,
 );
 
+router.post(
+  "/sessions",
+  isAuthenticated,
+  isAdmin,
+  UploadsController.createUploadSession,
+);
+
 router.patch(
   "/upload/:id",
   isAuthenticated,
@@ -57,6 +64,7 @@ router.post(
   handleValidation,
   UploadsController.persistMediaUpload,
 );
+
 router.delete(
   "/rm/:id",
   isAuthenticated,
