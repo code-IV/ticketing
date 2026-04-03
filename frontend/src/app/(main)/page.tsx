@@ -133,8 +133,8 @@ export default function Home() {
 
             <motion.h1
               variants={fadeUp}
-              className="text-[clamp(3.5rem,8vw,10rem)] lg:text-[clamp(3rem,6vw,6rem)] font-black leading-[0.88] tracking-tight mb-10"
-              style={{ fontFamily: "'Arial Black', sans-serif" }}
+              className="text-[clamp(3.5rem,8vw,10rem)] lg:text-[clamp(3rem,6vw,6rem)] font-black leading-[0.88] tracking-tight mb-10 font-display"
+              style={{ fontFamily: "var(--font-unbounded)" }}
             >
               UNLEASH
               <br />
@@ -393,7 +393,7 @@ export default function Home() {
                 </p>
                 <h2
                   className="text-5xl pl-4 md:text-6xl font-black leading-tight"
-                  style={{ fontFamily: "'Arial Black', sans-serif" }}
+                  style={{ fontFamily: "var(--font-montserrat)" }}
                 >
                   Must-Try
                   <br />
@@ -524,7 +524,7 @@ export default function Home() {
               >
                 <p
                   className="text-4xl md:text-5xl font-black text-[#FFD84D] mb-2"
-                  style={{ fontFamily: "'Arial Black', sans-serif" }}
+                  style={{ fontFamily: "var(--font-plus-jakarta-sans)" }}
                 >
                   {stat.num}
                 </p>
@@ -556,7 +556,7 @@ export default function Home() {
 
           <h2
             className="text-5xl md:text-7xl font-black text-black mb-10 relative z-10 leading-tight"
-            style={{ fontFamily: "'Arial Black', sans-serif" }}
+            style={{ fontFamily: "var(--font-unbounded)" }}
           >
             Ready to skip
             <br />
