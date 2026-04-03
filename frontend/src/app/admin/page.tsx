@@ -6,7 +6,7 @@ export default function AdminDashboard() {
   const router = useRouter();
 
   useEffect(() => {
-    router.replace("/admin/analitics");
+    router.replace("/admin/analytics");
   }, []);
 
   return (
