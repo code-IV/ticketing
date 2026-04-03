@@ -5,8 +5,6 @@ import {
   Plus,
   ImageIcon,
   Video,
-  Calendar,
-  Clock,
   Users,
   Tag,
   ChevronRight,
@@ -71,7 +69,6 @@ const CreateGameDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
     id: null,
     category: "ADULT",
     price: 0,
-    description: "",
     maxQuantityPerBooking: 10,
   });
 
@@ -164,7 +161,6 @@ const CreateGameDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
       id: null,
       category: "ADULT",
       price: 0,
-      description: "",
       maxQuantityPerBooking: 10,
     });
   };
@@ -177,10 +173,12 @@ const CreateGameDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
       let media;
       if (formData.mediaFiles.length > 0) {
         const data = new FormData();
-        formData.mediaFiles.forEach((m: any) => {
+        formData.mediaFiles.forEach((m: any, index: number) => {
           data.append("mediaFiles", m.file);
           data.append("label", m.label);
-          data.append("thumbnail", m.thumbnail || null);
+          if (m.thumbnail) {
+            data.append(`thumbnail_${index}`, m.thumbnail);
+          }
         });
         media = await adminService.uploadProductMedia(data);
       }
@@ -345,7 +343,7 @@ const CreateGameDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
                             </span>
                             <div>
                               <p className={`text-xs ${muted}`}>
-                                {tt.price} ETB · max {tt.maxQuantityPerBooking}
+                                {tt.price} ETB  {tt.maxQuantityPerBooking}
                                 /booking
                               </p>
                             </div>
@@ -424,7 +422,7 @@ const CreateGameDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
                       <div className="relative">
                         <input
                           type="number"
-                          className={`w-full pl-3 pr-3 py-2.5 rounded-xl text-sm font-medium outline-none border border-transparent focus:border-accent2/50 transition-all ${inputBg} ${text}`}
+                          className={`hidden w-full pl-3 pr-3 py-2.5 rounded-xl text-sm font-medium outline-none border border-transparent focus:border-accent2/50 transition-all ${inputBg} ${text}`}
                           value={newTicket.maxQuantityPerBooking}
                           onChange={(e) =>
                             setNewTicket({
@@ -434,24 +432,12 @@ const CreateGameDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
                           }
                         />
                         <span
-                          className={`absolute -top-2 left-3 text-[9px] font-bold uppercase tracking-wider ${muted} pointer-events-none`}
+                          className={` hidden absolute -top-2 left-3 text-[9px] font-bold uppercase tracking-wider ${muted} pointer-events-none`}
                         >
                           Max qty
                         </span>
                       </div>
                     </div>
-                    <textarea
-                      placeholder="Optional description for this ticket type…"
-                      rows={2}
-                      className={`w-full mt-3 px-3 py-2.5 rounded-xl text-sm font-medium outline-none border border-transparent focus:border-accent2/50 resize-none transition-all placeholder:${muted} ${inputBg} ${text}`}
-                      value={newTicket.description}
-                      onChange={(e) =>
-                        setNewTicket({
-                          ...newTicket,
-                          description: e.target.value,
-                        })
-                      }
-                    />
                     <button
                       type="button"
                       onClick={addCategory}

@@ -139,20 +139,23 @@ const Game = {
 
   async findById(id) {
     const sql = `
-    WITH product_details AS (
+    WITH ticket_agg AS (
     SELECT 
-        p.game_id,
-        p.id AS product_id,
-        -- Aggregate Ticket Types once
+        product_id,
         COALESCE(
-            JSONB_AGG(DISTINCT JSONB_BUILD_OBJECT(
-                'id', tt.id,
-                'category', tt.category,
-                'price', tt.price
-            )) FILTER (WHERE tt.id IS NOT NULL AND tt.deleted_at IS NULL), 
+            JSONB_AGG(JSONB_BUILD_OBJECT(
+                'id', id,
+                'category', category,
+                'price', price
+            )) FILTER (WHERE id IS NOT NULL AND deleted_at IS NULL), 
             '[]'
-        ) AS ticket_types,
-        -- Aggregate Media once
+        ) AS ticket_types
+    FROM ticket_types
+    GROUP BY product_id
+),
+media_agg AS (
+    SELECT 
+        pm.product_id,
         COALESCE(
             JSONB_AGG(JSONB_BUILD_OBJECT(
                 'id', m.id,
@@ -168,11 +171,19 @@ const Game = {
             ) ORDER BY pm.sort_order ASC) FILTER (WHERE m.id IS NOT NULL), 
             '[]'
         ) AS gallery
+    FROM products_media pm
+    JOIN media m ON pm.media_id = m.id
+    GROUP BY pm.product_id
+),
+product_details AS (
+    SELECT 
+        p.game_id,
+        p.id AS product_id,
+        COALESCE(ta.ticket_types, '[]') AS ticket_types,
+        COALESCE(ma.gallery, '[]') AS gallery
     FROM products p
-    LEFT JOIN ticket_types tt ON p.id = tt.product_id
-    LEFT JOIN products_media pm ON p.id = pm.product_id
-    LEFT JOIN media m ON pm.media_id = m.id
-    GROUP BY p.game_id, p.id
+    LEFT JOIN ticket_agg ta ON p.id = ta.product_id
+    LEFT JOIN media_agg ma ON p.id = ma.product_id
 )
 SELECT 
     g.*, 

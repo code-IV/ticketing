@@ -52,21 +52,6 @@ export const adminService = {
     return response.data;
   },
 
-  async createEventWithTicketTypes(
-    data: CreateEventWithTicketTypesRequest,
-  ): Promise<ApiResponse<{ event: Event; ticketTypes: TicketType[] }>> {
-    const response = await api.post("/admin/events-with-tickets", data);
-    return response.data;
-  },
-
-  async updateEventWithTicketTypes(
-    id: string,
-    data: CreateEventWithTicketTypesRequest & { isActive: boolean },
-  ): Promise<ApiResponse<{ event: Event; ticketTypes: TicketType[] }>> {
-    const response = await api.put(`/admin/events/${id}/ticket-types`, data);
-    return response.data;
-  },
-
   async updateEvent(
     id: string,
     data: Partial<{
@@ -320,6 +305,11 @@ export const adminService = {
         "Content-Type": "multipart/form-data",
       },
     });
+    return response.data;
+  },
+
+  async updateMediaLabel(id: string, label: string): Promise<ApiResponse> {
+    const response = await api.patch(`/media/${id}/label`, { label });
     return response.data;
   },
 };

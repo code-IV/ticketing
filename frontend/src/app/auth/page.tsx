@@ -1713,13 +1713,13 @@ export default function AuthPage() {
       style={{
         minHeight: "100vh",
         background: t.pageBg,
-        fontFamily: "'Arial', sans-serif",
+        fontFamily: "var(--font-dm-sans)",
         transition: "background 0.3s",
       }}
     >
       <style>{`
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        input { font-family: 'Arial', sans-serif; }
+        input { font-family: var(--font-dm-sans); }
         input::placeholder { color: ${t.placeholder}; opacity: 1; }
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-thumb { background: ${ACCENT}; border-radius: 2px; }

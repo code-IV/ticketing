@@ -68,17 +68,23 @@ export function Navbar({ nav }: { nav: Nav[] }) {
       : "bg-white/95 backdrop-blur-xl border-b border-gray-200/60 shadow-sm";
 
   const linkColor = isHomePage
-    ? isDarkTheme
-      ? "text-white/80 hover:text-[#FFD84D]"
-      : "text-gray-600 hover:text-gray-900"
+    ? scrolled
+      ? isDarkTheme
+        ? "text-white/90 hover:text-[#FFD84D]"
+        : "text-gray-800 hover:text-gray-900"
+      : isDarkTheme
+        ? "text-white hover:text-[#FFD84D]"
+        : "text-white hover:text-gray-900 shadow-black"
     : isDarkTheme
-      ? "text-white/80 hover:text-[#FFD84D]"
-      : "text-gray-600 hover:text-gray-900";
+      ? "text-white/90 hover:text-[#FFD84D]"
+      : "text-gray-800 hover:text-gray-900";
 
   const logoFilter = isHomePage
     ? isDarkTheme
       ? "brightness-0 invert"
-      : ""
+      : scrolled
+        ? ""
+        : "drop-shadow-2xl brightness-0 invert"
     : isDarkTheme
       ? "brightness-0 invert"
       : "";
@@ -125,7 +131,9 @@ export function Navbar({ nav }: { nav: Nav[] }) {
                 className={`p-2 rounded-xl transition-all ${
                   isDarkTheme
                     ? "hover:bg-white/10 text-white"
-                    : "hover:bg-gray-100 text-gray-600"
+                    : scrolled
+                      ? "hover:bg-gray-100 text-gray-600"
+                      : "hover:bg-gray-100 text-white shadow-black"
                 }`}
                 title="Toggle theme"
               >
@@ -166,8 +174,8 @@ export function Navbar({ nav }: { nav: Nav[] }) {
                     onClick={handleLogout}
                     className={`flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-full border transition-all ${
                       isDarkTheme
-                        ? "border-white/20 text-white/70 hover:bg-white/10 hover:text-white hover:border-white/40"
-                        : "border-gray-200 text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                        ? "border-white/20 text-white/70 hover:bg-accent/50 hover:text-white hover:border-accent2"
+                        : "border-gray-200 text-gray-600 hover:bg-accent2/50 hover:text-gray-900  hover:border-accent2"
                     }`}
                   >
                     <LogOut className="h-4 w-4" />
@@ -188,7 +196,7 @@ export function Navbar({ nav }: { nav: Nav[] }) {
                     </button>
                   </Link>
                   <Link href="/auth">
-                    <button className="text-sm font-black px-6 py-2.5 rounded-full bg-[#FFD84D] text-black hover:bg-white transition-all shadow-lg shadow-yellow-400/20">
+                    <button className="text-sm font-black px-6 py-2.5 rounded-full bg-accent text-black hover:bg-accent2 hover:scale-105 transition-all shadow-lg shadow-yellow-400/20">
                       Sign Up
                     </button>
                   </Link>
@@ -227,7 +235,13 @@ export function Navbar({ nav }: { nav: Nav[] }) {
                 toggleTheme();
                 setMobileOpen(false);
               }}
-              className="flex items-center gap-3 text-white/80 hover:text-[#FFD84D] font-semibold py-1 transition-colors text-lg"
+              className={`flex items-center gap-3 font-semibold py-1 transition-colors text-lg ${
+                isDarkTheme 
+                  ? "text-white/80 hover:text-[#FFD84D]" 
+                  : scrolled
+                    ? "text-gray-600 hover:text-gray-900"
+                    : "text-white hover:text-[#FFD84D] shadow-black"
+              }`}
             >
               {isDarkTheme ? (
                 <>
@@ -245,7 +259,13 @@ export function Navbar({ nav }: { nav: Nav[] }) {
                 key={item.href}
                 href={item.href}
                 onClick={() => setMobileOpen(false)}
-                className="block text-white/80 hover:text-[#FFD84D] font-semibold py-1 transition-colors text-lg"
+                className={`block font-semibold py-1 transition-colors text-lg ${
+                  isDarkTheme 
+                    ? "text-white/80 hover:text-[#FFD84D]" 
+                    : scrolled
+                      ? "text-gray-600 hover:text-gray-900"
+                      : "text-white hover:text-[#FFD84D] shadow-black"
+                }`}
               >
                 {item.name}
               </Link>
@@ -259,7 +279,9 @@ export function Navbar({ nav }: { nav: Nav[] }) {
                       <User className="h-5 w-5 text-white" />
                     </div>
                     <div>
-                      <p className="font-bold text-white">
+                      <p className={`font-bold ${
+                        isDarkTheme ? "text-white" : scrolled ? "text-gray-600" : "text-white shadow-black"
+                      }`}>
                         {user.first_name} {user.last_name}
                       </p>
                       {(user?.role === "SUPERADMIN" && (
@@ -279,7 +301,13 @@ export function Navbar({ nav }: { nav: Nav[] }) {
                       handleLogout();
                       setMobileOpen(false);
                     }}
-                    className="w-full flex items-center justify-center gap-2 border border-white/20 text-white/70 font-semibold py-3 rounded-2xl hover:bg-white/10 transition-colors"
+                    className={`w-full flex items-center justify-center gap-2 border font-semibold py-3 rounded-2xl transition-colors ${
+                      isDarkTheme 
+                        ? "border-white/20 text-white/70 hover:bg-white/10" 
+                        : scrolled
+                          ? "border-gray-300/90 text-gray-600 hover:bg-gray-100/80"
+                          : "border-white/20 text-white hover:bg-white/10 shadow-black"
+                    }`}
                   >
                     <LogOut className="h-4 w-4" /> Logout
                   </button>
@@ -287,7 +315,13 @@ export function Navbar({ nav }: { nav: Nav[] }) {
               ) : (
                 <div className="flex flex-col gap-3">
                   <Link href="/auth" onClick={() => setMobileOpen(false)}>
-                    <button className="w-full border border-white/20 text-white font-semibold py-3 rounded-2xl hover:bg-white/10 transition-colors">
+                    <button className={`w-full border font-semibold py-3 rounded-2xl transition-colors ${
+                      isDarkTheme 
+                        ? "border-white/20 text-white hover:bg-accent/80" 
+                        : scrolled
+                          ? "border-gray-300/60 text-gray-600 hover:bg-accent/80"
+                          : "border-white/20 text-white hover:bg-accent shadow-black"
+                    }`}>
                       Login
                     </button>
                   </Link>

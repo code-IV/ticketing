@@ -71,7 +71,6 @@ const CreateEventDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
     id: null,
     category: "ADULT",
     price: 0,
-    description: "",
     maxQuantityPerBooking: 10,
   });
 
@@ -171,7 +170,6 @@ const CreateEventDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
       id: null,
       category: "ADULT",
       price: 0,
-      description: "",
       maxQuantityPerBooking: 10,
     });
   };
@@ -179,27 +177,61 @@ const CreateEventDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (loading) return;
+    
+    // Add validation for required event date
+    console.log("=== DEBUGGING EVENT CREATION ===");
+    console.log("formData.eventDate:", JSON.stringify(formData.eventDate));
+    console.log("formData.eventDate type:", typeof formData.eventDate);
+    console.log("Is eventDate falsy?", !formData.eventDate);
+    
+    if (!formData.eventDate || formData.eventDate === "") {
+      alert("Please select a valid event date");
+      setLoading(false);
+      return;
+    }
+    
     setLoading(true);
+    
+    // Create date and validate it's a real date
+    const eventDate = new Date(formData.eventDate);
+    if (isNaN(eventDate.getTime())) {
+      alert("Invalid date selected. Please choose a valid date.");
+      setLoading(false);
+      return;
+    }
+    
+    const formattedDate = eventDate.toISOString().split('T')[0];
+    
     const payload = {
       name: formData.name,
       description: formData.description,
-      eventDate: formData.eventDate,
+      eventDate: formattedDate,
       startTime: formData.startTime,
       endTime: formData.endTime,
       capacity: parseInt(formData.capacity, 10),
       ticketTypes: formData.ticket_types.map((tt) => ({
         ...tt,
+        category: tt.category.toUpperCase(), // Fix: Convert to uppercase for database enum
         price: parseFloat(tt.price.toString()),
       })),
     };
+
+    console.log("Final payload being sent:", JSON.stringify(payload, null, 2));
+    console.log("payload.eventDate:", payload.eventDate);
+    console.log("payload.eventDate type:", typeof payload.eventDate);
+    console.log("================================");
     try {
       let media;
       if (formData.mediaFiles.length > 0) {
         const data = new FormData();
-        formData.mediaFiles.forEach((m: any) => {
+        formData.mediaFiles.forEach((m: any, index: number) => {
           data.append("mediaFiles", m.file);
           data.append("label", m.label);
-          data.append("thumbnail", m.thumbnail || null);
+          
+          // Named thumbnail per video index
+          if (m.thumbnail) {
+            data.append(`thumbnail_${index}`, m.thumbnail);
+          }
         });
         media = await adminService.uploadProductMedia(data);
       }
@@ -352,10 +384,10 @@ const CreateEventDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
                         className={`w-full px-4 py-3 rounded-2xl text-sm font-medium outline-none border-2 border-transparent transition-all focus:border-accent/50 ${inputBg} ${text}`}
                         value={formData.eventDate}
                         onChange={(e) =>
-                          setFormData({
-                            ...formData,
+                          setFormData(prev => ({
+                            ...prev,
                             eventDate: e.target.value,
-                          })
+                          }))
                         }
                       />
                     </Field>
@@ -451,7 +483,7 @@ const CreateEventDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
                             </span>
                             <div>
                               <p className={`text-xs ${muted}`}>
-                                {tt.price} ETB · max {tt.maxQuantityPerBooking}
+                                {tt.price} ETB  {tt.maxQuantityPerBooking}
                                 /booking
                               </p>
                             </div>
@@ -530,7 +562,7 @@ const CreateEventDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
                       <div className="relative">
                         <input
                           type="number"
-                          className={`w-full pl-3 pr-3 py-2.5 rounded-xl text-sm font-medium outline-none border border-transparent focus:border-accent/50 transition-all ${inputBg} ${text}`}
+                          className={` hidden w-full pl-3 pr-3 py-2.5 rounded-xl text-sm font-medium outline-none border border-transparent focus:border-accent/50 transition-all ${inputBg} ${text}`}
                           value={newTicket.maxQuantityPerBooking}
                           onChange={(e) =>
                             setNewTicket({
@@ -540,24 +572,12 @@ const CreateEventDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
                           }
                         />
                         <span
-                          className={`absolute -top-2 left-3 text-[9px] font-bold uppercase tracking-wider ${muted} pointer-events-none`}
+                          className={`hidden absolute -top-2 left-3 text-[9px] font-bold uppercase tracking-wider ${muted} pointer-events-none`}
                         >
                           Max qty
                         </span>
                       </div>
                     </div>
-                    <textarea
-                      placeholder="Optional description for this ticket type…"
-                      rows={2}
-                      className={`w-full mt-3 px-3 py-2.5 rounded-xl text-sm font-medium outline-none border border-transparent focus:border-accent/50 resize-none transition-all placeholder:${muted} ${inputBg} ${text}`}
-                      value={newTicket.description}
-                      onChange={(e) =>
-                        setNewTicket({
-                          ...newTicket,
-                          description: e.target.value,
-                        })
-                      }
-                    />
                     <button
                       type="button"
                       onClick={addCategory}

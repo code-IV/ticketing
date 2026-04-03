@@ -7,6 +7,7 @@ const {
   promoteFile,
 } = require("../../utils/uploads");
 const { Media } = require("../models/Media");
+const { Cipheriv } = require("crypto");
 
 const UploadsService = {
   async addMediaToTemp(files) {
@@ -41,7 +42,7 @@ const UploadsService = {
               metadata: {
                 size: thumb.size,
                 encoding: thumb.encoding,
-                parent_label: media.label,
+                parent_label: file.label,
               },
             },
           };
@@ -94,37 +95,59 @@ const UploadsService = {
       client.release();
     }
   },
+
   async addMediaToProduct(productId, mediaIds, client) {
     const promotedPaths = [];
 
     try {
       for (const id of mediaIds) {
         const media = await Media.getMediaById(id, client);
-        if (!media) {
-          throw new Error("No staged media found");
+        if (!media) throw new Error("No staged media found");
+
+        // 1️⃣ Skip if already permanent or if it's a thumbnail
+        // (We handle thumbnails inside the main file's logic below)
+        if (!media.path.includes("/tmp/uploads/")) continue;
+        if (media.label === "thumbnail") continue;
+
+        let finalThumbnailUrl = null;
+
+        // 2️⃣ Handle Thumbnail Promotion FIRST
+        const thumbId = media.metadata?.thumbnail_id;
+        if (thumbId) {
+          const thumbMedia = await Media.getMediaById(thumbId, client);
+          if (thumbMedia && thumbMedia.path.includes("/tmp/uploads/")) {
+            const promotedThumb = await promoteFile(
+              thumbMedia.path,
+              thumbMedia.name,
+            );
+            promotedPaths.push(promotedThumb.path);
+
+            // Update the thumbnail record itself to permanent
+            await Media.promoteMedia(
+              thumbId,
+              {
+                path: promotedThumb.path,
+                url: promotedThumb.url,
+              },
+              client,
+            );
+
+            finalThumbnailUrl = promotedThumb.url;
+          } else {
+            finalThumbnailUrl = thumbMedia?.url;
+          }
         }
 
-        const tempPath = media.path;
-
-        // ✅ Skip already promoted files (idempotency)
-        if (!tempPath.includes("/tmp/uploads/")) continue;
-
-        // ✅ Ensure file exists
-        if (!tempPath || !fs.existsSync(tempPath)) {
-          throw new Error(`Temp file missing: ${tempPath}`);
-        }
-
-        // ✅ Use safe filename (UUID-based)
-        const filename = path.basename(tempPath);
-
-        const promoted = await promoteFile(tempPath, media.name);
-        promotedPaths.push(promoted.path);
+        // 3️⃣ Handle Main File Promotion
+        const promotedMain = await promoteFile(media.path, media.name);
+        promotedPaths.push(promotedMain.path);
 
         await Media.promoteMedia(
           media.id,
           {
-            path: promoted.path,
-            url: promoted.url,
+            path: promotedMain.path,
+            url: promotedMain.url,
+            thumbnailUrl: finalThumbnailUrl, // Now points to permanent storage!
           },
           client,
         );
@@ -134,11 +157,9 @@ const UploadsService = {
 
       return { productId, promotedMedia: promotedPaths };
     } catch (err) {
-      // cleanup only what we already moved
       for (const p of promotedPaths) {
         await fs.promises.unlink(p).catch(() => {});
       }
-
       throw err;
     }
   },
@@ -241,6 +262,15 @@ const UploadsService = {
     }
     const media = await Media.getMediaByType(type);
     return media;
+  },
+
+  async updateMedia(id, { label }) {
+    if (!id) {
+      throw new Error("Media ID is required");
+    }
+
+    const result = await Media.updateMediaLabel(id, label);
+    return result;
   },
 };
 

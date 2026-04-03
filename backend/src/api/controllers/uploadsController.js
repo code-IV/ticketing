@@ -6,19 +6,21 @@ const UploadsController = {
     try {
       const { label } = req.body; // This is an array of strings
 
-      // req.files is now an object with keys 'mediaFiles' and 'thumbnail'
+      // req.files is now an object with keys 'mediaFiles' and thumbnail_0, thumbnail_1, etc.
       const files = req.files?.mediaFiles || [];
-      const thumbs = req.files?.thumbnail || [];
 
       if (files.length === 0) {
         return apiResponse(res, 400, false, "No files uploaded.");
       }
 
-      const media = files.map((file, index) => ({
-        file: file,
-        thumb: thumbs[index] || null, // Pairs 1st thumb with 1st file
-        label: label[index],
-      }));
+      const media = files.map((file, index) => {
+        const thumb = req.files[`thumbnail_${index}`]?.[0] || null;
+        return {
+          file: file,
+          thumb: thumb,
+          label: label[index],
+        };
+      });
 
       const mediaResults = await UploadsService.addMediaToTemp(media);
 
@@ -167,6 +169,23 @@ const UploadsController = {
     } catch (err) {
       next(err);
     }
+},
+
+async updateMedia(req, res, next) {
+  try {
+    const { id } = req.params;
+    const { label } = req.body;
+    
+    if (!id) {
+      return apiResponse(res, 400, false, "Media ID required");
+    }
+    
+    const result = await UploadsService.updateMedia(id, { label });
+    
+    return apiResponse(res, 200, true, "Media updated successfully", result);
+  } catch (err) {
+    next(err);
+  }
   },
 };
 

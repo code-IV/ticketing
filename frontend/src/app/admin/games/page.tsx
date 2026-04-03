@@ -34,7 +34,7 @@ const GamesManagementPage = () => {
 
       {/* STATS OVERVIEW (Exact UI Clone) */}
       <div className="flex flex-col md:flex-row gap-6 mb-8">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 flex-1">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 flex-1">
           {[
             { label: "Active Rides", value: games.filter(g => g.status === 'OPEN').length.toString(), icon: <Activity />, color: "text-green-600" },
             { label: "Under Repair", value: games.filter(g => g.status === 'ON_MAINTENANCE').length.toString(), icon: <Settings />, color: "text-orange-600" },
@@ -49,7 +49,7 @@ const GamesManagementPage = () => {
           ))}
         </div>
         <div className="flex items-end">
-          <Link href="/admin/analitics/games" className={`group flex items-center gap-3 px-6 py-4 rounded-2xl border shadow-lg transition-all bg-accent2 hover:bg-accent2/90 text-black font-bold`}>
+          <Link href="/admin/analytics/games" className={`group flex items-center gap-3 px-6 py-4 rounded-2xl border shadow-lg transition-all bg-accent2 hover:bg-accent2/90 text-black font-bold`}>
             <BarChart3 className="w-5 h-5" /><span>View Analytics</span><ArrowUp className="w-4 h-4 group-hover:translate-y-0.5 transition-transform" />
           </Link>
         </div>
@@ -86,7 +86,7 @@ const GamesManagementPage = () => {
                   </div>
                   <h3 className={`text-2xl font-black mb-6 bg-linear-to-r ${isDarkTheme ? 'from-white to-gray-300' : 'from-slate-900 to-slate-700'} bg-clip-text text-transparent`}>{game.name}</h3>
                   <div className={`flex justify-end border-t pt-6 ${isDarkTheme ? 'border-gray-700/50' : 'border-slate-200/50'}`}>
-                    <Link href={`/admin/analitics/games/${game.id}`} onClick={e => e.stopPropagation()} className={`group/btn relative px-6 py-3 rounded-2xl font-bold text-sm bg-accent2 hover:bg-accent2/90 text-black`}>
+                    <Link href={`/admin/analytics/games/${game.id}`} onClick={e => e.stopPropagation()} className={`group/btn relative px-6 py-3 rounded-2xl font-bold text-sm bg-accent2 hover:bg-accent2/90 text-black`}>
                       <span className="relative z-10">View Statistics</span>
                     </Link>
                   </div>

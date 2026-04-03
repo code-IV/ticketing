@@ -74,7 +74,7 @@ const EventsManagementPage = () => {
 
       {/* STATS OVERVIEW */}
       <div className="flex flex-col md:flex-row gap-6 mb-8">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 flex-1">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 flex-1">
           {[
             {
               label: "Active Events",
@@ -113,7 +113,7 @@ const EventsManagementPage = () => {
         </div>
         <div className="flex items-end">
           <Link
-            href="/admin/analitics/events"
+            href="/admin/analytics/events"
             className={`group flex items-center gap-3 px-6 py-4 rounded-2xl border transition-all bg-accent2 hover:bg-accent2/90 text-black font-bold shadow-lg`}
           >
             <BarChart3 className="w-5 h-5" />
@@ -201,7 +201,7 @@ const EventsManagementPage = () => {
                     className={`flex justify-end border-t pt-6 ${isDarkTheme ? "border-gray-700/50" : "border-slate-200/50"}`}
                   >
                     <Link
-                      href={`/admin/analitics/events/${event.id}`}
+                      href={`/admin/analytics/events/${event.id}`}
                       className="px-6 py-3 rounded-2xl font-bold text-sm bg-accent2 hover:bg-accent2/90 text-black"
                       onClick={(e) => e.stopPropagation()}
                     >
