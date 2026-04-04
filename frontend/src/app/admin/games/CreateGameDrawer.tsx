@@ -189,7 +189,7 @@ const CreateGameDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
         price: parseFloat(tt.price.toString()),
       })),
     };
-    let sessionId: string | null = null;
+    let sid;
 
     try {
       const fileMeta = formData.mediaFiles.map((m: any) => ({
@@ -197,17 +197,22 @@ const CreateGameDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
         filename: m.file.name,
         type: m.file.type,
         label: m.label,
-        thumbnail: m.thubnail
+        thumbnail: m.thumbnail
           ? {
               filename: m.thumbnail?.name,
               type: m.thumbnail?.type,
             }
           : null,
       }));
+
       if (fileMeta.length) {
         const response = await adminService.createSessions(fileMeta);
+        if (!response.data) {
+          throw new Error("Failed to create upload sessions");
+        }
 
-        const { uploads, sessionId } = response.data?.uploads ?? null;
+        const { uploads, sessionId } = response.data;
+        sid = sessionId;
 
         const fileMap = new Map();
         formData.mediaFiles.forEach((m: any, i: number) => {
@@ -246,10 +251,9 @@ const CreateGameDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
         //   throw new Error("Upload failed");
         // }
       }
-
       await gameService.createGame({
         game: payload,
-        sessionId,
+        sessionId: sid || null,
       });
 
       setFormData({

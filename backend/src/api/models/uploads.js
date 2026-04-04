@@ -3,11 +3,12 @@ const BACKEND_URL = require("../../config/settings");
 
 const Media = {
   async createMedia(mediaData, client) {
+    console.log("mediaData", mediaData);
     const sql = `
       INSERT INTO media (id, name, path, url, type, label, thumbnail_url)
       VALUES ($1, $2, $3, $4, $5, $6, $7)
-      RETURNING id
-      ON CONFLICT (path) DO NOTHING`;
+      ON CONFLICT (path) DO NOTHING
+      RETURNING id`;
     const { rows } = await client.query(sql, [
       mediaData.id,
       mediaData.name,
@@ -15,9 +16,9 @@ const Media = {
       mediaData.url,
       mediaData.type,
       mediaData.label,
-      mediaData.thumbnail.url,
+      mediaData.thumbnailUrl ?? null,
     ]);
-    return rows[0].id;
+    return rows[0]?.id ?? null;
   },
   async promoteMedia(id, mediaData, client) {
     const sql = `
@@ -34,7 +35,7 @@ const Media = {
       mediaData.path,
       mediaData.thumbnailUrl,
     ]);
-    return rows[0].id;
+    return rows[0]?.id ?? null;
   },
   async updateMedia(id, label = null, thumbnailUrl = null, client) {
     const sql = `
@@ -52,15 +53,6 @@ RETURNING *;`;
   async linkProductMedia(productId, mediaId, client) {
     const sql = `INSERT INTO products_media (product_id, media_id) VALUES ($1, $2)`;
     await client.query(sql, [productId, mediaId]);
-  },
-
-  async getAllMedia() {
-    const sql = `
-        SELECT id, name,  url, type, provider, metadata FROM media;
-        `;
-
-    const media = await query(sql, [BACKEND_URL]);
-    return media.rows;
   },
   async getAllMedia(page = 1, limit = 32, type = null) {
     try {
@@ -130,7 +122,7 @@ RETURNING *;`;
   },
   async getMediaById(id) {
     const sql = `
-        SELECT id, name,  url, path, type, provider, metadata, label FROM media WHERE id=$2;
+        SELECT id, name,  url, path, type, provider, metadata, label FROM media WHERE id=$1;
         `;
 
     const media = await query(sql, [id]);
@@ -139,10 +131,10 @@ RETURNING *;`;
 
   async getMediaByName(name) {
     const sql = `
-        SELECT id, name,  url, type, provider, metadata FROM media WHERE name=$2;
+        SELECT id, name,  url, type, provider, metadata FROM media WHERE name=$1;
         `;
 
-    const media = await query(sql, [BACKEND_URL, name]);
+    const media = await query(sql, [name]);
     return media.rows;
   },
 
@@ -151,10 +143,10 @@ RETURNING *;`;
     const sql = `
     SELECT id, name,  url, type, provider, metadata 
     FROM media 
-    WHERE type LIKE $2 || '/%';
+    WHERE type LIKE $1 || '/%';
   `;
 
-    const media = await query(sql, [BACKEND_URL, type]);
+    const media = await query(sql, [type]);
     return media.rows;
   },
 
@@ -182,14 +174,14 @@ const Sessions = {
     return result.rows[0];
   },
 
-  async updateSession(id) {
+  async updateSession(id, client) {
     const sql = `
-  UPDATE upload_sessions
-  SET confirmed = TRUE
-  WHERE id = $1 AND confirmed = FALSE
+    UPDATE upload_sessions
+    SET confirmed = TRUE
+    WHERE id = $1 AND confirmed = FALSE RETURNING metadata
   `;
-    const result = await query(sql, [id]);
-    console.log(result);
+    const result = await client.query(sql, [id]);
+
     if (result.rowCount === 0) {
       throw new Error("Session already used or invalid");
     }
@@ -198,7 +190,7 @@ const Sessions = {
 
   async getSessionData(id) {
     const sql = `
-    SELECT id, metadata, expires_at, used
+    SELECT id, metadata, expires_at, confirmed
     FROM upload_sessions
     WHERE id = $1
   `;
@@ -212,7 +204,7 @@ const Sessions = {
     const session = rows[0];
 
     // 🔹 2. Validate session
-    if (session.used) {
+    if (session.confirmed) {
       throw new Error("Session already used");
     }
 

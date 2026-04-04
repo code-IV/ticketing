@@ -6,6 +6,7 @@ const {
   deleteFromLocal,
   promoteFile,
   supaseSignedUrl,
+  checkUploadBySid,
 } = require("../../utils/uploads");
 const { Media, Sessions } = require("../models/uploads");
 
@@ -164,18 +165,12 @@ const UploadsService = {
     }
   },
   async createUploadSessions(files) {
-    const client = await getClient();
     try {
       const { uploads, sessId } = await supaseSignedUrl(files);
-      await client.query("BEGIN");
       await Sessions.createSession(sessId, uploads);
-      await client.query("COMMIT");
       return { uploads, sessionId: sessId };
     } catch (err) {
-      await client.query("ROLLBACK");
       throw err;
-    } finally {
-      client.release();
     }
   },
 

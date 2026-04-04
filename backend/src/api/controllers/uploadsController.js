@@ -6,15 +6,19 @@ const UploadsController = {
     try {
       const { files } = req.body;
 
-      if (files.length === 0) {
+      if (!files || files.length === 0) {
         return apiResponse(res, 400, false, "No files uploaded.");
       }
 
       const uploads = await UploadsService.createUploadSessions(files);
 
-      return apiResponse(res, 200, true, "Session created successfully", {
+      return apiResponse(
+        res,
+        200,
+        true,
+        "Session created successfully",
         uploads,
-      });
+      );
     } catch (err) {
       console.log(err);
       next(err);
@@ -59,7 +63,6 @@ const UploadsController = {
     try {
       const productId = req.params.id;
       const { uploads } = req.body;
-      console.log(req.body);
 
       const persistResults = await UploadsService.persistMedia(
         uploads,

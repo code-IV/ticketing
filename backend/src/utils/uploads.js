@@ -170,31 +170,43 @@ exports.checkUploadBySid = async (sessionId, metadata) => {
   if (!Array.isArray(metadata) || metadata.length === 0)
     throw new Error("No metadata provided");
 
-  // 1️⃣ List all files under the session folder
-  const { data: files, error } = await supabase.storage
-    .from("media")
-    .list(`uploads/${sessionId}`, { limit: 1000, recursive: true });
-
-  if (error) throw error;
-
-  const existingPaths = new Set(
-    files.map((f) => `uploads/${sessionId}/${f.name}`),
-  );
-
   // 2️⃣ Validate that each file and thumbnail exists
   for (const meta of metadata) {
-    if (!existingPaths.has(meta.path)) {
-      throw new Error(`Missing uploaded file: ${meta.path}`);
+    // Use .exists() to check the specific path
+    const { data: exists, error } = await supabase.storage
+      .from("media")
+      .exists(meta.file.path);
+
+    console.log("data", exists);
+
+    if (error) {
+      console.error(`Error checking path ${meta.file.path}:`, error);
+      continue;
     }
 
-    if (meta.thumbnail?.path && !existingPaths.has(meta.thumbnail.path)) {
-      throw new Error(`Missing uploaded thumbnail: ${meta.thumbnail.path}`);
+    if (!exists) {
+      throw new Error(`Missing uploaded file: ${meta.file.path}`);
+    }
+
+    if (meta.thumbnail?.path) {
+      const { data: exists, error } = await supabase.storage
+        .from("media")
+        .exists(meta.thumbnail.path);
+
+      if (error) {
+        console.error(`Error checking path ${meta.thumbnail.path}:`, error);
+        continue;
+      }
+
+      if (!exists) {
+        throw new Error(`Missing uploaded file: ${meta.thumbnail.path}`);
+      }
     }
   }
 
   // 3️⃣ If all files exist, return the original metadata
   return metadata.map((m) => ({
-    mediaId: m.id,
+    id: m.mediaId,
     name: m.name,
     path: m.file.path,
     url: m.file.url,

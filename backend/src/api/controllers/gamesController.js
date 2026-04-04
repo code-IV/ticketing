@@ -1,7 +1,5 @@
 const { GameService, GameStatsService } = require("../services/gameService");
 const { apiResponse } = require("../../utils/helpers");
-const { supaseSignedUrl } = require("../../utils/uploads");
-const UploadsService = require("../services/uploadsService");
 
 const GameController = {
   /**

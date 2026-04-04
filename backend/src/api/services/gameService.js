@@ -17,7 +17,6 @@ const GameService = {
         ? await UploadsService.validateSession(sessionId)
         : [];
       await client.query("BEGIN");
-      await Sessions.updateSession(sessionId);
       // 1. Create the base Game
       const newGame = await Game.createGame(client, {
         name,
@@ -37,8 +36,12 @@ const GameService = {
       }
 
       for (const file of files || []) {
-        const media = await Media.createMedia(file, client);
-        await Media.linkProductMedia(productId, media.id, client);
+        await Media.createMedia(file, client);
+        await Media.linkProductMedia(productId, file.id, client);
+      }
+
+      if (sessionId) {
+        await Sessions.updateSession(sessionId, client);
       }
 
       await client.query("COMMIT");
