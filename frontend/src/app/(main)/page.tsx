@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { motion, useScroll, useTransform ,Variants} from "framer-motion";
 import {
@@ -13,6 +13,7 @@ import { gameService } from "@/services/adminService";
 import { eventService } from "@/services/eventService";
 import { Event, Game } from "@/types";
 import { useTheme } from "@/contexts/ThemeContext";
+import { DiscountBadge } from "@/components/ui/DiscountBadge";
 
 const stagger: Variants = {
   visible: { transition: { staggerChildren: 0.2 } },
@@ -44,6 +45,21 @@ export default function Home() {
   const heroY = useTransform(scrollY, [0, 600], [0, 200]);
   const heroOpacity = useTransform(scrollY, [0, 400], [1, 0]);
   const badgeRotate = useTransform(scrollY, [0, 400], [12, -5]);
+
+  // Generate permanent discount assignments for this page load
+  const gameDiscounts = useMemo(() => {
+    const discounts: Record<string, { text: string; hasDiscount: boolean }> = {};
+    featuredGames.forEach((game) => {
+      const randomDiscount = Math.random() > 0.5; // 50% chance
+      const discountTexts = ["LIMITED TIME", "LIMITED OFFER"];
+      const discountText = randomDiscount ? discountTexts[Math.floor(Math.random() * discountTexts.length)] : null;
+      discounts[game.id] = {
+        text: discountText || "",
+        hasDiscount: randomDiscount
+      };
+    });
+    return discounts;
+  }, [featuredGames]);
 
   useEffect(() => {
     Promise.all([
@@ -414,7 +430,11 @@ export default function Home() {
 
             {/* Horizontal scroll container */}
             <div className="flex gap-6 overflow-x-auto scrollbar-hide px-2 py-4">
-              {featuredGames.map((game) => (
+              {featuredGames.map((game) => {
+                // Use permanent discount assignment
+                const gameDiscount = gameDiscounts[game.id] || { text: "", hasDiscount: false };
+                
+                return (
                 <motion.div
                   key={game.id}
                   variants={fadeUp}
@@ -460,8 +480,16 @@ export default function Home() {
                   />
 
                   {/* Corner accent */}
-                  <div className="absolute top-4 right-4 w-10 h-10 rounded-full bg-[#FFD84D] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 scale-75 group-hover:scale-100">
-                    <ArrowDownRight className="w-5 h-5 text-black -rotate-45" />
+                  <div className="absolute top-4 right-4">
+                    {/* Discount Badge */}
+                    {gameDiscount.hasDiscount && (
+                      <div className="z-50">
+                        <DiscountBadge 
+                          customText={gameDiscount.text || "OFFER"}
+                          size="sm"
+                        />
+                      </div>
+                    )}
                   </div>
 
                   <div className="absolute bottom-0 left-0 right-0 p-7">
@@ -490,7 +518,8 @@ export default function Home() {
                     </div>
                   </div>
                 </motion.div>
-              ))}
+                );
+              })}
             </div>
           </motion.div>
         </div>

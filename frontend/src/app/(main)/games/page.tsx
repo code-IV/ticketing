@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { Game } from "@/types";
@@ -13,6 +13,7 @@ import {
   X,
 } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
+import { DiscountBadge } from "@/components/ui/DiscountBadge";
 
 // Helper to detect if URL is a video
 const isVideoUrl = (url: string) => {
@@ -100,6 +101,21 @@ export default function GamesListingPage() {
   const [itemsPerPage, setItemsPerPage] = useState(12);
   const [showShareModal, setShowShareModal] = useState(false);
   const [selectedGame, setSelectedGame] = useState<Game | null>(null);
+
+  // Generate permanent discount assignments for this page load
+  const gameDiscounts = useMemo(() => {
+    const discounts: Record<string, { text: string; hasDiscount: boolean }> = {};
+    games.forEach((game) => {
+      const randomDiscount = Math.random() > 0.5; // 50% chance
+      const discountTexts = ["LIMITED TIME", "LIMITED OFFER"];
+      const discountText = randomDiscount ? discountTexts[Math.floor(Math.random() * discountTexts.length)] : null;
+      discounts[game.id] = {
+        text: discountText || "",
+        hasDiscount: randomDiscount
+      };
+    });
+    return discounts;
+  }, [games]);
 
   useEffect(() => {
     const fetchGames = async () => {
@@ -249,7 +265,11 @@ export default function GamesListingPage() {
       {/* Card grid – original dark card design with #ffd84f accents */}
       <div className="relative z-10 max-w-7xl mx-auto px-6 pb-20">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {currentGames.map((game, index) => (
+          {currentGames.map((game, index) => {
+            // Use permanent discount assignment
+            const gameDiscount = gameDiscounts[game.id] || { text: "", hasDiscount: false };
+            
+            return (
             <motion.div
               key={game.id}
               initial={{ opacity: 0, y: 80 }}
@@ -290,9 +310,19 @@ export default function GamesListingPage() {
                 </div>
               </div>
 
+              {/* Discount Badge */}
+              {gameDiscount.hasDiscount && (
+                <div className="absolute top-8 right-8 z-50">
+                  <DiscountBadge 
+                    customText={gameDiscount.text}
+                    size="sm"
+                  />
+                </div>
+              )}
+
               {/* Price Tag Overlay – #ffd84f background with black text for contrast */}
               <div
-                className="absolute top-8 right-8 w-14 h-14 rounded-2xl flex flex-col items-center justify-center shadow-lg transform -rotate-12 group-hover:rotate-0 transition-transform"
+                className="hidden absolute top-8 right-8 w-14 h-14 rounded-2xl flex flex-col items-center justify-center shadow-lg transform -rotate-12 group-hover:rotate-0 transition-transform"
                 style={{ backgroundColor: "#ffd84f" }}
               >
                 <span className="text-[8px] font-black uppercase opacity-80 text-black">
@@ -319,32 +349,11 @@ export default function GamesListingPage() {
                 {/* Actions */}
                 <div className="flex gap-3">
                   <button
-                    className="flex-1 py-4 bg-white/10 backdrop-blur-md border border-white/20 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-white transition-all"
-                    style={{ hover: { color: "#000" } } as React.CSSProperties} // fallback: we'll use a class for hover text color
-                    onMouseEnter={(e) => (e.currentTarget.style.color = "#000")}
-                    onMouseLeave={(e) => (e.currentTarget.style.color = "")}
-                  >
-                    Quick View
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSelectedGame(game);
-                      setShowShareModal(true);
-                    }}
-                    className="py-4 px-4 bg-white/10 backdrop-blur-md border border-white/20 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-white transition-all"
-                    style={{ hover: { color: "#000" } } as React.CSSProperties}
-                    onMouseEnter={(e) => (e.currentTarget.style.color = "#000")}
-                    onMouseLeave={(e) => (e.currentTarget.style.color = "")}
-                  >
-                    <Share2 size={16} />
-                  </button>
-                  <button
                     onClick={(e) => {
                       e.stopPropagation();
                       router.push(`/buy#game-visual-${game.id}`);
                     }}
-                    className="flex-[1.5] py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-lg flex items-center justify-center gap-2"
+                    className="flex-1 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-lg flex items-center justify-center gap-2"
                     style={{ backgroundColor: "#ffd84f", color: "#000" }}
                     onMouseEnter={(e) =>
                       (e.currentTarget.style.backgroundColor = "#e6c247")
@@ -358,7 +367,8 @@ export default function GamesListingPage() {
                 </div>
               </div>
             </motion.div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Pagination Controls */}
