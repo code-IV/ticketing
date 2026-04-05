@@ -218,6 +218,17 @@ export const adminService = {
     return response.data;
   },
 
+  async searchUsers(
+    term: string,
+    page = 1,
+    limit = 20,
+  ): Promise<PaginatedResponse<User>> {
+    const response = await api.get("/admin/search/users", {
+      params: { term, page, limit },
+    });
+    return response.data;
+  },
+
   async getUserById(id: string): Promise<ApiResponse<{ user: User }>> {
     const response = await api.get(`/admin/users/${id}`);
     return response.data;

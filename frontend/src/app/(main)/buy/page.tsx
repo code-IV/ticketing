@@ -18,7 +18,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { bookingService } from "@/services/bookingService";
 import { guestCookieUtils } from "@/utils/cookies";
 import SuccessModal from "@/components/ui/SuccessModal";
-import { FadingBlurOverlay } from "@/components/ui/FadingBlurOverlay";
 import { DiscountBadge } from "@/components/ui/DiscountBadge";
 
 // Helper function to get poster image (images only)
