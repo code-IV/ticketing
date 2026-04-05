@@ -32,20 +32,20 @@
 ### ⚙️ Backend: API & Logic
 
 - [ ] **Endpoint:** `POST /api/games/create`
-  - [x] Change: Convert to **Atomic Transaction** (Multipart/Form-Data).
-  - [x] Logic: Implement `JSON.parse` for the `game` metadata string.
+  - ✅ Change: Convert to **Atomic Transaction** (Multipart/Form-Data).
+  - 🚫 Logic: Implement `JSON.parse` for the `game` metadata string.
 - [ ] **Media Handling**
   - [x] Task: Generate Low-Res Image Placeholders (LQIP) on upload.
   - [x] Task: Implement WebP conversion for performance.
   - [x] Task: Fix duplicate media upload logic.
-  - [x] Support for: Thumbnail, Banner, Poster, and Gallery assets.
+  - ✅ Support for: Thumbnail, Banner, Poster, and Gallery assets.
 - [ ] **Authentication & Security**
   - [x] Implement **OTP (One-Time Password)** for 1-time password resets.
   - [x] Enforce "Auth Required" middleware for discount eligibility.
 - [ ]**Core Logic & Discounts**
   - [x] Build **Discount Engine**: Case-by-case eligibility checker.
     - _Types:_ Percentage (10/20/30%), Tiered (3+ or 5+), Early Bird, Member, and Group packages.
-  - [x] Ticket **Revoke** functionality for Admins.
+  - ✅ Ticket **Revoke** functionality for Admins.
   - [x] Standardize API **Response Model** (Data cleanup & optimization).
 - [ ] **Logging & Monitoring**
   - [x] **Ticket Buy Log**: Audit trail for transactions.
