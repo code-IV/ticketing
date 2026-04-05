@@ -71,6 +71,56 @@ const User = {
     }
   },
 
+  async searchUser({ term = "", page = 1, limit = 15 }) {
+    const offset = (page - 1) * limit;
+
+    // Use a template literal or array to manage params if you add more filters later
+    const searchTerm = `%${term.replace(/[%_\\]/g, "\\$&")}%`;
+
+    const whereClause = `
+     (u.first_name || ' ' || u.last_name) ILIKE $1 ESCAPE '\\' OR
+     u.email ILIKE $1 ESCAPE '\\' OR
+     u.phone ILIKE $1 ESCAPE '\\'
+   `;
+
+    const sql = `
+    SELECT 
+      u.id,
+      u.first_name,
+      u.last_name,
+      u.email,
+      u.phone,
+      u.is_active,
+      r.name AS role
+      
+    FROM users u
+    LEFT JOIN roles r ON u.role_id = r.id
+    WHERE ${whereClause}
+    ORDER BY u.first_name ASC
+    LIMIT $2 OFFSET $3;
+  `;
+
+    const countSql = `
+     SELECT COUNT(*) FROM users u
+     WHERE ${whereClause}
+   `;
+
+    // Pass the calculated limit and offset to the query
+    const result = await query(sql, [searchTerm, limit, offset]);
+    const countResult = await query(countSql, [searchTerm]);
+    const total = parseInt(countResult.rows[0].count, 10);
+
+    return {
+      users: result.rows,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  },
+
   /**
    * Find user by email
    */
@@ -198,22 +248,22 @@ LEFT JOIN roles r ON u.role_id = r.id;
 
     // 2. Build WHERE clause with filters
     const whereConditions = [];
-    
+
     if (role) {
       whereConditions.push(`r.name = $${paramIndex}`);
       values.push(role);
       paramIndex++;
     }
-    
+
     if (status) {
-      const isActive = status === 'active';
+      const isActive = status === "active";
       whereConditions.push(`u.is_active = $${paramIndex}`);
       values.push(isActive);
       paramIndex++;
     }
-    
+
     if (whereConditions.length > 0) {
-      sql += ` WHERE ${whereConditions.join(' AND ')}`;
+      sql += ` WHERE ${whereConditions.join(" AND ")}`;
     }
 
     // 3. Ordering and Pagination
@@ -232,16 +282,16 @@ LEFT JOIN roles r ON u.role_id = r.id;
 
     if (role || status) {
       const countConditions = [];
-      
+
       if (role) {
         countSql += ` JOIN roles r ON u.role_id = r.id`;
         countConditions.push(`r.name = $${countParamIndex}`);
         countValues.push(role);
         countParamIndex++;
       }
-      
+
       if (status) {
-        const isActive = status === 'active';
+        const isActive = status === "active";
         if (role) {
           countConditions.push(`u.is_active = $${countParamIndex}`);
         } else {
@@ -250,8 +300,8 @@ LEFT JOIN roles r ON u.role_id = r.id;
         countValues.push(isActive);
         countParamIndex++;
       }
-      
-      countSql += ` WHERE ${countConditions.join(' AND ')}`;
+
+      countSql += ` WHERE ${countConditions.join(" AND ")}`;
     }
 
     const countResult = await query(countSql, countValues);

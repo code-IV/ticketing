@@ -223,6 +223,23 @@ const adminController = {
   },
 
   /**
+   * GET /api/admin/search/users -
+   */
+
+  async searchUsers(req, res, next) {
+    try {
+      const term = req.query.term || "";
+      const page = parseInt(req.query.page, 10) || 1;
+      const limit = parseInt(req.query.limit, 10) || 20;
+
+      const result = await User.searchUser({ term, page, limit });
+      return apiResponse(res, 200, true, "Users found.", result);
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  /**
    * GET /api/admin/users/:id - Get user details
    */
   async getUserById(req, res, next) {
