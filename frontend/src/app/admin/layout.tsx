@@ -15,6 +15,7 @@ export default function AdminLayout({
     { name: "Games", href: "/admin/games", iconName: "Gamepad2" },  
     { name: "Events", href: "/admin/events", iconName: "Calendar" },
     { name: "Media", href: "/admin/media", iconName: "Image" },
+    { name: "Bookings", href: "/admin/bookings", iconName: "Calendar" },
     { name: "Users", href: "/admin/user", iconName: "Users" },
   ];
 
