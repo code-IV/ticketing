@@ -501,7 +501,7 @@ LIMIT $2 OFFSET $3;
 
       // Get booking details
       const bookingResult = await client.query(
-        `SELECT * FROM bookings WHERE id = $1 AND booking_status = 'confirmed' FOR UPDATE`,
+        `SELECT * FROM bookings WHERE id = $1 AND status = 'CONFIRMED' OR status = 'PENDING' FOR UPDATE`,
         [id],
       );
       const booking = bookingResult.rows[0];
@@ -518,14 +518,14 @@ LIMIT $2 OFFSET $3;
 
       // Update booking status
       await client.query(
-        `UPDATE bookings SET booking_status = 'cancelled', payment_status = 'refunded', cancelled_at = NOW()
+        `UPDATE bookings SET status = 'CANCELLED'
          WHERE id = $1`,
         [id],
       );
 
       // Update payment status
       await client.query(
-        `UPDATE payments SET payment_status = 'refunded' WHERE booking_id = $1`,
+        `UPDATE payments SET status = 'REFUNDED' WHERE booking_id = $1`,
         [id],
       );
 
