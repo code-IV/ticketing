@@ -116,6 +116,12 @@ router.get(
   adminController.getAllUsers,
 );
 router.get(
+  "/search/users",
+  paginationRules,
+  handleValidation,
+  adminController.searchUsers,
+);
+router.get(
   "/users/:id",
   uuidParamRule("id"),
   handleValidation,
