@@ -17,7 +17,7 @@ const { GameController } = require("../api/controllers/gamesController");
 const bookingController = require("../api/controllers/bookingController");
 
 // All admin routes require authentication + admin role
-// router.use(isAuthenticated, isAdmin);
+router.use(isAuthenticated, isAdmin);
 
 // Dashboard
 router.get("/dashboard", adminController.getDashboard);
