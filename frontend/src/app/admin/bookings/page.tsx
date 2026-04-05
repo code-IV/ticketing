@@ -43,10 +43,13 @@ export default function BookingManagement() {
   // Bulk operations state
   const [selectedBookings, setSelectedBookings] = useState<Set<string>>(new Set());
   const [selectAll, setSelectAll] = useState(false);
-  
-  // Auto-refresh state
-  const [lastActivity, setLastActivity] = useState(Date.now());
-  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [showBulkCancelModal, setShowBulkCancelModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    bookingCount: number;
+    onConfirm: () => void;
+  } | null>(null);
   
   // Confirmation dialog state
   const [confirmDialog, setConfirmDialog] = useState<{
@@ -60,76 +63,29 @@ export default function BookingManagement() {
   // Auto-refresh interval
   const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Load bookings
+  // Load bookings data
   const loadBookings = useCallback(async () => {
     try {
       setLoading(true);
-      setError(null);
-      
-      const apiStatus = statusFilter === "ALL" ? undefined : statusFilter.toLowerCase();
-      const apiPaymentStatus = paymentStatusFilter === "ALL" ? undefined : paymentStatusFilter.toLowerCase();
-      
-      let response;
-      
-      // Use search endpoint if there's a search term
-      if (searchTerm.trim()) {
-        response = await adminService.searchBookings(searchTerm.trim(), currentPage, bookingsPerPage);
-      } else {
-        response = await adminService.getAllBookings(currentPage, bookingsPerPage, apiStatus, apiPaymentStatus);
+      const response = await adminService.getAllBookings(
+        currentPage,
+        15,
+        statusFilter !== 'ALL' ? statusFilter : undefined
+      );
+      if (response.success) {
+        setBookings(response.data.bookings || []);
+        const paginationData = response.data.pagination;
+        if (paginationData) {
+          setTotalPages(paginationData.totalPages || 0);
+          setTotalBookings(paginationData.total || 0);
+        }
       }
-      
-      const responseData = response.data;
-      let bookingsData = responseData?.bookings || [];
-      const paginationData = responseData?.pagination;
-      
-      setBookings(bookingsData);
-      if (paginationData) {
-        setTotalPages(paginationData.totalPages || 0);
-        setTotalBookings(paginationData.total || 0);
-      }
-      
-      // Clear selections when data reloads
-      setSelectedBookings(new Set());
-      setSelectAll(false);
-      
-    } catch (err: any) {
-      console.error('Error loading bookings:', err);
-      setError(`Failed to load bookings: ${err.message || 'Unknown error'}`);
-      setBookings([]);
+    } catch (err) {
+      setError("Failed to load bookings");
     } finally {
       setLoading(false);
-      setIsRefreshing(false);
     }
-  }, [currentPage, statusFilter, paymentStatusFilter, searchTerm, bookingsPerPage]);
-
-  // Auto-refresh effect
-  useEffect(() => {
-    const startAutoRefresh = () => {
-      if (refreshIntervalRef.current) {
-        clearInterval(refreshIntervalRef.current);
-      }
-      
-      refreshIntervalRef.current = setInterval(() => {
-        // Only refresh if no user activity for 7 seconds
-        if (Date.now() - lastActivity > 7000) {
-          loadBookings();
-        }
-      }, 7000);
-    };
-
-    startAutoRefresh();
-    
-    return () => {
-      if (refreshIntervalRef.current) {
-        clearInterval(refreshIntervalRef.current);
-      }
-    };
-  }, [loadBookings, lastActivity]);
-
-  // Track user activity
-  const trackUserActivity = useCallback(() => {
-    setLastActivity(Date.now());
-  }, []);
+  }, [currentPage, statusFilter]);
 
   // Initial load
   useEffect(() => {
@@ -164,7 +120,6 @@ export default function BookingManagement() {
     }
     setSelectedBookings(newSelection);
     setSelectAll(newSelection.size === bookings.length && bookings.length > 0);
-    trackUserActivity();
   }, [selectedBookings, bookings.length]);
 
   const handleSelectAll = useCallback(() => {
@@ -174,14 +129,12 @@ export default function BookingManagement() {
       setSelectedBookings(new Set(bookings.map(b => b.id)));
     }
     setSelectAll(!selectAll);
-    trackUserActivity();
   }, [selectAll, bookings]);
 
   // View booking details
   const handleViewBooking = useCallback((booking: Booking) => {
     setSelectedBooking(booking);
     setBookingDetailsModalOpen(true);
-    trackUserActivity();
   }, []);
 
   // Cancel booking
@@ -203,7 +156,6 @@ export default function BookingManagement() {
         }
       }
     });
-    trackUserActivity();
   }, []);
 
   // Bulk cancel bookings
@@ -231,46 +183,80 @@ export default function BookingManagement() {
         }
       }
     });
-    trackUserActivity();
   }, [selectedBookings, bookings]);
 
   // Manual refresh
   const handleRefresh = useCallback(() => {
-    setIsRefreshing(true);
     loadBookings();
   }, [loadBookings]);
 
   // Status badge styling
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: string | undefined) => {
+    if (!status) {
+      status = 'PENDING'; // Default fallback
+    }
+    
     const baseClasses = "px-3 py-1 rounded-full text-xs font-medium";
+    let statusClass;
+    let statusText;
+    
     switch (status.toLowerCase()) {
       case 'confirmed':
-        return `${baseClasses} ${isDarkTheme ? 'bg-green-900/50 text-green-400' : 'bg-green-100 text-green-700'}`;
+        statusClass = isDarkTheme ? 'bg-green-900/50 text-green-400' : 'bg-green-100 text-green-700';
+        statusText = 'Confirmed';
+        break;
       case 'pending':
-        return `${baseClasses} ${isDarkTheme ? 'bg-yellow-900/50 text-yellow-400' : 'bg-yellow-100 text-yellow-700'}`;
+        statusClass = isDarkTheme ? 'bg-yellow-900/50 text-yellow-400' : 'bg-yellow-100 text-yellow-700';
+        statusText = 'Pending';
+        break;
       case 'cancelled':
-        return `${baseClasses} ${isDarkTheme ? 'bg-red-900/50 text-red-400' : 'bg-red-100 text-red-700'}`;
+        statusClass = isDarkTheme ? 'bg-red-900/50 text-red-400' : 'bg-red-100 text-red-700';
+        statusText = 'Cancelled';
+        break;
       case 'refunded':
-        return `${baseClasses} ${isDarkTheme ? 'bg-gray-900/50 text-gray-400' : 'bg-gray-100 text-gray-700'}`;
+        statusClass = isDarkTheme ? 'bg-gray-900/50 text-gray-400' : 'bg-gray-100 text-gray-700';
+        statusText = 'Refunded';
+        break;
       default:
-        return `${baseClasses} ${isDarkTheme ? 'bg-blue-900/50 text-blue-400' : 'bg-blue-100 text-blue-700'}`;
+        statusClass = isDarkTheme ? 'bg-blue-900/50 text-blue-400' : 'bg-blue-100 text-blue-700';
+        statusText = status;
     }
+    
+    return <span className={`${baseClasses} ${statusClass}`}>{statusText}</span>;
   };
 
-  const getPaymentStatusBadge = (status: string) => {
+  const getPaymentStatusBadge = (status: string | undefined) => {
+    if (!status) {
+      status = 'PENDING'; // Default fallback
+    }
+    
     const baseClasses = "px-3 py-1 rounded-full text-xs font-medium";
+    let statusClass;
+    let statusText;
+    
     switch (status.toLowerCase()) {
       case 'completed':
-        return `${baseClasses} ${isDarkTheme ? 'bg-green-900/50 text-green-400' : 'bg-green-100 text-green-700'}`;
+        statusClass = isDarkTheme ? 'bg-green-900/50 text-green-400' : 'bg-green-100 text-green-700';
+        statusText = 'Completed';
+        break;
       case 'pending':
-        return `${baseClasses} ${isDarkTheme ? 'bg-yellow-900/50 text-yellow-400' : 'bg-yellow-100 text-yellow-700'}`;
+        statusClass = isDarkTheme ? 'bg-yellow-900/50 text-yellow-400' : 'bg-yellow-100 text-yellow-700';
+        statusText = 'Pending';
+        break;
       case 'failed':
-        return `${baseClasses} ${isDarkTheme ? 'bg-red-900/50 text-red-400' : 'bg-red-100 text-red-700'}`;
+        statusClass = isDarkTheme ? 'bg-red-900/50 text-red-400' : 'bg-red-100 text-red-700';
+        statusText = 'Failed';
+        break;
       case 'refunded':
-        return `${baseClasses} ${isDarkTheme ? 'bg-gray-900/50 text-gray-400' : 'bg-gray-100 text-gray-700'}`;
+        statusClass = isDarkTheme ? 'bg-gray-900/50 text-gray-400' : 'bg-gray-100 text-gray-700';
+        statusText = 'Refunded';
+        break;
       default:
-        return `${baseClasses} ${isDarkTheme ? 'bg-blue-900/50 text-blue-400' : 'bg-blue-100 text-blue-700'}`;
+        statusClass = isDarkTheme ? 'bg-blue-900/50 text-blue-400' : 'bg-blue-100 text-blue-700';
+        statusText = status;
     }
+    
+    return <span className={`${baseClasses} ${statusClass}`}>{statusText}</span>;
   };
 
   return (
@@ -282,19 +268,20 @@ export default function BookingManagement() {
           <h1 className={`text-3xl font-bold tracking-tight ${isDarkTheme ? 'text-white' : 'text-slate-900'}`}>
             Manage Bookings
           </h1>
-          <button 
+          
+          <button
             onClick={handleRefresh} 
             disabled={loading}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
-              loading || isRefreshing 
+              loading 
                 ? 'bg-gray-500 text-gray-200' 
                 : isDarkTheme 
                   ? 'bg-accent text-black hover:bg-accent2' 
                   : 'bg-accent2 text-black hover:bg-accent'
             }`}
           >
-            <RefreshCw className={`h-4 w-4 ${loading || isRefreshing ? 'animate-spin' : ''}`} />
-            {loading || isRefreshing ? 'Loading...' : 'Refresh'}
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            {loading ? 'Loading...' : 'Refresh'}
           </button>
         </div>
 
@@ -313,7 +300,6 @@ export default function BookingManagement() {
                 value={searchTerm}
                 onChange={e => {
                   setSearchTerm(e.target.value);
-                  trackUserActivity();
                 }}
               />
               {searchTerm && (
@@ -343,7 +329,6 @@ export default function BookingManagement() {
                   value={statusFilter}
                   onChange={e => {
                     handleStatusFilterChange(e.target.value);
-                    trackUserActivity();
                   }}
                   className={`w-full px-4 py-2 rounded-lg outline-none border ${
                     isDarkTheme ? 'bg-[#1a1a1a] border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'
@@ -365,7 +350,6 @@ export default function BookingManagement() {
                   value={paymentStatusFilter}
                   onChange={e => {
                     handlePaymentStatusFilterChange(e.target.value);
-                    trackUserActivity();
                   }}
                   className={`w-full px-4 py-2 rounded-lg outline-none border ${
                     isDarkTheme ? 'bg-[#1a1a1a] border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'
@@ -527,17 +511,13 @@ export default function BookingManagement() {
                     }`}>
                       Date
                     </th>
-                    <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${
-                      isDarkTheme ? 'text-gray-400 border-gray-600' : 'text-gray-700 border-gray-200'
-                    }`}>
-                      Actions
-                    </th>
                   </tr>
                 </thead>
                 <tbody className={`divide-y ${isDarkTheme ? 'divide-gray-700' : 'divide-gray-200'}`}>
                   {bookings.map((booking) => (
                     <tr 
                       key={booking.id}
+                      onClick={() => router.push(`/admin/bookings/${booking.id}`, { state: { booking } })}
                       className={`hover:bg-opacity-80 transition-colors cursor-pointer ${
                         selectedBookings.has(booking.id)
                           ? isDarkTheme ? 'bg-indigo-900/20' : 'bg-indigo-50'
@@ -553,55 +533,31 @@ export default function BookingManagement() {
                         />
                       </td>
                       <td className={`px-6 py-4 font-medium ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}>
-                        {booking.bookingReference}
+                        {booking.booking_reference}
                       </td>
                       <td className={`px-6 py-4 ${isDarkTheme ? 'text-gray-300' : 'text-gray-700'}`}>
                         <div className="space-y-1">
                           <div className="font-medium">
-                            {booking.firstName} {booking.lastName}
+                            {booking.customer_name || booking.guest_name || 'Unknown'}
                           </div>
-                          {booking.email && (
+                          {booking.guest_email && (
                             <div className={`text-sm ${isDarkTheme ? 'text-gray-400' : 'text-gray-500'}`}>
-                              {booking.email}
+                              {booking.guest_email}
                             </div>
                           )}
                         </div>
                       </td>
                       <td className={`px-6 py-4 font-medium ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}>
-                        ETB {parseFloat(booking.totalAmount).toLocaleString()}
+                        ETB {parseFloat(booking.total_amount).toLocaleString()}
                       </td>
                       <td className={`px-6 py-4`}>
-                        {getStatusBadge(booking.status)}
+                        {getStatusBadge(booking.booking_status)}
                       </td>
                       <td className={`px-6 py-4`}>
-                        {getPaymentStatusBadge(booking.paymentStatus || 'PENDING')}
+                        {getPaymentStatusBadge(booking.payment_status || 'PENDING')}
                       </td>
                       <td className={`px-6 py-4 text-sm ${isDarkTheme ? 'text-gray-300' : 'text-gray-600'}`}>
-                        {new Date(booking.bookedAt).toLocaleDateString()}
-                      </td>
-                      <td className={`px-6 py-4`}>
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => handleViewBooking(booking)}
-                            className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                              isDarkTheme 
-                                ? 'bg-blue-600 text-white hover:bg-blue-700' 
-                                : 'bg-blue-500 text-white hover:bg-blue-600'
-                            }`}
-                          >
-                            <Eye size={14} />
-                            View
-                          </button>
-                          {booking.status === 'CONFIRMED' && (
-                            <button
-                              onClick={() => handleCancelBooking(booking)}
-                              className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium text-white transition-all bg-red-600 hover:bg-red-700`}
-                            >
-                              <Trash2 size={14} />
-                              Cancel
-                            </button>
-                          )}
-                        </div>
+                        {new Date(booking.created_at).toLocaleDateString()}
                       </td>
                     </tr>
                   ))}

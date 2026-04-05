@@ -173,7 +173,7 @@ export const adminService = {
 
   async getBookingDetails(
     id: string,
-  ): Promise<ApiResponse<{ booking: Booking }>> {
+  ): Promise<ApiResponse<{ bookings: Booking[] }>> {
     const response = await api.get(`/admin/bookings/${id}`);
     return response.data;
   },
