@@ -4,15 +4,19 @@ const adminController = require("../api/controllers/adminController");
 const { EventController } = require("../api/controllers/eventController");
 const { isAuthenticated, isAdmin } = require("../middleware/auth");
 const {
-  createEventRules,
-  updateEventRules,
-  createEventWithTicketTypesRules,
-  createTicketTypeRules,
-  updateTicketTypeRules,
   uuidParamRule,
   paginationRules,
   handleValidation,
 } = require("../middleware/validate");
+const {
+  createEventRules,
+  updateEventRules,
+  createEventWithTicketTypesRules,
+} = require("../middleware/validators/event.validator");
+const {
+  createTicketTypeRules,
+  updateTicketTypeRules,
+} = require("../middleware/validators/ticketType.validator");
 const { GameController } = require("../api/controllers/gamesController");
 const bookingController = require("../api/controllers/bookingController");
 

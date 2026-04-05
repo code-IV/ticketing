@@ -3,11 +3,13 @@ const router = express.Router();
 const bookingController = require("../api/controllers/bookingController");
 const { isAuthenticated, isStaff, isAdmin } = require("../middleware/auth");
 const {
-  createBookingRules,
   uuidParamRule,
   paginationRules,
   handleValidation,
 } = require("../middleware/validate");
+const {
+  createBookingRules,
+} = require("../middleware/validators/booking.validator");
 
 // Remove global authentication - apply per route instead
 

@@ -31,6 +31,8 @@
 
 ### ⚙️ Backend: API & Logic
 
+- [ ] **Missing functionaity:**
+  - [x] delete files when deleting a product
 - [ ] **Endpoint:** `POST /api/games/create`
   - ✅ Change: Convert to **Atomic Transaction** (Multipart/Form-Data).
   - 🚫 Logic: Implement `JSON.parse` for the `game` metadata string.
@@ -57,6 +59,12 @@
   - [x] Admin tab visibility on login fix.
   - [x] Admin/User search by user email.
   - [x] Merge Admin and Analytics pages.
+
+---
+
+### ⚙️ System requirements
+
+- [x] allow the admin to create their own ticket type
 
 ---
 
