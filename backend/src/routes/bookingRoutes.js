@@ -47,7 +47,6 @@ router.get(
 );
 router.post(
   "/:id/cancel",
-  isAuthenticated,
   uuidParamRule("id"),
   handleValidation,
   bookingController.cancelBooking,

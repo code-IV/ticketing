@@ -290,27 +290,19 @@ const bookingController = {
         return apiResponse(res, 404, false, "Booking not found.");
       }
 
-      // Ensure user can only cancel their own bookings (unless admin)
-      if (
-        req.session.user.role !== "admin" &&
-        booking.user_id !== req.session.user.id
-      ) {
-        return apiResponse(res, 403, false, "Access denied.");
-      }
-
-      if (booking.booking_status === "cancelled") {
+      if (booking.status === "cancelled") {
         return apiResponse(res, 400, false, "Booking is already cancelled.");
       }
 
       // Check if event date has passed
-      if (new Date(booking.event_date) < new Date().setHours(0, 0, 0, 0)) {
-        return apiResponse(
-          res,
-          400,
-          false,
-          "Cannot cancel bookings for past events.",
-        );
-      }
+      // if (new Date(booking.event_date) < new Date().setHours(0, 0, 0, 0)) {
+      //   return apiResponse(
+      //     res,
+      //     400,
+      //     false,
+      //     "Cannot cancel bookings for past events.",
+      //   );
+      // }
 
       const result = await Booking.cancel(req.params.id);
       return apiResponse(
