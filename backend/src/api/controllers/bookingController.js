@@ -185,6 +185,44 @@ const bookingController = {
   },
 
   /**
+   * GET /api/bookings/user/:id - Get current user's bookings
+   */
+  async getBookingByUserId(req, res, next) {
+    try {
+      // Disable caching for bookings endpoints
+      res.setHeader(
+        "Cache-Control",
+        "no-cache, no-store, must-revalidate, max-age=0",
+      );
+      res.setHeader("Pragma", "no-cache");
+      res.setHeader("Expires", "0");
+      res.removeHeader("ETag"); // Clear ETag to prevent 304 responses
+
+      const userId = req.params.id;
+      const page = parseInt(req.query.page, 10) || 1;
+      const limit = Math.min(parseInt(req.query.limit, 10) || 20, 100);
+
+      const result = await Booking.findByUserId(userId, { page, limit });
+      const bookings = (result.bookings || []).map((b) => ({
+        id: b.id,
+        bookingReference: b.booking_reference,
+        totalAmount: b.total_amount,
+        status: b.status,
+        eventDate: b.eventDate,
+        bookendAt: b.created_at,
+        type: b.type,
+        ticket: b.ticket,
+      }));
+      return apiResponse(res, 200, true, "Bookings retrieved.", {
+        bookings,
+        pagination: result.pagination,
+      });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  /**
    * GET /api/bookings/:id - Get booking details
    */
   async getBookingById(req, res, next) {
@@ -196,7 +234,7 @@ const bookingController = {
 
       // Ensure user can only see their own bookings (unless admin)
       if (
-        req.session.user.role !== "admin" &&
+        req.session.user.role !== "ADMIN" &&
         booking.user_id !== req.session.user.id
       ) {
         return apiResponse(res, 403, false, "Access denied.");
