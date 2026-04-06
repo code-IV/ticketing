@@ -8,6 +8,7 @@ const {
   bookingStatsService,
 } = require("../services/bookingService");
 const { EventService } = require("../services/eventService");
+const { createBookingGamesReq } = require("../dtos/bookingDto");
 
 const bookingController = {
   /**
@@ -111,26 +112,16 @@ const bookingController = {
 
   async createBookingGames(req, res, next) {
     try {
-      const {
-        items, // [{ ticketTypeId, quantity }]
-        totalAmount,
-        paymentMethod,
-        guestEmail,
-        guestName,
-        notes,
-      } = req.body;
+      const validatedBody = new createBookingGamesReq(req.body);
+      const { items, paymentMethod } = validatedBody;
       const userId = req.session?.user?.id || null;
-      const expiresAt = new Date(); //leave it like this for now
+      const expiresAt = new Date();
 
       // 4️⃣ Call transactional booking service
       const booking = await Booking.bookGames({
         userId,
         items,
-        totalAmount,
         paymentMethod,
-        guestEmail,
-        guestName,
-        notes,
         expires_at: expiresAt,
       });
 

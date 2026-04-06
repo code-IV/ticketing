@@ -8,7 +8,7 @@ const {
   handleValidation,
 } = require("../middleware/validate");
 const {
-  createBookingRules,
+  bookingValidator,
 } = require("../middleware/validators/booking.validator");
 
 // Remove global authentication - apply per route instead
@@ -16,13 +16,18 @@ const {
 // Event bookings - allow guests
 router.post(
   "/event",
-  createBookingRules,
+  bookingValidator.createEventBookingRules,
   handleValidation,
   bookingController.createBookingEvent,
 );
 
 // Game bookings - allow guests
-router.post("/games", handleValidation, bookingController.createBookingGames);
+router.post(
+  "/games",
+  bookingValidator.createGameBookingRules,
+  handleValidation,
+  bookingController.createBookingGames,
+);
 
 // User-specific routes require authentication
 router.get(

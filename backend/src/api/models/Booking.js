@@ -72,10 +72,7 @@ const Booking = {
   async bookGames({
     userId,
     items,
-    totalAmount,
     paymentMethod,
-    guestEmail,
-    guestName,
     expires_in_days = 30, // Default to 30 days
   }) {
     const client = await getClient();
@@ -85,12 +82,28 @@ const Booking = {
 
       // 1️⃣ Create booking header
       const bookingReference = generateBookingReference();
+
+      const inputData = items.map((item) => ({
+        ticket_type_id: item.ticketTypeId,
+        quantity: item.quantity,
+      }));
+
+      // 2. Execute the query
+      const amountSql = `
+        SELECT SUM(input.quantity * tt.price) as "totalAmount"
+        FROM jsonb_to_recordset($1::jsonb) AS input(ticket_type_id UUID, quantity INT)
+        JOIN ticket_types tt ON tt.id = input.ticket_type_id
+        WHERE tt.deleted_at IS NULL;
+      `;
+
+      const result = await client.query(amountSql, [JSON.stringify(inputData)]);
+      const totalAmount = result.rows[0].totalAmount || 0;
       const bookingResult = await client.query(
         `INSERT INTO bookings
-       (user_id, booking_reference, total_amount, status, guest_email, guest_name)
-       VALUES ($1, $2, $3, 'CONFIRMED', $4, $5)
+       (user_id, booking_reference, total_amount, status)
+       VALUES ($1, $2, $3, 'CONFIRMED')
        RETURNING *`,
-        [userId, bookingReference, totalAmount, guestEmail, guestName],
+        [userId, bookingReference, totalAmount],
       );
       const booking = bookingResult.rows[0];
 
@@ -119,7 +132,7 @@ const Booking = {
           `SELECT tt.price, tt.category, p.id as product_id, p.name as product_name 
      FROM ticket_types tt
      JOIN products p ON tt.product_id = p.id
-     WHERE tt.id = $1`,
+     WHERE tt.id = $1 AND tt.deleted_at IS NULL`,
           [item.ticketTypeId],
         );
 
