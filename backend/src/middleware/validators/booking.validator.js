@@ -42,6 +42,7 @@ exports.bookingValidator = {
     body("items.*.category")
       .trim()
       .notEmpty()
+      .isLength({ max: 100 })
       .withMessage("Category is required"),
     body("items.*.quantity")
       .isInt({ min: 1 })

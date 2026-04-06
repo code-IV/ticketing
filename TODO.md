@@ -66,6 +66,7 @@
 ### ⚙️ System requirements
 
 - [x] allow the admin to create their own ticket type
+- [x] set expiry date to games and events
 - [x] check for unused & unsafe packages
 
 ---
