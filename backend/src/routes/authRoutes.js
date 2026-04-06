@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const authController = require("../api/controllers/authController");
+const { userLimiter } = require("../middleware/ratelimiting/auth.limiter");
 const { isAuthenticated } = require("../middleware/auth");
 const { handleValidation } = require("../middleware/validate");
 const {
@@ -13,28 +14,47 @@ const {
 // Public routes
 router.post(
   "/register",
+  userLimiter.authLimiter,
   registerRules,
   handleValidation,
   authController.register,
 );
-router.post("/login", loginRules, handleValidation, authController.login);
+router.post(
+  "/login",
+  userLimiter.authLimiter,
+  loginRules,
+  handleValidation,
+  authController.login,
+);
 
 // Protected routes
-router.post("/logout", isAuthenticated, authController.logout);
-router.get("/me", isAuthenticated, authController.getMe);
+router.put(
+  "/change-password",
+  userLimiter.authLimiter,
+  isAuthenticated,
+  changePasswordRules,
+  handleValidation,
+  authController.changePassword,
+);
+router.get(
+  "/me",
+  userLimiter.getUserLimiter,
+  isAuthenticated,
+  authController.getMe,
+);
 router.put(
   "/profile",
+  userLimiter.getUserLimiter,
   isAuthenticated,
   updateProfileRules,
   handleValidation,
   authController.updateProfile,
 );
-router.put(
-  "/change-password",
+router.post(
+  "/logout",
+  userLimiter.getUserLimiter,
   isAuthenticated,
-  changePasswordRules,
-  handleValidation,
-  authController.changePassword,
+  authController.logout,
 );
 
 module.exports = router;

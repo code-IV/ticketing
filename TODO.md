@@ -49,6 +49,7 @@
     - _Types:_ Percentage (10/20/30%), Tiered (3+ or 5+), Early Bird, Member, and Group packages.
   - ✅ Ticket **Revoke** functionality for Admins.
   - [x] Standardize API **Response Model** (Data cleanup & optimization).
+  - 🟡 **Request body validation**
 - [ ] **Logging & Monitoring**
   - [x] **Ticket Buy Log**: Audit trail for transactions.
   - [x] **System Log**: Administrative action and error tracking.
@@ -65,6 +66,7 @@
 ### ⚙️ System requirements
 
 - [x] allow the admin to create their own ticket type
+- [x] check for unused & unsafe packages
 
 ---
 
@@ -83,7 +85,7 @@
 
 - [x] **Uploads:** Add file type validation (MIME type check) on server-side.
 - [x] **Cleanup:** Add logic to delete orphaned files if DB write fails.
-- [x] **Rate Limiting:** Protect the game creation endpoint.
+- 🟡 **Rate Limiting:** Protect the game creation endpoint.
 
 ---
 
