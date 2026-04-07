@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const authController = require("../api/controllers/authController");
-const { userLimiter } = require("../middleware/ratelimiting/auth.limiter");
+const { userLimiter } = require("../middleware/ratelimiting/user.limiter");
 const { isAuthenticated } = require("../middleware/auth");
 const { handleValidation } = require("../middleware/validate");
 const {

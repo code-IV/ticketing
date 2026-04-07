@@ -7,7 +7,7 @@ exports.userLimiter = {
   }),
 
   getUserLimiter: rateLimit({
-    windowMs: 30 * 60 * 1000,
-    max: 20,
+    windowMs: 15 * 60 * 1000,
+    max: 100,
   }),
 };
