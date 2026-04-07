@@ -12,12 +12,14 @@ const {
   analyticsRules,
 } = require("../middleware/validate");
 const { eventRules } = require("../middleware/validators/event.validator");
+const { eventLimiter } = require("../middleware/ratelimiting/event.limiter");
 
 //===============
 // SECURE ROUTES
 //===============
 router.post(
   "/add",
+  eventLimiter.createLimit,
   isAuthenticated,
   isAdmin,
   eventRules.create,
@@ -26,6 +28,7 @@ router.post(
 );
 router.patch(
   "/patch/:id",
+  eventLimiter.createLimit,
   isAuthenticated,
   isAdmin,
   uuidParamRule("id"),
@@ -35,6 +38,7 @@ router.patch(
 );
 router.patch(
   "/status/:id",
+  eventLimiter.writeLimit,
   isAuthenticated,
   isAdmin,
   uuidParamRule("id"),
@@ -43,6 +47,7 @@ router.patch(
 );
 router.delete(
   "/del/:id",
+  eventLimiter.createLimit,
   isAuthenticated,
   isAdmin,
   uuidParamRule("id"),
@@ -51,6 +56,7 @@ router.delete(
 );
 router.get(
   "/all",
+  eventLimiter.getAllLimit,
   isAuthenticated,
   isAdmin,
   paginationRules,
@@ -64,6 +70,7 @@ router.get(
 
 router.get(
   "/stats",
+  eventLimiter.statsLimit,
   isAuthenticated,
   isAdmin,
   analyticsRules,
@@ -72,6 +79,7 @@ router.get(
 );
 router.get(
   "/stats/:eventId",
+  eventLimiter.statsLimit,
   isAuthenticated,
   isAdmin,
   uuidParamRule("eventId"),
@@ -86,24 +94,28 @@ router.get(
 
 router.get(
   "/",
+  eventLimiter.listLimit,
   paginationRules,
   handleValidation,
   EventController.getActiveEvents,
 );
 router.get(
   "/:id",
+  eventLimiter.listLimit,
   uuidParamRule("id"),
   handleValidation,
   EventController.getEventById,
 );
 router.get(
   "/:id/availability",
+  eventLimiter.listLimit,
   uuidParamRule("id"),
   handleValidation,
   EventController.checkAvailability,
 );
 router.get(
   "/:id/ticket-types",
+  eventLimiter.listLimit,
   uuidParamRule("id"),
   handleValidation,
   EventController.getTicketTypes,
