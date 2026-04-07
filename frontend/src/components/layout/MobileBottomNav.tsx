@@ -7,7 +7,7 @@ import {
   Home,
   Calendar,
   Gamepad2,
-  ShoppingCart,
+  Ticket,
   CalendarCheck,
 } from "lucide-react";
 
@@ -40,7 +40,7 @@ const mobileNavItems: MobileNavItems[] = [
   {
     name: "buy tickets",
     href: "/buy",
-    icon: ShoppingCart,
+    icon: Ticket,
     label: "Buy Ticket",
   },
   {

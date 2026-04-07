@@ -195,10 +195,10 @@ export default function EventsPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.1, type: "spring", stiffness: 100 }}
-                className={`group relative ${isDarkTheme ? "bg-[#1a1a1a]" : "bg-white"} rounded-[40px] border border-[#ffd84f] shadow-sm hover:shadow-2xl hover:scale-[1.02] transition-all duration-700 flex flex-col lg:flex-row overflow-hidden min-h-100`}
+                className={`group relative ${isDarkTheme ? "bg-[#1a1a1a]" : "bg-white"} rounded-[40px] border border-[#ffd84f] shadow-sm hover:shadow-2xl hover:scale-[1.02] transition-all duration-700 flex flex-col md:flex-row overflow-hidden min-h-100`}
               >
                 {/* MEDIA */}
-                <div className="relative h-64 lg:h-auto lg:w-112.5 shrink-0 overflow-hidden bg-[#ffd84f]">
+                <div className="relative h-64 md:h-auto md:w-112.5 shrink-0 overflow-hidden bg-[#ffd84f] aspect-video">
                   {(() => {
                     const poster = getBannerImage(event);
                     
@@ -254,7 +254,7 @@ export default function EventsPage() {
 
                 {/* CONTENT */}
                 <div
-                  className={`flex-1 p-6 lg:p-10 flex flex-col ${isDarkTheme ? "text-white" : "text-gray-900"}`}
+                  className={`flex-1 p-6 md:p-10 flex flex-col ${isDarkTheme ? "text-white" : "text-gray-900"}`}
                 >
                   <h2 className="text-2xl md:text-4xl font-black tracking-tighter mb-4 leading-tight">
                     {event.name}

@@ -352,7 +352,7 @@ export default function Home() {
                       {event.description || "Defining the next generation of park experiences through exclusive curated events and world-class production."}
                    </p>
 
-                     <div className="flex justify-between  border-y border-current/10 py-4">
+                     <div className="flex justify-between  border-y border-current/10 py-4 gap-1">
                        <Link href={`/events/${event.id}`}>
                           <button
                             disabled={!event.isActive}
@@ -537,14 +537,14 @@ export default function Home() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.8 }}
-          className="max-w-3xl mx-auto relative overflow-hidden rounded-[2.5rem] bg-[#FFD84D] p-12 md:p-20 text-center"
+          className="max-w-3xl mx-auto relative overflow-hidden rounded-4xl bg-accent p-12 md:p-20 text-center"
         >
           {/* Background decoration */}
           <div className="absolute -top-24 -right-24 w-72 h-72 rounded-full bg-black/8" />
           <div className="absolute -bottom-16 -left-16 w-56 h-56 rounded-full bg-black/5" />
 
           <h2
-            className="text-3xl md:text-5xl font-black text-black mb-10 relative z-10 leading-tight"
+            className="text-3xl md:text-5xl font-black text-black mb-6 relative z-10 leading-tight"
             style={{ fontFamily: "var(--font-unbounded)" }}
           >
             Ready to skip
