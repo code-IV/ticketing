@@ -2,7 +2,7 @@ const { Event } = require("../models/Event");
 const { EventService, EventStatsService } = require("../services/eventService");
 const TicketType = require("../models/TicketType");
 const { apiResponse } = require("../../utils/helpers");
-const { query } = require("../../config/db");
+const { CreateEventReq, UpdateEventReq } = require("../dtos/eventDto");
 
 const EventController = {
   /**
@@ -25,7 +25,8 @@ const EventController = {
    */
   async createEvent(req, res, next) {
     try {
-      const event = { ...req.body, createdBy: req.session.user.id };
+      const validEvent = new CreateEventReq(req.body);
+      const event = { ...validEvent, createdBy: req.session.user.id };
 
       const result = await EventService.createEvent(event);
       return apiResponse(res, 201, true, "Event created successfully.", result);
@@ -39,14 +40,14 @@ const EventController = {
    */
   async updateEvent(req, res, next) {
     try {
-      const eventReq = req.body;
+      const validEvent = new UpdateEventReq(req.body);
 
       const existing = await Event.findById(req.params.id);
       if (!existing) {
         return apiResponse(res, 404, false, "Event not found.");
       }
 
-      const event = await EventService.updateEvent(req.params.id, eventReq);
+      const event = await EventService.updateEvent(req.params.id, validEvent);
 
       return apiResponse(res, 200, true, "Event updated successfully.", {
         event,
@@ -183,7 +184,7 @@ const EventStatsController = {
       });
     } catch (error) {
       console.log(error);
-      res.status(500).json({ success: false, message: error.message });
+      next(error);
     }
   },
   async getEventStats(req, res) {

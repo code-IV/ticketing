@@ -1,74 +1,95 @@
 # 🚀 Project Incremental Changes
 
-## 📅 Current Sprint: UI/UX Overhaul
+## 📅 Current Sprint: UI/UX Overhaul & Core Logic
 
 **Status:** In Progress 🟡
 
 ---
 
-### 🎨 Frontend: /home Page
+### 🎨 Frontend: /home & Interface
 
-- [X] **Events Section:** - [ ] Logic: Only show `events-list` if data is present (conditional rendering).
-  - [X] Layout: Single event display (Removed Grid layout).
-- [ ] **Games Section:**
-  - [ ] Layout: Restructure into two distinct rows.
-  - [ ] Interaction: Add hover-to-play video logic.
-
-
+- [ ] **UI**
+  - [ ] **Games Section**
+    - [x] Layout: Restructure into two distinct rows.
+  - [x] Interaction: Add hover-to-play video logic. else display thumbnail
 - [ ] **Navigation & Access**
-    - [ ] Add 'X' (Close) button to the Signup Page.
-    - [ ] Update Event Navigation Page background (Apply Fading Blur/Gradient).
+  - [x] Add 'X' (Close) button to the Signup Page.
+  - [x] **Mandatory Signup:** Enforce signup requirement for discount eligibility.
 - [ ] **Features**
-    - [ ] Implement **Media Gallery View** for asset selection (vs. direct download).
-    - [ ] Real-time "Tickets Left" display on the Event Page.
-    - [ ] Integrated **Discount UI** logic for:
-        - Percentage, Tiered, Early Bird, Member, and Group types.
+  - [x] after booking qrcode and some details of entitlement should be displayed rightaway and not ask for to see more details
+  - [x] Implement **Media Gallery View** for asset selection (vs. direct download).
+  - [x] Integrated **Discount UI** logic (Percentage, Tiered, Early Bird, Member, and Group).
+  - [x] Discount UI only.
+  - [x] Ticket buying page card.
 - [ ] **Refinement**
-    - [x] Home Page Layout (2 items per line).
-    - [x] Event Page Layout (2 items per line).
-    - [x] User Profile update UI.
-    - [x] QR/Barcode Scan Page fixes.
+  - [x] Home Page Layout (2 items per line).
+  - [x] Event Page Layout (2 items per line).
+  - [x] User Profile update UI.
+  - [x] QR/Barcode Scan Page fixes.
+  - [x] Asset Integration (Real Media, Mock Images, Metadata).
+
 ---
 
 ### ⚙️ Backend: API & Logic
 
+- [ ] **Missing functionaity:**
+  - [x] delete files when deleting a product
 - [ ] **Endpoint:** `POST /api/games/create`
-  - [ ] Change: Convert to **Atomic Transaction** (Multipart/Form-Data). - [ ] Logic: Implement `JSON.parse` for the `game` metadata string.
-- [ ] **Media Handling:**
-  - [ ] Task: Generate Low-Res Image Placeholders (LQIP) on upload.
-  - [ ] Task: Implement WebP conversion for performance.
-  - [ ] Task: Duplicate media is possible we need to fix that also.
-
-
-- [ ] **Authentication**
-    - [ ] Implement **OTP (One-Time Password)** for password resets.
-    - [ ] Enforce "Auth Required" middleware for discount eligibility.
-- [ ] **Core Logic**
-    - [ ] Build **Discount Engine**: Case-by-case eligibility checker.
-    - [ ] Ticket **Revoke** functionality for Admins.
-    - [ ] Standardize API **Response Model** (Data cleanup).
+  - ✅ Change: Convert to **Atomic Transaction** (Multipart/Form-Data).
+  - 🚫 Logic: Implement `JSON.parse` for the `game` metadata string.
+  - [x] remove routes/buyTicket
+  - [x] encapsulate handleValidation in validation rules
+- [ ] **Media Handling**
+  - [x] Task: Generate Low-Res Image Placeholders (LQIP) on upload.
+  - [x] Task: Implement WebP conversion for performance.
+  - [x] Task: Fix duplicate media upload logic.
+  - ✅ Support for: Thumbnail, Banner, Poster, and Gallery assets.
+- [ ] **Authentication & Security**
+  - [x] Implement **OTP (One-Time Password)** for 1-time password resets.
+  - [x] Enforce "Auth Required" middleware for discount eligibility.
+- [ ]**Core Logic & Discounts**
+  - [x] Build **Discount Engine**: Case-by-case eligibility checker.
+    - _Types:_ Percentage (10/20/30%), Tiered (3+ or 5+), Early Bird, Member, and Group packages.
+  - ✅ Ticket **Revoke** functionality for Admins.
+  - [x] Standardize API **Response Model** (Data cleanup & optimization).
+  - 🟡 **Request body validation**
 - [ ] **Logging & Monitoring**
-    - [ ] **Ticket Buy Log**: Audit trail for transactions.
-    - [ ] **System Log**: Administrative action and error tracking.
+  - [x] **Ticket Buy Log**: Audit trail for transactions.
+  - [x] **System Log**: Administrative action and error tracking.
+- [ ] **Admin & Analytics**
+  - [x] Fix **Analytics Data** rendering issue (merged dashboard).
+  - [x] Admin ticket list: Ability to view and revoke user tickets.
+  - [x] Super Admin / User role permission logic.
+  - [x] Admin tab visibility on login fix.
+  - [x] Admin/User search by user email.
+  - [x] Merge Admin and Analytics pages.
 
- - [ ] Fix **Analytics Data** rendering issue (merged dashboard).
-- [x] Super Admin / User role permission logic.
 ---
 
-## 🧪 Testing & Quality Assurance
-- [ ] **Unit & Integration Testing**
-    - [ ] Test Discount triggers (e.g., "Buy 3, get 15% off").
-    - [ ] Test OTP expiration and reuse prevention.
-- [ ] **User Acceptance (UAT)**
-    - [ ] Extensive UI testing on mobile/KDE Plasma browsers.
-    - [ ] End-to-end "Ticket Buy" flow validation.
+### ⚙️ System requirements
 
+- [x] allow the admin to create their own ticket type
+- [x] set expiry date to games and events
+- [x] check for unused & unsafe packages
+
+---
+
+### 🧪 Testing & Quality Assurance
+
+- [ ] **Unit & Integration Testing**
+  - [x] Test Discount triggers (e.g., "Buy 3, get 15% off").
+  - [x] Test OTP expiration and reuse prevention.
+- [ ] **User Acceptance (UAT)**
+  - [x] Extensive UI testing on mobile/KDE Plasma browsers.
+  - [x] End-to-end "Ticket Buy" flow validation.
+
+---
 
 ### 🔒 Security & Reliability
 
-- [ ] **Uploads:** Add file type validation (MIME type check) on server-side.
-- [ ] **Cleanup:** Add logic to delete orphaned files if DB write fails.
-- [ ] **Rate Limiting:** Protect the game creation endpoint.
+- [x] **Uploads:** Add file type validation (MIME type check) on server-side.
+- [x] **Cleanup:** Add logic to delete orphaned files if DB write fails.
+- 🟡 **Rate Limiting:** Protect the game creation endpoint.
 
 ---
 
@@ -76,62 +97,11 @@
 
 - _Check if the blur-2xl on the MOCK_IMG is too heavy._
 - _Consider using Next/Image for automatic optimization._
+- ~~❌ Customer Support module (Postponed)~~
 
+## Legend
 
-
-
-
-      
-x button to the signup page
-1 time pasword pass reset
-
-✅ discount ui only
-✅ ticket buying page card
-
-sighnup is nessassary for the discount
-discount
-limited discount
-discount for each case
-meida selection with the the galler rather than allways download
-
-
-response model cleanup
-
-✅ super admin
-✅ home page layout 2 per line
-✅ event page layout 2 per line
-✅ user profile update
-✅ real MEDIA
-✅ ticket cut
-✅ mock images
-✅ metadata
-        thumbnail
-        banner
-        poter
-        galary
-
-update the event navigation page background
-update the events number of tickets left
-
-✅ admin tab not apearing when loging in
-✅ admin / user search by user email
-✅ merge admin and analitics page
-fix analitics data not showing properly
-adin ticket list and ability to revoke the user ticket
-✅ fix scan page
-
-extensive testing
-        - feat
-        - ui
-
-ticket buy log
-system log
-
-❌ customer support
-
-discount types
-Percentage discounts: Should users get 10%, 20%, 30% off based on quantity?
-Tiered discounts: Buy 3+ tickets get 15% off, 5+ get 25% off?
-Early bird discounts: Book before certain date get discount?
-Member discounts: Logged-in users get special pricing?
-Group discounts: Family packages or group bookings?
+- 🚫 => cancelled task
+- ✅ => completed task
+- 🟡 => inprogress task
+- [x] => new task

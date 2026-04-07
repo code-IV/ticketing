@@ -26,6 +26,9 @@ const app = express();
 // GLOBAL MIDDLEWARE
 // ============================================
 
+//number of hop distances
+app.set("trust proxy", 1);
+
 // Security headers
 app.use(helmet());
 
@@ -62,10 +65,7 @@ app.use(
   "/media/uploads",
   express.static(path.join(__dirname, "../public/media/uploads")),
 );
-app.use(
-  "/uploads",
-  express.static(path.join(__dirname, "../public/uploads")),
-);
+app.use("/uploads", express.static(path.join(__dirname, "../public/uploads")));
 
 // ============================================
 // API ROUTES
@@ -83,7 +83,7 @@ app.use("/api/media", uploadsRoute);
 app.use("/api/analytics", analyticsRoutes);
 app.use("/api/metrics", metricsRoute);
 app.use("/api/games", gameRoutes);
-app.use("/api/buy", buyTicketRoutes);
+// app.use("/api/buy", buyTicketRoutes);
 
 // ============================================
 // ERROR HANDLING

@@ -20,7 +20,7 @@ export const adminService = {
   },
 
   async getAllEvents(page = 1, limit = 20): Promise<PaginatedResponse<Event>> {
-    const response = await api.get("/admin/events", {
+    const response = await api.get("/events/all", {
       params: { page, limit },
     });
     return response.data;
@@ -35,7 +35,7 @@ export const adminService = {
     capacity: number;
     mediaIds: any[];
   }): Promise<ApiResponse<{ event: Event; productId: string }>> {
-    const response = await api.post("/admin/events", data);
+    const response = await api.post("/events/add", data);
     return response.data;
   },
 
@@ -65,7 +65,7 @@ export const adminService = {
       mediaIds: string[];
     }>,
   ): Promise<ApiResponse<{ event: Event }>> {
-    const response = await api.patch(`/admin/event/${id}`, data);
+    const response = await api.patch(`/events/patch/${id}`, data);
     return response.data;
   },
 
@@ -122,7 +122,7 @@ export const adminService = {
   },
 
   async deleteEvent(id: string): Promise<ApiResponse<{ event: Event }>> {
-    const response = await api.delete(`/admin/events/${id}`);
+    const response = await api.delete(`/events/del/${id}`);
     return response.data;
   },
 
@@ -358,22 +358,22 @@ export const gameService = {
   async createGame(
     data: CreateGame,
   ): Promise<ApiResponse<{ game: Game; productId: string }>> {
-    const response = await api.post("/admin/game", data);
+    const response = await api.post("/games/add", data);
     return response.data;
   },
   async updateGame(
     id: string,
     data: Partial<Game>,
   ): Promise<ApiResponse<Partial<Game>>> {
-    const response = await api.patch(`/admin/game/${id}`, data);
+    const response = await api.patch(`/games/patch/${id}`, data);
     return response.data;
   },
   async getAll(): Promise<ApiResponse<{ games: Game[] }>> {
-    const response = await api.get("/games");
+    const response = await api.get("/games/all");
     return response.data;
   },
   async getActiveGames(): Promise<ApiResponse<{ games: Game[] }>> {
-    const response = await api.get("/games/buy");
+    const response = await api.get("/games");
     return response.data;
   },
   async getGame(id: string): Promise<ApiResponse<{ game: Partial<Game> }>> {
@@ -381,7 +381,7 @@ export const gameService = {
     return response.data;
   },
   async deleteGame(id: string): Promise<ApiResponse> {
-    const response = await api.delete(`/admin/game/${id}`);
+    const response = await api.delete(`/games/del/${id}`);
     return response.data;
   },
 };

@@ -61,7 +61,7 @@ const CreateGameDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
     description: "",
     rules: "",
     status: "OPEN" as "OPEN" | "ON_MAINTENANCE" | "UPCOMING" | "CLOSED",
-    ticket_types: [] as CreateTicketTypeRequest[],
+    ticketTypes: [] as CreateTicketTypeRequest[],
     mediaFiles: [] as any[],
   });
 
@@ -151,11 +151,11 @@ const CreateGameDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
   const addCategory = () => {
     if (!newTicket.category || isNaN(newTicket.price))
       return alert("Please provide at least a category and price");
-    if (formData.ticket_types.some((tt) => tt.category === newTicket.category))
+    if (formData.ticketTypes.some((tt) => tt.category === newTicket.category))
       return alert("Category already exists.");
     setFormData((p) => ({
       ...p,
-      ticket_types: [...p.ticket_types, { ...newTicket }],
+      ticketTypes: [...p.ticketTypes, { ...newTicket }],
     }));
     setNewTicket({
       id: null,
@@ -191,7 +191,7 @@ const CreateGameDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
         description: "",
         rules: "",
         status: "OPEN",
-        ticket_types: [],
+        ticketTypes: [],
         mediaFiles: [],
       });
       onSuccess();
@@ -328,9 +328,9 @@ const CreateGameDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
                   isDark={d}
                 >
                   {/* Existing tickets */}
-                  {formData.ticket_types.length > 0 && (
+                  {formData.ticketTypes.length > 0 && (
                     <div className="space-y-2 mb-4">
-                      {formData.ticket_types.map((tt, index) => (
+                      {formData.ticketTypes.map((tt, index) => (
                         <div
                           key={index}
                           className={`flex items-center justify-between px-4 py-3 rounded-2xl border ${border} ${card}`}
@@ -343,7 +343,7 @@ const CreateGameDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
                             </span>
                             <div>
                               <p className={`text-xs ${muted}`}>
-                                {tt.price} ETB  {tt.maxQuantityPerBooking}
+                                {tt.price} ETB {tt.maxQuantityPerBooking}
                                 /booking
                               </p>
                             </div>
@@ -352,7 +352,7 @@ const CreateGameDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
                             onClick={() =>
                               setFormData((p) => ({
                                 ...p,
-                                ticket_types: p.ticket_types.filter(
+                                ticket_types: p.ticketTypes.filter(
                                   (_, i) => i !== index,
                                 ),
                               }))
@@ -391,7 +391,7 @@ const CreateGameDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
                             <option
                               key={cat}
                               value={cat.toUpperCase()}
-                              disabled={formData.ticket_types.some(
+                              disabled={formData.ticketTypes.some(
                                 (tt) => tt.category === cat.toUpperCase(),
                               )}
                             >
@@ -634,8 +634,8 @@ const CreateGameDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
 
             <div className="flex items-center gap-3">
               <span className={`text-xs ${muted}`}>
-                {formData.ticket_types.length} ticket type
-                {formData.ticket_types.length !== 1 ? "s" : ""} ·{" "}
+                {formData.ticketTypes.length} ticket type
+                {formData.ticketTypes.length !== 1 ? "s" : ""} ·{" "}
                 {formData.mediaFiles.length} file
                 {formData.mediaFiles.length !== 1 ? "s" : ""}
               </span>

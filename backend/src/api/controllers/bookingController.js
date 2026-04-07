@@ -8,6 +8,10 @@ const {
   bookingStatsService,
 } = require("../services/bookingService");
 const { EventService } = require("../services/eventService");
+const {
+  CreateBookingEventsReq,
+  CreateBookingGamesReq,
+} = require("../dtos/bookingDto");
 
 const bookingController = {
   /**
@@ -15,15 +19,8 @@ const bookingController = {
    */
   async createBookingEvent(req, res, next) {
     try {
-      const {
-        eventId,
-        items,
-        paymentMethod,
-        guestEmail,
-        guestName,
-        notes,
-        expires_at,
-      } = req.body;
+      const validatedBody = new CreateBookingEventsReq(req.body);
+      const { items, paymentMethod, eventId } = validatedBody;
       const userId = req.session?.user?.id || null;
 
       // Verify event exists and is active
@@ -95,9 +92,6 @@ const bookingController = {
         eventId,
         items: resolvedItems,
         paymentMethod,
-        guestEmail,
-        guestName,
-        notes,
         expires_at: expires,
       });
 
@@ -111,26 +105,16 @@ const bookingController = {
 
   async createBookingGames(req, res, next) {
     try {
-      const {
-        items, // [{ ticketTypeId, quantity }]
-        totalAmount,
-        paymentMethod,
-        guestEmail,
-        guestName,
-        notes,
-      } = req.body;
+      const validatedBody = new CreateBookingGamesReq(req.body);
+      const { items, paymentMethod } = validatedBody;
       const userId = req.session?.user?.id || null;
-      const expiresAt = new Date(); //leave it like this for now
+      const expiresAt = new Date();
 
       // 4️⃣ Call transactional booking service
       const booking = await Booking.bookGames({
         userId,
         items,
-        totalAmount,
         paymentMethod,
-        guestEmail,
-        guestName,
-        notes,
         expires_at: expiresAt,
       });
 
