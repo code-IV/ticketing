@@ -40,4 +40,19 @@ exports.bookingLimiter = {
     standardHeaders: true,
     legacyHeaders: false,
   }),
+
+  punch: rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 200,
+    message: "Too many requests. Please slow down.",
+    standardHeaders: true,
+    legacyHeaders: false,
+  }),
+  scan: rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 200,
+    message: "Too many requests. Please slow down.",
+    standardHeaders: true,
+    legacyHeaders: false,
+  }),
 };
