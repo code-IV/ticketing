@@ -20,7 +20,7 @@ export const adminService = {
   },
 
   async getAllEvents(page = 1, limit = 20): Promise<PaginatedResponse<Event>> {
-    const response = await api.get("/admin/events", {
+    const response = await api.get("/events/all", {
       params: { page, limit },
     });
     return response.data;
@@ -35,7 +35,7 @@ export const adminService = {
     capacity: number;
     mediaIds: any[];
   }): Promise<ApiResponse<{ event: Event; productId: string }>> {
-    const response = await api.post("/admin/events", data);
+    const response = await api.post("/events/add", data);
     return response.data;
   },
 
@@ -65,7 +65,7 @@ export const adminService = {
       mediaIds: string[];
     }>,
   ): Promise<ApiResponse<{ event: Event }>> {
-    const response = await api.patch(`/admin/event/${id}`, data);
+    const response = await api.patch(`/events/patch/${id}`, data);
     return response.data;
   },
 
@@ -122,7 +122,7 @@ export const adminService = {
   },
 
   async deleteEvent(id: string): Promise<ApiResponse<{ event: Event }>> {
-    const response = await api.delete(`/admin/events/${id}`);
+    const response = await api.delete(`/events/del/${id}`);
     return response.data;
   },
 

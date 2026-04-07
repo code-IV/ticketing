@@ -9,11 +9,6 @@ const {
   handleValidation,
 } = require("../middleware/validate");
 const {
-  createEventRules,
-  updateEventRules,
-  createEventWithTicketTypesRules,
-} = require("../middleware/validators/event.validator");
-const {
   createTicketTypeRules,
   updateTicketTypeRules,
 } = require("../middleware/validators/ticketType.validator");
@@ -26,37 +21,6 @@ router.use(isAuthenticated, isAdmin);
 // Dashboard
 router.get("/dashboard", adminController.getDashboard);
 
-// Event management
-router.get(
-  "/events",
-  paginationRules,
-  handleValidation,
-  EventController.getAllEvents,
-);
-router.post(
-  "/events",
-  createEventRules,
-  handleValidation,
-  EventController.createEvent,
-);
-router.patch(
-  "/event/:id",
-  uuidParamRule("id"),
-  handleValidation,
-  EventController.updateEvent,
-);
-router.patch(
-  "/events/status/:id",
-  uuidParamRule("id"),
-  handleValidation,
-  EventController.deactivateEvent,
-);
-router.delete(
-  "/events/:id",
-  uuidParamRule("id"),
-  handleValidation,
-  EventController.deleteEvent,
-);
 // Game management
 router.post("/game", handleValidation, GameController.createGame);
 router.patch(
