@@ -21,21 +21,6 @@ router.use(isAuthenticated, isAdmin);
 // Dashboard
 router.get("/dashboard", adminController.getDashboard);
 
-// Game management
-router.post("/game", handleValidation, GameController.createGame);
-router.patch(
-  "/game/:id",
-  uuidParamRule("id"),
-  handleValidation,
-  GameController.updateGame,
-);
-router.delete(
-  "/game/:id",
-  uuidParamRule("id"),
-  handleValidation,
-  GameController.deleteGameWithId,
-);
-
 // Ticket type management
 router.post(
   "/ticket-types",

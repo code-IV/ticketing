@@ -6,7 +6,7 @@ const UploadsService = require("./uploadsService");
 
 const GameService = {
   async create(gameData) {
-    const { name, description, rules, status, ticket_types, mediaIds } =
+    const { name, description, rules, status, ticketTypes, mediaIds } =
       gameData;
     const client = await getClient();
 
@@ -27,7 +27,7 @@ const GameService = {
         gameId: newGame.id,
       });
 
-      for (const type of ticket_types || []) {
+      for (const type of ticketTypes || []) {
         await TicketType.create({ ...type, productId }, client);
       }
 

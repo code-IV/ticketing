@@ -1,6 +1,7 @@
 const { Game } = require("../models/Games");
 const { GameService, GameStatsService } = require("../services/gameService");
 const { apiResponse } = require("../../utils/helpers");
+const { CreateGameReq, UpdateGameReq } = require("../dtos/gameDto");
 
 const GameController = {
   /**
@@ -8,16 +9,8 @@ const GameController = {
    */
   async createGame(req, res, next) {
     try {
-      const { name, description, rules, status, ticket_types, mediaIds } =
-        req.body;
-      const game = await GameService.create({
-        name,
-        description,
-        rules,
-        status,
-        ticket_types,
-        mediaIds,
-      });
+      const validatedReq = new CreateGameReq(req.body);
+      const game = await GameService.create(validatedReq);
       return apiResponse(res, 200, true, "Game created successfully", game);
     } catch (err) {
       next(err);
@@ -28,25 +21,9 @@ const GameController = {
    */
   async updateGame(req, res, next) {
     try {
+      const validatedReq = new UpdateGameReq(req.body);
       const { id } = req.params;
-      const {
-        productId,
-        name,
-        description,
-        rules,
-        status,
-        ticketTypes,
-        mediaIds,
-      } = req.body;
-      const game = await GameService.update(id, {
-        productId,
-        name,
-        description,
-        rules,
-        status,
-        ticketTypes,
-        mediaIds,
-      });
+      const game = await GameService.update(id, validatedReq);
       return apiResponse(res, 200, true, "Game updated successfully", { game });
     } catch (err) {
       next(err);

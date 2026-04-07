@@ -358,22 +358,22 @@ export const gameService = {
   async createGame(
     data: CreateGame,
   ): Promise<ApiResponse<{ game: Game; productId: string }>> {
-    const response = await api.post("/admin/game", data);
+    const response = await api.post("/games/add", data);
     return response.data;
   },
   async updateGame(
     id: string,
     data: Partial<Game>,
   ): Promise<ApiResponse<Partial<Game>>> {
-    const response = await api.patch(`/admin/game/${id}`, data);
+    const response = await api.patch(`/games/patch/${id}`, data);
     return response.data;
   },
   async getAll(): Promise<ApiResponse<{ games: Game[] }>> {
-    const response = await api.get("/games");
+    const response = await api.get("/games/all");
     return response.data;
   },
   async getActiveGames(): Promise<ApiResponse<{ games: Game[] }>> {
-    const response = await api.get("/games/buy");
+    const response = await api.get("/games");
     return response.data;
   },
   async getGame(id: string): Promise<ApiResponse<{ game: Partial<Game> }>> {
@@ -381,7 +381,7 @@ export const gameService = {
     return response.data;
   },
   async deleteGame(id: string): Promise<ApiResponse> {
-    const response = await api.delete(`/admin/game/${id}`);
+    const response = await api.delete(`/games/del/${id}`);
     return response.data;
   },
 };
