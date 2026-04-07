@@ -4,6 +4,34 @@ const { query: queryValidator } = require("express-validator");
 // BUY TICKET VALIDATORS
 // ============================================
 
+exports.ticketRules = {
+  punch: [
+    body("usage")
+      .notEmpty()
+      .withMessage("usage is required")
+      .isArray()
+      .withMessage("usage must be a valid object"),
+    body("usage.*.passId")
+      .notEmpty()
+      .withMessage("passId is required")
+      .isUUID()
+      .withMessage("passId must be a valid UUId"),
+    body("usage.*.quantity")
+      .notEmpty()
+      .withMessage("quantity is required")
+      .isInt({ min: 0 })
+      .withMessage("Token must be a valid int"),
+  ],
+  scan: [
+    queryValidator("token")
+      .notEmpty()
+      .withMessage("Token is required")
+      // We avoid .isUUID() because HMAC is a custom string format
+      .isString()
+      .withMessage("Token must be a valid string"),
+  ],
+};
+
 const purchaseTicketRules = [
   body("game_id").isUUID().withMessage("Valid game ID is required"),
   body("quantity")
@@ -14,14 +42,3 @@ const purchaseTicketRules = [
     .isUUID()
     .withMessage("Valid ticket type ID is required"),
 ];
-
-const scanTicketRules = [
-  queryValidator("token")
-    .notEmpty()
-    .withMessage("Token is required")
-    // We avoid .isUUID() because HMAC is a custom string format
-    .isString()
-    .withMessage("Token must be a valid string"),
-];
-
-module.exports = { purchaseTicketRules, scanTicketRules };

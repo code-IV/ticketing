@@ -1,5 +1,6 @@
 const TicketService = require("../services/ticketService");
 const { apiResponse } = require("../../utils/helpers");
+const { PunchTicetReq } = require("../dtos/bookingDto");
 
 const TicketController = {
   /**
@@ -153,7 +154,7 @@ const TicketController = {
    */
   async punchTicketPass(req, res, next) {
     try {
-      const usage = req.body;
+      const usage = new PunchTicetReq(req.body);
       if (!usage) {
         return apiResponse(
           res,
@@ -207,7 +208,7 @@ const TicketController = {
    */
   async validateTicket(req, res, next) {
     try {
-      const result = await ticketService.validate(req.params.code);
+      const result = await TicketService.validate(req.params.code);
 
       if (!result.valid) {
         return apiResponse(

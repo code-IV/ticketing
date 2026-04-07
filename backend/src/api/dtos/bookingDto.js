@@ -19,4 +19,17 @@ class CreateBookingGamesReq {
   }
 }
 
-module.exports = { CreateBookingEventsReq, CreateBookingGamesReq };
+class PunchTicetReq {
+  constructor(usage) {
+    this.usage = usage.map((item) => ({
+      passId: item.gameId,
+      quantity: item.quantity,
+    }));
+  }
+}
+
+module.exports = {
+  CreateBookingEventsReq,
+  CreateBookingGamesReq,
+  PunchTicetReq,
+};
