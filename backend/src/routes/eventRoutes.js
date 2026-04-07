@@ -8,6 +8,7 @@ const {
   uuidParamRule,
   paginationRules,
   handleValidation,
+  analyticsRules,
 } = require("../middleware/validate");
 
 // Public routes - no auth required
@@ -18,10 +19,17 @@ router.get(
   EventController.getActiveEvents,
 );
 
-router.get("/stats", EventStatsController.getEventStats);
+router.get(
+  "/stats",
+  analyticsRules,
+  handleValidation,
+  EventStatsController.getEventStats,
+);
 router.get(
   "/stats/:eventId",
   uuidParamRule("eventId"),
+  analyticsRules,
+  handleValidation,
   EventStatsController.getEventDashboard,
 );
 router.get(

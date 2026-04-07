@@ -37,6 +37,8 @@
 - [ ] **Endpoint:** `POST /api/games/create`
   - ✅ Change: Convert to **Atomic Transaction** (Multipart/Form-Data).
   - 🚫 Logic: Implement `JSON.parse` for the `game` metadata string.
+  - [x] remove routes/buyTicket
+  - [x] encapsulate handleValidation in validation rules
 - [ ] **Media Handling**
   - [x] Task: Generate Low-Res Image Placeholders (LQIP) on upload.
   - [x] Task: Implement WebP conversion for performance.

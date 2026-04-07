@@ -83,7 +83,7 @@ app.use("/api/media", uploadsRoute);
 app.use("/api/analytics", analyticsRoutes);
 app.use("/api/metrics", metricsRoute);
 app.use("/api/games", gameRoutes);
-app.use("/api/buy", buyTicketRoutes);
+// app.use("/api/buy", buyTicketRoutes);
 
 // ============================================
 // ERROR HANDLING

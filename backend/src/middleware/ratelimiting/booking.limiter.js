@@ -7,8 +7,6 @@ exports.bookingLimiter = {
     message: "Too many booking attempts. Please try again in 15 minutes.",
     standardHeaders: true,
     legacyHeaders: false,
-    // Key by User ID if logged in, otherwise IP
-    keyGenerator: (req) => (req.user ? req.user.id : req.ip),
   }),
 
   writeBookingLimit: rateLimit({
@@ -17,8 +15,6 @@ exports.bookingLimiter = {
     message: "Too many booking attempts. Please try again in 15 minutes.",
     standardHeaders: true,
     legacyHeaders: false,
-    // Key by User ID if logged in, otherwise IP
-    keyGenerator: (req) => (req.user ? req.user.id : req.ip),
   }),
 
   myBookingLimit: rateLimit({
@@ -27,8 +23,6 @@ exports.bookingLimiter = {
     message: "Too many requests to fetch history. Please slow down.",
     standardHeaders: true,
     legacyHeaders: false,
-    // Key by User ID if logged in, otherwise IP
-    keyGenerator: (req) => (req.user ? req.user.id : req.ip),
   }),
 
   getBookingLimit: rateLimit({
@@ -37,8 +31,6 @@ exports.bookingLimiter = {
     message: "Too many requests to fetch history. Please slow down.",
     standardHeaders: true,
     legacyHeaders: false,
-    // Key by User ID if logged in, otherwise IP
-    keyGenerator: (req) => (req.user ? req.user.id : req.ip),
   }),
 
   bookingStatsLimit: rateLimit({
@@ -47,7 +39,5 @@ exports.bookingLimiter = {
     message: "Too many requests to fetch history. Please slow down.",
     standardHeaders: true,
     legacyHeaders: false,
-    // Key by User ID if logged in, otherwise IP
-    keyGenerator: (req) => (req.user ? req.user.id : req.ip),
   }),
 };
