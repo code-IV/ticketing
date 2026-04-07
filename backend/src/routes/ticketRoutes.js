@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const ticketController = require("../api/controllers/ticketController");
+const TicketController = require("../api/controllers/ticketController");
 const { isAuthenticated, isAdmin, isStaff } = require("../middleware/auth");
 const {
   uuidParamRule,
@@ -19,7 +19,7 @@ router.post(
   isStaff,
   ticketRules.punch,
   handleValidation,
-  ticketController.punchTicketPass,
+  TicketController.punchTicketPass,
 );
 router.post(
   "/validate/:code",
@@ -28,7 +28,7 @@ router.post(
   isAdmin,
   stringParamRule("code"),
   handleValidation,
-  ticketController.validateTicket,
+  TicketController.validateTicket,
 );
 
 // Authenticated routes
@@ -36,7 +36,7 @@ router.get(
   "/my",
   bookingLimiter.getBookingLimit,
   isAuthenticated,
-  ticketController.getMyTickets,
+  TicketController.getMyTickets,
 );
 router.get(
   "/code/:code",
@@ -44,7 +44,7 @@ router.get(
   isAuthenticated,
   stringParamRule("code"),
   handleValidation,
-  ticketController.getTicketByCode,
+  TicketController.getTicketByCode,
 );
 router.get(
   "/game/:gameId",
@@ -52,7 +52,7 @@ router.get(
   isAuthenticated,
   uuidParamRule("gameId"),
   handleValidation,
-  ticketController.getGameTicketsDetails,
+  TicketController.getGameTicketsDetails,
 );
 // everyone can see but only admin and staff can edit
 router.get(
@@ -60,7 +60,7 @@ router.get(
   bookingLimiter.scan,
   ticketRules.scan,
   handleValidation,
-  ticketController.scanTicket,
+  TicketController.scanTicket,
 );
 
 router.get(
@@ -69,7 +69,7 @@ router.get(
   isAuthenticated,
   uuidParamRule("id"),
   handleValidation,
-  ticketController.getTicketById,
+  TicketController.getTicketById,
 );
 
 module.exports = router;
