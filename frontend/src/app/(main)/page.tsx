@@ -178,10 +178,10 @@ export default function Home() {
                 <motion.button
                   whileHover={{ scale: 1.05, rotate: -1 }}
                   whileTap={{ scale: 0.95 }}
-                  className={`flex items-center gap-3 border-2 font-bold text-base px-8 py-4 rounded-full transition-all duration-300 ${
+                  className={`flex items-center backdrop-blur-xl gap-3 border-2 font-bold text-base px-8 py-4 rounded-full transition-all duration-300 ${
                     isDarkTheme
                       ? "border-white/20 text-white hover:border-white/60 hover:bg-white/5"
-                      : "border-gray-300 text-gray-700 hover:border-gray-400 hover:bg-gray-50"
+                      : "border-gray-300 text-black hover:border-gray-400 hover:bg-gray-50"
                   }`}
                 >
                   <Play className="h-4 w-4 fill-current" />
@@ -525,48 +525,8 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── STATS ────────────────────────────────────────────────────────── */}
-      <section className={`py-24 px-6 sm:px-10 lg:px-16 backdrop-blur-sm ${
-  isDarkTheme ? "bg-[#0A0A0A]/80" : "bg-gray-100/80"
-}`}>
-        <div className="max-w-7xl mx-auto">
-          <div
-            className={`grid grid-cols-2 md:grid-cols-4 gap-px rounded-3xl overflow-hidden border ${
-              isDarkTheme
-                ? "bg-white/8 border-white/8"
-                : "bg-gray-200 border-gray-200"
-            }`}
-          >
-            {[
-              { num: "15+", label: "Thriller Rides" },
-              { num: "10k+", label: "Happy Visitors" },
-              { num: "100%", label: "Safe & Secure" },
-              { num: "4.9★", label: "User Rating" },
-            ].map((stat, i) => (
-              <motion.div
-                key={stat.label}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.1, duration: 0.6 }}
-                viewport={{ once: true }}
-                className={`py-12 px-8 text-center ${isDarkTheme ? "bg-[#0A0A0A]" : "bg-white"}`}
-              >
-                <p
-                  className="text-4xl md:text-5xl font-black text-[#FFD84D] mb-2"
-                  style={{ fontFamily: "var(--font-plus-jakarta-sans)" }}
-                >
-                  {stat.num}
-                </p>
-                <p
-                  className={`text-xs font-bold uppercase tracking-widest ${isDarkTheme ? "text-white/40" : "text-gray-500"}`}
-                >
-                  {stat.label}
-                </p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
+      
+        
 
       {/* ── CTA ──────────────────────────────────────────────────────────── */}
       <section className={`py-28 px-6 sm:px-10 lg:px-16 backdrop-blur-md ${
@@ -577,14 +537,14 @@ export default function Home() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.8 }}
-          className="max-w-6xl mx-auto relative overflow-hidden rounded-[2.5rem] bg-[#FFD84D] p-12 md:p-20 text-center"
+          className="max-w-3xl mx-auto relative overflow-hidden rounded-[2.5rem] bg-[#FFD84D] p-12 md:p-20 text-center"
         >
           {/* Background decoration */}
           <div className="absolute -top-24 -right-24 w-72 h-72 rounded-full bg-black/8" />
           <div className="absolute -bottom-16 -left-16 w-56 h-56 rounded-full bg-black/5" />
 
           <h2
-            className="text-5xl md:text-7xl font-black text-black mb-10 relative z-10 leading-tight"
+            className="text-3xl md:text-5xl font-black text-black mb-10 relative z-10 leading-tight"
             style={{ fontFamily: "var(--font-unbounded)" }}
           >
             Ready to skip

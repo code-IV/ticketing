@@ -3,6 +3,7 @@
 import { ReactNode } from "react";
 import { Navbar } from "./Navbar";
 import { Footer } from "./Footer";
+import { MobileBottomNav } from "./MobileBottomNav";
 import { usePathname } from "next/navigation";
 import { useTheme } from "@/contexts/ThemeContext";
 
@@ -24,10 +25,11 @@ export function MainLayout({ children, Nav }: MainLayoutProps) {
     >
       {/* Navbar is fixed, so no padding needed on home; add top padding elsewhere */}
       {!isAuthPage && <Navbar nav={Nav} />}
-      <main className={`flex-1 ${isHomePage || isAuthPage ? "" : "pt-16"}`}>
+      <main className={`flex-1 ${isHomePage || isAuthPage ? "" : "pt-16 lg:pt-16"} pb-16 md:pb-0`}>
         {children}
       </main>
       {!isAuthPage && <Footer />}
+      {!isAuthPage && <MobileBottomNav />}
     </div>
   );
 }

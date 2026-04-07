@@ -3,17 +3,7 @@ import Link from "next/link";
 import { motion, useScroll, useMotionValueEvent } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
-import {
-  LayoutDashboard,
-  BarChart3,
-  Menu,
-  X,
-  User,
-  LogOut,
-  Ticket,
-  Moon,
-  Sun,
-} from "lucide-react";
+import { User, LogOut, Moon, Sun } from "lucide-react";
 import { useMemo, useState } from "react";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
@@ -27,21 +17,27 @@ interface Nav {
 export function Navbar({ nav }: { nav: Nav[] }) {
   const { user, logout } = useAuth();
   const { isDarkTheme, toggleTheme } = useTheme();
-  const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const pathname = usePathname();
   const isHomePage = pathname === "/";
   const { scrollY } = useScroll();
 
+  const bottomNavItems = ["home", "events", "games", "buy tickets", "my bookings"];
+  
   const filteredNav = useMemo(() => {
     return nav.filter((item) => {
+      // Filter out bottom nav items when bottom nav is visible (mobile/tablet)
+      // Hide bottom nav items from top nav on screens where bottom nav exists
+      if (bottomNavItems.includes(item.name.toLowerCase())) {
+        return false; // Hide from top nav on mobile/tablet
+      }
       if (item.name === "admin" || item.href === "/admin") {
         // Use optional chaining and ensure permissions exists
         return user?.permissions?.includes("ADMIN");
       }
-      return true;
+      return true; // Show other items
     });
-  }, [user]);
+  }, [user, nav]);
 
   useMotionValueEvent(scrollY, "change", (y) => {
     setScrolled(y > 40);
@@ -62,7 +58,7 @@ export function Navbar({ nav }: { nav: Nav[] }) {
       ? isDarkTheme
         ? "bg-black/80 backdrop-blur-xl border-b border-white/10"
         : "bg-white/80 backdrop-blur-xl border-b border-gray-200/60"
-      : "bg-transparent border-b border-transparent"
+      : "bg-black/10 backdrop-blur-xs border-b border-white/5"
     : isDarkTheme
       ? "bg-[#0A0A0A]/95 backdrop-blur-xl border-b border-gray-700/60 shadow-sm"
       : "bg-white/95 backdrop-blur-xl border-b border-gray-200/60 shadow-sm";
@@ -123,6 +119,19 @@ export function Navbar({ nav }: { nav: Nav[] }) {
               ))}
             </div>
 
+            {/* Desktop Nav Links - Bottom nav items (only on large screens) */}
+            <div className="hidden md:flex items-center gap-8">
+              {nav.filter((item) => bottomNavItems.includes(item.name.toLowerCase())).map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`text-sm font-semibold transition-colors ${linkColor} ${pathname === item.href ? (isDarkTheme ? "text-[#FFD84D]" : "text-gray-900") : ""}`}
+                >
+                  {item.name}
+                </Link>
+              ))}
+            </div>
+
             {/* Desktop Auth */}
             <div className="hidden md:flex items-center gap-3">
               {/* Theme Toggle */}
@@ -138,9 +147,13 @@ export function Navbar({ nav }: { nav: Nav[] }) {
                 title="Toggle theme"
               >
                 {isDarkTheme ? (
-                  <Sun className="h-5 w-5" />
+                  <div className="flex items-center justify-center text-accent">
+                    <Sun className="h-5 w-5" />
+                  </div>
                 ) : (
-                  <Moon className="h-5 w-5" />
+                  <div className="flex items-center justify-center text-accent2">
+                    <Moon className="h-5 w-5" />
+                  </div>
                 )}
               </button>
 
@@ -172,7 +185,7 @@ export function Navbar({ nav }: { nav: Nav[] }) {
 
                   <button
                     onClick={handleLogout}
-                    className={`flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-full border transition-all ${
+                    className={` hidden flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-full border transition-all ${
                       isDarkTheme
                         ? "border-white/20 text-white/70 hover:bg-accent/50 hover:text-white hover:border-accent2"
                         : "border-gray-200 text-gray-600 hover:bg-accent2/50 hover:text-gray-900  hover:border-accent2"
@@ -204,138 +217,75 @@ export function Navbar({ nav }: { nav: Nav[] }) {
               )}
             </div>
 
-            {/* Mobile burger */}
-            <button
-              onClick={() => setMobileOpen(!mobileOpen)}
-              className={`md:hidden p-2 rounded-xl transition-colors ${isDarkTheme ? "hover:bg-white/10 text-white" : "hover:bg-gray-100 text-gray-800"}`}
-            >
-              {mobileOpen ? (
-                <X className="h-6 w-6" />
+            {/* Mobile Auth Section */}
+            <div className="md:hidden flex items-center gap-3">
+              {/* Mobile Theme Toggle */}
+              <button
+                onClick={toggleTheme}
+                className={`p-2 rounded-xl transition-all ${
+                  isDarkTheme
+                    ? "hover:bg-white/10 text-white"
+                    : "hover:bg-gray-100 text-gray-800"
+                }`}
+                title="Toggle theme"
+              >
+                {isDarkTheme ? (
+                  <div className="flex items-center justify-center text-accent2">
+                    <Sun className="h-5 w-5" />
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center text-accent2">
+                    <Moon className="h-5 w-5" />
+                  </div>
+                )}
+              </button>
+
+              {user ? (
+                <>
+                  <Link
+                    href="/profile"
+                    className={`flex items-center gap-2 text-sm font-semibold transition-colors ${linkColor}`}
+                  >
+                    <div
+                      className={`w-8 h-8 rounded-full flex items-center justify-center ${isDarkTheme ? "bg-white/15" : "bg-gray-100"}`}
+                    >
+                      <User
+                        className={`h-4 w-4 ${isDarkTheme ? "text-white" : "text-gray-700"}`}
+                      />
+                    </div>
+                    {user.first_name}
+                    {(user?.role === "ADMIN") && (
+                      <span className="text-[10px] bg-[#FFD84D] text-black px-2 py-0.5 rounded-full font-black uppercase">
+                        Admin
+                      </span>
+                    )}
+                  </Link>
+                </>
               ) : (
-                <Menu className="h-6 w-6" />
+                <>
+                  <Link href="/auth">
+                    <button
+                      className={`text-sm font-semibold px-5 py-2 rounded-full transition-all ${
+                        isDarkTheme
+                          ? "text-white/80 hover:text-white hover:bg-white/10"
+                          : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                      }`}
+                    >
+                      Login
+                    </button>
+                  </Link>
+                  <Link href="/auth">
+                    <button className="text-sm font-black px-6 py-2.5 rounded-full bg-accent text-black hover:bg-accent2 hover:scale-105 transition-all shadow-lg shadow-yellow-400/20">
+                      Sign Up
+                    </button>
+                  </Link>
+                </>
               )}
-            </button>
+            </div>
           </div>
         </div>
       </motion.nav>
 
-      {/* Mobile Menu */}
-      {mobileOpen && (
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -10 }}
-          transition={{ duration: 0.25 }}
-          className="fixed inset-x-0 top-16 z-40 md:hidden bg-black/95 backdrop-blur-xl border-b border-white/10"
-        >
-          <div className="px-6 py-8 space-y-6">
-            {/* Theme Toggle */}
-            <button
-              onClick={() => {
-                toggleTheme();
-                setMobileOpen(false);
-              }}
-              className={`flex items-center gap-3 font-semibold py-1 transition-colors text-lg ${
-                isDarkTheme 
-                  ? "text-white/80 hover:text-[#FFD84D]" 
-                  : scrolled
-                    ? "text-gray-600 hover:text-gray-900"
-                    : "text-white hover:text-[#FFD84D] shadow-black"
-              }`}
-            >
-              {isDarkTheme ? (
-                <>
-                  <Sun className="h-5 w-5" /> Light Theme
-                </>
-              ) : (
-                <>
-                  <Moon className="h-5 w-5" /> Dark Theme
-                </>
-              )}
-            </button>
-
-            {filteredNav.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={() => setMobileOpen(false)}
-                className={`block font-semibold py-1 transition-colors text-lg ${
-                  isDarkTheme 
-                    ? "text-white/80 hover:text-[#FFD84D]" 
-                    : scrolled
-                      ? "text-gray-600 hover:text-gray-900"
-                      : "text-white hover:text-[#FFD84D] shadow-black"
-                }`}
-              >
-                {item.name}
-              </Link>
-            ))}
-
-            <div className="pt-6 border-t border-white/10">
-              {user ? (
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
-                      <User className="h-5 w-5 text-white" />
-                    </div>
-                    <div>
-                      <p className={`font-bold ${
-                        isDarkTheme ? "text-white" : scrolled ? "text-gray-600" : "text-white shadow-black"
-                      }`}>
-                        {user.first_name} {user.last_name}
-                      </p>
-                      {(user?.role === "SUPERADMIN" && (
-                        <span className="text-[10px] bg-[#FFD84D] text-black px-2 py-0.5 rounded-full font-black uppercase">
-                          Super Admin
-                        </span>
-                      )) ||
-                        (user?.role === "ADMIN" && (
-                          <span className="text-[10px] bg-[#FFD84D] text-black px-2 py-0.5 rounded-full font-black uppercase">
-                            Admin
-                          </span>
-                        ))}
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => {
-                      handleLogout();
-                      setMobileOpen(false);
-                    }}
-                    className={`w-full flex items-center justify-center gap-2 border font-semibold py-3 rounded-2xl transition-colors ${
-                      isDarkTheme 
-                        ? "border-white/20 text-white/70 hover:bg-white/10" 
-                        : scrolled
-                          ? "border-gray-300/90 text-gray-600 hover:bg-gray-100/80"
-                          : "border-white/20 text-white hover:bg-white/10 shadow-black"
-                    }`}
-                  >
-                    <LogOut className="h-4 w-4" /> Logout
-                  </button>
-                </div>
-              ) : (
-                <div className="flex flex-col gap-3">
-                  <Link href="/auth" onClick={() => setMobileOpen(false)}>
-                    <button className={`w-full border font-semibold py-3 rounded-2xl transition-colors ${
-                      isDarkTheme 
-                        ? "border-white/20 text-white hover:bg-accent/80" 
-                        : scrolled
-                          ? "border-gray-300/60 text-gray-600 hover:bg-accent/80"
-                          : "border-white/20 text-white hover:bg-accent shadow-black"
-                    }`}>
-                      Login
-                    </button>
-                  </Link>
-                  <Link href="/auth" onClick={() => setMobileOpen(false)}>
-                    <button className="w-full bg-[#FFD84D] text-black font-black py-3 rounded-2xl hover:bg-white transition-colors">
-                      Sign Up
-                    </button>
-                  </Link>
-                </div>
-              )}
-            </div>
-          </div>
-        </motion.div>
-      )}
     </>
   );
 }
