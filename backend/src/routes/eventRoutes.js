@@ -11,11 +11,7 @@ const {
   handleValidation,
   analyticsRules,
 } = require("../middleware/validate");
-const {
-  createEventRules,
-  updateEventRules,
-  createEventWithTicketTypesRules,
-} = require("../middleware/validators/event.validator");
+const { eventRules } = require("../middleware/validators/event.validator");
 
 //===============
 // SECURE ROUTES
@@ -24,7 +20,7 @@ router.post(
   "/add",
   isAuthenticated,
   isAdmin,
-  createEventRules,
+  eventRules.create,
   handleValidation,
   EventController.createEvent,
 );
@@ -33,6 +29,7 @@ router.patch(
   isAuthenticated,
   isAdmin,
   uuidParamRule("id"),
+  eventRules.update,
   handleValidation,
   EventController.updateEvent,
 );

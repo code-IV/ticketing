@@ -1,3 +1,36 @@
+class CreateEventReq {
+  constructor(event) {
+    this.name = event.name;
+    this.description = event.description;
+    this.eventDate = event.eventDate;
+    this.startTime = event.startTime;
+    this.endTime = event.endTime;
+    this.capacity = event.capacity;
+    this.ticketTypes = (event.ticketTypes || []).map((type) => ({
+      price: type.price,
+      category: type.category,
+    }));
+    this.mediaIds = event.mediaIds || [];
+  }
+}
+
+class UpdateEventReq {
+  constructor(event) {
+    this.name = event.name;
+    this.description = event.description;
+    this.eventDate = event.eventDate;
+    this.startTime = event.startTime;
+    this.endTime = event.endTime;
+    this.capacity = event.capacity;
+    this.ticketTypes = (event.ticketTypes || []).map((type) => ({
+      id: type.id || null,
+      price: type.price,
+      category: type.category,
+    }));
+    this.mediaIds = event.mediaIds || [];
+  }
+}
+
 class EventRes {
   constructor(event) {
     this.id = event.id;
@@ -16,4 +49,4 @@ class EventRes {
   }
 }
 
-module.exports = { EventRes };
+module.exports = { CreateEventReq, UpdateEventReq, EventRes };
