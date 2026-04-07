@@ -1,6 +1,14 @@
-const TicketType = require("../models/TicketType");
+class CreateBookingEventsReq {
+  constructor(data) {
+    ((this.eventId = data.eventId), (this.paymentMethod = data.paymentMethod));
+    this.items = data.items.map((item) => ({
+      ticketTypeId: item.ticketTypeId,
+      quantity: item.quantity,
+    }));
+  }
+}
 
-class createBookingGamesReq {
+class CreateBookingGamesReq {
   constructor(data) {
     this.paymentMethod = data.paymentMethod;
     this.items = data.items.map((item) => ({
@@ -11,4 +19,4 @@ class createBookingGamesReq {
   }
 }
 
-module.exports = { createBookingGamesReq };
+module.exports = { CreateBookingEventsReq, CreateBookingGamesReq };

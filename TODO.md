@@ -16,6 +16,7 @@
   - [x] Add 'X' (Close) button to the Signup Page.
   - [x] **Mandatory Signup:** Enforce signup requirement for discount eligibility.
 - [ ] **Features**
+  - [x] after booking qrcode and some details of entitlement should be displayed rightaway and not ask for to see more details
   - [x] Implement **Media Gallery View** for asset selection (vs. direct download).
   - [x] Integrated **Discount UI** logic (Percentage, Tiered, Early Bird, Member, and Group).
   - [x] Discount UI only.

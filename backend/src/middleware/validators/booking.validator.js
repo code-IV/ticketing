@@ -4,7 +4,10 @@ const { body } = require("../validate");
 // ============================================
 exports.bookingValidator = {
   createEventBookingRules: [
-    body("eventId").isUUID().withMessage("Valid event ID is required"),
+    body("eventId")
+      .notEmpty()
+      .isUUID()
+      .withMessage("Valid event ID is required"),
     body("items")
       .isArray({ min: 1 })
       .withMessage("At least one ticket item is required"),
@@ -19,12 +22,6 @@ exports.bookingValidator = {
       .withMessage(
         "Payment method must be one of: credit_card, debit_card, telebirr, cash",
       ),
-    body("guestEmail")
-      .optional()
-      .isEmail()
-      .withMessage("Valid guest email required"),
-    body("guestName").optional().trim().isLength({ max: 200 }),
-    body("notes").optional().trim(),
   ],
 
   createGameBookingRules: [
