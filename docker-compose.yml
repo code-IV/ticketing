@@ -1,0 +1,80 @@
+services:
+  db:
+    image: supabase/postgres:15.1.0.147
+    restart: unless-stopped
+    volumes:
+      - ./supabase/volumes/db:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    # internal only; no explicit ports exposed
+
+  supabase-storage:
+    image: supabase/storage-api:v1.25.7
+    restart: unless-stopped
+    volumes:
+      - ./supabase/volumes/storage:/var/lib/storage
+    environment:
+      STORAGE_DB_HOST: db
+      STORAGE_DB_PORT: "5432"
+      STORAGE_DB_USER: ${POSTGRES_USER}
+      STORAGE_DB_PASSWORD: ${POSTGRES_PASSWORD}
+      STORAGE_DB_NAME: ${POSTGRES_DB}
+    ports:
+      - "8000:8000"
+
+  # supabase-kong:
+  #   image: kong:2.8.1-alpine
+  #   restart: unless-stopped
+  #   depends_on:
+  #     - db
+  #   volumes:
+  #     - ./supabase/volumes/kong:/var/lib/kong
+  #     - ./files/kong.yml:/home/kong/kong.yml:ro
+  #   environment:
+  #     KONG_DATABASE: "postgres"
+  #     KONG_PG_HOST: db
+  #     KONG_PG_DATABASE: ${POSTGRES_DB}
+  #     KONG_PG_USER: ${POSTGRES_USER}
+  #     KONG_PG_PASSWORD: ${POSTGRES_PASSWORD}
+  #     KONG_DECLARATIVE_CONFIG: /home/kong/kong.yml
+  #     KONG_PROXY_ACCESS_LOG: /dev/stdout
+  #     KONG_ADMIN_ACCESS_LOG: /dev/stdout
+  #     KONG_PROXY_ERROR_LOG: /dev/stderr
+  #     KONG_ADMIN_ERROR_LOG: /dev/stderr
+  #     KONG_ADMIN_LISTEN: "127.0.0.1:8001"
+  #     KONG_PROXY_LISTEN: "0.0.0.0:8000"
+  #   ports:
+  #     - "8000:8000" # API
+
+  # supabase-auth:
+  #   image: supabase/gotrue:v2.120.0
+  #   restart: unless-stopped
+  #   depends_on:
+  #     - supabase-kong
+  #   environment:
+  #     GOTRUE_API_HOST: "0.0.0.0"
+  #     GOTRUE_API_PORT: "9999"
+  #     GOTRUE_DB_DRIVER: "postgres"
+  #     GOTRUE_DB_DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+  #     GOTRUE_JWT_SECRET: ${JWT_SECRET}
+  #     GOTRUE_SITE_URL: "http://localhost:3000"
+  #   ports:
+  #     - "9999:9999"
+
+  # supabase-realtime:
+  #   image: supabase/realtime:v2.13.0
+  #   restart: unless-stopped
+  #   depends_on:
+  #     - supabase-kong
+  #   environment:
+  #     DB_HOST: db
+  #     DB_USER: ${POSTGRES_USER}
+  #     DB_PASSWORD: ${POSTGRES_PASSWORD}
+  #     DB_NAME: ${POSTGRES_DB}
+  #     DB_PORT: "5432"
+  #     API_JWT_SECRET: ${JWT_SECRET}
+  #     PORT: "4000"
+  #   ports:
+  #     - "4000:4000"

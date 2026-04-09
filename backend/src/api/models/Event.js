@@ -58,11 +58,11 @@ const Event = {
             JSON_BUILD_OBJECT(
               'id', m.id,
               'name', m.name,
-              'url', '${BACKEND_URL}' || m.url,
+              'url', m.url,
               'type', m.type,
               'label', m.label,
               'thumbnailUrl', CASE 
-                                WHEN m.thumbnail_url IS NOT NULL THEN '${BACKEND_URL}' || m.thumbnail_url 
+                                WHEN m.thumbnail_url IS NOT NULL THEN m.thumbnail_url 
                                 ELSE NULL 
                               END,
               'sort_order', pm.sort_order
@@ -99,11 +99,11 @@ const Event = {
       COALESCE(
         JSON_AGG(
           JSON_BUILD_OBJECT(
-            'url', '${BACKEND_URL}' || m.url, -- Concatenate URL here
+            'url', m.url, -- Concatenate URL here
             'type', m.type,
               'label', m.label,
               'thumbnailUrl', CASE 
-                                WHEN m.thumbnail_url IS NOT NULL THEN '${BACKEND_URL}' || m.thumbnail_url 
+                                WHEN m.thumbnail_url IS NOT NULL THEN m.thumbnail_url 
                                 ELSE NULL 
                               END,
             'name', m.name
@@ -149,11 +149,11 @@ const Event = {
         SELECT COALESCE(
           json_agg(
             json_build_object(
-              'url', '${BACKEND_URL}' || m.url,
+              'url', m.url,
               'type', m.type,
               'label', m.label,
               'thumbnailUrl', CASE 
-                                WHEN m.thumbnail_url IS NOT NULL THEN '${BACKEND_URL}' || m.thumbnail_url 
+                                WHEN m.thumbnail_url IS NOT NULL THEN m.thumbnail_url 
                                 ELSE NULL 
                               END,
               'name', m.name
