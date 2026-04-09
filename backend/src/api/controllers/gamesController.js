@@ -10,14 +10,7 @@ const GameController = {
       const { game, sessionId } = req.body;
       const { name, description, rules, status, ticketTypes } = game;
 
-      const gameRes = await GameService.create({
-        name,
-        description,
-        rules,
-        status,
-        ticketTypes,
-        sessionId,
-      });
+      const gameRes = await GameService.create(game, sessionId);
 
       return apiResponse(res, 200, true, "Game created successfully", gameRes);
     } catch (err) {
@@ -30,25 +23,11 @@ const GameController = {
   async updateGame(req, res, next) {
     try {
       const { id } = req.params;
-      const {
-        productId,
-        name,
-        description,
-        rules,
-        status,
-        ticketTypes,
-        mediaIds,
-      } = req.body;
-      const game = await GameService.update(id, {
-        productId,
-        name,
-        description,
-        rules,
-        status,
-        ticketTypes,
-        mediaIds,
+      const { game, sessionId } = req.body;
+      const result = await GameService.update(id, game, sessionId);
+      return apiResponse(res, 200, true, "Game updated successfully", {
+        result,
       });
-      return apiResponse(res, 200, true, "Game updated successfully", { game });
     } catch (err) {
       next(err);
     }

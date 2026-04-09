@@ -366,7 +366,10 @@ export const gameService = {
   },
   async updateGame(
     id: string,
-    data: Partial<Game>,
+    data: {
+      game: Partial<Game>;
+      sessionId: string | null;
+    },
   ): Promise<ApiResponse<Partial<Game>>> {
     const response = await api.patch(`/admin/game/${id}`, data);
     return response.data;
