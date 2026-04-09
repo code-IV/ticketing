@@ -45,6 +45,7 @@ const EventController = {
     try {
       const { id } = req.params;
       const { event, sessionId } = req.body;
+      console.log(event);
 
       const existing = await Event.findById(id);
       if (!existing) {

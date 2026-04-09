@@ -74,7 +74,7 @@ const EventService = {
 
       for (const file of files || []) {
         await Media.createMedia(file, client);
-        await Media.linkProductMedia(productId, file.id, client);
+        await Media.linkProductMedia(eventData.productId, file.id, client);
       }
 
       if (sessionId) {
