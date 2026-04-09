@@ -133,6 +133,17 @@ exports.up = async function (knex) {
     table.timestamp("last_used_at").nullable();
     table.index("ticket_id", "idx_ticket_products_ticket_id");
   });
+
+  await knex.schema.createTable("upload_sessions", (table) => {
+    table.uuid("id").primary().defaultTo(knex.raw("gen_random_uuid()"));
+    table.timestamp("expires_at").notNullable();
+    table.jsonb("metadata").notNullable();
+    table.jsonb("product_data").nullable();
+    table.boolean("confirmed").defaultTo(false);
+    table.timestamp("created_at").defaultTo(knex.fn.now());
+
+    table.index("expires_at", "idx_upload_sessions_expiry");
+  });
 };
 
 /**
@@ -141,6 +152,7 @@ exports.up = async function (knex) {
  */
 exports.down = async function (knex) {
   // Drop tables in REVERSE order of creation to respect Foreign Keys
+  await knex.schema.dropTableIfExists("upload_sessions");
   await knex.schema.dropTableIfExists("ticket_products");
   await knex.schema.dropTableIfExists("tickets");
   await knex.schema.dropTableIfExists("payments");
