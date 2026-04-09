@@ -30,7 +30,7 @@ router.get(
 );
 router.post(
   "/events",
-  createEventRules,
+  // createEventRules,
   handleValidation,
   EventController.createEvent,
 );

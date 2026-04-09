@@ -25,9 +25,13 @@ const EventController = {
    */
   async createEvent(req, res, next) {
     try {
-      const event = { ...req.body, createdBy: req.session.user.id };
+      const { event, sessionId } = req.body;
+      const userId = req.session.user.id;
 
-      const result = await EventService.createEvent(event);
+      const result = await EventService.createEvent(
+        { ...event, userId },
+        sessionId,
+      );
       return apiResponse(res, 201, true, "Event created successfully.", result);
     } catch (err) {
       next(err);
@@ -102,17 +106,18 @@ const EventController = {
    */
   async updateEvent(req, res, next) {
     try {
-      const eventReq = req.body;
+      const { id } = req.params;
+      const { event, sessionId } = req.body;
 
-      const existing = await Event.findById(req.params.id);
+      const existing = await Event.findById(id);
       if (!existing) {
         return apiResponse(res, 404, false, "Event not found.");
       }
 
-      const event = await EventService.updateEvent(req.params.id, eventReq);
+      const result = await EventService.updateEvent(id, event, sessionId);
 
       return apiResponse(res, 200, true, "Event updated successfully.", {
-        event,
+        result,
       });
     } catch (err) {
       next(err);

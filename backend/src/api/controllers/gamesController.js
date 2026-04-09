@@ -8,7 +8,6 @@ const GameController = {
   async createGame(req, res, next) {
     try {
       const { game, sessionId } = req.body;
-      const { name, description, rules, status, ticketTypes } = game;
 
       const gameRes = await GameService.create(game, sessionId);
 

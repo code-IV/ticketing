@@ -27,13 +27,15 @@ export const adminService = {
   },
 
   async createEvent(data: {
-    name: string;
-    description?: string;
-    eventDate: string;
-    startTime: string;
-    endTime: string;
-    capacity: number;
-    mediaIds: any[];
+    event: {
+      name: string;
+      description?: string;
+      eventDate: string;
+      startTime: string;
+      endTime: string;
+      capacity: number;
+    };
+    sessionId: string | null;
   }): Promise<ApiResponse<{ event: Event; productId: string }>> {
     const response = await api.post("/admin/events", data);
     return response.data;
@@ -62,16 +64,18 @@ export const adminService = {
 
   async updateEvent(
     id: string,
-    data: Partial<{
-      name: string;
-      description: string;
-      eventDate: string;
-      startTime: string;
-      endTime: string;
-      capacity: number;
-      isActive: boolean;
-      mediaIds: string[];
-    }>,
+    data: {
+      event: Partial<{
+        name: string;
+        description: string;
+        eventDate: string;
+        startTime: string;
+        endTime: string;
+        capacity: number;
+        isActive: boolean;
+      }>;
+      sessionId: string | null;
+    },
   ): Promise<ApiResponse<{ event: Event }>> {
     const response = await api.patch(`/admin/event/${id}`, data);
     return response.data;
