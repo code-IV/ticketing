@@ -384,7 +384,7 @@ export const gameService = {
       preSignedUrls: string[];
     }>
   > {
-    const response = await api.post("/game/add", data);
+    const response = await api.post("/games/add", data);
     return response.data;
   },
   async updateGame(

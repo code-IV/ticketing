@@ -3,7 +3,7 @@ const { body } = require("../validate");
 exports.gameRules = {
   create: [
     body("game").isObject().withMessage("Gamet data must be an object"),
-    body("name")
+    body("game.name")
       .trim()
       .notEmpty()
       .withMessage("Game name is required")
@@ -29,7 +29,10 @@ exports.gameRules = {
       .withMessage(
         "Category must be one of: ADULT, CHILD, STUDENT, SENIOR, GROUP",
       ),
-    body("sessionId").isUUID().withMessage("Invalid session format"),
+    body("sessionId")
+      .optional({ nullable: true })
+      .isUUID()
+      .withMessage("Invalid session format"),
   ],
 
   update: [
@@ -63,6 +66,9 @@ exports.gameRules = {
       .withMessage(
         "Category must be one of: ADULT, CHILD, STUDENT, SENIOR, GROUP",
       ),
-    body("sessionId").isUUID().withMessage("Invalid session format"),
+    body("sessionId")
+      .optional({ nullable: true })
+      .isUUID()
+      .withMessage("Invalid session format"),
   ],
 };

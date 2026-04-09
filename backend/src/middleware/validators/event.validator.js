@@ -42,7 +42,10 @@ exports.eventRules = {
       .withMessage(
         "Category must be one of: ADULT, CHILD, STUDENT, SENIOR, GROUP",
       ),
-    body("sessionId").isUUID().withMessage("Invalid session format"),
+    body("sessionId")
+      .optional({ nullable: true })
+      .isUUID()
+      .withMessage("Invalid session format"),
   ],
 
   update: [
@@ -85,6 +88,9 @@ exports.eventRules = {
       .withMessage(
         "Category must be one of: ADULT, CHILD, STUDENT, SENIOR, GROUP",
       ),
-    body("sessionId").isUUID().withMessage("Invalid session format"),
+    body("sessionId")
+      .optional({ nullable: true })
+      .isUUID()
+      .withMessage("Invalid session format"),
   ],
 };

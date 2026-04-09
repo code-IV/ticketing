@@ -16,6 +16,7 @@ class CreateEventReq {
 
 class UpdateEventReq {
   constructor(event) {
+    this.productId = event.productId;
     this.name = event.name;
     this.description = event.description;
     this.eventDate = event.eventDate;

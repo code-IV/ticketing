@@ -25,7 +25,8 @@ const EventController = {
    */
   async createEvent(req, res, next) {
     try {
-      const { event, sessionId } = req.body;
+      const event = new CreateEventReq(req.body.event);
+      const sessionId = req.body.sessionId;
       const userId = req.session.user.id;
 
       const result = await EventService.createEvent(
@@ -44,8 +45,8 @@ const EventController = {
   async updateEvent(req, res, next) {
     try {
       const { id } = req.params;
-      const { event, sessionId } = req.body;
-      console.log(event);
+      const event = new UpdateEventReq(req.body.event);
+      const sessionId = req.body.sessionId;
 
       const existing = await Event.findById(id);
       if (!existing) {

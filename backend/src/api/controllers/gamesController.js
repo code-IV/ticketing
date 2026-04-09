@@ -8,7 +8,8 @@ const GameController = {
    */
   async createGame(req, res, next) {
     try {
-      const { game, sessionId } = req.body;
+      const game = new CreateGameReq(req.body.game);
+      const sessionId = req.body.sessionId;
 
       const gameRes = await GameService.create(game, sessionId);
 
@@ -22,9 +23,9 @@ const GameController = {
    */
   async updateGame(req, res, next) {
     try {
-      const validatedReq = new UpdateGameReq(req.body);
       const { id } = req.params;
-      const { game, sessionId } = req.body;
+      const game = new UpdateGameReq(req.body.game);
+      const sessionId = req.body.sessionId;
       const result = await GameService.update(id, game, sessionId);
       return apiResponse(res, 200, true, "Game updated successfully", {
         result,

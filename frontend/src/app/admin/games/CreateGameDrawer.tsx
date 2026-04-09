@@ -61,7 +61,7 @@ const CreateGameDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
     description: "",
     rules: "",
     status: "OPEN" as "OPEN" | "ON_MAINTENANCE" | "UPCOMING" | "CLOSED",
-    ticket_types: [] as CreateTicketTypeRequest[],
+    ticketTypes: [] as CreateTicketTypeRequest[],
     mediaFiles: [] as {
       file: File;
       thumbnail: File | null;
@@ -181,7 +181,7 @@ const CreateGameDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
       description: formData.description,
       rules: formData.rules,
       status: formData.status,
-      ticketTypes: formData.ticket_types.map((tt) => ({
+      ticketTypes: formData.ticketTypes.map((tt) => ({
         ...tt,
         category: tt.category.toUpperCase(), // Fix: Convert to uppercase for database enum
         price: parseFloat(tt.price.toString()),
