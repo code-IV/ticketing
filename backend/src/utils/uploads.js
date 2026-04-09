@@ -1,20 +1,12 @@
 const { createClient } = require("@supabase/supabase-js");
+const { v4: uuidv4 } = require("uuid");
 const path = require("path");
 const fs = require("fs");
 
-// Only initialize Supabase if credentials are provided
-let supabase = null;
-if (
-  process.env.SUPABASE_URL &&
-  process.env.SUPABASE_ANON_KEY &&
-  process.env.SUPABASE_URL !== "anything" &&
-  process.env.SUPABASE_ANON_KEY !== "anything"
-) {
-  supabase = createClient(
-    process.env.SUPABASE_URL,
-    process.env.SUPABASE_ANON_KEY,
-  );
-}
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY,
+);
 
 exports.uploadToTemp = async (file) => {
   if (!file.filename) {
@@ -114,4 +106,112 @@ exports.uploadToSupabase = async (file) => {
       path: data.path,
     }),
   };
+};
+
+exports.supaseSignedUrl = async (files) => {
+  const uploads = [];
+  const sessId = uuidv4();
+
+  for (const file of files || []) {
+    const mediaId = uuidv4();
+
+    const ext = file.filename.split(".").pop();
+    const type = file.type.startsWith("image") ? "images" : "videos";
+
+    const filePath = `uploads/${sessId}/${type}/${mediaId}.${ext}`;
+
+    // 🔹 main file signed URL
+    const { data, error } = await supabase.storage
+      .from("media")
+      .createSignedUploadUrl(filePath);
+
+    if (error) throw error;
+
+    let thumbnail = null;
+
+    // 🔹 thumbnail handling
+    if (file.thumbnail) {
+      const thumbExt = file.thumbnail.filename?.split(".").pop() || "jpg";
+
+      const thumbPath = `uploads/${sessId}/thumbnails/${mediaId}.${thumbExt}`;
+
+      const { data: thumbData, error: thumbError } = await supabase.storage
+        .from("media")
+        .createSignedUploadUrl(thumbPath);
+
+      if (thumbError) throw thumbError;
+
+      thumbnail = {
+        path: thumbPath,
+        url: `${process.env.SUPABASE_URL}/storage/v1/object/public/media/${thumbPath}`,
+        signedUrl: thumbData.signedUrl,
+      };
+    }
+
+    uploads.push({
+      mediaId,
+      clientId: file.clientId,
+      name: file.filename,
+      label: file.label,
+      type,
+      file: {
+        path: filePath,
+        url: `${process.env.SUPABASE_URL}/storage/v1/object/public/media/${filePath}`,
+        signedUrl: data.signedUrl,
+      },
+      thumbnail,
+    });
+  }
+  if (!uploads.length) return null;
+  return { uploads, sessId };
+};
+
+exports.checkUploadBySid = async (sessionId, metadata) => {
+  if (!Array.isArray(metadata) || metadata.length === 0)
+    throw new Error("No metadata provided");
+
+  // 2️⃣ Validate that each file and thumbnail exists
+  for (const meta of metadata) {
+    // Use .exists() to check the specific path
+    const { data: exists, error } = await supabase.storage
+      .from("media")
+      .exists(meta.file.path);
+
+    console.log("data", exists);
+
+    if (error) {
+      console.error(`Error checking path ${meta.file.path}:`, error);
+      continue;
+    }
+
+    if (!exists) {
+      throw new Error(`Missing uploaded file: ${meta.file.path}`);
+    }
+
+    if (meta.thumbnail?.path) {
+      const { data: exists, error } = await supabase.storage
+        .from("media")
+        .exists(meta.thumbnail.path);
+
+      if (error) {
+        console.error(`Error checking path ${meta.thumbnail.path}:`, error);
+        continue;
+      }
+
+      if (!exists) {
+        throw new Error(`Missing uploaded file: ${meta.thumbnail.path}`);
+      }
+    }
+  }
+
+  // 3️⃣ If all files exist, return the original metadata
+  return metadata.map((m) => ({
+    id: m.mediaId,
+    name: m.name,
+    path: m.file.path,
+    url: m.file.url,
+    type: m.type,
+    label: m.label,
+    thumbnailUrl: m.thumbnail?.url || null,
+  }));
 };

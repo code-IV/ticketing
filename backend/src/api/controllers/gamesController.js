@@ -1,4 +1,3 @@
-const { Game } = require("../models/Games");
 const { GameService, GameStatsService } = require("../services/gameService");
 const { apiResponse } = require("../../utils/helpers");
 const { CreateGameReq, UpdateGameReq } = require("../dtos/gameDto");
@@ -9,9 +8,11 @@ const GameController = {
    */
   async createGame(req, res, next) {
     try {
-      const validatedReq = new CreateGameReq(req.body);
-      const game = await GameService.create(validatedReq);
-      return apiResponse(res, 200, true, "Game created successfully", game);
+      const { game, sessionId } = req.body;
+
+      const gameRes = await GameService.create(game, sessionId);
+
+      return apiResponse(res, 200, true, "Game created successfully", gameRes);
     } catch (err) {
       next(err);
     }
@@ -23,8 +24,11 @@ const GameController = {
     try {
       const validatedReq = new UpdateGameReq(req.body);
       const { id } = req.params;
-      const game = await GameService.update(id, validatedReq);
-      return apiResponse(res, 200, true, "Game updated successfully", { game });
+      const { game, sessionId } = req.body;
+      const result = await GameService.update(id, game, sessionId);
+      return apiResponse(res, 200, true, "Game updated successfully", {
+        result,
+      });
     } catch (err) {
       next(err);
     }

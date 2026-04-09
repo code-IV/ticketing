@@ -778,24 +778,70 @@ export default function EditGamePage() {
 
     try {
       // Upload new media files if any (if service method exists)
-      let media;
-      if (formData.mediaFiles.length > 0) {
-        const data = new FormData();
-        formData.mediaFiles.forEach((m: any, index: number) => {
-          data.append("mediaFiles", m.file);
-          data.append("label", m.label);
-          if (m.thumbnail) {
-            data.append(`thumbnail_${index}`, m.thumbnail);
-          }
+      let sid;
+      const fileMeta = formData.mediaFiles.map((m: any) => ({
+        clientId: crypto.randomUUID(),
+        filename: m.file.name,
+        type: m.file.type,
+        label: m.label,
+        thumbnail: m.thumbnail
+          ? {
+              filename: m.thumbnail?.name,
+              type: m.thumbnail?.type,
+            }
+          : null,
+      }));
+
+      if (fileMeta.length) {
+        const response = await adminService.createSessions(fileMeta);
+        if (!response.data) {
+          throw new Error("Failed to create upload sessions");
+        }
+
+        const { uploads, sessionId } = response.data;
+        sid = sessionId;
+
+        const fileMap = new Map();
+        formData.mediaFiles.forEach((m: any, i: number) => {
+          fileMap.set(fileMeta[i].clientId, m);
         });
-        // Assuming adminService.uploadProductMedia exists, otherwise skip or handle
-        // For now, keep the original approach: comment out if method not available
-        media = await adminService.uploadProductMedia(data);
+
+        const results = await Promise.all(
+          uploads.map(async (upload: any) => {
+            const media = fileMap.get(upload.clientId);
+
+            if (!media) throw new Error("File mapping failed");
+
+            const res = await fetch(upload.file.signedUrl, {
+              method: "PUT",
+              body: media.file,
+              headers: { "Content-Type": media.file.type },
+            });
+            if (!res.ok) throw new Error("Upload failed");
+
+            // thumbnail
+            if (upload.thumbnail && media.thumbnail) {
+              const res = await fetch(upload.thumbnail.signedUrl, {
+                method: "PUT",
+                body: media.thumbnail,
+                headers: { "Content-Type": media.thumbnail.type },
+              });
+              if (!res.ok) throw new Error("Upload failed");
+            }
+          }),
+        );
+
+        // const failed = results.some((r) => r.status === "rejected");
+
+        // if (failed) {
+        //   // await adminService.cancelSession(sessionId);
+        //   throw new Error("Upload failed");
+        // }
       }
 
       await gameService.updateGame(gameId, {
-        ...payload,
-        mediaIds: media?.data?.mediaIds || [],
+        game: payload,
+        sessionId: sid || null,
       });
 
       setOriginalData(formData);

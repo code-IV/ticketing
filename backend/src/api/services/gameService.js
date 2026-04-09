@@ -1,18 +1,21 @@
 const { getClient } = require("../../config/db");
+const { checkUploadBySid } = require("../../utils/uploads");
 const { GameRes } = require("../dtos/gameDto");
 const { Game, GameStats } = require("../models/Games");
 const TicketType = require("../models/TicketType");
+const { Sessions, Media } = require("../models/uploads");
 const UploadsService = require("./uploadsService");
 
 const GameService = {
-  async create(gameData) {
-    const { name, description, rules, status, ticketTypes, mediaIds } =
-      gameData;
+  async create(gameData, sessionId) {
+    const { name, description, rules, status, ticketTypes } = gameData;
     const client = await getClient();
 
     try {
+      const files = sessionId
+        ? await UploadsService.validateSession(sessionId)
+        : [];
       await client.query("BEGIN");
-
       // 1. Create the base Game
       const newGame = await Game.createGame(client, {
         name,
@@ -31,8 +34,13 @@ const GameService = {
         await TicketType.create({ ...type, productId }, client);
       }
 
-      if (mediaIds?.length) {
-        await UploadsService.addMediaToProduct(productId, mediaIds, client);
+      for (const file of files || []) {
+        await Media.createMedia(file, client);
+        await Media.linkProductMedia(productId, file.id, client);
+      }
+
+      if (sessionId) {
+        await Sessions.updateSession(sessionId, client);
       }
 
       await client.query("COMMIT");
@@ -46,19 +54,15 @@ const GameService = {
     }
   },
 
-  async update(id, gameData) {
-    const {
-      productId,
-      name,
-      description,
-      rules,
-      status,
-      ticketTypes,
-      mediaIds,
-    } = gameData;
+  async update(id, gameData, sessionId) {
+    const { productId, name, description, rules, status, ticketTypes } =
+      gameData;
     const client = await getClient();
 
     try {
+      const files = sessionId
+        ? await UploadsService.validateSession(sessionId)
+        : [];
       await client.query("BEGIN");
 
       // Task 1: Update the game itself
@@ -74,10 +78,14 @@ const GameService = {
         await TicketType.update({ ...type, productId }, client);
       }
 
-      if (mediaIds?.length) {
-        await UploadsService.addMediaToProduct(productId, mediaIds, client);
+      for (const file of files || []) {
+        await Media.createMedia(file, client);
+        await Media.linkProductMedia(productId, file.id, client);
       }
 
+      if (sessionId) {
+        await Sessions.updateSession(sessionId, client);
+      }
       await client.query("COMMIT");
       return updatedGame;
     } catch (error) {

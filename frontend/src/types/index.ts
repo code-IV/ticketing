@@ -49,7 +49,6 @@ export interface CreateGame {
   description: string;
   rules: string;
   status: "OPEN" | "ON_MAINTENANCE" | "UPCOMING" | "CLOSED";
-  mediaIds: string[];
 }
 
 export interface Event {

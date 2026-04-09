@@ -3,21 +3,22 @@ const BACKEND_URL = require("../../config/settings");
 
 const Media = {
   async createMedia(mediaData, client) {
+    console.log("mediaData", mediaData);
     const sql = `
-      INSERT INTO media (name, url, path, type, label, thumbnail_url, provider, metadata)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      INSERT INTO media (id, name, path, url, type, label, thumbnail_url)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      ON CONFLICT (path) DO NOTHING
       RETURNING id`;
     const { rows } = await client.query(sql, [
+      mediaData.id,
       mediaData.name,
-      mediaData.url,
       mediaData.path,
+      mediaData.url,
       mediaData.type,
       mediaData.label,
-      mediaData.thumbnail_url,
-      mediaData.provider,
-      mediaData.metadata,
+      mediaData.thumbnailUrl ?? null,
     ]);
-    return rows[0].id;
+    return rows[0]?.id ?? null;
   },
   async promoteMedia(id, mediaData, client) {
     const sql = `
@@ -34,7 +35,7 @@ const Media = {
       mediaData.path,
       mediaData.thumbnailUrl,
     ]);
-    return rows[0].id;
+    return rows[0]?.id ?? null;
   },
   async updateMedia(id, label = null, thumbnailUrl = null, client) {
     const sql = `
@@ -52,15 +53,6 @@ RETURNING *;`;
   async linkProductMedia(productId, mediaId, client) {
     const sql = `INSERT INTO products_media (product_id, media_id) VALUES ($1, $2)`;
     await client.query(sql, [productId, mediaId]);
-  },
-
-  async getAllMedia() {
-    const sql = `
-        SELECT id, name, ($1 || url) AS url, type, provider, metadata FROM media;
-        `;
-
-    const media = await query(sql, [BACKEND_URL]);
-    return media.rows;
   },
   async getAllMedia(page = 1, limit = 32, type = null) {
     try {
@@ -97,7 +89,7 @@ RETURNING *;`;
       }
 
       // Get results
-      let sql = `SELECT id, name, ($1 || url) AS url, type, provider, created_at, label FROM media`;
+      let sql = `SELECT id, name,  url, type, provider, created_at, label FROM media`;
       let params = [BACKEND_URL];
 
       if (type) {
@@ -130,7 +122,7 @@ RETURNING *;`;
   },
   async getMediaById(id) {
     const sql = `
-        SELECT id, name, url, path, type, provider, metadata, label FROM media WHERE id=$1;
+        SELECT id, name,  url, path, type, provider, metadata, label FROM media WHERE id=$1;
         `;
 
     const media = await query(sql, [id]);
@@ -139,22 +131,22 @@ RETURNING *;`;
 
   async getMediaByName(name) {
     const sql = `
-        SELECT id, name, ($1 || url) AS url, type, provider, metadata FROM media WHERE name=$2;
+        SELECT id, name,  url, type, provider, metadata FROM media WHERE name=$1;
         `;
 
-    const media = await query(sql, [BACKEND_URL, name]);
+    const media = await query(sql, [name]);
     return media.rows;
   },
 
   async getMediaByType(type) {
     // Use LIKE with a wildcard to match the prefix
     const sql = `
-    SELECT id, name, ($1 || url) AS url, type, provider, metadata 
+    SELECT id, name,  url, type, provider, metadata 
     FROM media 
-    WHERE type LIKE $2 || '/%';
+    WHERE type LIKE $1 || '/%';
   `;
 
-    const media = await query(sql, [BACKEND_URL, type]);
+    const media = await query(sql, [type]);
     return media.rows;
   },
 
@@ -174,4 +166,58 @@ RETURNING *;`;
   },
 };
 
-module.exports = { Media };
+const Sessions = {
+  async createSession(id, metaData) {
+    console.log(metaData);
+    const sql = `INSERT INTO upload_sessions (id, metadata, expires_at) VALUES ($1, $2,  NOW() + INTERVAL '30 minutes') RETURNING id`;
+    const result = await query(sql, [id, JSON.stringify(metaData)]);
+    return result.rows[0];
+  },
+
+  async updateSession(id, client) {
+    const sql = `
+    UPDATE upload_sessions
+    SET confirmed = TRUE
+    WHERE id = $1 AND confirmed = FALSE RETURNING metadata
+  `;
+    const result = await client.query(sql, [id]);
+
+    if (result.rowCount === 0) {
+      throw new Error("Session already used or invalid");
+    }
+    return result.rows[0].metadata;
+  },
+
+  async getSessionData(id) {
+    const sql = `
+    SELECT id, metadata, expires_at, confirmed
+    FROM upload_sessions
+    WHERE id = $1
+  `;
+
+    const { rows } = await query(sql, [id]);
+
+    if (rows.length === 0) {
+      throw new Error("Upload session not found");
+    }
+
+    const session = rows[0];
+
+    // 🔹 2. Validate session
+    if (session.confirmed) {
+      throw new Error("Session already used");
+    }
+
+    if (new Date(session.expires_at) < new Date()) {
+      throw new Error("Session expired");
+    }
+
+    if (!Array.isArray(session.metadata)) {
+      throw new Error("Invalid session metadata");
+    }
+
+    return session.metadata;
+  },
+};
+
+module.exports = { Media, Sessions };

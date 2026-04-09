@@ -2,6 +2,28 @@ const { apiResponse } = require("../../utils/helpers");
 const UploadsService = require("../services/uploadsService");
 
 const UploadsController = {
+  async createUploadSession(req, res, next) {
+    try {
+      const { files } = req.body;
+
+      if (!files || files.length === 0) {
+        return apiResponse(res, 400, false, "No files uploaded.");
+      }
+
+      const uploads = await UploadsService.createUploadSessions(files);
+
+      return apiResponse(
+        res,
+        200,
+        true,
+        "Session created successfully",
+        uploads,
+      );
+    } catch (err) {
+      console.log(err);
+      next(err);
+    }
+  },
   async uploadProductMedia(req, res, next) {
     try {
       const { label } = req.body; // This is an array of strings
@@ -30,6 +52,28 @@ const UploadsController = {
         true,
         "Media uploaded successfully.",
         mediaResults,
+      );
+    } catch (err) {
+      console.log(err);
+      next(err);
+    }
+  },
+
+  async persistMediaUpload(req, res, next) {
+    try {
+      const productId = req.params.id;
+      const { uploads } = req.body;
+
+      const persistResults = await UploadsService.persistMedia(
+        uploads,
+        productId,
+      );
+      return apiResponse(
+        res,
+        200,
+        true,
+        "Media persistence completed successfully.",
+        persistResults,
       );
     } catch (err) {
       console.log(err);
@@ -169,23 +213,6 @@ const UploadsController = {
     } catch (err) {
       next(err);
     }
-},
-
-async updateMedia(req, res, next) {
-  try {
-    const { id } = req.params;
-    const { label } = req.body;
-    
-    if (!id) {
-      return apiResponse(res, 400, false, "Media ID required");
-    }
-    
-    const result = await UploadsService.updateMedia(id, { label });
-    
-    return apiResponse(res, 200, true, "Media updated successfully", result);
-  } catch (err) {
-    next(err);
-  }
   },
 };
 
