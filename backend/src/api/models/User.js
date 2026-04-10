@@ -7,25 +7,30 @@ const User = {
   /**
    * Create a new user
    */
-  async create({
-    firstName,
-    lastName,
-    email,
-    phone,
-    password,
-    roleName = "VISITOR",
-  }) {
+  async create(
+    provider,
+    {
+      firstName,
+      lastName,
+      authId = null,
+      email = null,
+      phone = null,
+      password = null,
+      roleName = "VISITOR",
+    },
+  ) {
     const client = await getClient();
     try {
       await client.query("BEGIN");
-
-      const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
-
+      let passwordHash;
+      if (password) {
+        passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
+      }
       // 1. Insert the User and link the role in one go
       // We look up the role_id by name inside the INSERT statement
       const userSql = `
-      INSERT INTO users (first_name, last_name, email, phone, password_hash, role_id)
-      VALUES ($1, $2, $3, $4, $5, (SELECT id FROM roles WHERE name = $6))
+      INSERT INTO users (first_name, last_name, email, phone, password_hash, oauth_provider, oauth_id, role_id)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, (SELECT id FROM roles WHERE name = $8))
       RETURNING id, first_name, last_name, email, phone, role_id, is_active, created_at`;
 
       const userRes = await client.query(userSql, [
@@ -34,6 +39,8 @@ const User = {
         email,
         phone,
         passwordHash,
+        provider,
+        authId,
         roleName,
       ]);
 
@@ -119,6 +126,27 @@ const User = {
         totalPages: Math.ceil(total / limit),
       },
     };
+  },
+
+  async findByOauthId(id, client) {
+    // Select the actual user data so we can put it in the session later
+    const result = await client.query(
+      `SELECT 
+    u.*, 
+    r.name AS role,
+    COALESCE(
+        (SELECT jsonb_agg(p.name ORDER BY p.rank DESC) 
+         FROM roles p 
+         WHERE p.rank <= r.rank),
+        '[]'
+    ) AS permissions
+FROM users u
+LEFT JOIN roles r ON u.role_id = r.id WHERE oauth_id = $1 LIMIT 1`,
+      [id],
+    );
+
+    // Return the user object if found, otherwise null
+    return result.rows.length > 0 ? result.rows[0] : null;
   },
 
   /**
