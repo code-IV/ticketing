@@ -49,7 +49,6 @@ export interface CreateGame {
   description: string;
   rules: string;
   status: "OPEN" | "ON_MAINTENANCE" | "UPCOMING" | "CLOSED";
-  mediaIds: string[];
 }
 
 export interface Event {
@@ -178,18 +177,31 @@ export interface Bookings {
 
 export interface Booking {
   id: string;
-  bookingReference: string;
-  userId: string;
-  firstName: string;
-  lastName: string;
+  booking_reference: string;
+  user_id?: string;
+  customer_name?: string;
+  guest_name?: string;
+  guest_email?: string;
+  total_amount: string;
+  booking_status: "PENDING" | "CONFIRMED" | "CANCELLED" | "REFUNDED";
+  payment_status?: "PENDING" | "COMPLETED" | "FAILED" | "REFUNDED";
+  payment_method?: string;
+  created_at: string;
+  updated_at: string;
+  type?: "EVENT" | "GAME";
+  items?: any[];
+  // Keep old fields for backward compatibility
+  bookingReference?: string;
+  firstName?: string;
+  lastName?: string;
   email?: string;
-  totalAmount: string;
-  status: "PENDING" | "CONFIRMED" | "CANCELLED" | "REFUNDED";
-  paymentStatus: "PENDING" | "COMPLETED" | "FAILED" | "REFUNDED";
+  totalAmount?: string;
+  status?: "PENDING" | "CONFIRMED" | "CANCELLED" | "REFUNDED";
+  paymentStatus?: "PENDING" | "COMPLETED" | "FAILED" | "REFUNDED";
   paymentMethod?: "CREDIT_CARD" | "DEBIT_CARD" | "TELEBIRR" | "CASH";
-  bookedAt: string;
-  updatedAt: string;
-  passes: Passes;
+  bookedAt?: string;
+  updatedAt?: string;
+  passes?: Passes;
   ticket?: Ticket;
 }
 

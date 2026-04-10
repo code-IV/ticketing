@@ -61,8 +61,15 @@ const CreateGameDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
     description: "",
     rules: "",
     status: "OPEN" as "OPEN" | "ON_MAINTENANCE" | "UPCOMING" | "CLOSED",
-    ticket_types: [] as CreateTicketTypeRequest[],
-    mediaFiles: [] as any[],
+    ticketTypes: [] as CreateTicketTypeRequest[],
+    mediaFiles: [] as {
+      file: File;
+      thumbnail: File | null;
+      label: string;
+      type: string;
+      preview?: string;
+      thumbnailPreview?: string;
+    }[],
   });
 
   const [newTicket, setNewTicket] = useState<CreateTicketTypeRequest>({
@@ -102,12 +109,12 @@ const CreateGameDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
     if (!file) return;
     const preview =
       type === "IMAGE" ? await getTinyPreview(file) : URL.createObjectURL(file);
-    const newMedia = { file, type, preview, label: "gallery" };
+    const newMedia = { file, thumbnail: null, type, preview, label: "gallery" };
 
     if (isGalleryOnly()) {
       setFormData((p) => ({
         ...p,
-        mediaFiles: [...p.mediaFiles, { ...newMedia, label: "gallery" }],
+        mediaFiles: [...p.mediaFiles, { ...newMedia }],
       }));
     } else {
       setPendingFile(newMedia);
@@ -142,7 +149,7 @@ const CreateGameDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
     setFormData((prev) => {
       const updatedMedia = [...prev.mediaFiles];
       if (updatedMedia[index].type === "VIDEO")
-        URL.revokeObjectURL(updatedMedia[index].preview);
+        URL.revokeObjectURL(updatedMedia[index].preview ?? "");
       updatedMedia.splice(index, 1);
       return { ...prev, mediaFiles: updatedMedia };
     });
@@ -151,11 +158,11 @@ const CreateGameDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
   const addCategory = () => {
     if (!newTicket.category || isNaN(newTicket.price))
       return alert("Please provide at least a category and price");
-    if (formData.ticket_types.some((tt) => tt.category === newTicket.category))
+    if (formData.ticketTypes.some((tt) => tt.category === newTicket.category))
       return alert("Category already exists.");
     setFormData((p) => ({
       ...p,
-      ticket_types: [...p.ticket_types, { ...newTicket }],
+      ticketTypes: [...p.ticketTypes, { ...newTicket }],
     }));
     setNewTicket({
       id: null,
@@ -169,29 +176,90 @@ const CreateGameDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
     e.preventDefault();
     if (loading) return;
     setLoading(true);
+    const payload = {
+      name: formData.name,
+      description: formData.description,
+      rules: formData.rules,
+      status: formData.status,
+      ticketTypes: formData.ticketTypes.map((tt) => ({
+        ...tt,
+        category: tt.category.toUpperCase(), // Fix: Convert to uppercase for database enum
+        price: parseFloat(tt.price.toString()),
+      })),
+    };
+    let sid;
+
     try {
-      let media;
-      if (formData.mediaFiles.length > 0) {
-        const data = new FormData();
-        formData.mediaFiles.forEach((m: any, index: number) => {
-          data.append("mediaFiles", m.file);
-          data.append("label", m.label);
-          if (m.thumbnail) {
-            data.append(`thumbnail_${index}`, m.thumbnail);
-          }
+      const fileMeta = formData.mediaFiles.map((m: any) => ({
+        clientId: crypto.randomUUID(),
+        filename: m.file.name,
+        type: m.file.type,
+        label: m.label,
+        thumbnail: m.thumbnail
+          ? {
+              filename: m.thumbnail?.name,
+              type: m.thumbnail?.type,
+            }
+          : null,
+      }));
+
+      if (fileMeta.length) {
+        const response = await adminService.createSessions(fileMeta);
+        if (!response.data) {
+          throw new Error("Failed to create upload sessions");
+        }
+
+        const { uploads, sessionId } = response.data;
+        sid = sessionId;
+
+        const fileMap = new Map();
+        formData.mediaFiles.forEach((m: any, i: number) => {
+          fileMap.set(fileMeta[i].clientId, m);
         });
-        media = await adminService.uploadProductMedia(data);
+
+        const results = await Promise.all(
+          uploads.map(async (upload: any) => {
+            const media = fileMap.get(upload.clientId);
+
+            if (!media) throw new Error("File mapping failed");
+
+            const res = await fetch(upload.file.signedUrl, {
+              method: "PUT",
+              body: media.file,
+              headers: { "Content-Type": media.file.type },
+            });
+            if (!res.ok) throw new Error("Upload failed");
+
+            // thumbnail
+            if (upload.thumbnail && media.thumbnail) {
+              const res = await fetch(upload.thumbnail.signedUrl, {
+                method: "PUT",
+                body: media.thumbnail,
+                headers: { "Content-Type": media.thumbnail.type },
+              });
+              if (!res.ok) throw new Error("Upload failed");
+            }
+          }),
+        );
+
+        // const failed = results.some((r) => r.status === "rejected");
+
+        // if (failed) {
+        //   // await adminService.cancelSession(sessionId);
+        //   throw new Error("Upload failed");
+        // }
       }
-      const response = await gameService.createGame({
-        ...formData,
-        mediaIds: media?.data?.mediaIds,
+      await gameService.createGame({
+        game: payload,
+        sessionId: sid || null,
       });
+
       setFormData({
         name: "",
         description: "",
         rules: "",
         status: "OPEN",
-        ticket_types: [],
+        ticketTypes: [],
         mediaFiles: [],
       });
       onSuccess();
@@ -328,9 +396,9 @@ const CreateGameDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
                   isDark={d}
                 >
                   {/* Existing tickets */}
-                  {formData.ticket_types.length > 0 && (
+                  {formData.ticketTypes.length > 0 && (
                     <div className="space-y-2 mb-4">
-                      {formData.ticket_types.map((tt, index) => (
+                      {formData.ticketTypes.map((tt, index) => (
                         <div
                           key={index}
                           className={`flex items-center justify-between px-4 py-3 rounded-2xl border ${border} ${card}`}
@@ -343,7 +411,7 @@ const CreateGameDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
                             </span>
                             <div>
                               <p className={`text-xs ${muted}`}>
-                                {tt.price} ETB  {tt.maxQuantityPerBooking}
+                                {tt.price} ETB {tt.maxQuantityPerBooking}
                                 /booking
                               </p>
                             </div>
@@ -352,7 +420,7 @@ const CreateGameDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
                             onClick={() =>
                               setFormData((p) => ({
                                 ...p,
-                                ticket_types: p.ticket_types.filter(
+                                ticket_types: p.ticketTypes.filter(
                                   (_, i) => i !== index,
                                 ),
                               }))
@@ -391,7 +459,7 @@ const CreateGameDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
                             <option
                               key={cat}
                               value={cat.toUpperCase()}
-                              disabled={formData.ticket_types.some(
+                              disabled={formData.ticketTypes.some(
                                 (tt) => tt.category === cat.toUpperCase(),
                               )}
                             >
@@ -594,7 +662,7 @@ const CreateGameDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
                                 if (updatedMedia[index]) {
                                   updatedMedia[index].thumbnailPreview =
                                     undefined;
-                                  updatedMedia[index].thumbnail = undefined;
+                                  updatedMedia[index].thumbnail = null;
                                 }
                                 return { ...prev, mediaFiles: updatedMedia };
                               });
@@ -634,8 +702,8 @@ const CreateGameDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
 
             <div className="flex items-center gap-3">
               <span className={`text-xs ${muted}`}>
-                {formData.ticket_types.length} ticket type
-                {formData.ticket_types.length !== 1 ? "s" : ""} ·{" "}
+                {formData.ticketTypes.length} ticket type
+                {formData.ticketTypes.length !== 1 ? "s" : ""} ·{" "}
                 {formData.mediaFiles.length} file
                 {formData.mediaFiles.length !== 1 ? "s" : ""}
               </span>

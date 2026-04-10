@@ -1,6 +1,6 @@
 const { Event } = require("../models/Event");
 const TicketType = require("../models/TicketType");
-const Booking = require("../models/Booking");
+const { Booking } = require("../models/Booking");
 const Payment = require("../models/Payment");
 const User = require("../models/User");
 const { apiResponse } = require("../../utils/helpers");
@@ -217,6 +217,23 @@ const adminController = {
 
       const result = await User.findAll({ page, limit, role, status });
       return apiResponse(res, 200, true, "Users retrieved.", result);
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  /**
+   * GET /api/admin/search/users -
+   */
+
+  async searchUsers(req, res, next) {
+    try {
+      const term = req.query.term || "";
+      const page = parseInt(req.query.page, 10) || 1;
+      const limit = parseInt(req.query.limit, 10) || 20;
+
+      const result = await User.searchUser({ term, page, limit });
+      return apiResponse(res, 200, true, "Users found.", result);
     } catch (err) {
       next(err);
     }

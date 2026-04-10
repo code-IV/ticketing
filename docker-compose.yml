@@ -1,0 +1,57 @@
+services:
+  db:
+    image: supabase/postgres:15.1.0.147
+    restart: unless-stopped
+    env_file:
+      - ./supabase/.env
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - internal
+
+  supabase-storage:
+    image: supabase/storage-api:latest
+    restart: unless-stopped
+    env_file:
+      - ./supabase/.env
+    volumes:
+      - storage_data:/var/lib/storage
+    ports:
+      - "8020:8020"
+    networks:
+      - internal
+
+  postgres-meta:
+    image: supabase/postgres-meta:v0.68.0
+    restart: unless-stopped
+    env_file:
+      - ./supabase/.env
+    environment:
+      PG_META_PORT: 8080
+    networks:
+      - internal
+
+  studio:
+    container_name: supabase-studio
+    image: supabase/studio:latest
+    restart: unless-stopped
+    ports:
+      - "8000:3000"
+    env_file:
+      - ./supabase/.env
+    environment:
+      SUPABASE_PUBLIC_URL: http://localhost:8000
+      STUDIO_PG_META_URL: http://postgres-meta:8080
+      SUPABASE_REST_URL: http://localhost:8010/rest/v1/
+    networks:
+      - internal
+
+volumes:
+  postgres_data:
+    name: bora_postgres_data
+  storage_data:
+    name: bora_storage_data
+
+networks:
+  internal:
+    driver: bridge

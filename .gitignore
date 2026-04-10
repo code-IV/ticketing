@@ -40,3 +40,6 @@ Thumbs.db
 
 #Ai helper
 .windsurf/
+
+#supabase volumes
+/supabase/volumes/

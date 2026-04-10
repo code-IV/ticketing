@@ -151,7 +151,6 @@ exports.down = async function (knex) {
   await knex.schema.dropTableIfExists("products");
   await knex.schema.dropTableIfExists("games");
   await knex.schema.dropTableIfExists("events");
-  await knex.schema.dropTableIfExists("users_roles");
   await knex.schema.dropTableIfExists("users");
   await knex.schema.dropTableIfExists("roles");
   await knex.raw("DROP TYPE IF EXISTS game_status");

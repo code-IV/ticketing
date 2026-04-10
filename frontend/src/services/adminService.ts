@@ -20,22 +20,24 @@ export const adminService = {
   },
 
   async getAllEvents(page = 1, limit = 20): Promise<PaginatedResponse<Event>> {
-    const response = await api.get("/admin/events", {
+    const response = await api.get("/events/all", {
       params: { page, limit },
     });
     return response.data;
   },
 
   async createEvent(data: {
-    name: string;
-    description?: string;
-    eventDate: string;
-    startTime: string;
-    endTime: string;
-    capacity: number;
-    mediaIds: any[];
+    event: {
+      name: string;
+      description?: string;
+      eventDate: string;
+      startTime: string;
+      endTime: string;
+      capacity: number;
+    };
+    sessionId: string | null;
   }): Promise<ApiResponse<{ event: Event; productId: string }>> {
-    const response = await api.post("/admin/events", data);
+    const response = await api.post("/events/add", data);
     return response.data;
   },
 
@@ -54,18 +56,20 @@ export const adminService = {
 
   async updateEvent(
     id: string,
-    data: Partial<{
-      name: string;
-      description: string;
-      eventDate: string;
-      startTime: string;
-      endTime: string;
-      capacity: number;
-      isActive: boolean;
-      mediaIds: string[];
-    }>,
+    data: {
+      event: Partial<{
+        name: string;
+        description: string;
+        eventDate: string;
+        startTime: string;
+        endTime: string;
+        capacity: number;
+        isActive: boolean;
+      }>;
+      sessionId: string | null;
+    },
   ): Promise<ApiResponse<{ event: Event }>> {
-    const response = await api.patch(`/admin/event/${id}`, data);
+    const response = await api.patch(`/events/patch/${id}`, data);
     return response.data;
   },
 
@@ -122,7 +126,7 @@ export const adminService = {
   },
 
   async deleteEvent(id: string): Promise<ApiResponse<{ event: Event }>> {
-    const response = await api.delete(`/admin/events/${id}`);
+    const response = await api.delete(`/events/del/${id}`);
     return response.data;
   },
 
@@ -173,7 +177,7 @@ export const adminService = {
 
   async getBookingDetails(
     id: string,
-  ): Promise<ApiResponse<{ booking: Booking }>> {
+  ): Promise<ApiResponse<{ bookings: Booking[] }>> {
     const response = await api.get(`/admin/bookings/${id}`);
     return response.data;
   },
@@ -214,6 +218,28 @@ export const adminService = {
 
     const response = await api.get("/admin/users", {
       params,
+    });
+    return response.data;
+  },
+
+  async searchUsers(
+    term: string,
+    page = 1,
+    limit = 20,
+  ): Promise<PaginatedResponse<User>> {
+    const response = await api.get("/admin/search/users", {
+      params: { term, page, limit },
+    });
+    return response.data;
+  },
+
+  async searchBookings(
+    term: string,
+    page = 1,
+    limit = 20,
+  ): Promise<PaginatedResponse<Booking>> {
+    const response = await api.get("/admin/search/bookings", {
+      params: { term, page, limit },
     });
     return response.data;
   },
@@ -269,6 +295,16 @@ export const adminService = {
     return response.data;
   },
 
+  async createSessions(files: any[]): Promise<ApiResponse> {
+    const response = await api.post(`/media/sessions`, { files });
+    return response.data;
+  },
+
+  async persistMediaData(id: string, uploads: any[]): Promise<ApiResponse> {
+    const response = await api.post(`/media/persist/${id}`, { uploads });
+    return response.data;
+  },
+
   async getAllMedia(
     page = 1,
     limit = 32,
@@ -296,6 +332,11 @@ export const adminService = {
 
   async deleteMedia(id: string): Promise<ApiResponse> {
     const response = await api.delete(`/media/rm/${id}`);
+    return response.data;
+  },
+
+  async getMediaUrl(id: string): Promise<ApiResponse> {
+    const response = await api.get(`/media/url/${id}`);
     return response.data;
   },
 
@@ -333,25 +374,35 @@ export const ticketService = {
 };
 
 export const gameService = {
-  async createGame(
-    data: CreateGame,
-  ): Promise<ApiResponse<{ game: Game; productId: string }>> {
-    const response = await api.post("/admin/game", data);
+  async createGame(data: {
+    game: CreateGame;
+    sessionId: string | null;
+  }): Promise<
+    ApiResponse<{
+      game: Game;
+      productId: string;
+      preSignedUrls: string[];
+    }>
+  > {
+    const response = await api.post("/games/add", data);
     return response.data;
   },
   async updateGame(
     id: string,
-    data: Partial<Game>,
+    data: {
+      game: Partial<Game>;
+      sessionId: string | null;
+    },
   ): Promise<ApiResponse<Partial<Game>>> {
-    const response = await api.patch(`/admin/game/${id}`, data);
+    const response = await api.patch(`/games/patch/${id}`, data);
     return response.data;
   },
   async getAll(): Promise<ApiResponse<{ games: Game[] }>> {
-    const response = await api.get("/games");
+    const response = await api.get("/games/all");
     return response.data;
   },
   async getActiveGames(): Promise<ApiResponse<{ games: Game[] }>> {
-    const response = await api.get("/games/buy");
+    const response = await api.get("/games");
     return response.data;
   },
   async getGame(id: string): Promise<ApiResponse<{ game: Partial<Game> }>> {
@@ -359,7 +410,7 @@ export const gameService = {
     return response.data;
   },
   async deleteGame(id: string): Promise<ApiResponse> {
-    const response = await api.delete(`/admin/game/${id}`);
+    const response = await api.delete(`/games/del/${id}`);
     return response.data;
   },
 };

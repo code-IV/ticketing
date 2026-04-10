@@ -177,21 +177,21 @@ const CreateEventDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (loading) return;
-    
+
     // Add validation for required event date
     console.log("=== DEBUGGING EVENT CREATION ===");
     console.log("formData.eventDate:", JSON.stringify(formData.eventDate));
     console.log("formData.eventDate type:", typeof formData.eventDate);
     console.log("Is eventDate falsy?", !formData.eventDate);
-    
+
     if (!formData.eventDate || formData.eventDate === "") {
       alert("Please select a valid event date");
       setLoading(false);
       return;
     }
-    
+
     setLoading(true);
-    
+
     // Create date and validate it's a real date
     const eventDate = new Date(formData.eventDate);
     if (isNaN(eventDate.getTime())) {
@@ -199,9 +199,9 @@ const CreateEventDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
       setLoading(false);
       return;
     }
-    
-    const formattedDate = eventDate.toISOString().split('T')[0];
-    
+
+    const formattedDate = eventDate.toISOString().split("T")[0];
+
     const payload = {
       name: formData.name,
       description: formData.description,
@@ -221,23 +221,69 @@ const CreateEventDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
     console.log("payload.eventDate type:", typeof payload.eventDate);
     console.log("================================");
     try {
-      let media;
-      if (formData.mediaFiles.length > 0) {
-        const data = new FormData();
-        formData.mediaFiles.forEach((m: any, index: number) => {
-          data.append("mediaFiles", m.file);
-          data.append("label", m.label);
-          
-          // Named thumbnail per video index
-          if (m.thumbnail) {
-            data.append(`thumbnail_${index}`, m.thumbnail);
-          }
+      let sid;
+      const fileMeta = formData.mediaFiles.map((m: any) => ({
+        clientId: crypto.randomUUID(),
+        filename: m.file.name,
+        type: m.file.type,
+        label: m.label,
+        thumbnail: m.thumbnail
+          ? {
+              filename: m.thumbnail?.name,
+              type: m.thumbnail?.type,
+            }
+          : null,
+      }));
+
+      if (fileMeta.length) {
+        const response = await adminService.createSessions(fileMeta);
+        if (!response.data) {
+          throw new Error("Failed to create upload sessions");
+        }
+
+        const { uploads, sessionId } = response.data;
+        sid = sessionId;
+
+        const fileMap = new Map();
+        formData.mediaFiles.forEach((m: any, i: number) => {
+          fileMap.set(fileMeta[i].clientId, m);
         });
-        media = await adminService.uploadProductMedia(data);
+
+        const results = await Promise.all(
+          uploads.map(async (upload: any) => {
+            const media = fileMap.get(upload.clientId);
+
+            if (!media) throw new Error("File mapping failed");
+
+            const res = await fetch(upload.file.signedUrl, {
+              method: "PUT",
+              body: media.file,
+              headers: { "Content-Type": media.file.type },
+            });
+            if (!res.ok) throw new Error("Upload failed");
+
+            // thumbnail
+            if (upload.thumbnail && media.thumbnail) {
+              const res = await fetch(upload.thumbnail.signedUrl, {
+                method: "PUT",
+                body: media.thumbnail,
+                headers: { "Content-Type": media.thumbnail.type },
+              });
+              if (!res.ok) throw new Error("Upload failed");
+            }
+          }),
+        );
+
+        // const failed = results.some((r) => r.status === "rejected");
+
+        // if (failed) {
+        //   // await adminService.cancelSession(sessionId);
+        //   throw new Error("Upload failed");
+        // }
       }
       const response = await adminService.createEvent({
-        ...payload,
-        mediaIds: media?.data?.mediaIds,
+        event: payload,
+        sessionId: sid || null,
       });
       setFormData({
         name: "",
@@ -384,7 +430,7 @@ const CreateEventDrawer = ({ isOpen, onClose, onSuccess }: Props) => {
                         className={`w-full px-4 py-3 rounded-2xl text-sm font-medium outline-none border-2 border-transparent transition-all focus:border-accent/50 ${inputBg} ${text}`}
                         value={formData.eventDate}
                         onChange={(e) =>
-                          setFormData(prev => ({
+                          setFormData((prev) => ({
                             ...prev,
                             eventDate: e.target.value,
                           }))

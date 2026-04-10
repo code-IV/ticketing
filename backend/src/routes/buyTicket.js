@@ -2,15 +2,13 @@ const express = require("express");
 const router = express.Router();
 const buyTicketController = require("../api/controllers/buyTicketController");
 const { isAuthenticated } = require("../middleware/auth");
-const {
-  handleValidation,
-  purchaseTicketRules,
-} = require("../middleware/validate");
+const { handleValidation } = require("../middleware/validate");
+const { ticketRules } = require("../middleware/validators/buy.validator");
 
 // POST /api/buy/purchase - Purchase tickets for games (requires authentication)
 router.post(
   "/purchase",
-  purchaseTicketRules,
+  ticketRules.purchaseTicketRules,
   handleValidation,
   buyTicketController.purchaseTickets,
 );

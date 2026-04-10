@@ -4,68 +4,22 @@ const adminController = require("../api/controllers/adminController");
 const { EventController } = require("../api/controllers/eventController");
 const { isAuthenticated, isAdmin } = require("../middleware/auth");
 const {
-  createEventRules,
-  updateEventRules,
-  createEventWithTicketTypesRules,
-  createTicketTypeRules,
-  updateTicketTypeRules,
   uuidParamRule,
   paginationRules,
   handleValidation,
 } = require("../middleware/validate");
+const {
+  createTicketTypeRules,
+  updateTicketTypeRules,
+} = require("../middleware/validators/ticketType.validator");
 const { GameController } = require("../api/controllers/gamesController");
+const bookingController = require("../api/controllers/bookingController");
 
 // All admin routes require authentication + admin role
 router.use(isAuthenticated, isAdmin);
 
 // Dashboard
 router.get("/dashboard", adminController.getDashboard);
-
-// Event management
-router.get(
-  "/events",
-  paginationRules,
-  handleValidation,
-  EventController.getAllEvents,
-);
-router.post(
-  "/events",
-  createEventRules,
-  handleValidation,
-  EventController.createEvent,
-);
-router.patch(
-  "/event/:id",
-  uuidParamRule("id"),
-  handleValidation,
-  EventController.updateEvent,
-);
-router.patch(
-  "/events/status/:id",
-  uuidParamRule("id"),
-  handleValidation,
-  EventController.deactivateEvent,
-);
-router.delete(
-  "/events/:id",
-  uuidParamRule("id"),
-  handleValidation,
-  EventController.deleteEvent,
-);
-// Game management
-router.post("/game", handleValidation, GameController.createGame);
-router.patch(
-  "/game/:id",
-  uuidParamRule("id"),
-  handleValidation,
-  GameController.updateGame,
-);
-router.delete(
-  "/game/:id",
-  uuidParamRule("id"),
-  handleValidation,
-  GameController.deleteGameWithId,
-);
 
 // Ticket type management
 router.post(
@@ -101,6 +55,12 @@ router.get(
   handleValidation,
   adminController.getBookingDetails,
 );
+router.get(
+  "/bookings/user/:id",
+  uuidParamRule("id"),
+  handleValidation,
+  bookingController.getBookingByUserId,
+);
 router.post(
   "/bookings/:id/cancel",
   uuidParamRule("id"),
@@ -114,6 +74,12 @@ router.get(
   paginationRules,
   handleValidation,
   adminController.getAllUsers,
+);
+router.get(
+  "/search/users",
+  paginationRules,
+  handleValidation,
+  adminController.searchUsers,
 );
 router.get(
   "/users/:id",

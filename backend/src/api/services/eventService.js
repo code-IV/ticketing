@@ -2,12 +2,16 @@ const { getClient } = require("../../config/db");
 const { EventRes } = require("../dtos/eventDto");
 const { Event, EventStats } = require("../models/Event");
 const TicketType = require("../models/TicketType");
+const { Sessions, Media } = require("../models/uploads");
 const UploadsService = require("./uploadsService");
 
 const EventService = {
-  async createEvent(eventData) {
+  async createEvent(eventData, sessionId) {
     const client = await getClient();
     try {
+      const files = sessionId
+        ? await UploadsService.validateSession(sessionId)
+        : [];
       await client.query("BEGIN");
 
       // 1. Create Physical Event
@@ -26,12 +30,13 @@ const EventService = {
       for (const type of eventData.ticketTypes || []) {
         await TicketType.create({ ...type, productId }, client);
       }
-      if (eventData.mediaIds?.length) {
-        await UploadsService.addMediaToProduct(
-          productId,
-          eventData.mediaIds,
-          client,
-        );
+      for (const file of files || []) {
+        await Media.createMedia(file, client);
+        await Media.linkProductMedia(productId, file.id, client);
+      }
+
+      if (sessionId) {
+        await Sessions.updateSession(sessionId, client);
       }
       await client.query("COMMIT");
       return { event: newEvent, productId: productId };
@@ -45,9 +50,12 @@ const EventService = {
 
   // events.service.js
 
-  async updateEvent(id, eventData) {
+  async updateEvent(id, eventData, sessionId) {
     const client = await getClient();
     try {
+      const files = sessionId
+        ? await UploadsService.validateSession(sessionId)
+        : [];
       await client.query("BEGIN");
 
       // Perform the core update
@@ -64,12 +72,13 @@ const EventService = {
         );
       }
 
-      if (eventData.mediaIds?.length) {
-        await UploadsService.addMediaToProduct(
-          eventData.productId,
-          eventData.mediaIds,
-          client,
-        );
+      for (const file of files || []) {
+        await Media.createMedia(file, client);
+        await Media.linkProductMedia(eventData.productId, file.id, client);
+      }
+
+      if (sessionId) {
+        await Sessions.updateSession(sessionId, client);
       }
 
       await client.query("COMMIT");

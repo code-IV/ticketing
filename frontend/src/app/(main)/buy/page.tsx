@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import {
   Ticket,
@@ -7,7 +7,6 @@ import {
   Zap,
   Plus,
   Minus,
-  Sparkles,
   ArrowRight,
   ChevronDown,
 } from "lucide-react";
@@ -19,6 +18,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { bookingService } from "@/services/bookingService";
 import { guestCookieUtils } from "@/utils/cookies";
 import SuccessModal from "@/components/ui/SuccessModal";
+import { DiscountBadge } from "@/components/ui/DiscountBadge";
 
 // Helper function to get poster image (images only)
 const getPosterImage = (game: any) => {
@@ -38,7 +38,6 @@ const BuyTicketsPage = () => {
   const [games, setGames] = useState<Game[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [openGameId, setOpenGameId] = useState<string | null>(null);
   const [cart, setCart] = useState<Record<string, Record<string, number>>>({});
   const [bookingLoading, setBookingLoading] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -50,6 +49,24 @@ const BuyTicketsPage = () => {
   const summaryRef = useRef<HTMLDivElement>(null);
   const { isDarkTheme } = useTheme();
   const { user } = useAuth();
+
+  // Generate permanent discount assignments for this page load (only once)
+  const gameDiscountsRef = useRef<Record<string, { text: string; hasDiscount: boolean }>>({});
+  
+  // Initialize discounts only when games load and not already initialized
+  if (games && games.length > 0 && Object.keys(gameDiscountsRef.current).length === 0) {
+    const discounts: Record<string, { text: string; hasDiscount: boolean }> = {};
+    games.forEach((game) => {
+      const randomDiscount = Math.random() > 0.5; // 50% chance
+      const discountTexts = ["LIMITED TIME", "LIMITED OFFER"];
+      const discountText = randomDiscount ? discountTexts[Math.floor(Math.random() * discountTexts.length)] : null;
+      discounts[game.id] = {
+        text: discountText || "",
+        hasDiscount: randomDiscount
+      };
+    });
+    gameDiscountsRef.current = discounts;
+  }
 
   useEffect(() => {
     loadGames();
@@ -273,12 +290,14 @@ const BuyTicketsPage = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <AnimatePresence>
                   {games?.map((game, index) => {
-                    const isOpen = openGameId === game.id;
                     const hasItems = !!cart[game.id];
                     const posterImage = getPosterImage(game);
                     const lowestPrice = game.ticketTypes?.length
                       ? Math.min(...game.ticketTypes.map((t) => t.price))
                       : 0;
+                    
+                    // Use permanent discount assignment
+                    const gameDiscount = gameDiscountsRef.current[game.id] || { text: "", hasDiscount: false };
 
                     return (
                       <motion.div
@@ -286,20 +305,15 @@ const BuyTicketsPage = () => {
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         id={`game-visual-${game.id}`}
-                        className={`group relative min-h-100 rounded-[40px] overflow-hidden border-2 transition-all cursor-pointer ${
-                          hasItems
-                            ? " ring-4 ring-indigo-50"
-                            : `border-transparent shadow-sm hover:shadow-xl ${isDarkTheme ? "bg-gray-800" : "bg-white"}`
+                        className={`group relative min-h-100 rounded-[40px] overflow-hidden border-2 transition-all ${
+                          gameDiscount.hasDiscount
+                            ? hasItems
+                              ? "border-[#FFD84D] border-4 shadow-sm hover:shadow-xl hover:border-[#FFD84D]"
+                              : "border-[#FFD84D]/50 shadow-sm hover:shadow-xl hover:border-[#FFD84D]/70"
+                            : hasItems
+                              ? "ring-4 ring-indigo-50"
+                              : `border-transparent shadow-sm hover:shadow-xl ${isDarkTheme ? "bg-gray-800" : "bg-white"}`
                         }`}
-                        onClick={(e) => {
-                          // Check if the click target is the "View Details" button
-                          const target = e.target as HTMLElement;
-                          if (target.closest("button")) {
-                            // Don't handle the click if it's on a button
-                            return;
-                          }
-                          setOpenGameId(isOpen ? null : game.id);
-                        }}
                       >
                         <div className="absolute inset-0 h-full w-full">
                           <img
@@ -314,92 +328,130 @@ const BuyTicketsPage = () => {
                         </div>
 
                         <div className="absolute top-6 left-6 right-6 flex justify-between items-start z-10">
-                          <div className="bg-white/10 backdrop-blur-md px-4 py-2 rounded-2xl border border-white/20 text-white font-black text-[10px] uppercase tracking-widest">
-                            {lowestPrice} ETB+
-                          </div>
-                          {hasItems && (
-                            <div className="bg-accent2 text-white p-2 rounded-xl shadow-lg animate-pulse">
-                              <Sparkles size={16} />
+                          <div>
+                            <div className="hidden bg-white/10 backdrop-blur-md px-4 py-2 rounded-2xl border border-white/20 text-white font-black text-[10px] uppercase tracking-widest">
+                              {lowestPrice} ETB+
                             </div>
-                          )}
+                            {/* Discount Badge */}
+                            {gameDiscount.hasDiscount && (
+                              <div className="absolute -top-2 -right-2 z-50">
+                                <DiscountBadge 
+                                  customText={gameDiscount.text}
+                                  size="sm"
+                                />
+                              </div>
+                            )}
+
+                            <h3 className="font-black text-2xl text-white tracking-tighter leading-none uppercase italic mb-2">
+                              {game.name}
+                            </h3>
+                          </div>
                         </div>
 
                         <div className="absolute bottom-0  left-0 right-0 p-8 z-10">
-                          <h3 className="font-black text-3xl text-white tracking-tighter leading-none uppercase italic mb-2">
-                            {game.name}
-                          </h3>
                           {/* <p className="flex items-center gap-1.5 text-white/60 text-[10px] font-black uppercase tracking-widest mb-4">
                             <MapPin size={12} /> Bora Stage 0{index + 1}
                           </p> */}
 
-                          <button
-                            onClick={() => {
-                              router.push(`/games/${game.id}`);
-                            }}
-                            className="relative z-20 bg-white/20 backdrop-blur-md px-4 py-2 rounded-2xl border border-white/20 text-white font-black text-[10px] uppercase tracking-widest hover:bg-white/30 transition-colors"
-                          >
-                            View Details
-                          </button>
-
-                          <AnimatePresence>
-                            {isOpen && (
-                              <motion.div
-                                initial={{ height: 0, opacity: 0 }}
-                                animate={{ height: "auto", opacity: 1 }}
-                                exit={{ height: 0, opacity: 0 }}
-                                className="overflow-hidden bg-white/10 backdrop-blur-xl mt-2 rounded-3xl border border-white/20 p-4 space-y-3"
-                                onClick={(e) => e.stopPropagation()}
+                          {/* View Details Button - Hidden Again */}
+                          {/* <div className="relative group shrink-0">
+                            <FadingBlurOverlay 
+                              blurStrength={8}
+                              overlayColor="rgba(0,0,0,0.3)"
+                            >
+                              <button
+                                onClick={() => {
+                                  router.push(`/games/${game.id}`);
+                                }}
+                                className="relative z-20 bg-white/20 backdrop-blur-md px-4 py-2 rounded-2xl border border-white/20 text-white font-black text-[10px] uppercase tracking-widest hover:bg-white/30 transition-all duration-300"
                               >
-                                {game.ticketTypes?.map((tt) => {
-                                  const qty = cart[game.id]?.[tt.category] || 0;
-                                  return (
-                                    <div
-                                      key={tt.category}
-                                      className="flex justify-between items-center bg-white/10 rounded-2xl p-3 border border-white/10"
-                                    >
-                                      <div>
-                                        <p className="text-[8px] font-black text-indigo-300 uppercase tracking-widest">
-                                          {tt.category}
-                                        </p>
-                                        <p className="text-white font-black text-sm">
+                                View Details
+                              </button>
+                            </FadingBlurOverlay>
+                          </div> */}
+
+                          {/* Ticket List - Always Open */}
+                          <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: "auto", opacity: 1 }}
+                            transition={{ delay: 0.2 }}
+                            className="overflow-hidden bg-white/10 backdrop-blur-xl mt-2 rounded-3xl border border-white/20 p-4 space-y-3"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            {game.ticketTypes?.map((tt) => {
+                              const qty = cart[game.id]?.[tt.category] || 0;
+                              
+                              // Calculate discount for this ticket type
+                              const hasTicketDiscount = Math.random() > 0.6; // 40% chance
+                              const discountPercentage = hasTicketDiscount ? Math.floor(Math.random() * 25) + 10 : 0; // 10-35% off
+                              const discountedPrice = hasTicketDiscount ? Math.round(tt.price * (1 - discountPercentage / 100)) : tt.price;
+                              const savings = tt.price - discountedPrice;
+                              return (
+                                <div
+                                  key={tt.category}
+                                  className={`flex justify-between items-center rounded-2xl p-3 border ${
+                                    hasTicketDiscount 
+                                      ? "bg-[#FFD84D]/10 border-[#FFD84D]/30" 
+                                      : "bg-white/10 border-white/10"
+                                  }`}
+                                >
+                                  <div>
+                                    <p className={`text-[8px] font-black uppercase tracking-widest ${
+                                      hasTicketDiscount ? "text-[#FFD84D]" : "text-indigo-300"
+                                    }`}>
+                                      {tt.category}
+                                    </p>
+                                    <div className="flex items-center gap-2">
+                                      {hasTicketDiscount && (
+                                        <span className="text-white/50 line-through text-xs">
                                           {tt.price} ETB
-                                        </p>
-                                      </div>
-                                      <div className="flex items-center gap-3 bg-white/20 rounded-xl p-1 px-2">
-                                        <button
-                                          onClick={() =>
-                                            updateQuantity(
-                                              game.id,
-                                              tt.category,
-                                              -1,
-                                            )
-                                          }
-                                          className="text-white hover:text-red-400"
-                                        >
-                                          <Minus size={14} />
-                                        </button>
-                                        <span className="text-white font-black text-sm w-4 text-center">
-                                          {qty}
                                         </span>
-                                        <button
-                                          onClick={() =>
-                                            updateQuantity(
-                                              game.id,
-                                              tt.category,
-                                              1,
-                                            )
-                                          }
-                                          className="text-white hover:text-indigo-400"
-                                        >
-                                          <Plus size={14} />
-                                        </button>
-                                      </div>
+                                      )}
+                                      <p className={`font-black text-sm ${
+                                        hasTicketDiscount ? "text-[#FFD84D]" : "text-white"
+                                      }`}>
+                                        {discountedPrice} ETB
+                                      </p>
                                     </div>
-                                  );
-                                })}
-                              </motion.div>
-                            )}
-                          </AnimatePresence>
+                                    {hasTicketDiscount && (
+                                      <p className="text-[#FFD84D] text-[8px] font-black uppercase tracking-widest">
+                                        SAVE {savings} ETB ({discountPercentage}% OFF)
+                                      </p>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center gap-3 bg-white/20 rounded-xl p-1 px-2">
+                                    <button
+                                      onClick={() =>
+                                        updateQuantity(
+                                          game.id,
+                                          tt.category,
+                                          -1,
+                                        )
+                                      }
+                                      className="text-white hover:text-red-400"
+                                    >
+                                      <Minus size={14} />
+                                    </button>
+                                    <span className="text-white font-black text-sm w-4 text-center">
+                                      {qty}
+                                    </span>
+                                    <button
+                                      onClick={() =>
+                                        updateQuantity(
+                                          game.id,
+                                          tt.category,
+                                          1,
+                                        )
+                                      }
+                                      className="text-white hover:text-indigo-400"
+                                    >
+                                      <Plus size={14} />
+                                    </button>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </motion.div>
                         </div>
                       </motion.div>
                     );

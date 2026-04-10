@@ -7,25 +7,30 @@ const User = {
   /**
    * Create a new user
    */
-  async create({
-    firstName,
-    lastName,
-    email,
-    phone,
-    password,
-    roleName = "VISITOR",
-  }) {
+  async create(
+    provider,
+    {
+      firstName,
+      lastName,
+      authId = null,
+      email = null,
+      phone = null,
+      password = null,
+      roleName = "VISITOR",
+    },
+  ) {
     const client = await getClient();
     try {
       await client.query("BEGIN");
-
-      const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
-
+      let passwordHash;
+      if (password) {
+        passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
+      }
       // 1. Insert the User and link the role in one go
       // We look up the role_id by name inside the INSERT statement
       const userSql = `
-      INSERT INTO users (first_name, last_name, email, phone, password_hash, role_id)
-      VALUES ($1, $2, $3, $4, $5, (SELECT id FROM roles WHERE name = $6))
+      INSERT INTO users (first_name, last_name, email, phone, password_hash, oauth_provider, oauth_id, role_id)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, (SELECT id FROM roles WHERE name = $8))
       RETURNING id, first_name, last_name, email, phone, role_id, is_active, created_at`;
 
       const userRes = await client.query(userSql, [
@@ -34,6 +39,8 @@ const User = {
         email,
         phone,
         passwordHash,
+        provider,
+        authId,
         roleName,
       ]);
 
@@ -69,6 +76,77 @@ const User = {
     } finally {
       client.release();
     }
+  },
+
+  async searchUser({ term = "", page = 1, limit = 15 }) {
+    const offset = (page - 1) * limit;
+
+    // Use a template literal or array to manage params if you add more filters later
+    const searchTerm = `%${term.replace(/[%_\\]/g, "\\$&")}%`;
+
+    const whereClause = `
+     (u.first_name || ' ' || u.last_name) ILIKE $1 ESCAPE '\\' OR
+     u.email ILIKE $1 ESCAPE '\\' OR
+     u.phone ILIKE $1 ESCAPE '\\'
+   `;
+
+    const sql = `
+    SELECT 
+      u.id,
+      u.first_name,
+      u.last_name,
+      u.email,
+      u.phone,
+      u.is_active,
+      r.name AS role
+      
+    FROM users u
+    LEFT JOIN roles r ON u.role_id = r.id
+    WHERE ${whereClause}
+    ORDER BY u.first_name ASC
+    LIMIT $2 OFFSET $3;
+  `;
+
+    const countSql = `
+     SELECT COUNT(*) FROM users u
+     WHERE ${whereClause}
+   `;
+
+    // Pass the calculated limit and offset to the query
+    const result = await query(sql, [searchTerm, limit, offset]);
+    const countResult = await query(countSql, [searchTerm]);
+    const total = parseInt(countResult.rows[0].count, 10);
+
+    return {
+      users: result.rows,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  },
+
+  async findByOauthId(id, client) {
+    // Select the actual user data so we can put it in the session later
+    const result = await client.query(
+      `SELECT 
+    u.*, 
+    r.name AS role,
+    COALESCE(
+        (SELECT jsonb_agg(p.name ORDER BY p.rank DESC) 
+         FROM roles p 
+         WHERE p.rank <= r.rank),
+        '[]'
+    ) AS permissions
+FROM users u
+LEFT JOIN roles r ON u.role_id = r.id WHERE oauth_id = $1 LIMIT 1`,
+      [id],
+    );
+
+    // Return the user object if found, otherwise null
+    return result.rows.length > 0 ? result.rows[0] : null;
   },
 
   /**
@@ -198,22 +276,22 @@ LEFT JOIN roles r ON u.role_id = r.id;
 
     // 2. Build WHERE clause with filters
     const whereConditions = [];
-    
+
     if (role) {
       whereConditions.push(`r.name = $${paramIndex}`);
       values.push(role);
       paramIndex++;
     }
-    
+
     if (status) {
-      const isActive = status === 'active';
+      const isActive = status === "active";
       whereConditions.push(`u.is_active = $${paramIndex}`);
       values.push(isActive);
       paramIndex++;
     }
-    
+
     if (whereConditions.length > 0) {
-      sql += ` WHERE ${whereConditions.join(' AND ')}`;
+      sql += ` WHERE ${whereConditions.join(" AND ")}`;
     }
 
     // 3. Ordering and Pagination
@@ -232,16 +310,16 @@ LEFT JOIN roles r ON u.role_id = r.id;
 
     if (role || status) {
       const countConditions = [];
-      
+
       if (role) {
         countSql += ` JOIN roles r ON u.role_id = r.id`;
         countConditions.push(`r.name = $${countParamIndex}`);
         countValues.push(role);
         countParamIndex++;
       }
-      
+
       if (status) {
-        const isActive = status === 'active';
+        const isActive = status === "active";
         if (role) {
           countConditions.push(`u.is_active = $${countParamIndex}`);
         } else {
@@ -250,8 +328,8 @@ LEFT JOIN roles r ON u.role_id = r.id;
         countValues.push(isActive);
         countParamIndex++;
       }
-      
-      countSql += ` WHERE ${countConditions.join(' AND ')}`;
+
+      countSql += ` WHERE ${countConditions.join(" AND ")}`;
     }
 
     const countResult = await query(countSql, countValues);

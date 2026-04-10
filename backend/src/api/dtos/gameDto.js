@@ -1,3 +1,32 @@
+class CreateGameReq {
+  constructor(game) {
+    this.name = game.name;
+    this.description = game.description;
+    this.rules = game.rules;
+    this.status = game.status;
+    this.ticketTypes = (game.ticketTypes || []).map((type) => ({
+      price: type.price,
+      category: type.category,
+    }));
+    this.mediaIds = game.mediaIds || [];
+  }
+}
+
+class UpdateGameReq {
+  constructor(game) {
+    this.productId = game.productId;
+    this.name = game.name;
+    this.description = game.description;
+    this.rules = game.rules;
+    this.status = game.status;
+    this.ticketTypes = (game.ticketTypes || []).map((type) => ({
+      id: type.id || null,
+      price: type.price,
+      category: type.category,
+    }));
+    this.mediaIds = game.mediaIds || [];
+  }
+}
 class GameRes {
   constructor(game) {
     this.id = game.id;
@@ -15,4 +44,4 @@ class GameRes {
   }
 }
 
-module.exports = { GameRes };
+module.exports = { CreateGameReq, UpdateGameReq, GameRes };

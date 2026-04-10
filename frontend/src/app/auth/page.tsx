@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
+import { authService } from "@/services/authService";
 
 const ACCENT = "#FFD84D";
 
@@ -848,6 +849,45 @@ const LoginForm = ({
       </div>
 
       <SubmitBtn label="Sign In" loading={loading} />
+      {/* Social Login */}
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 12,
+          marginTop: 8,
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <div style={{ flex: 1, height: 1, background: t.inputBorder }} />
+          <span style={{ fontSize: 12, color: t.textMuted }}>
+            or continue with
+          </span>
+          <div style={{ flex: 1, height: 1, background: t.inputBorder }} />
+        </div>
+        <button
+          type="button"
+          onClick={authService.googleAuth}
+          style={{
+            width: "100%",
+            padding: "12px 16px",
+            background: isDark ? "rgba(255,255,255,0.06)" : "#fff",
+            border: `1px solid ${t.inputBorder}`,
+            borderRadius: 16,
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 8,
+            fontSize: 14,
+            fontWeight: 600,
+            color: t.text,
+          }}
+        >
+          {/* Add Google icon SVG here */}
+          Sign in with Google
+        </button>
+      </div>
 
       {error && (
         <div

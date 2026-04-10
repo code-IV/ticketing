@@ -1,5 +1,6 @@
 const User = require("../models/User");
 const { apiResponse } = require("../../utils/helpers");
+const { UserService } = require("../services/userService");
 
 const authController = {
   /**
@@ -103,6 +104,88 @@ const authController = {
       });
     } catch (err) {
       next(err);
+    }
+  },
+
+  /**
+   * POST /api/auth/google/callback
+   */
+  async googleAuth(req, res, next) {
+    try {
+      const { code, state } = req.query;
+
+      if (!code) {
+        return res
+          .status(400)
+          .json({ message: "No code provided from Google" });
+      }
+
+      // 1. Exchange the code for tokens
+      const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          code,
+          client_id: process.env.GOOGLE_CLIENT_ID,
+          client_secret: process.env.GOOGLE_CLIENT_SECRET,
+          grant_type: "authorization_code",
+          redirect_uri: `${process.env.BACKEND_URL}/api/auth/google/callback`,
+        }),
+      });
+
+      const tokens = await tokenResponse.json();
+
+      if (!tokenResponse.ok) {
+        throw new Error(tokens.error_description || "Failed to exchange code");
+      }
+
+      const { access_token } = tokens;
+
+      // 2. Fetch User Profile using the access_token
+      const userResponse = await fetch(
+        "https://www.googleapis.com/oauth2/v3/userinfo",
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${access_token}`,
+          },
+        },
+      );
+      const googleUser = await userResponse.json();
+
+      if (!userResponse.ok) {
+        throw new Error(
+          googleUser.error?.message || "Failed to fetch user info",
+        );
+      }
+
+      if (!googleUser.sub || !googleUser.email) {
+        throw new Error("Incomplete user profile from Google");
+      }
+
+      // Now you have: googleUser.email, googleUser.sub (ID), googleUser.name, googleUser.picture
+      // 3. Database Logic (Example)
+      const user = await UserService.authUser("google", {
+        authId: googleUser.sub,
+        email: googleUser.email,
+        firstName: googleUser.given_name,
+        lastName: googleUser.family_name,
+      });
+      console.log(user);
+      req.session.user = {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        permissions: user.permissions,
+        firstName: user.first_name,
+        lastName: user.last_name,
+      };
+      const destination = state || `${process.env.CLIENT_URL}/`;
+
+      res.redirect(destination);
+    } catch (error) {
+      console.error("OAuth Error:", error);
+      res.redirect(`${process.env.CLIENT_URL}/`);
     }
   },
 

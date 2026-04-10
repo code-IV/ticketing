@@ -24,8 +24,8 @@ router.post(
     { name: "thumbnail", maxCount: 10 }, // TEMP: Accept old field name
   ]),
   (req, res, next) => {
-    console.log('🔍 Received fields:', Object.keys(req.body));
-    console.log('🔍 Received files:', Object.keys(req.files || {}));
+    console.log("🔍 Received fields:", Object.keys(req.body));
+    console.log("🔍 Received files:", Object.keys(req.files || {}));
     if (req.body.label) {
       req.body.label = Array.isArray(req.body.label)
         ? req.body.label
@@ -39,6 +39,13 @@ router.post(
   UploadsController.uploadProductMedia,
 );
 
+router.post(
+  "/sessions",
+  isAuthenticated,
+  isAdmin,
+  UploadsController.createUploadSession,
+);
+
 router.patch(
   "/upload/:id",
   isAuthenticated,
@@ -48,6 +55,16 @@ router.patch(
   upload.fields([{ name: "thumbnail", maxCount: 1 }]),
   UploadsController.updateMedia,
 );
+
+router.post(
+  "/persist/:id",
+  isAuthenticated,
+  isAdmin,
+  uuidParamRule("id"),
+  handleValidation,
+  UploadsController.persistMediaUpload,
+);
+
 router.delete(
   "/rm/:id",
   isAuthenticated,

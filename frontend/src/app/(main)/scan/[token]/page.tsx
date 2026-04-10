@@ -652,7 +652,7 @@ export default function StaffTransactionPage() {
                   isDarkTheme ? "text-white/40" : "text-slate-500"
                 }`}
               >
-                Token: <span className="font-mono">{token || "Unknown"}</span>
+                Token: <span className="font-mono">{token ? `${token.substring(0, 12)}...` : "Unknown"}</span>
               </p>
             </div>
           </div>

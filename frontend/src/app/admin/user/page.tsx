@@ -8,6 +8,8 @@ import { User } from '@/types';
 export default function UserManagement() {
   const { isDarkTheme } = useTheme();
   const [searchTerm, setSearchTerm] = useState("");
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchQuery, setSearchQuery] = useState(""); // The actual search being executed
   const [roleFilter, setRoleFilter] = useState<string>("ALL");
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [users, setUsers] = useState<User[]>([]);
@@ -224,18 +226,25 @@ export default function UserManagement() {
   };
 
   const loadUsers = useCallback(async () => {
-    console.log('loadUsers called with:', { currentPage, roleFilter, statusFilter });
+    console.log('loadUsers called with:', { currentPage, roleFilter, statusFilter, searchQuery });
     try {
       setLoading(true);
       setError(null);
-      const apiRole = roleFilter === "ALL" ? undefined : roleFilter;
-      const apiStatus = statusFilter === "ALL" ? undefined : statusFilter.toLowerCase();
-      console.log('Making API call with params:', { currentPage, usersPerPage, apiRole, apiStatus });
-      const response = await adminService.getAllUsers(currentPage, usersPerPage, apiRole, apiStatus);
+      
+      let response;
+      
+      // Use search endpoint if there's a search query, otherwise use regular getAllUsers
+      if (searchQuery.trim()) {
+        response = await adminService.searchUsers(searchQuery.trim(), currentPage, usersPerPage);
+      } else {
+        const apiRole = roleFilter === "ALL" ? undefined : roleFilter;
+        const apiStatus = statusFilter === "ALL" ? undefined : statusFilter.toLowerCase();
+        response = await adminService.getAllUsers(currentPage, usersPerPage, apiRole, apiStatus);
+      }
+      
       console.log('API response:', response);
       
-      // The actual API response structure is: { success: true, message: '...', data: { users: [...], pagination: {...} } }
-      const responseData = response.data; // Direct access, not response.data.data
+      const responseData = response.data;
       console.log('Response data:', responseData);
       let usersData = responseData?.users || [];
       const paginationData = responseData?.pagination;
@@ -260,8 +269,28 @@ export default function UserManagement() {
       setUsers([]);
     } finally {
       setLoading(false);
+      setIsSearching(false);
     }
-  }, [currentPage, roleFilter, statusFilter, usersPerPage]);
+  }, [currentPage, roleFilter, statusFilter, usersPerPage, searchQuery]);
+
+  const handleSearchSubmit = useCallback(async (e?: React.FormEvent) => {
+    if (e) {
+      e.preventDefault();
+    }
+    
+    // Only search if term is different from current search query
+    if (searchTerm.trim() !== searchQuery) {
+      setIsSearching(true);
+      setSearchQuery(searchTerm.trim());
+      setCurrentPage(1); // Reset to first page when searching
+    }
+  }, [searchTerm, searchQuery]);
+
+  const handleClearSearch = useCallback(() => {
+    setSearchTerm("");
+    setSearchQuery("");
+    setCurrentPage(1);
+  }, []);
 
   const goToPage = (page: number) => { if (page >= 1 && page <= totalPages) setCurrentPage(page); };
   const goToPreviousPage = () => { if (currentPage > 1) setCurrentPage(currentPage - 1); };
@@ -269,7 +298,7 @@ export default function UserManagement() {
 
   useEffect(() => {
     loadUsers();
-  }, [currentPage, roleFilter, statusFilter, loadUsers]);
+  }, [currentPage, roleFilter, statusFilter, searchQuery, loadUsers]);
 
   const handleDeleteUser = async (userId: string, userEmail: string) => {
     showConfirmDialog('Delete User', `Are you sure you want to delete user "${userEmail}"?`, async () => {
@@ -331,7 +360,7 @@ export default function UserManagement() {
     );
   };
 
-  const filteredUsers = users.filter(user => user.email?.toLowerCase().includes(searchTerm.toLowerCase()));
+  const filteredUsers = users; // No client-side filtering needed
 
   return (
     <div className="space-y-6 container max-w-7xl mx-auto p-5">
@@ -775,8 +804,8 @@ export default function UserManagement() {
           {/* Header */}
           <div className="flex items-center justify-between gap-4">
             <h1 className={`text-2xl font-black tracking-tight ${isDarkTheme ? 'text-white' : 'text-slate-900'}`}>Manage Users</h1>
-            <button onClick={loadUsers} disabled={loading} className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${loading ? 'bg-gray-500 text-gray-200' : isDarkTheme ? 'bg-accent text-black hover:bg-accent2' : 'bg-accent2 text-black hover:bg-accent'}`}>
-              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} /> {loading ? 'Loading...' : 'Refresh'}
+            <button onClick={loadUsers} disabled={loading || isSearching} className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${(loading || isSearching) ? 'bg-gray-500 text-gray-200' : isDarkTheme ? 'bg-accent text-black hover:bg-accent2' : 'bg-accent2 text-black hover:bg-accent'}`}>
+              <RefreshCw className={`h-4 w-4 ${(loading || isSearching) ? 'animate-spin' : ''}`} /> {(loading || isSearching) ? (isSearching ? 'Searching...' : 'Loading...') : 'Refresh'}
             </button>
           </div>
 
@@ -800,10 +829,25 @@ export default function UserManagement() {
 
           {/* Search and Filters */}
           <div className={`p-4 rounded-2xl border shadow-sm flex flex-col gap-4 ${isDarkTheme ? 'bg-[#0A0A0A] border-gray-700' : 'bg-white border-slate-100'}`}>
-            <div className="relative w-full">
+            <form onSubmit={handleSearchSubmit} className="relative w-full">
               <Search className={`absolute left-4 top-1/2 -translate-y-1/2 ${isDarkTheme ? 'text-gray-500' : 'text-slate-400'}`} size={16} />
-              <input type="text" placeholder="Search by email..." className={`w-full pl-12 pr-4 py-3 border-none rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-medium ${isDarkTheme ? 'bg-[#1a1a1a] text-white placeholder-gray-500' : 'bg-slate-50 text-slate-900 placeholder-slate-400'}`} value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
-            </div>
+              <input 
+                type="text" 
+                placeholder="Search by name, email, or phone..." 
+                className={`w-full pl-12 pr-12 py-3 border-none rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-medium ${isDarkTheme ? 'bg-[#1a1a1a] text-white placeholder-gray-500' : 'bg-slate-50 text-slate-900 placeholder-slate-400'}`} 
+                value={searchTerm} 
+                onChange={e => setSearchTerm(e.target.value)}
+              />
+              {searchTerm && (
+                <button
+                  type="button"
+                  onClick={handleClearSearch}
+                  className={`absolute right-4 top-1/2 -translate-y-1/2 p-1 rounded-full transition-colors ${isDarkTheme ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-200 text-gray-500'}`}
+                >
+                  <X size={14} />
+                </button>
+              )}
+            </form>
             <div className="flex gap-3">
               <select value={roleFilter} onChange={e => setRoleFilter(e.target.value)} className={`flex-1 px-4 py-2 rounded-xl outline-none ${isDarkTheme ? 'bg-[#1a1a1a] border border-gray-700 text-white' : 'bg-slate-50 border border-slate-200'}`}>
                 <option value="ALL">All Roles</option>

@@ -8,6 +8,10 @@ const {
   bookingStatsService,
 } = require("../services/bookingService");
 const { EventService } = require("../services/eventService");
+const {
+  CreateBookingEventsReq,
+  CreateBookingGamesReq,
+} = require("../dtos/bookingDto");
 
 const bookingController = {
   /**
@@ -15,15 +19,8 @@ const bookingController = {
    */
   async createBookingEvent(req, res, next) {
     try {
-      const {
-        eventId,
-        items,
-        paymentMethod,
-        guestEmail,
-        guestName,
-        notes,
-        expires_at,
-      } = req.body;
+      const validatedBody = new CreateBookingEventsReq(req.body);
+      const { items, paymentMethod, eventId } = validatedBody;
       const userId = req.session?.user?.id || null;
 
       // Verify event exists and is active
@@ -95,9 +92,6 @@ const bookingController = {
         eventId,
         items: resolvedItems,
         paymentMethod,
-        guestEmail,
-        guestName,
-        notes,
         expires_at: expires,
       });
 
@@ -111,26 +105,16 @@ const bookingController = {
 
   async createBookingGames(req, res, next) {
     try {
-      const {
-        items, // [{ ticketTypeId, quantity }]
-        totalAmount,
-        paymentMethod,
-        guestEmail,
-        guestName,
-        notes,
-      } = req.body;
+      const validatedBody = new CreateBookingGamesReq(req.body);
+      const { items, paymentMethod } = validatedBody;
       const userId = req.session?.user?.id || null;
-      const expiresAt = new Date(); //leave it like this for now
+      const expiresAt = new Date();
 
       // 4️⃣ Call transactional booking service
       const booking = await Booking.bookGames({
         userId,
         items,
-        totalAmount,
         paymentMethod,
-        guestEmail,
-        guestName,
-        notes,
         expires_at: expiresAt,
       });
 
@@ -185,6 +169,44 @@ const bookingController = {
   },
 
   /**
+   * GET /api/bookings/user/:id - Get current user's bookings
+   */
+  async getBookingByUserId(req, res, next) {
+    try {
+      // Disable caching for bookings endpoints
+      res.setHeader(
+        "Cache-Control",
+        "no-cache, no-store, must-revalidate, max-age=0",
+      );
+      res.setHeader("Pragma", "no-cache");
+      res.setHeader("Expires", "0");
+      res.removeHeader("ETag"); // Clear ETag to prevent 304 responses
+
+      const userId = req.params.id;
+      const page = parseInt(req.query.page, 10) || 1;
+      const limit = Math.min(parseInt(req.query.limit, 10) || 20, 100);
+
+      const result = await Booking.findByUserId(userId, { page, limit });
+      const bookings = (result.bookings || []).map((b) => ({
+        id: b.id,
+        bookingReference: b.booking_reference,
+        totalAmount: b.total_amount,
+        status: b.status,
+        eventDate: b.eventDate,
+        bookendAt: b.created_at,
+        type: b.type,
+        ticket: b.ticket,
+      }));
+      return apiResponse(res, 200, true, "Bookings retrieved.", {
+        bookings,
+        pagination: result.pagination,
+      });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  /**
    * GET /api/bookings/:id - Get booking details
    */
   async getBookingById(req, res, next) {
@@ -196,7 +218,7 @@ const bookingController = {
 
       // Ensure user can only see their own bookings (unless admin)
       if (
-        req.session.user.role !== "admin" &&
+        req.session.user.role !== "ADMIN" &&
         booking.user_id !== req.session.user.id
       ) {
         return apiResponse(res, 403, false, "Access denied.");
@@ -290,27 +312,19 @@ const bookingController = {
         return apiResponse(res, 404, false, "Booking not found.");
       }
 
-      // Ensure user can only cancel their own bookings (unless admin)
-      if (
-        req.session.user.role !== "admin" &&
-        booking.user_id !== req.session.user.id
-      ) {
-        return apiResponse(res, 403, false, "Access denied.");
-      }
-
-      if (booking.booking_status === "cancelled") {
+      if (booking.status === "cancelled") {
         return apiResponse(res, 400, false, "Booking is already cancelled.");
       }
 
       // Check if event date has passed
-      if (new Date(booking.event_date) < new Date().setHours(0, 0, 0, 0)) {
-        return apiResponse(
-          res,
-          400,
-          false,
-          "Cannot cancel bookings for past events.",
-        );
-      }
+      // if (new Date(booking.event_date) < new Date().setHours(0, 0, 0, 0)) {
+      //   return apiResponse(
+      //     res,
+      //     400,
+      //     false,
+      //     "Cannot cancel bookings for past events.",
+      //   );
+      // }
 
       const result = await Booking.cancel(req.params.id);
       return apiResponse(

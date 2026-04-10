@@ -1,5 +1,5 @@
-import { api } from '@/lib/api';
-import { User, ApiResponse } from '@/types';
+import { api } from "@/lib/api";
+import { User, ApiResponse } from "@/types";
 
 export const authService = {
   async register(data: {
@@ -9,22 +9,30 @@ export const authService = {
     phone?: string;
     password: string;
   }): Promise<ApiResponse<{ user: User }>> {
-    const response = await api.post('/auth/register', data);
+    const response = await api.post("/auth/register", data);
     return response.data;
   },
 
-  async login(email: string, password: string): Promise<ApiResponse<{ user: User }>> {
-    const response = await api.post('/auth/login', { email, password });
+  async login(
+    email: string,
+    password: string,
+  ): Promise<ApiResponse<{ user: User }>> {
+    const response = await api.post("/auth/login", { email, password });
     return response.data;
+  },
+
+  googleAuth(): void {
+    const returnTo = encodeURIComponent(window.location.origin + "/");
+    window.location.href = `${process.env.NEXT_PUBLIC_API_URL}/auth/google/login?returnTo=${returnTo}`;
   },
 
   async logout(): Promise<ApiResponse> {
-    const response = await api.post('/auth/logout');
+    const response = await api.post("/auth/logout");
     return response.data;
   },
 
   async getMe(): Promise<ApiResponse<{ user: User }>> {
-    const response = await api.get('/auth/me');
+    const response = await api.get("/auth/me");
     return response.data;
   },
 
@@ -33,12 +41,15 @@ export const authService = {
     lastName?: string;
     phone?: string;
   }): Promise<ApiResponse<{ user: User }>> {
-    const response = await api.put('/auth/profile', data);
+    const response = await api.put("/auth/profile", data);
     return response.data;
   },
 
-  async changePassword(currentPassword: string, newPassword: string): Promise<ApiResponse> {
-    const response = await api.put('/auth/change-password', {
+  async changePassword(
+    currentPassword: string,
+    newPassword: string,
+  ): Promise<ApiResponse> {
+    const response = await api.put("/auth/change-password", {
       currentPassword,
       newPassword,
     });

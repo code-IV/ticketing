@@ -2,7 +2,7 @@ const { Event } = require("../models/Event");
 const { EventService, EventStatsService } = require("../services/eventService");
 const TicketType = require("../models/TicketType");
 const { apiResponse } = require("../../utils/helpers");
-const { query } = require("../../config/db");
+const { CreateEventReq, UpdateEventReq } = require("../dtos/eventDto");
 
 const EventController = {
   /**
@@ -25,9 +25,14 @@ const EventController = {
    */
   async createEvent(req, res, next) {
     try {
-      const event = { ...req.body, createdBy: req.session.user.id };
+      const event = new CreateEventReq(req.body.event);
+      const sessionId = req.body.sessionId;
+      const userId = req.session.user.id;
 
-      const result = await EventService.createEvent(event);
+      const result = await EventService.createEvent(
+        { ...event, userId },
+        sessionId,
+      );
       return apiResponse(res, 201, true, "Event created successfully.", result);
     } catch (err) {
       next(err);
@@ -39,17 +44,19 @@ const EventController = {
    */
   async updateEvent(req, res, next) {
     try {
-      const eventReq = req.body;
+      const { id } = req.params;
+      const event = new UpdateEventReq(req.body.event);
+      const sessionId = req.body.sessionId;
 
-      const existing = await Event.findById(req.params.id);
+      const existing = await Event.findById(id);
       if (!existing) {
         return apiResponse(res, 404, false, "Event not found.");
       }
 
-      const event = await EventService.updateEvent(req.params.id, eventReq);
+      const result = await EventService.updateEvent(id, event, sessionId);
 
       return apiResponse(res, 200, true, "Event updated successfully.", {
-        event,
+        result,
       });
     } catch (err) {
       next(err);
@@ -183,7 +190,7 @@ const EventStatsController = {
       });
     } catch (error) {
       console.log(error);
-      res.status(500).json({ success: false, message: error.message });
+      next(error);
     }
   },
   async getEventStats(req, res) {
