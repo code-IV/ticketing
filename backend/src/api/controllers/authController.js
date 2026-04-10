@@ -180,9 +180,11 @@ const authController = {
         lastName: user.last_name,
       };
       console.log("session:   ", req.session.user);
-      const destination = state || `${process.env.CLIENT_URL}/`;
 
-      res.redirect(destination);
+      req.session.save((err) => {
+        const destination = state || `${process.env.CLIENT_URL}/`;
+        res.redirect(destination);
+      });
     } catch (error) {
       console.error("OAuth Error:", error);
       res.redirect(`${process.env.CLIENT_URL}/`);
