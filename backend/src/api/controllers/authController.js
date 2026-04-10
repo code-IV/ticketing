@@ -182,6 +182,11 @@ const authController = {
       console.log("session:   ", req.session.user);
 
       req.session.save((err) => {
+        if (err) {
+          console.error("SESSION SAVE ERROR:", err);
+          return res.status(500).send("Internal Server Error");
+        }
+        console.log("Session saved successfully for user:", user.email);
         const destination = state || `${process.env.CLIENT_URL}/`;
         res.redirect(destination);
       });
