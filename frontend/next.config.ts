@@ -2,11 +2,11 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   images: {
-    domains: ["localhost", process.env.NEXT_PUBLIC_API_DOMAIN || ""],
+    domains: ["localhost", process.env.NEXT_PUBLIC_API_URL || ""],
     unoptimized: true,
   },
   async rewrites() {
-    const backendHost = process.env.BACKEND_URL || "http://localhost:5000";
+    const backendHost = process.env.NEXT_PUBLIC_API_URL;
 
     return [
       {
