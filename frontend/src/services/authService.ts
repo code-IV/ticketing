@@ -23,7 +23,7 @@ export const authService = {
 
   googleAuth(): void {
     const returnTo = encodeURIComponent(window.location.origin + "/");
-    window.location.href = `${process.env.NEXT_PUBLIC_API_URL}/auth/google/login?returnTo=${returnTo}`;
+    window.location.href = `${process.env.NEXT_PUBLIC_API_URL}/api/auth/google/login?returnTo=${returnTo}`;
   },
 
   async logout(): Promise<ApiResponse> {

@@ -171,7 +171,6 @@ const authController = {
         firstName: googleUser.given_name,
         lastName: googleUser.family_name,
       });
-      console.log(user);
       req.session.user = {
         id: user.id,
         email: user.email,

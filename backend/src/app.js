@@ -27,7 +27,7 @@ const app = express();
 // ============================================
 
 //number of hop distances
-app.set("trust proxy", 1);
+// app.set("trust proxy", 1);
 
 // Security headers
 app.use(helmet());

@@ -32,7 +32,9 @@ exports.up = async function (knex) {
     table.string("last_name", 100).notNullable();
     table.string("email", 255).unique().notNullable();
     table.string("phone", 20);
-    table.string("password_hash", 255).notNullable();
+    table.string("oauth_provider", 30).nullable();
+    table.string("oauth_id", 100).unique().nullable();
+    table.string("password_hash", 255).nullable();
     table
       .uuid("role_id")
       .references("id")
