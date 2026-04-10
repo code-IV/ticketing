@@ -179,6 +179,7 @@ const authController = {
         firstName: user.first_name,
         lastName: user.last_name,
       };
+      console.log("session:   ", req.session.user);
       const destination = state || `${process.env.CLIENT_URL}/`;
 
       res.redirect(destination);
@@ -218,6 +219,7 @@ const authController = {
       res.setHeader("Pragma", "no-cache");
       res.setHeader("Expires", "0");
       res.setHeader("ETag", ""); // Clear ETag to prevent 304 responses
+      console.log("me  ", req.session.user);
 
       const user = await User.findById(req.session.user.id);
       if (!user) {
