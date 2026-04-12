@@ -1,6 +1,8 @@
 const { getClient } = require("../../config/db");
+const PromotionEngine = require("../../utils/promotinEngine");
 const { checkUploadBySid } = require("../../utils/uploads");
 const { GameRes } = require("../dtos/gameDto");
+const { Discount } = require("../models/Discount");
 const { Game, GameStats } = require("../models/Games");
 const TicketType = require("../models/TicketType");
 const { Sessions, Media } = require("../models/uploads");
@@ -107,14 +109,72 @@ const GameService = {
       throw new Error("Could not retrieve games catalog.");
     }
   },
-  async getActive() {
+  async getActive(user) {
+    const client = await getClient();
     try {
+      await client.query("BEGIN");
       const rows = await Game.findActive();
+      const activePromos = await Discount.getApplicablePromos(
+        rows.map((r) => r.product_id),
+        client,
+      );
+      const gamesWithDiscounts = rows.map((game) => {
+        const gameResult = new GameRes(game);
 
-      return { games: rows.map((row) => new GameRes(row)) };
+        // Enrich each ticket type with its own discount
+        const enrichedTicketTypes = game.ticket_types.map((tt) => {
+          let bestDiscount = 0;
+          let name = "";
+
+          activePromos.forEach((promo) => {
+            const promoContext = {
+              userId: user?.id,
+              isAuthenticated: !!user,
+              ticketTypeIds: [tt.id], // only this ticket type
+              cartTotal: 0,
+            };
+            if (
+              promo.rules?.length > 0 &&
+              PromotionEngine.validateRules(promo.rules, promoContext)
+            ) {
+              const discount = PromotionEngine.calculateDiscount(
+                tt.price,
+                promo.rules[0],
+              );
+
+              if (discount > bestDiscount) {
+                bestDiscount = discount;
+                name = promo.name;
+              }
+            }
+          });
+
+          // optionally cap discount so final price >= 0
+          const finalPrice = Math.max(0, tt.price - bestDiscount);
+
+          return {
+            ...tt,
+            discount: {
+              discountName: name,
+              discountAmount: bestDiscount,
+              finalPrice,
+            },
+          };
+        });
+
+        return {
+          ...gameResult,
+          ticketTypes: enrichedTicketTypes, // if you want game‑level
+        };
+      });
+      await client.query("COMMIT");
+      return { games: gamesWithDiscounts };
     } catch (error) {
+      await client.query("ROLLBACK");
       console.error("Error in gameService.getActive:", error);
       throw new Error("Could not retrieve games catalog.");
+    } finally {
+      client.release();
     }
   },
 

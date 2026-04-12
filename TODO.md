@@ -27,6 +27,7 @@
   - [x] User Profile update UI.
   - [x] QR/Barcode Scan Page fixes.
   - [x] Asset Integration (Real Media, Mock Images, Metadata).
+- [ ] **SEO**
 
 ---
 

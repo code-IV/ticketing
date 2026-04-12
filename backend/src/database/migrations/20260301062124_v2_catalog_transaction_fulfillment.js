@@ -44,6 +44,57 @@ exports.up = async function (knex) {
   WHERE deleted_at IS NULL
 `);
 
+  await knex.schema.createTable("promotions", (table) => {
+    table.uuid("id").primary().defaultTo(knex.raw("gen_random_uuid()"));
+    table.string("name").notNullable(); // e.g., "Summer Sale"
+    table.text("description");
+    table.boolean("is_active").defaultTo(true);
+
+    // Global limits
+    table.integer("max_global_usages").nullable(); // e.g., First 100 tickets
+    table.integer("total_usages").defaultTo(0);
+
+    // Time windows
+    table.timestamp("starts_at").notNullable();
+    table.timestamp("ends_at").notNullable();
+
+    table.timestamps(true, true);
+  });
+
+  // 2. Rules Table (The logic)
+  await knex.schema.createTable("promotion_rules", (table) => {
+    table.uuid("id").primary().defaultTo(knex.raw("gen_random_uuid()"));
+    table
+      .uuid("promotion_id")
+      .references("id")
+      .inTable("promotions")
+      .onDelete("CASCADE")
+      .notNullable();
+    table.index("promotion_id", "idx_promotion_rules_promotion_id");
+
+    // Rule types: 'USER_LOGGED_IN', 'MIN_PURCHASE', 'PRODUCT_SPECIFIC', 'USAGE_COUNT'
+    table.string("rule_type").notNullable();
+    table.jsonb("rule_data").notNullable(); // e.g., { "min_amount": 500 } or { "first_n": 100 }
+
+    // Action: How much to take off
+    table.enu("discount_type", ["PERCENTAGE", "FLAT_AMOUNT"]).notNullable();
+    table.decimal("discount_value", 10, 2).notNullable();
+  });
+
+  // 3. Coupon Codes (Optional access)
+  await knex.schema.createTable("coupon_codes", (table) => {
+    table.string("code").primary(); // e.g., "SAVE20"
+    table
+      .uuid("promotion_id")
+      .references("id")
+      .inTable("promotions")
+      .onDelete("CASCADE")
+      .notNullable();
+    table.integer("max_usages_per_user").defaultTo(1);
+    table.boolean("is_active").defaultTo(true);
+    table.timestamps(true, true);
+  });
+
   // 4. BOOKINGS: Use the booking_status ENUM
   await knex.schema.createTable("bookings", (table) => {
     table.uuid("id").primary().defaultTo(knex.raw("gen_random_uuid()"));
@@ -51,8 +102,14 @@ exports.up = async function (knex) {
     table.uuid("user_id").nullable();
     table.decimal("total_amount", 10, 2).notNullable();
     table.specificType("status", "booking_status").defaultTo("PENDING");
-    table.string("guest_email").nullable();
-    table.string("guest_name").nullable();
+    table
+      .uuid("promotion_id")
+      .nullable()
+      .references("id")
+      .inTable("promotions")
+      .onDelete("SET NULL");
+    table.string("coupon_code").nullable();
+    table.decimal("discount_total", 10, 2).defaultTo(0);
     table.timestamps(true, true);
   });
 
@@ -72,6 +129,7 @@ exports.up = async function (knex) {
     table.integer("quantity").notNullable();
     table.decimal("unit_price", 10, 2).notNullable();
     table.decimal("subtotal", 10, 2).notNullable();
+    table.decimal("discount_amount", 10, 2).defaultTo(0);
     table.index("booking_id", "idx_booking_items_booking_id");
   });
 
@@ -143,6 +201,22 @@ exports.up = async function (knex) {
     table.timestamp("created_at").defaultTo(knex.fn.now());
 
     table.index("expires_at", "idx_upload_sessions_expiry");
+  });
+
+  await knex.schema.createTable("promotion_rule_products", (table) => {
+    table.uuid("id").primary().defaultTo(knex.raw("gen_random_uuid()"));
+    table
+      .uuid("rule_id")
+      .references("id")
+      .inTable("promotion_rules")
+      .onDelete("CASCADE");
+    table
+      .uuid("ticket_type_id")
+      .references("id")
+      .inTable("ticket_types")
+      .onDelete("CASCADE");
+
+    table.unique(["rule_id", "ticket_type_id"]);
   });
 };
 

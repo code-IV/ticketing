@@ -13,7 +13,7 @@ const GameController = {
 
       const gameRes = await GameService.create(game, sessionId);
 
-      return apiResponse(res, 200, true, "Game created successfully", gameRes);
+      return apiResponse(res, 201, true, "Game created successfully", gameRes);
     } catch (err) {
       next(err);
     }
@@ -50,7 +50,7 @@ const GameController = {
    */
   async getActiveGames(req, res, next) {
     try {
-      const games = await GameService.getActive();
+      const games = await GameService.getActive(req.user);
       return apiResponse(res, 200, true, "GET game successful", games);
     } catch (err) {
       next(err);

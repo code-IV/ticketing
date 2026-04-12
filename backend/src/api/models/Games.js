@@ -96,39 +96,52 @@ const Game = {
   async findActive() {
     const sql = `
     SELECT 
-      g.id, g.name, g.description, g.rules, g.status,
-      -- Aggregate Ticket Types
-      COALESCE(
-        (SELECT JSON_AGG(JSON_BUILD_OBJECT(
+  g.id, g.name, g.description, g.rules, g.status,
+  p.id AS product_id,
+  -- Aggregate Ticket Types + their discounts
+  COALESCE(
+    (
+      SELECT JSON_AGG(
+        JSON_BUILD_OBJECT(
           'id', tt.id,
           'category', tt.category,
           'price', tt.price
-        )) FROM ticket_types tt WHERE tt.product_id = p.id AND tt.deleted_at IS NULL), 
-        '[]'
-      ) AS ticket_types,
-      -- Aggregate Media Gallery
-      COALESCE(
-        (SELECT JSON_AGG(JSON_BUILD_OBJECT(
+        )
+      )
+      FROM ticket_types tt
+      WHERE tt.product_id = p.id
+        AND tt.deleted_at IS NULL
+    ),
+    '[]'
+  ) AS ticket_types,
+
+  -- Gallery (unchanged)
+  COALESCE(
+    (
+      SELECT JSON_AGG(
+        JSON_BUILD_OBJECT(
           'id', m.id,
           'url', m.url,
           'type', m.type,
-              'label', m.label,
-              'thumbnailUrl', CASE 
-                                WHEN m.thumbnail_url IS NOT NULL THEN m.thumbnail_url 
-                                ELSE NULL 
-                              END,
+          'label', m.label,
+          'thumbnailUrl',
+            CASE WHEN m.thumbnail_url IS NOT NULL THEN m.thumbnail_url ELSE NULL END,
           'name', m.name,
           'sort_order', pm.sort_order
-        ) ORDER BY pm.sort_order ASC) 
-         FROM media m 
-         JOIN products_media pm ON pm.media_id = m.id 
-         WHERE pm.product_id = p.id), 
-        '[]'
-      ) AS gallery
-    FROM games g
-    LEFT JOIN products p ON g.id = p.game_id
-    WHERE g.status = 'OPEN' AND p.is_active=true
-    ORDER BY g.created_at DESC;
+        )
+        ORDER BY pm.sort_order ASC
+      )
+      FROM media m
+      JOIN products_media pm ON pm.media_id = m.id
+      WHERE pm.product_id = p.id
+    ),
+    '[]'
+  ) AS gallery
+
+FROM games g
+LEFT JOIN products p ON g.id = p.game_id
+WHERE g.status = 'OPEN' AND p.is_active = true
+ORDER BY g.created_at DESC;
   `;
 
     const result = await query(sql);

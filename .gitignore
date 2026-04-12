@@ -43,3 +43,4 @@ Thumbs.db
 
 #supabase volumes
 /supabase/volumes/
+/supabase-docker

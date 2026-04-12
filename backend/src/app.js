@@ -19,6 +19,7 @@ const analyticsRoutes = require("./routes/analyticsRoutes");
 const metricsRoute = require("./routes/metricsRoutes");
 const gameRoutes = require("./routes/gameRoutes");
 const buyTicketRoutes = require("./routes/buyTicket");
+const discountRoutes = require("./routes/discountRoutes");
 
 const app = express();
 
@@ -27,7 +28,7 @@ const app = express();
 // ============================================
 
 //number of hop distances
-// app.set("trust proxy", 1);
+app.set("trust proxy", 1);
 
 // Security headers
 app.use(helmet());
@@ -83,6 +84,7 @@ app.use("/api/media", uploadsRoute);
 app.use("/api/analytics", analyticsRoutes);
 app.use("/api/metrics", metricsRoute);
 app.use("/api/games", gameRoutes);
+app.use("/api/discount", discountRoutes);
 // app.use("/api/buy", buyTicketRoutes);
 
 // ============================================
