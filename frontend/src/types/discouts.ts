@@ -14,26 +14,24 @@ export enum RuleType {
 
 // Specific data shapes for the JSONB column
 export interface AuthRuleData {
-  is_authenticated: boolean;
+  isAuthenticated: boolean;
 }
 export interface LimitRuleData {
   limit: number;
-  current_usage: number;
+  currentUsage: number;
 }
 export interface ProductRuleData {
-  ticket_type_ids: string[];
+  ticketTypeIds: string[];
 }
 export interface MinPurchaseData {
-  min_amount: number;
+  minAmount: number;
 }
 
 export interface PromotionRule {
   id: string;
-  promotion_id: string;
+  promotionId: string;
   ruleType: RuleType;
   ruleData: AuthRuleData | LimitRuleData | ProductRuleData | MinPurchaseData;
-  discountType: DiscountType;
-  discountValue: number;
 }
 
 export interface Promotion {
@@ -45,6 +43,8 @@ export interface Promotion {
   endsAt: Date;
   maxGlobalUsages?: number;
   totalUsages: number;
+  discountType: DiscountType;
+  discountValue: number;
   rules: PromotionRule[]; // Nested rules for the engine to check
 }
 

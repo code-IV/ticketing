@@ -1,5 +1,7 @@
 const { getClient } = require("../../config/db");
+const PromotionEngine = require("../../utils/promotinEngine");
 const { EventRes } = require("../dtos/eventDto");
+const { Discount } = require("../models/Discount");
 const { Event, EventStats } = require("../models/Event");
 const TicketType = require("../models/TicketType");
 const { Sessions, Media } = require("../models/uploads");
@@ -155,15 +157,111 @@ const EventService = {
     };
   },
 
-  async getEventById(id) {
-    const event = await Event.findEventWithDetails(id);
+  async getEventById(id, user = null) {
+    try {
+      // 1. Fetch active event + products + ticket_types
+      const row = await Event.findEventWithDetails(id);
 
-    if (!event) {
-      throw new Error(`Event with ID ${id} not found`);
+      if (!row) {
+        throw new Error(`Event with ID ${id} not found`);
+      }
+      const activePromos = await Discount.getApplicablePromos();
+
+      // 2. Index promos by ticket_type_id (fast lookup)
+      const promosByTicketType = new Map();
+
+      for (const promo of activePromos) {
+        const ticketTypeIds = promo.rules
+          ?.filter((r) => r.type === "PRODUCT_SPECIFIC")
+          .flatMap((r) => r.data?.ticketTypeIds || []);
+
+        if (ticketTypeIds.length === 0) {
+          // This promo is global (no ticket_type restriction).
+          // Mark it with a sentinel key so we can find it later.
+          const globalKey = "__global__";
+          if (!promosByTicketType.has(globalKey)) {
+            promosByTicketType.set(globalKey, []);
+          }
+          promosByTicketType.get(globalKey).push(promo);
+        } else {
+          // Index per ticket_type_id.
+          ticketTypeIds.forEach((id) => {
+            if (!promosByTicketType.has(id)) {
+              promosByTicketType.set(id, []);
+            }
+            promosByTicketType.get(id).push(promo);
+          });
+        }
+      }
+
+      // 3. Enrich each game + each ticket type
+      const eventWithDiscounts = (row) => {
+        const eventResult = new EventRes(row);
+
+        const enrichedTicketTypes = row.ticket_types.map((tt) => {
+          let bestDiscount = 0;
+          let bestDiscountName = "";
+
+          const promoContext = {
+            userId: user?.id,
+            isAuthenticated: !!user,
+            ticketTypeIds: [tt.id],
+            cartTotal: 0,
+          };
+
+          // 3.1 Check promos that are either:
+          // - explicitly for this ticket_type_id
+          // - or global (no ticket_type_ids)
+          const specificPromos = promosByTicketType.get(tt.id) || [];
+          const globalPromos = promosByTicketType.get("__global__") || [];
+          const applicablePromos = [...specificPromos, ...globalPromos];
+
+          applicablePromos.forEach((promo) => {
+            if (
+              promo.rules?.length > 0 &&
+              PromotionEngine.validateRules(promo.rules, promoContext)
+            ) {
+              const discount = PromotionEngine.calculateDiscount(
+                tt.price,
+                promo.discount_type,
+                promo.discount_value,
+              );
+
+              if (discount > bestDiscount) {
+                bestDiscount = discount;
+                bestDiscountName = promo.name;
+              }
+            }
+          });
+
+          // 4. Only attach `discount` if there is at least one applicable promo.
+          const finalPrice = Math.max(0, tt.price - bestDiscount);
+
+          if (bestDiscount > 0) {
+            return {
+              ...tt,
+              discount: {
+                discountName: bestDiscountName,
+                discountAmount: bestDiscount,
+                finalPrice,
+              },
+            };
+          }
+
+          // If no promo applies, return original ticket WITHOUT `discount` object.
+          return tt;
+        });
+
+        return {
+          ...eventResult,
+          ticketTypes: enrichedTicketTypes,
+        };
+      };
+      return { event: eventWithDiscounts(row) };
+    } catch (error) {
+      console.error("Error in EventService.getEventById:", error);
+      throw error;
     }
-
-    // Business Logic: Maybe you want to format the media URLs or calculate total capacity
-    return { event: new EventRes(event) };
   },
 
   async checkAvailability(eventId, requestedQuantity) {

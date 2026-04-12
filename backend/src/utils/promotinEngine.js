@@ -7,46 +7,48 @@
  */
 
 class PromotionEngine {
-  /**
-   * Evaluates if a promotion's rules are met
-   */
   static validateRules(rules, context) {
     for (const rule of rules) {
-      const { rule_type, rule_data } = rule;
+      const { type, data } = rule;
 
-      switch (rule_type) {
+      switch (type) {
         case "REQUIRE_AUTH":
           if (!context.isAuthenticated) return false;
           break;
 
         case "GLOBAL_LIMIT":
-          if (rule_data.current_usage >= rule_data.limit) return false;
+          if (data.currentUsage >= data.limit) return false;
           break;
 
         case "MIN_PURCHASE":
-          if (context.cartTotal < rule_data.min_amount) return false;
+          if (context.cartTotal < data.minAmount) return false;
           break;
 
-        case "PRODUCT_SPECIFIC":
-          // Check if any ticket type in this game matches the allowed ticket_type_ids
-          const contextIds = context.ticketTypeIds ?? [];
-          const allowedIds = rule_data.ticket_type_ids ?? [];
-          const hasMatch = contextIds.some((id) => allowedIds.includes(id));
+        case "PRODUCT_SPECIFIC": {
+          // If rule has ticket_type_ids, require at least one match.
+          const allowedTicketTypeIds = data.ticketTypeIds;
+          if (!allowedTicketTypeIds || allowedTicketTypeIds.length === 0) {
+            break; // no restriction
+          }
+          const hasMatch = (context.ticketTypeIds || []).some((id) =>
+            allowedTicketTypeIds.includes(id),
+          );
           if (!hasMatch) return false;
           break;
+        }
+
+        default:
+          return false;
       }
     }
     return true;
   }
 
-  /**
-   * Calculates the specific discount amount
-   */
-  static calculateDiscount(price, rule) {
-    if (rule.discount_type === "PERCENTAGE") {
-      return price * (rule.discount_value / 100);
+  static calculateDiscount(price, discountType, discountValue) {
+    if (discountType === "PERCENTAGE") {
+      return price * (discountValue / 100);
     }
-    return Math.min(price, rule.discount_value); // Don't discount more than the price
+    return Math.min(price, discountValue);
   }
 }
 

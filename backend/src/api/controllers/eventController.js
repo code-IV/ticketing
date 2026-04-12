@@ -126,7 +126,10 @@ const EventController = {
    */
   async getEventById(req, res, next) {
     try {
-      const event = await EventService.getEventById(req.params.id);
+      const event = await EventService.getEventById(
+        req.params.id,
+        req.session?.user,
+      );
       if (!event) {
         return apiResponse(res, 404, false, "Event not found.");
       }

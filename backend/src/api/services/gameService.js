@@ -109,72 +109,107 @@ const GameService = {
       throw new Error("Could not retrieve games catalog.");
     }
   },
-  async getActive(user) {
-    const client = await getClient();
+  async getActive(user = null) {
     try {
-      await client.query("BEGIN");
+      // 1. Fetch active games + products + ticket_types
       const rows = await Game.findActive();
-      const activePromos = await Discount.getApplicablePromos(
-        rows.map((r) => r.product_id),
-        client,
-      );
+      const activePromos = await Discount.getApplicablePromos();
+
+      // 2. Index promos by ticket_type_id (fast lookup)
+      const promosByTicketType = new Map();
+
+      for (const promo of activePromos) {
+        const ticketTypeIds = promo.rules
+          ?.filter((r) => r.type === "PRODUCT_SPECIFIC")
+          .flatMap((r) => r.data?.ticketTypeIds || []);
+
+        if (ticketTypeIds.length === 0) {
+          // This promo is global (no ticket_type restriction).
+          // Mark it with a sentinel key so we can find it later.
+          const globalKey = "__global__";
+          if (!promosByTicketType.has(globalKey)) {
+            promosByTicketType.set(globalKey, []);
+          }
+          promosByTicketType.get(globalKey).push(promo);
+        } else {
+          // Index per ticket_type_id.
+          ticketTypeIds.forEach((id) => {
+            if (!promosByTicketType.has(id)) {
+              promosByTicketType.set(id, []);
+            }
+            promosByTicketType.get(id).push(promo);
+          });
+        }
+      }
+
+      // 3. Enrich each game + each ticket type
       const gamesWithDiscounts = rows.map((game) => {
         const gameResult = new GameRes(game);
 
-        // Enrich each ticket type with its own discount
         const enrichedTicketTypes = game.ticket_types.map((tt) => {
           let bestDiscount = 0;
-          let name = "";
+          let bestDiscountName = "";
 
-          activePromos.forEach((promo) => {
-            const promoContext = {
-              userId: user?.id,
-              isAuthenticated: !!user,
-              ticketTypeIds: [tt.id], // only this ticket type
-              cartTotal: 0,
-            };
+          const promoContext = {
+            userId: user?.id,
+            isAuthenticated: !!user,
+            ticketTypeIds: [tt.id],
+            cartTotal: 0,
+          };
+
+          // 3.1 Check promos that are either:
+          // - explicitly for this ticket_type_id
+          // - or global (no ticket_type_ids)
+          const specificPromos = promosByTicketType.get(tt.id) || [];
+          const globalPromos = promosByTicketType.get("__global__") || [];
+          const applicablePromos = [...specificPromos, ...globalPromos];
+
+          applicablePromos.forEach((promo) => {
             if (
               promo.rules?.length > 0 &&
               PromotionEngine.validateRules(promo.rules, promoContext)
             ) {
               const discount = PromotionEngine.calculateDiscount(
                 tt.price,
-                promo.rules[0],
+                promo.discount_type,
+                promo.discount_value,
               );
 
               if (discount > bestDiscount) {
                 bestDiscount = discount;
-                name = promo.name;
+                bestDiscountName = promo.name;
               }
             }
           });
 
-          // optionally cap discount so final price >= 0
+          // 4. Only attach `discount` if there is at least one applicable promo.
           const finalPrice = Math.max(0, tt.price - bestDiscount);
 
-          return {
-            ...tt,
-            discount: {
-              discountName: name,
-              discountAmount: bestDiscount,
-              finalPrice,
-            },
-          };
+          if (bestDiscount > 0) {
+            return {
+              ...tt,
+              discount: {
+                discountName: bestDiscountName,
+                discountAmount: bestDiscount,
+                finalPrice,
+              },
+            };
+          }
+
+          // If no promo applies, return original ticket WITHOUT `discount` object.
+          return tt;
         });
 
         return {
           ...gameResult,
-          ticketTypes: enrichedTicketTypes, // if you want game‑level
+          ticketTypes: enrichedTicketTypes,
         };
       });
-      await client.query("COMMIT");
+
       return { games: gamesWithDiscounts };
     } catch (error) {
-      await client.query("ROLLBACK");
       console.error("Error in gameService.getActive:", error);
       throw new Error("Could not retrieve games catalog.");
-    } finally {
-      client.release();
     }
   },
 

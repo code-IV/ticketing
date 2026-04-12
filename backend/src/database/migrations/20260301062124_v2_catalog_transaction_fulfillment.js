@@ -58,6 +58,10 @@ exports.up = async function (knex) {
     table.timestamp("starts_at").notNullable();
     table.timestamp("ends_at").notNullable();
 
+    // Action: How much to take off
+    table.enu("discount_type", ["PERCENTAGE", "FLAT_AMOUNT"]).notNullable();
+    table.decimal("discount_value", 10, 2).notNullable();
+
     table.timestamps(true, true);
   });
 
@@ -75,10 +79,6 @@ exports.up = async function (knex) {
     // Rule types: 'USER_LOGGED_IN', 'MIN_PURCHASE', 'PRODUCT_SPECIFIC', 'USAGE_COUNT'
     table.string("rule_type").notNullable();
     table.jsonb("rule_data").notNullable(); // e.g., { "min_amount": 500 } or { "first_n": 100 }
-
-    // Action: How much to take off
-    table.enu("discount_type", ["PERCENTAGE", "FLAT_AMOUNT"]).notNullable();
-    table.decimal("discount_value", 10, 2).notNullable();
   });
 
   // 3. Coupon Codes (Optional access)
