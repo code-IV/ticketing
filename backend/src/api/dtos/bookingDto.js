@@ -3,6 +3,7 @@ class CreateBookingEventsReq {
     ((this.eventId = data.eventId), (this.paymentMethod = data.paymentMethod));
     this.items = data.items.map((item) => ({
       ticketTypeId: item.ticketTypeId,
+      promotionId: item.promotionId ?? null,
       quantity: item.quantity,
     }));
   }
@@ -14,6 +15,7 @@ class CreateBookingGamesReq {
     this.items = data.items.map((item) => ({
       gameId: item.gameId,
       ticketTypeId: item.ticketTypeId,
+      promotionId: item.promotionId ?? null,
       quantity: item.quantity,
     }));
   }

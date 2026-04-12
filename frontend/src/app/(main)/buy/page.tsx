@@ -23,9 +23,10 @@ import { DiscountBadge } from "@/components/ui/DiscountBadge";
 // Helper function to get poster image (images only)
 const getPosterImage = (game: any) => {
   const posters =
-    game.gallery?.filter((item: any) => 
-      item.label === "poster" && 
-      (item.type?.startsWith("image/") || !item.type?.startsWith("video/"))
+    game.gallery?.filter(
+      (item: any) =>
+        item.label === "poster" &&
+        (item.type?.startsWith("image/") || !item.type?.startsWith("video/")),
     ) || [];
   if (posters.length === 0) {
     return "/l.jpg"; // Fallback to poster placeholder
@@ -51,18 +52,27 @@ const BuyTicketsPage = () => {
   const { user } = useAuth();
 
   // Generate permanent discount assignments for this page load (only once)
-  const gameDiscountsRef = useRef<Record<string, { text: string; hasDiscount: boolean }>>({});
-  
+  const gameDiscountsRef = useRef<
+    Record<string, { text: string; hasDiscount: boolean }>
+  >({});
+
   // Initialize discounts only when games load and not already initialized
-  if (games && games.length > 0 && Object.keys(gameDiscountsRef.current).length === 0) {
-    const discounts: Record<string, { text: string; hasDiscount: boolean }> = {};
+  if (
+    games &&
+    games.length > 0 &&
+    Object.keys(gameDiscountsRef.current).length === 0
+  ) {
+    const discounts: Record<string, { text: string; hasDiscount: boolean }> =
+      {};
     games.forEach((game) => {
       const randomDiscount = Math.random() > 0.5; // 50% chance
       const discountTexts = ["LIMITED TIME", "LIMITED OFFER"];
-      const discountText = randomDiscount ? discountTexts[Math.floor(Math.random() * discountTexts.length)] : null;
+      const discountText = randomDiscount
+        ? discountTexts[Math.floor(Math.random() * discountTexts.length)]
+        : null;
       discounts[game.id] = {
         text: discountText || "",
-        hasDiscount: randomDiscount
+        hasDiscount: randomDiscount,
       };
     });
     gameDiscountsRef.current = discounts;
@@ -155,6 +165,7 @@ const BuyTicketsPage = () => {
           );
           if (ticketType) {
             itemsPayload.push({
+              promotionId: ticketType.discount?.discountId,
               ticketTypeId: ticketType.id,
               category,
               quantity,
@@ -295,9 +306,12 @@ const BuyTicketsPage = () => {
                     const lowestPrice = game.ticketTypes?.length
                       ? Math.min(...game.ticketTypes.map((t) => t.price))
                       : 0;
-                    
+
                     // Use permanent discount assignment
-                    const gameDiscount = gameDiscountsRef.current[game.id] || { text: "", hasDiscount: false };
+                    const gameDiscount = gameDiscountsRef.current[game.id] || {
+                      text: "",
+                      hasDiscount: false,
+                    };
 
                     return (
                       <motion.div
@@ -335,7 +349,7 @@ const BuyTicketsPage = () => {
                             {/* Discount Badge */}
                             {gameDiscount.hasDiscount && (
                               <div className="absolute -top-2 -right-2 z-50">
-                                <DiscountBadge 
+                                <DiscountBadge
                                   customText={gameDiscount.text}
                                   size="sm"
                                 />
@@ -380,25 +394,35 @@ const BuyTicketsPage = () => {
                           >
                             {game.ticketTypes?.map((tt) => {
                               const qty = cart[game.id]?.[tt.category] || 0;
-                              
+
                               // Calculate discount for this ticket type
                               const hasTicketDiscount = Math.random() > 0.6; // 40% chance
-                              const discountPercentage = hasTicketDiscount ? Math.floor(Math.random() * 25) + 10 : 0; // 10-35% off
-                              const discountedPrice = hasTicketDiscount ? Math.round(tt.price * (1 - discountPercentage / 100)) : tt.price;
+                              const discountPercentage = hasTicketDiscount
+                                ? Math.floor(Math.random() * 25) + 10
+                                : 0; // 10-35% off
+                              const discountedPrice = hasTicketDiscount
+                                ? Math.round(
+                                    tt.price * (1 - discountPercentage / 100),
+                                  )
+                                : tt.price;
                               const savings = tt.price - discountedPrice;
                               return (
                                 <div
                                   key={tt.category}
                                   className={`flex justify-between items-center rounded-2xl p-3 border ${
-                                    hasTicketDiscount 
-                                      ? "bg-[#FFD84D]/10 border-[#FFD84D]/30" 
+                                    hasTicketDiscount
+                                      ? "bg-[#FFD84D]/10 border-[#FFD84D]/30"
                                       : "bg-white/10 border-white/10"
                                   }`}
                                 >
                                   <div>
-                                    <p className={`text-[8px] font-black uppercase tracking-widest ${
-                                      hasTicketDiscount ? "text-[#FFD84D]" : "text-indigo-300"
-                                    }`}>
+                                    <p
+                                      className={`text-[8px] font-black uppercase tracking-widest ${
+                                        hasTicketDiscount
+                                          ? "text-[#FFD84D]"
+                                          : "text-indigo-300"
+                                      }`}
+                                    >
                                       {tt.category}
                                     </p>
                                     <div className="flex items-center gap-2">
@@ -407,26 +431,27 @@ const BuyTicketsPage = () => {
                                           {tt.price} ETB
                                         </span>
                                       )}
-                                      <p className={`font-black text-sm ${
-                                        hasTicketDiscount ? "text-[#FFD84D]" : "text-white"
-                                      }`}>
+                                      <p
+                                        className={`font-black text-sm ${
+                                          hasTicketDiscount
+                                            ? "text-[#FFD84D]"
+                                            : "text-white"
+                                        }`}
+                                      >
                                         {discountedPrice} ETB
                                       </p>
                                     </div>
                                     {hasTicketDiscount && (
                                       <p className="text-[#FFD84D] text-[8px] font-black uppercase tracking-widest">
-                                        SAVE {savings} ETB ({discountPercentage}% OFF)
+                                        SAVE {savings} ETB ({discountPercentage}
+                                        % OFF)
                                       </p>
                                     )}
                                   </div>
                                   <div className="flex items-center gap-3 bg-white/20 rounded-xl p-1 px-2">
                                     <button
                                       onClick={() =>
-                                        updateQuantity(
-                                          game.id,
-                                          tt.category,
-                                          -1,
-                                        )
+                                        updateQuantity(game.id, tt.category, -1)
                                       }
                                       className="text-white hover:text-red-400"
                                     >
@@ -437,11 +462,7 @@ const BuyTicketsPage = () => {
                                     </span>
                                     <button
                                       onClick={() =>
-                                        updateQuantity(
-                                          game.id,
-                                          tt.category,
-                                          1,
-                                        )
+                                        updateQuantity(game.id, tt.category, 1)
                                       }
                                       className="text-white hover:text-indigo-400"
                                     >

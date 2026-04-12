@@ -4,6 +4,8 @@ const {
   generateTicketCode,
   generateQRToken,
 } = require("../../utils/helpers");
+const PromotionEngine = require("../../utils/promotinEngine");
+const { Discount } = require("./Discount");
 
 const Booking = {
   /**
@@ -11,13 +13,11 @@ const Booking = {
    * items: [{ ticketTypeId, quantity, unitPrice }]
    */
   async createBooking(client, data) {
-    const { reference, userId, total, guestEmail, guestName } = data;
+    const { reference, userId, total } = data;
     const sql = `
-      INSERT INTO bookings (booking_reference, user_id, total_amount, status, guest_email, guest_name)
-      VALUES ($1, $2, $3, 'CONFIRMED', $4, $5) RETURNING *`;
-    return (
-      await client.query(sql, [reference, userId, total, guestEmail, guestName])
-    ).rows[0];
+      INSERT INTO bookings (booking_reference, user_id, total_amount, status)
+      VALUES ($1, $2, $3, 'CONFIRMED') RETURNING *`;
+    return (await client.query(sql, [reference, userId, total])).rows[0];
   },
 
   async createMasterTicket(client, data) {
@@ -31,14 +31,16 @@ const Booking = {
 
   async addBookingItem(client, item) {
     const sql = `
-      INSERT INTO booking_items (booking_id, ticket_type_id, quantity, unit_price, subtotal)
-      VALUES ($1, $2, $3, $4, $5)`;
+      INSERT INTO booking_items (booking_id, ticket_type_id, promotion_id, quantity, unit_price, subtotal, discount_amount)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)`;
     return client.query(sql, [
       item.bookingId,
       item.ticketTypeId,
+      item.promotionId || null,
       item.quantity,
-      item.unitPrice,
+      item.finalPrice,
       item.subtotal,
+      item.discountAmount,
     ]);
   },
 
@@ -69,35 +71,81 @@ const Booking = {
    * Create a full booking with items and tickets (transactional) for Games
    * items: [{ ticketTypeId, quantity, unitPrice }]
    */
-  async bookGames({
-    userId,
-    items,
-    paymentMethod,
-    expires_in_days = 30, // Default to 30 days
-  }) {
+  async bookGames(
+    { userId, items, paymentMethod, expires_in_days = 30 },
+    user = null,
+  ) {
     const client = await getClient();
 
     try {
       await client.query("BEGIN");
 
-      // 1️⃣ Create booking header
       const bookingReference = generateBookingReference();
 
-      const inputData = items.map((item) => ({
-        ticket_type_id: item.ticketTypeId,
-        quantity: item.quantity,
-      }));
+      let totalAmount = 0;
 
-      // 2. Execute the query
-      const amountSql = `
-        SELECT SUM(input.quantity * tt.price) as "totalAmount"
-        FROM jsonb_to_recordset($1::jsonb) AS input(ticket_type_id UUID, quantity INT)
-        JOIN ticket_types tt ON tt.id = input.ticket_type_id
-        WHERE tt.deleted_at IS NULL;
-      `;
+      // 1️⃣ FIRST LOOP: compute prices, discounts, totals and enrich items
+      const enrichedItems = [];
 
-      const result = await client.query(amountSql, [JSON.stringify(inputData)]);
-      const totalAmount = result.rows[0].totalAmount || 0;
+      for (const item of items) {
+        const typeResult = await client.query(
+          `SELECT tt.price, tt.category, p.id as product_id, p.name as product_name 
+         FROM ticket_types tt
+         JOIN products p ON tt.product_id = p.id
+         WHERE tt.id = $1 AND tt.deleted_at IS NULL`,
+          [item.ticketTypeId],
+        );
+
+        if (typeResult.rows.length === 0) {
+          throw new Error(`Invalid Ticket Type ID: ${item.ticketTypeId}`);
+        }
+
+        const { price, category, product_id, product_name } =
+          typeResult.rows[0];
+
+        let discountAmount = 0;
+        let finalPrice = price;
+
+        if (item.promotionId) {
+          const promo = await Discount.getById(item.promotionId);
+
+          if (
+            promo &&
+            promo.rules?.length > 0 &&
+            PromotionEngine.validateRules(promo.rules, {
+              userId: user?.id,
+              isAuthenticated: !!user,
+              ticketTypeIds: [item.ticketTypeId],
+              cartTotal: 0,
+            })
+          ) {
+            const discount = PromotionEngine.calculateDiscount(
+              price,
+              promo.discount_type,
+              promo.discount_value,
+            );
+            discountAmount = Math.min(discount, price);
+            finalPrice = Math.max(0, price - discountAmount);
+          }
+        }
+
+        const subtotal = finalPrice * item.quantity;
+        totalAmount += subtotal;
+
+        // Keep this for later loops
+        enrichedItems.push({
+          ...item,
+          price,
+          finalPrice,
+          discountAmount,
+          subtotal,
+          product_id,
+          product_name,
+          category,
+        });
+      }
+
+      // 2️⃣ Create booking header (now we have the correct totalAmount)
       const bookingResult = await client.query(
         `INSERT INTO bookings
        (user_id, booking_reference, total_amount, status)
@@ -107,72 +155,71 @@ const Booking = {
       );
       const booking = bookingResult.rows[0];
 
-      // 2️⃣ Process Items and Entitlements
+      // 3️⃣ Create master ticket (needed for ticket_products)
       const ticketCode = generateTicketCode();
       const expiresAt = new Date();
       expiresAt.setDate(expiresAt.getDate() + expires_in_days);
-
-      // Generate HMAC QR Token
       const qrToken = generateQRToken();
 
-      // Create the master Ticket first so we have the ID for ticket_products
       const ticketResult = await client.query(
-        `INSERT INTO tickets (booking_id, ticket_code, qr_token, status, expires_at)
+        `INSERT INTO tickets
+       (booking_id, ticket_code, qr_token, status, expires_at)
        VALUES ($1, $2, $3, 'ACTIVE', $4)
        RETURNING id`,
         [booking.id, ticketCode, qrToken, expiresAt],
       );
       const ticketId = ticketResult.rows[0].id;
 
-      const passesMap = {}; // Helper to group by gameName
+      const passesMap = {};
 
-      for (const item of items) {
-        // Fetch price, product_id AND the product name
-        const typeResult = await client.query(
-          `SELECT tt.price, tt.category, p.id as product_id, p.name as product_name 
-     FROM ticket_types tt
-     JOIN products p ON tt.product_id = p.id
-     WHERE tt.id = $1 AND tt.deleted_at IS NULL`,
-          [item.ticketTypeId],
-        );
-
-        if (typeResult.rows.length === 0)
-          throw new Error(`Invalid Ticket Type ID: ${item.ticketTypeId}`);
-
-        const { price, category, product_id, product_name } =
-          typeResult.rows[0];
-        const subtotal = price * item.quantity;
-
-        // 1. Record the Sale
+      // 4️⃣ SECOND LOOP: insert booking_items + ticket_products
+      for (const item of enrichedItems) {
+        // 4.1 Insert booking item
         await client.query(
-          `INSERT INTO booking_items (booking_id, ticket_type_id, quantity, unit_price, subtotal)
-     VALUES ($1, $2, $3, $4, $5)`,
-          [booking.id, item.ticketTypeId, item.quantity, price, subtotal],
+          `INSERT INTO booking_items
+         (booking_id, ticket_type_id, promotion_id, quantity, unit_price, subtotal, discount_amount)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+          [
+            booking.id,
+            item.ticketTypeId,
+            item.promotionId || null,
+            item.quantity,
+            item.finalPrice,
+            item.subtotal,
+            item.discountAmount,
+          ],
         );
 
-        // 2. Create the Entitlement
+        // 4.2 Insert entitlement
         await client.query(
-          `INSERT INTO ticket_products (ticket_id, product_id, ticket_type_id, total_quantity, status)
-     VALUES ($1, $2, $3, $4, 'AVAILABLE')`,
-          [ticketId, product_id, item.ticketTypeId, item.quantity],
+          `INSERT INTO ticket_products
+         (ticket_id, product_id, ticket_type_id, total_quantity, status)
+         VALUES ($1, $2, $3, $4, 'AVAILABLE')`,
+          [ticketId, item.product_id, item.ticketTypeId, item.quantity],
         );
 
-        // 3. Group for Response
-        if (!passesMap[product_name]) {
-          passesMap[product_name] = { gameName: product_name, ticketTypes: [] };
+        // 4.3 Group for response
+        if (!passesMap[item.product_name]) {
+          passesMap[item.product_name] = {
+            gameName: item.product_name,
+            ticketTypes: [],
+          };
         }
 
-        passesMap[product_name].ticketTypes.push({
-          category: category, // e.g., "ADULT"
+        passesMap[item.product_name].ticketTypes.push({
+          category: item.category,
           quantity: item.quantity,
-          unitPrice: price,
-          subtotal: subtotal,
+          unitPrice: item.finalPrice,
+          subtotal: item.subtotal,
+          discountAmount: item.discountAmount,
+          promotionId: item.promotionId || null,
         });
       }
 
-      // 3️⃣ Record Payment
+      // 5️⃣ Record payment
       await client.query(
-        `INSERT INTO payments (booking_id, amount, method, status, paid_at)
+        `INSERT INTO payments
+       (booking_id, amount, method, status, paid_at)
        VALUES ($1, $2, $3, 'COMPLETED', NOW())`,
         [booking.id, totalAmount, paymentMethod.toUpperCase()],
       );
@@ -434,8 +481,6 @@ LIMIT $2 OFFSET $3;
       b.user_id,
       b.total_amount,
       b.status AS booking_status,
-      b.guest_email,
-      b.guest_name,
       b.created_at,
       b.updated_at,
       u.first_name || ' ' || u.last_name AS customer_name,

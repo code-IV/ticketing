@@ -67,5 +67,33 @@ WHERE
 
     return result.rows;
   },
+
+  async getById(id) {
+    const sql = `SELECT 
+    p.*, 
+    COALESCE(r.rules, '[]'::json) AS rules
+FROM promotions p
+LEFT JOIN (
+    -- Aggregate rules first to keep the main query clean
+    SELECT 
+        promotion_id, 
+        json_agg(json_build_object(
+            'id', id,
+            'type', rule_type,
+            'data', rule_data
+        )) AS rules
+    FROM promotion_rules
+    GROUP BY promotion_id
+) r ON p.id = r.promotion_id
+WHERE 
+    p.id=$1 AND
+    p.is_active = true
+    -- AND CURRENT_TIMESTAMP BETWEEN p.starts_at 
+    -- AND p.ends_at
+    AND (p.max_global_usages IS NULL OR p.total_usages < p.max_global_usages);`;
+    const result = await query(sql, [id]);
+
+    return result.rows[0];
+  },
 };
 module.exports = { Discount };

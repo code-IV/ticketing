@@ -75,6 +75,7 @@ export interface TicketType {
   price: number;
   max_quantity: number;
   status?: "ACTIVE" | "INACTIVE";
+  discount?: any;
   created_at?: string;
   updated_at?: string;
 }

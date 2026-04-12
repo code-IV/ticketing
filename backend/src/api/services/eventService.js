@@ -161,10 +161,6 @@ const EventService = {
     try {
       // 1. Fetch active event + products + ticket_types
       const row = await Event.findEventWithDetails(id);
-
-      if (!row) {
-        throw new Error(`Event with ID ${id} not found`);
-      }
       const activePromos = await Discount.getApplicablePromos();
 
       // 2. Index promos by ticket_type_id (fast lookup)
@@ -199,6 +195,7 @@ const EventService = {
         const eventResult = new EventRes(row);
 
         const enrichedTicketTypes = row.ticket_types.map((tt) => {
+          let discountId = "";
           let bestDiscount = 0;
           let bestDiscountName = "";
 
@@ -230,6 +227,7 @@ const EventService = {
               if (discount > bestDiscount) {
                 bestDiscount = discount;
                 bestDiscountName = promo.name;
+                discountId = promo.id;
               }
             }
           });
@@ -241,6 +239,7 @@ const EventService = {
             return {
               ...tt,
               discount: {
+                discountId: discountId,
                 discountName: bestDiscountName,
                 discountAmount: bestDiscount,
                 finalPrice,

@@ -47,22 +47,3 @@ export interface Promotion {
   discountValue: number;
   rules: PromotionRule[]; // Nested rules for the engine to check
 }
-
-//The "Engine" Interface
-
-export interface DiscountContext {
-  userId?: string;
-  isAuthenticated: boolean;
-  cartTotal: number;
-  productIds: string[]; // IDs of products currently in the booking
-  couponCode?: string;
-}
-
-export interface AppliedDiscount {
-  promotionId: string;
-  totalDiscount: number;
-  discountedLineItems: {
-    productId: string;
-    amountSaved: number;
-  }[];
-}

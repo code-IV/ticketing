@@ -147,6 +147,7 @@ const GameService = {
         const gameResult = new GameRes(game);
 
         const enrichedTicketTypes = game.ticket_types.map((tt) => {
+          let discountId = "";
           let bestDiscount = 0;
           let bestDiscountName = "";
 
@@ -178,6 +179,7 @@ const GameService = {
               if (discount > bestDiscount) {
                 bestDiscount = discount;
                 bestDiscountName = promo.name;
+                discountId = promo.id;
               }
             }
           });
@@ -189,6 +191,7 @@ const GameService = {
             return {
               ...tt,
               discount: {
+                discountId: discountId,
                 discountName: bestDiscountName,
                 discountAmount: bestDiscount,
                 finalPrice,

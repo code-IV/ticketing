@@ -64,6 +64,7 @@ const bookingController = {
 
         totalQuantity += item.quantity;
         resolvedItems.push({
+          promotionId: item.promotionId || null,
           ticketTypeId: item.ticketTypeId,
           quantity: item.quantity,
           unitPrice: parseFloat(ticketType.price),
@@ -87,13 +88,16 @@ const bookingController = {
       expires.setMonth(expires.getMonth() + 1);
 
       // Create the booking (transactional)
-      const booking = await bookingService.bookEvent({
-        userId,
-        eventId,
-        items: resolvedItems,
-        paymentMethod,
-        expires_at: expires,
-      });
+      const booking = await bookingService.bookEvent(
+        {
+          userId,
+          eventId,
+          items: resolvedItems,
+          paymentMethod,
+          expires_at: expires,
+        },
+        req.session?.user,
+      );
 
       return apiResponse(res, 201, true, "Booking created successfully.", {
         booking,
@@ -111,12 +115,15 @@ const bookingController = {
       const expiresAt = new Date();
 
       // 4️⃣ Call transactional booking service
-      const booking = await Booking.bookGames({
-        userId,
-        items,
-        paymentMethod,
-        expires_at: expiresAt,
-      });
+      const booking = await Booking.bookGames(
+        {
+          userId,
+          items,
+          paymentMethod,
+          expires_at: expiresAt,
+        },
+        req.session?.user,
+      );
 
       return apiResponse(
         res,
@@ -286,7 +293,7 @@ const bookingController = {
 
       // Ensure user can only see their own bookings (unless admin)
       if (
-        req.session.user.role !== "admin" &&
+        req.session.user.role !== "ADMIN" &&
         booking.user_id !== req.session.user.id
       ) {
         return apiResponse(res, 403, false, "Access denied.");

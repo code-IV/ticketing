@@ -102,14 +102,6 @@ exports.up = async function (knex) {
     table.uuid("user_id").nullable();
     table.decimal("total_amount", 10, 2).notNullable();
     table.specificType("status", "booking_status").defaultTo("PENDING");
-    table
-      .uuid("promotion_id")
-      .nullable()
-      .references("id")
-      .inTable("promotions")
-      .onDelete("SET NULL");
-    table.string("coupon_code").nullable();
-    table.decimal("discount_total", 10, 2).defaultTo(0);
     table.timestamps(true, true);
   });
 
@@ -126,6 +118,12 @@ exports.up = async function (knex) {
       .references("id")
       .inTable("ticket_types")
       .onDelete("RESTRICT");
+    table
+      .uuid("promotion_id")
+      .nullable()
+      .references("id")
+      .inTable("promotions")
+      .onDelete("SET NULL");
     table.integer("quantity").notNullable();
     table.decimal("unit_price", 10, 2).notNullable();
     table.decimal("subtotal", 10, 2).notNullable();
@@ -226,12 +224,16 @@ exports.up = async function (knex) {
  */
 exports.down = async function (knex) {
   // Drop tables in REVERSE order of creation to respect Foreign Keys
+  await knex.schema.dropTableIfExists("promotion_rule_products");
   await knex.schema.dropTableIfExists("upload_sessions");
   await knex.schema.dropTableIfExists("ticket_products");
   await knex.schema.dropTableIfExists("tickets");
   await knex.schema.dropTableIfExists("payments");
   await knex.schema.dropTableIfExists("booking_items");
   await knex.schema.dropTableIfExists("bookings");
+  await knex.schema.dropTableIfExists("coupon_codes");
+  await knex.schema.dropTableIfExists("promotion_rules");
+  await knex.schema.dropTableIfExists("promotions");
   await knex.schema.dropTableIfExists("ticket_types");
 
   // Drop custom types

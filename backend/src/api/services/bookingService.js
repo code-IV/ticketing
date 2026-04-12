@@ -4,10 +4,12 @@ const {
   generateTicketCode,
   generateQRToken,
 } = require("../../utils/helpers");
+const PromotionEngine = require("../../utils/promotinEngine");
 const { Booking, BookingStats } = require("../models/Booking");
+const { Discount } = require("../models/Discount");
 
 const bookingService = {
-  async bookEvent(payload) {
+  async bookEvent(payload, user = null) {
     const client = await getClient();
     try {
       await client.query("BEGIN");
@@ -18,11 +20,65 @@ const bookingService = {
         throw new Error("Booking must include at least one item");
       }
 
-      // Business Logic: Math & Code Generation
-      const totalAmount = payload.items.reduce(
-        (sum, i) => sum + i.quantity * i.unitPrice,
-        0,
-      );
+      let totalAmount = 0;
+      const enrichedItems = [];
+
+      for (const item of payload.items) {
+        const typeResult = await client.query(
+          `SELECT tt.price, tt.category, p.id as product_id, p.name as product_name 
+         FROM ticket_types tt
+         JOIN products p ON tt.product_id = p.id
+         WHERE tt.id = $1 AND tt.deleted_at IS NULL`,
+          [item.ticketTypeId],
+        );
+
+        if (typeResult.rows.length === 0) {
+          throw new Error(`Invalid Ticket Type ID: ${item.ticketTypeId}`);
+        }
+
+        const { price, category, product_id, product_name } =
+          typeResult.rows[0];
+
+        let discountAmount = 0;
+        let finalPrice = price;
+        if (item.promotionId) {
+          const promo = await Discount.getById(item.promotionId);
+
+          if (
+            promo &&
+            promo.rules?.length > 0 &&
+            PromotionEngine.validateRules(promo.rules, {
+              userId: user?.id,
+              isAuthenticated: !!user,
+              ticketTypeIds: [item.ticketTypeId],
+              cartTotal: 0,
+            })
+          ) {
+            const discount = PromotionEngine.calculateDiscount(
+              price,
+              promo.discount_type,
+              promo.discount_value,
+            );
+            discountAmount = Math.min(discount, price);
+            finalPrice = Math.max(0, price - discountAmount);
+          }
+        }
+
+        const subtotal = finalPrice * item.quantity;
+        totalAmount += subtotal;
+
+        // Keep this for later loops
+        enrichedItems.push({
+          ...item,
+          price,
+          finalPrice,
+          discountAmount,
+          subtotal,
+          product_id,
+          product_name,
+          category,
+        });
+      }
       const bookingRef = generateBookingReference();
 
       // 1. Create Booking
@@ -30,8 +86,6 @@ const bookingService = {
         reference: bookingRef,
         userId: payload.userId,
         total: totalAmount,
-        guestEmail: payload.guestEmail,
-        guestName: payload.guestName,
       });
 
       // 2. Create Master Ticket (Security/Logic belongs here)
@@ -46,11 +100,10 @@ const bookingService = {
       });
 
       // 3. Process Items
-      for (const item of payload.items) {
+      for (const item of enrichedItems) {
         await Booking.addBookingItem(client, {
           ...item,
           bookingId: booking.id,
-          subtotal: item.quantity * item.unitPrice,
         });
 
         await Booking.createEntitlement(client, {
